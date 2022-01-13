@@ -1,3 +1,4 @@
+import { DateTime } from 'luxon';
 import {
   ethers,
   EventFilter,
@@ -16,20 +17,42 @@ import { FunctionFragment, EventFragment, Result } from '@ethersproject/abi';
 import { VAMM as VoltzVAMM } from '@voltz/voltz-core';
 import VAMMContract from '@voltz/voltz-core/artifacts/contracts/VAMM.sol/VAMM.json';
 
-class VAMM implements Partial<VoltzVAMM> {
+export type VAMMArgs = {
   address: string;
+  rateOracle: string;
+  underlying: string;
+  startDate: DateTime;
+  endDate: DateTime;
+};
+
+class VAMM implements Partial<VoltzVAMM>, VAMMArgs {
+  address: string;
+
+  rateOracle: string;
+
+  underlying: string;
+
+  startDate: DateTime;
+
+  endDate: DateTime;
 
   signer: ethers.Signer;
 
   contract: ethers.Contract;
 
-  constructor(address: string, signer: ethers.Signer) {
+  constructor(
+    { address, rateOracle, underlying, startDate, endDate }: VAMMArgs,
+    signer: ethers.Signer,
+  ) {
     this.address = address;
+    this.rateOracle = rateOracle;
+    this.underlying = underlying;
+    (this.startDate = startDate), (this.endDate = endDate);
     this.signer = signer;
     this.contract = new ethers.Contract(this.address, VAMMContract.abi, this.signer);
   }
 
-  swap(
+  async swap(
     params: {
       recipient: string;
       isFT: boolean;
@@ -43,7 +66,7 @@ class VAMM implements Partial<VoltzVAMM> {
     return this.contract.swap(params, overrides);
   }
 
-  mint(
+  async mint(
     recipient: string,
     tickLower: BigNumberish,
     tickUpper: BigNumberish,
@@ -53,7 +76,7 @@ class VAMM implements Partial<VoltzVAMM> {
     return this.contract.mint(recipient, tickLower, tickUpper, amount, overrides);
   }
 
-  burn(
+  async burn(
     tickLower: BigNumberish,
     tickUpper: BigNumberish,
     amount: BigNumberish,

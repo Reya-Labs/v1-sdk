@@ -11,6 +11,7 @@
     "README.md"
   ],
   "scripts": {
+    "prepare": "husky install",
     "build": "tsc -p tsconfig.build.json",
     "build-release": "tsc -p tsconfig.dist.json",
     "prettier": "prettier 'src/**/*.ts'",
@@ -29,6 +30,7 @@
     "@types/faker": "^5.5.8",
     "@types/jest": "^27.0.2",
     "@types/lodash": "^4.14.174",
+    "@types/luxon": "^2.0.9",
     "@typescript-eslint/eslint-plugin": "4.31.2",
     "@typescript-eslint/parser": "4.31.2",
     "commitizen": "^4.2.4",
@@ -48,7 +50,11 @@
     "ts-jest": "^27.0.5",
     "typescript": "^4.4.3"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@metamask/detect-provider": "^1.2.0",
+    "ethers": "^5.5.2",
+    "luxon": "^2.3.0"
+  },
   "lint-staged": {
     "src/**/*.ts": [
       "eslint --fix"
