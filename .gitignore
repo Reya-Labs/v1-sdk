@@ -1,4 +1,2 @@
+dist
 node_modules
-build
-yarn-error.log
-.npmrc
