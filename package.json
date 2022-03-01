@@ -52,7 +52,9 @@
   },
   "dependencies": {
     "@metamask/detect-provider": "^1.2.0",
+    "@voltz/voltz-core": "file:.yalc/@voltz/voltz-core",
     "ethers": "^5.5.2",
+    "lodash": "^4.17.21",
     "luxon": "^2.3.0"
   },
   "lint-staged": {
