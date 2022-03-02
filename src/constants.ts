@@ -4,8 +4,8 @@ import JSBI from 'jsbi'
 export type BigintIsh = JSBI | string | number
 
 export enum TradeType {
-  EXACT_INPUT,
-  EXACT_OUTPUT
+  FIXED_TAKER,
+  VARIABLE_TAKER
 }
 
 export enum Rounding {
