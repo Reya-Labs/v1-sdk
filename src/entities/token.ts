@@ -45,16 +45,16 @@ import { validateAndParseAddress } from '../utils/validateAndParseAddress'
       return this.address === other.address
     }
   
-    /**
-     * Returns true if the address of this token sorts before the address of the other token
-     * @param other other token to compare
-     * @throws if the tokens have the same address
-     * @throws if the tokens are on different chains
-     */
-    public sortsBefore(other: Token): boolean {
-      invariant(this.address !== other.address, 'ADDRESSES')
-      return this.address.toLowerCase() < other.address.toLowerCase()
-    }
+    // /**
+    //  * Returns true if the address of this token sorts before the address of the other token
+    //  * @param other other token to compare
+    //  * @throws if the tokens have the same address
+    //  * @throws if the tokens are on different chains
+    //  */
+    // public sortsBefore(other: Token): boolean {
+    //   invariant(this.address !== other.address, 'ADDRESSES')
+    //   return this.address.toLowerCase() < other.address.toLowerCase()
+    // }
 
   }
 

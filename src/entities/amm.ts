@@ -53,6 +53,7 @@ export class AMM {
     public readonly tickSpacing: number
     public readonly tickDataProvider: TickDataProvider
     private _fixedRate?: Price
+    private _price?: Price
 
    /**
    * Construct an IRS AMM
@@ -106,6 +107,16 @@ public get fixedRate(): Price {
         ))
     )
 } 
+
+public get price(): Price {
+  return (
+    this._price ??
+    (this._price = new Price(
+    Q192,
+    JSBI.multiply(this.sqrtRatioX96, this.sqrtRatioX96)
+    ))
+  )
+}
 
   /**
    * Returns true if the token is either token0 or token1
