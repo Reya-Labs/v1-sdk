@@ -4,8 +4,8 @@ import { BigNumber, Signer } from 'ethers';
 import { BigintIsh } from '../types';
 import { PERIPHERY_ADDRESS, Q192 } from '../constants';
 import { Price } from './fractions/price';
-import { Periphery__factory } from '../typechain';
-import { SwapPeripheryParams } from '../utils/interfaces';
+import { Periphery__factory, MarginEngine__factory } from '../typechain';
+import { SwapPeripheryParams, MintOrBurnParams } from '../utils/interfaces';
 import Token from './token';
 
 export type AMMConstructorArgs = {
@@ -26,6 +26,24 @@ export type AMMConstructorArgs = {
   txCount: number;
 };
 
+export type AMMGetMinimumMarginRequirementArgs = {
+  signer: Signer;
+  recipient: string;
+  isFT: boolean;
+  notional: BigNumber;
+  sqrtPriceLimitX96: BigNumber;
+  tickLower: number;
+  tickUpper: number;
+};
+
+export type AMMUpdatePositionMarginArgs = {
+  signer: Signer;
+  owner: string;
+  tickLower: number;
+  tickUpper: number;
+  marginDelta: BigNumber;
+};
+
 export type AMMSwapArgs = {
   signer: Signer;
   recipient: string;
@@ -34,6 +52,16 @@ export type AMMSwapArgs = {
   sqrtPriceLimitX96: BigNumber;
   tickLower: 0;
   tickUpper: 0;
+};
+
+export type AMMMintOrBurnArgs = {
+  signer: Signer;
+  marginEngineAddress: string;
+  recipient: string;
+  tickLower: number;
+  tickUpper: number;
+  notional: BigNumber;
+  isMint: boolean;
 };
 
 class AMM {
@@ -87,6 +115,95 @@ class AMM {
     this.tickSpacing = tickSpacing;
     this.tick = tick;
     this.txCount = txCount;
+  }
+
+  public async getMinimumMarginRequirement({
+    signer,
+    recipient,
+    isFT,
+    notional,
+    sqrtPriceLimitX96,
+    tickLower,
+    tickUpper,
+  }: AMMGetMinimumMarginRequirementArgs) {
+    const peripheryContract = Periphery__factory.connect(PERIPHERY_ADDRESS, signer);
+    const marginEngineAddress: string = this.marginEngineAddress;
+
+    const swapPeripheryParams: SwapPeripheryParams = {
+      marginEngineAddress,
+      recipient,
+      isFT,
+      notional,
+      sqrtPriceLimitX96,
+      tickLower,
+      tickUpper,
+    };
+
+    let marginRequirement: BigNumber = BigNumber.from(0);
+
+    await peripheryContract.callStatic.swap(swapPeripheryParams).then(
+      async (result: any) => {
+        marginRequirement = result[4];
+      },
+      (error) => {
+        if (error.message.includes('MarginRequirementNotMet')) {
+          const args: string[] = error.message
+            .split('(')[1]
+            .split(')')[0]
+            .replaceAll(' ', '')
+            .split(',');
+
+          marginRequirement = BigNumber.from(args[0]);
+        } else {
+          console.error(error.message);
+        }
+      },
+    );
+
+    return marginRequirement;
+  }
+
+  public async updatePositionMargin({
+    signer,
+    owner,
+    tickLower,
+    tickUpper,
+    marginDelta,
+  }: AMMUpdatePositionMarginArgs) {
+    const marginEngineContract = MarginEngine__factory.connect(this.marginEngineAddress, signer);
+    const updatePositionMarginReceipt = await marginEngineContract.updatePositionMargin(
+      owner,
+      tickLower,
+      tickUpper,
+      marginDelta,
+    );
+
+    return updatePositionMarginReceipt;
+  }
+
+  public async mintOrBurn({
+    signer,
+    recipient,
+    tickLower,
+    tickUpper,
+    notional,
+    isMint,
+  }: AMMMintOrBurnArgs) {
+    const peripheryContract = Periphery__factory.connect(PERIPHERY_ADDRESS, signer);
+    const marginEngineAddress: string = this.marginEngineAddress;
+
+    const mintOrBurnParams: MintOrBurnParams = {
+      marginEngineAddress,
+      recipient,
+      tickLower,
+      tickUpper,
+      notional,
+      isMint,
+    };
+
+    const mintOrBurnReceipt = await peripheryContract.mintOrBurn(mintOrBurnParams);
+
+    return mintOrBurnReceipt;
   }
 
   public async swap({

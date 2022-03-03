@@ -9,3 +9,12 @@ export interface SwapPeripheryParams {
   tickLower: number;
   tickUpper: number;
 }
+
+export interface MintOrBurnParams {
+  marginEngineAddress: string;
+  recipient: string;
+  tickLower: number;
+  tickUpper: number;
+  notional: BigNumber;
+  isMint: boolean;
+}
