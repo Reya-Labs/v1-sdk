@@ -1,1 +1,1 @@
-export { AMM } from './amm';
+export { default as AMM } from './amm';
