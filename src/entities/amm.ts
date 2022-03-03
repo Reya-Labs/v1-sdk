@@ -18,7 +18,7 @@ import { TickListDataProvider } from './tickListDataProvider'
 import { SwapMath } from '../utils/swapMath'
 import { LiquidityMath } from '../utils/liquidityMath'
 import { BigNumber, Signer } from "ethers"
-import { Periphery__factory } from '../typechain'
+import { Periphery__factory, MarginEngine__factory } from '../typechain'
 import "ethers"
 import { SwapPeripheryParams, MintOrBurnParams } from "../utils/interfaces"
 
@@ -152,6 +152,21 @@ public async getMinimumMarginRequirement(
 
 }
 
+
+public async updatePositionMargin(
+  signer: Signer,
+  owner: string,
+  tickLower: number,
+  tickUpper: number,
+  marginDelta: BigNumber
+) {
+
+  const marginEngineContract = MarginEngine__factory.connect(this.marginEngineAddress, signer)
+  const updatePositionMarginReceipt = await marginEngineContract.updatePositionMargin(owner, tickLower, tickUpper, marginDelta)
+
+  return updatePositionMarginReceipt
+
+}
 
 public async mintOrBurn(
   signer: Signer,
