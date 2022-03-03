@@ -15,7 +15,7 @@ const getHistoricalRates = async (symbol: string) => {
     const startTime = new Date("2021-06-01T00:00:00Z").toISOString();
     const endTime = new Date().toISOString();
     const resolution = "1D";
-    const base = `https://app.sense.finance/api/v0.1/rates/${symbol}/timeseries`;
+    const base = `https://app.sense.finance/api/v0.1/rates/${symbol}/series`;
     const query = `${base}?from=${startTime}&to=${endTime}&resolution=${resolution}`;
     // console.log(query);
     const cachedRates = await cache.getItem<string[]>(query);
