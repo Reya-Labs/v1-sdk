@@ -105,6 +105,54 @@ export class AMM {
   }
 
 
+public async getMinimumMarginRequirement(
+  signer: Signer,
+  recipient: string,
+  isFT: boolean,
+  notional: BigNumber,
+  sqrtPriceLimitX96: BigNumber,
+  tickLower: number,
+  tickUpper: number
+) {
+  const peripheryContract = Periphery__factory.connect(this.peripheryAddress, signer)
+  const marginEngineAddress: string = this.marginEngineAddress
+
+  const swapPeripheryParams: SwapPeripheryParams = {
+    marginEngineAddress,
+    recipient,
+    isFT,
+    notional,
+    sqrtPriceLimitX96,
+    tickLower,
+    tickUpper
+  }
+
+  let marginRequirement: BigNumber = BigNumber.from(0)
+
+  await peripheryContract.callStatic.swap(swapPeripheryParams).then(
+    async (result: any) => {
+      marginRequirement = result[4]
+    },
+    (error) => {
+      if (error.message.includes("MarginRequirementNotMet")) {
+        const args: string[] = error.message
+        .split("(")[1]
+        .split(")")[0]
+        .replaceAll(" ", "")
+        .split(",");
+
+        marginRequirement = BigNumber.from(args[0])
+      } else { 
+        console.error(error.message);
+      }
+    }
+  )
+
+  return marginRequirement
+
+}
+
+
 public async mintOrBurn(
   signer: Signer,
   recipient: string,
