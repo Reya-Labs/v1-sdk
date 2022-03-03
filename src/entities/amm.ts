@@ -17,10 +17,10 @@ import { NoTickDataProvider, TickDataProvider } from './tickDataProvider'
 import { TickListDataProvider } from './tickListDataProvider'
 import { SwapMath } from '../utils/swapMath'
 import { LiquidityMath } from '../utils/liquidityMath'
-import { BigNumber, ethers, Signer } from "ethers"
-import { Periphery, Periphery__factory } from '../typechain'
+import { BigNumber, Signer } from "ethers"
+import { Periphery__factory } from '../typechain'
 import "ethers"
-import { SwapPeripheryParams } from "../utils/interfaces"
+import { SwapPeripheryParams, MintOrBurnParams } from "../utils/interfaces"
 
 interface StepComputations {
     sqrtPriceStartX96: JSBI
@@ -105,16 +105,42 @@ export class AMM {
   }
 
 
+public async mintOrBurn(
+  signer: Signer,
+  recipient: string,
+  tickLower: number,
+  tickUpper: number,
+  notional: BigNumber,
+  isMint: boolean
+) {
+    // ab: can we cache the periphery contract? used in the swap function as well
+    const peripheryContract = Periphery__factory.connect(this.peripheryAddress, signer)
+    const marginEngineAddress: string = this.marginEngineAddress
+
+    const mintOrBurnParams: MintOrBurnParams = {
+      marginEngineAddress,
+      recipient,
+      tickLower,
+      tickUpper,
+      notional,
+      isMint
+    }
+
+    const mintOrBurnReceipt = await peripheryContract.mintOrBurn(mintOrBurnParams)
+
+    return mintOrBurnReceipt
+
+}
+  
 public async swap(
   signer: Signer,
   recipient: string,
   isFT: boolean,
   notional: BigNumber,
   sqrtPriceLimitX96: BigNumber,
-  tickLower: 0,
-  tickUpper: 0
+  tickLower: number,
+  tickUpper: number
 ) {
-  // tick lower and tick upper will be automatically reset in the periphery 
   const peripheryContract = Periphery__factory.connect(this.peripheryAddress, signer)
   const marginEngineAddress: string = this.marginEngineAddress;
   
