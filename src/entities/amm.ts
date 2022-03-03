@@ -18,6 +18,7 @@ import { NoTickDataProvider, TickDataProvider } from './tickDataProvider'
 import { TickListDataProvider } from './tickListDataProvider'
 import { SwapMath } from '../utils/swapMath'
 import { LiquidityMath } from '../utils/liquidityMath'
+import { BigNumber, Signer } from "ethers"
 
 interface StepComputations {
     sqrtPriceStartX96: JSBI
@@ -52,6 +53,7 @@ export class AMM {
     public readonly tickCurrent: number
     public readonly tickSpacing: number
     public readonly tickDataProvider: TickDataProvider
+    // todo: store the ME, VAMM and FCM addresses in here?
     private _fixedRate?: Price
     private _price?: Price
 
@@ -94,6 +96,22 @@ export class AMM {
     this.termEndTimestamp = termEndTimestamp
   }
 
+
+public async swap(
+  signer: Signer,
+  marginEngineAddress: string,
+  recipientAddress: string,
+  isFT: boolean,
+  notional: BigNumber,
+  sqrtPriceLimitX96: string,
+  tickLower: 0,
+  tickUpper: 0
+) {
+  // tick lower and tick upper will be automatically reset in the periphery 
+  const peripheryContract = 
+  
+
+}
 
 /**
  * Returns the current mid fixed rate (in percentage points) of the amm, it is the ratio of fixed tokens over variable tokens
@@ -142,7 +160,7 @@ public get price(): Price {
  * @returns liquidity
  * @returns tickCurrent
  */
- private async swap(
+ private async swapSim(
     amountSpecified: JSBI,
     currentTimestamp: JSBI,
     sqrtPriceLimitX96?: JSBI
@@ -267,7 +285,6 @@ public get price(): Price {
         sqrtRatioX96: state.sqrtPriceX96,
         liquidity: state.liquidity,
         tickCurrent: state.tick,
-
       }
 
 
