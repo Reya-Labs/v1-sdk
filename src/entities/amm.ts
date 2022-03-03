@@ -2,7 +2,6 @@ import { BigintIsh } from '../constants'
 import { Price } from './fractions/price'
 import { Token } from './token'
 import { CurrencyAmount } from './fractions/currencyAmount'
-
 import JSBI from 'jsbi'
 import invariant from 'tiny-invariant'
 
@@ -18,7 +17,10 @@ import { NoTickDataProvider, TickDataProvider } from './tickDataProvider'
 import { TickListDataProvider } from './tickListDataProvider'
 import { SwapMath } from '../utils/swapMath'
 import { LiquidityMath } from '../utils/liquidityMath'
-import { BigNumber, Signer } from "ethers"
+import { BigNumber, ethers, Signer } from "ethers"
+import { Periphery, Periphery__factory } from '../typechain'
+import "ethers"
+import { SwapPeripheryParams } from "../utils/interfaces"
 
 interface StepComputations {
     sqrtPriceStartX96: JSBI
@@ -53,6 +55,8 @@ export class AMM {
     public readonly tickCurrent: number
     public readonly tickSpacing: number
     public readonly tickDataProvider: TickDataProvider
+    public readonly marginEngineAddress: string
+    public readonly peripheryAddress: string
     // todo: store the ME, VAMM and FCM addresses in here?
     private _fixedRate?: Price
     private _price?: Price
@@ -74,6 +78,8 @@ export class AMM {
     tickCurrent: number,
     tickSpacing: number,
     fee: JSBI,
+    marginEngineAddress: string,
+    peripheryAddress: string,
     ticks: TickDataProvider | (Tick | TickConstructorArgs)[] = NO_TICK_DATA_PROVIDER_DEFAULT
   ) {
 
@@ -94,22 +100,36 @@ export class AMM {
     this.fee = fee
     this.termStartTimestamp = termStartTimestamp
     this.termEndTimestamp = termEndTimestamp
+    this.marginEngineAddress = marginEngineAddress
+    this.peripheryAddress = peripheryAddress
   }
 
 
 public async swap(
   signer: Signer,
-  marginEngineAddress: string,
-  recipientAddress: string,
+  recipient: string,
   isFT: boolean,
   notional: BigNumber,
-  sqrtPriceLimitX96: string,
+  sqrtPriceLimitX96: BigNumber,
   tickLower: 0,
   tickUpper: 0
 ) {
   // tick lower and tick upper will be automatically reset in the periphery 
-  const peripheryContract = 
+  const peripheryContract = Periphery__factory.connect(this.peripheryAddress, signer)
+  const marginEngineAddress: string = this.marginEngineAddress;
   
+  const swapPeripheryParams: SwapPeripheryParams = {
+    marginEngineAddress,
+    recipient,
+    isFT,
+    notional,
+    sqrtPriceLimitX96,
+    tickLower,
+    tickUpper
+  }
+  const swapReceipt = await peripheryContract.swap(swapPeripheryParams)
+
+  return swapReceipt
 
 }
 
