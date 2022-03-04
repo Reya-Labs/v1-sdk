@@ -44,6 +44,14 @@ export type AMMUpdatePositionMarginArgs = {
   marginDelta: BigNumber;
 };
 
+export type AMMSettlePositionArgs = {
+    signer: Signer,
+    owner: string,
+    tickLower: number,
+    tickUpper: number
+}
+
+
 export type AMMSwapArgs = {
   signer: Signer;
   recipient: string;
@@ -163,6 +171,17 @@ class AMM {
     return marginRequirement;
   }
 
+  public async settlePosition({
+    signer,
+    owner,
+    tickLower,
+    tickUpper
+  }: AMMSettlePositionArgs) {
+    const marginEngineContract = MarginEngine__factory.connect(this.marginEngineAddress, signer);
+    const settlePositionReceipt = await marginEngineContract.settlePosition(tickLower, tickUpper, owner)
+    return settlePositionReceipt
+  }
+  
   public async updatePositionMargin({
     signer,
     owner,
