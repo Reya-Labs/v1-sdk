@@ -20,7 +20,7 @@ interface PositionConstructorArgs {
   isLiquidityProvider: boolean;
 }
 
-export class Position {
+class Position {
   public readonly id: string;
   public readonly createdTimestamp: JSBI;
   public readonly updatedTimestamp: JSBI;
@@ -46,7 +46,7 @@ export class Position {
     margin,
     fixedTokenBalance,
     variableTokenBalance,
-    isLiquidityProvider
+    isLiquidityProvider,
   }: PositionConstructorArgs) {
     this.id = id;
     this.amm = amm;
@@ -69,6 +69,6 @@ export class Position {
   public get priceUpper(): Price {
     return tickToPrice(this.tickUpper);
   }
-
-
 }
+
+export default Position;
