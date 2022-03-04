@@ -5,7 +5,7 @@ import { Price } from './fractions/price';
 import { tickToPrice } from '../utils/priceTickConversions';
 import AMM from './amm';
 
-interface PositionConstructorArgs {
+export type PositionConstructorArgs = {
   id: string;
   createdTimestamp: JSBI;
   updatedTimestamp: JSBI;
@@ -18,7 +18,7 @@ interface PositionConstructorArgs {
   fixedTokenBalance: JSBI;
   variableTokenBalance: JSBI;
   isLiquidityProvider: boolean;
-}
+};
 
 class Position {
   public readonly id: string;
