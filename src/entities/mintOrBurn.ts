@@ -1,5 +1,4 @@
-import JSBI from "jsbi";
-
+import JSBI from 'jsbi';
 
 export type MintOrBurnConstructorArgs = {
   id: string;
@@ -12,24 +11,29 @@ export type MintOrBurnConstructorArgs = {
   amount: JSBI;
 };
 
-
-export class MintOrBurn {
+class MintOrBurn {
   public readonly id: string;
+
   public readonly transactionId: string;
+
   public readonly transactionBlockNumber: number;
+
   public readonly transactionTimestamp: number;
+
   public readonly ammId: string;
+
   public readonly positionId: string;
+
   public readonly sender: string;
 
   public constructor({
     id,
     transactionId,
-    transactionBlockNumber, 
+    transactionBlockNumber,
     transactionTimestamp,
     ammId,
     positionId,
-    sender
+    sender,
   }: MintOrBurnConstructorArgs) {
     this.id = id;
     this.transactionId = transactionId;
@@ -39,8 +43,6 @@ export class MintOrBurn {
     this.positionId = positionId;
     this.sender = sender;
   }
-
 }
 
-
-  
+export default MintOrBurn;

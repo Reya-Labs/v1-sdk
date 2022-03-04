@@ -1,4 +1,4 @@
-import JSBI from "jsbi";
+import JSBI from 'jsbi';
 
 export type SwapConstructorArgs = {
   // todo:  need more data in here (e.g the fixed delta unbalanced and variable delta, cumulative fees)
@@ -15,32 +15,41 @@ export type SwapConstructorArgs = {
   tick: number;
 };
 
-
-export class Swap {
+class Swap {
   public readonly id: string;
+
   public readonly transactionId: string;
+
   public readonly transactionBlockNumber: number;
+
   public readonly transactionTimestamp: number;
+
   public readonly ammId: string;
+
   public readonly positionId: string;
+
   public readonly sender: string;
+
   public readonly txIndex: number;
+
   public readonly sqrtPriceX96: JSBI;
+
   public readonly liquidity: JSBI;
+
   public readonly tick: number;
 
   public constructor({
     id,
     transactionId,
-    transactionBlockNumber, 
+    transactionBlockNumber,
     transactionTimestamp,
     ammId,
     positionId,
-    sender, 
+    sender,
     txIndex,
     sqrtPriceX96,
     liquidity,
-    tick
+    tick,
   }: SwapConstructorArgs) {
     this.id = id;
     this.transactionId = transactionId;
@@ -54,8 +63,6 @@ export class Swap {
     this.liquidity = liquidity;
     this.tick = tick;
   }
-
 }
 
-
-  
+export default Swap;
