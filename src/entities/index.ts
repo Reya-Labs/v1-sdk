@@ -1,2 +1,4 @@
 export { default as AMM } from './amm';
-export { Position } from './position';
+export { default as Position } from './position';
+export { default as Token } from './token';
+export { default as RateOracle } from './rateOracle';

@@ -4,7 +4,7 @@ import { BigintIsh } from '../types';
 import { Price } from './fractions/price';
 import { tickToPrice } from '../utils/priceTickConversions';
 
-interface PositionConstructorArgs {
+export type PositionConstructorArgs = {
   id: string;
   createdTimestamp: JSBI;
   updatedTimestamp: JSBI;
@@ -19,24 +19,36 @@ interface PositionConstructorArgs {
   isLiquidityProvider: boolean;
   owner: string;
   isEmpty: boolean;
-}
+};
 
-export class Position {
+class Position {
   public readonly id: string;
-  public readonly createdTimestamp: JSBI;
-  public readonly updatedTimestamp: JSBI;
-  public readonly ammId: string;
-  public readonly tickLower: number;
-  public readonly tickUpper: number;
-  public readonly liquidity: JSBI;
-  public readonly owner: string;
-  public isSettled: boolean;
-  public margin: JSBI;
-  public fixedTokenBalance: JSBI;
-  public variableTokenBalance: JSBI;
-  public isLiquidityProvider: boolean;
-  public readonly isEmpty: boolean;
 
+  public readonly createdTimestamp: JSBI;
+
+  public readonly updatedTimestamp: JSBI;
+
+  public readonly ammId: string;
+
+  public readonly tickLower: number;
+
+  public readonly tickUpper: number;
+
+  public readonly liquidity: JSBI;
+
+  public readonly owner: string;
+
+  public isSettled: boolean;
+
+  public margin: JSBI;
+
+  public fixedTokenBalance: JSBI;
+
+  public variableTokenBalance: JSBI;
+
+  public isLiquidityProvider: boolean;
+
+  public readonly isEmpty: boolean;
 
   public constructor({
     id,
@@ -52,7 +64,7 @@ export class Position {
     variableTokenBalance,
     isLiquidityProvider,
     owner,
-    isEmpty
+    isEmpty,
   }: PositionConstructorArgs) {
     this.id = id;
     this.ammId = ammId;
@@ -77,6 +89,6 @@ export class Position {
   public get priceUpper(): Price {
     return tickToPrice(this.tickUpper);
   }
-
-
 }
+
+export default Position;
