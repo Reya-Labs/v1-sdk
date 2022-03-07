@@ -2,7 +2,7 @@ import JSBI from 'jsbi';
 
 import { BigintIsh } from '../types';
 import { Price } from './fractions/price';
-import { tickToPrice } from '../utils/priceTickConversions';
+import { tickToFixedRate, tickToPrice } from '../utils/priceTickConversions';
 
 export type PositionConstructorArgs = {
   id: string;
@@ -89,6 +89,15 @@ class Position {
   public get priceUpper(): Price {
     return tickToPrice(this.tickUpper);
   }
+
+  public get fixedRateLower(): Price {
+    return tickToFixedRate(this.tickLower);
+  }
+
+  public get fixedRateUpper(): Price {
+    return tickToFixedRate(this.tickLower);
+  }
+
 }
 
 export default Position;
