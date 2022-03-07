@@ -2,7 +2,7 @@ import JSBI from 'jsbi';
 import { BigNumber, ContractTransaction, Signer } from 'ethers';
 
 import { BigintIsh } from '../types';
-import { Q192 } from '../constants';
+import { Q192, PERIPHERY_ADDRESS } from '../constants';
 import { Price } from './fractions/price';
 import { Periphery__factory as peripheryFactory, MarginEngine__factory as marginEngineFactory, VAMM__factory as vammFactory } from '../typechain';
 import { SwapPeripheryParams, MintOrBurnParams } from '../utils/interfaces';
@@ -13,8 +13,6 @@ import { TickMath } from '../utils/tickMath';
 export type AMMConstructorArgs = {
   id: string;
   marginEngineAddress: string;
-  vammAddress: string;
-  peripheryAddress: string;
   fcmAddress: string;
   rateOracle: RateOracle;
   protocolName: string;
@@ -77,9 +75,7 @@ export type AMMMintOrBurnArgs = {
 
 class AMM {
   public readonly id: string;
-  public readonly vammAddress: string;
   public readonly marginEngineAddress: string;
-  public readonly peripheryAddress: string;
   public readonly fcmAddress: string;
   public readonly rateOracle: RateOracle;
   public readonly protocolName: string;
@@ -98,9 +94,7 @@ class AMM {
 
   public constructor({
     id,
-    vammAddress,
     marginEngineAddress,
-    peripheryAddress,
     fcmAddress,
     rateOracle,
     protocolName,
@@ -117,7 +111,6 @@ class AMM {
   }: AMMConstructorArgs) {
     this.id = id;
     this.marginEngineAddress = marginEngineAddress;
-    this.vammAddress = vammAddress;
     this.fcmAddress = fcmAddress;
     this.rateOracle = rateOracle;
     this.protocolName = protocolName;
@@ -131,7 +124,6 @@ class AMM {
     this.tickSpacing = tickSpacing;
     this.tick = tick;
     this.txCount = txCount;
-    this.peripheryAddress = peripheryAddress;
   }
 
   public async getMinimumMarginRequirement({
@@ -143,7 +135,7 @@ class AMM {
     tickLower,
     tickUpper,
   }: AMMGetMinimumMarginRequirementArgs) : Promise<BigNumber> {
-    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, signer);
+    const peripheryContract = peripheryFactory.connect(PERIPHERY_ADDRESS, signer);
     const marginEngineAddress: string = this.marginEngineAddress;
 
     const swapPeripheryParams: SwapPeripheryParams = {
@@ -219,7 +211,7 @@ class AMM {
 
     // initialize VAMM if it is a mint and the VAMM is uninitialized
     if (isMint) {
-      const vammContract = vammFactory.connect(this.vammAddress, signer);
+      const vammContract = vammFactory.connect(this.id, signer);
       const vammVars = await vammContract.vammVars();
       const sqrtPriceLimitX96 = vammVars.sqrtPriceX96;
 
@@ -229,7 +221,7 @@ class AMM {
 
     }
 
-    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, signer);
+    const peripheryContract = peripheryFactory.connect(PERIPHERY_ADDRESS, signer);
     const marginEngineAddress: string = this.marginEngineAddress;
 
     const mintOrBurnParams: MintOrBurnParams = {
@@ -255,7 +247,7 @@ class AMM {
     tickLower = 0,
     tickUpper = 0,
   }: AMMSwapArgs) {
-    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, signer);
+    const peripheryContract = peripheryFactory.connect(PERIPHERY_ADDRESS, signer);
     const marginEngineAddress: string = this.marginEngineAddress;
 
     const swapPeripheryParams: SwapPeripheryParams = {
