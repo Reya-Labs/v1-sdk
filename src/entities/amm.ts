@@ -3,7 +3,7 @@ import { DateTime } from 'luxon';
 import { BigNumber, BigNumberish, ContractTransaction, Signer } from 'ethers';
 
 import { BigIntish, SwapPeripheryParams, MintOrBurnParams } from '../types';
-import { Q192, PERIPHERY_ADDRESS } from '../constants';
+import { Q192, PERIPHERY_ADDRESS, FACTORY_ADDRESS } from '../constants';
 import { Price } from './fractions/price';
 import {
   Periphery__factory as peripheryFactory,
@@ -15,7 +15,6 @@ import Token from './token';
 import RateOracle from './rateOracle';
 import { TickMath } from '../utils/tickMath';
 import timestampWadToDateTime from '../utils/timestampWadToDateTime';
-import { FACTORY_ADDRESS } from '../../dist/types/constants';
 
 export type AMMConstructorArgs = {
   id: string;
@@ -237,8 +236,8 @@ class AMM {
     if (!this.signer) {
       return;
     }
-    
-    this.approvePeriphery()
+
+    await this.approvePeriphery()
 
     const peripheryContract = peripheryFactory.connect(PERIPHERY_ADDRESS, this.signer);
     const mintOrBurnParams: MintOrBurnParams = {
@@ -285,7 +284,7 @@ class AMM {
       return;
     }
 
-    this.approvePeriphery()
+    await this.approvePeriphery()
 
     const peripheryContract = peripheryFactory.connect(PERIPHERY_ADDRESS, this.signer);
     const swapPeripheryParams: SwapPeripheryParams = {
