@@ -232,7 +232,7 @@ class AMM {
   public async burn(args: Omit<AMMMintOrBurnArgs, 'isMint'>): Promise<ContractTransaction | void> {
     return this.mintOrBurn({ ...args, isMint: false });
   }
- 
+
   public async mintOrBurn({
     recipient,
     tickLower,
@@ -264,7 +264,7 @@ class AMM {
     if (!this.signer) {
       return;
     }
-    
+
     const factoryContract = factoryFactory.connect(FACTORY_ADDRESS, this.signer);
     const signerAddress = await this.signer.getAddress();
 
@@ -278,7 +278,7 @@ class AMM {
     }
 
   }
-  
+
   public async swap({
     recipient,
     isFT,
