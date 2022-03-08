@@ -330,7 +330,7 @@ class AMM {
   }
 
   public get protocol(): string {
-    return 'aUSDC';
+    return this.rateOracle.protocol;
   }
 }
 
