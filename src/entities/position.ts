@@ -97,7 +97,6 @@ class Position {
   public get fixedRateUpper(): Price {
     return tickToFixedRate(this.tickLower);
   }
-
 }
 
 export default Position;

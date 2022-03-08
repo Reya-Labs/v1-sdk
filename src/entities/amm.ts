@@ -21,7 +21,6 @@ export type AMMConstructorArgs = {
   marginEngineAddress: string;
   fcmAddress: string;
   rateOracle: RateOracle;
-  protocolName: string;
   createdTimestamp: BigIntish;
   updatedTimestamp: BigIntish;
   termStartTimestamp: BigIntish;
@@ -79,7 +78,6 @@ class AMM {
   public readonly marginEngineAddress: string;
   public readonly fcmAddress: string;
   public readonly rateOracle: RateOracle;
-  public readonly protocolName: string;
   public readonly createdTimestamp: JSBI;
   public readonly updatedTimestamp: JSBI;
   public readonly termStartTimestamp: JSBI;
@@ -99,7 +97,6 @@ class AMM {
     marginEngineAddress,
     fcmAddress,
     rateOracle,
-    protocolName,
     createdTimestamp,
     updatedTimestamp,
     termStartTimestamp,
@@ -116,7 +113,6 @@ class AMM {
     this.marginEngineAddress = marginEngineAddress;
     this.fcmAddress = fcmAddress;
     this.rateOracle = rateOracle;
-    this.protocolName = protocolName;
     this.createdTimestamp = JSBI.BigInt(createdTimestamp);
     this.updatedTimestamp = JSBI.BigInt(updatedTimestamp);
     this.termStartTimestamp = JSBI.BigInt(termStartTimestamp);
@@ -309,6 +305,10 @@ class AMM {
 
   public get variableApr(): number {
     return 0;
+  }
+
+  public get protocol(): string {
+    return 'aUSDC';
   }
 }
 
