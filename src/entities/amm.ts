@@ -15,6 +15,8 @@ import Token from './token';
 import RateOracle from './rateOracle';
 import { TickMath } from '../utils/tickMath';
 import timestampWadToDateTime from '../utils/timestampWadToDateTime';
+import { fixedRateToClosestTick, tickToFixedRate } from '../utils/priceTickConversions';
+import { nearestUsableTick } from '../utils/nearestUsableTick';
 
 export type AMMConstructorArgs = {
   id: string;
@@ -30,7 +32,7 @@ export type AMMConstructorArgs = {
   sqrtPriceX96: BigIntish;
   liquidity: BigIntish;
   tick: BigIntish;
-  tickSpacing: BigIntish;
+  tickSpacing: number;
   txCount: number;
 };
 
@@ -73,6 +75,11 @@ export type AMMMintOrBurnArgs = {
   isMint: boolean;
 };
 
+export type ClosestTickAndFixedRate = {
+  closestUsableTick: number;
+  closestUsableFixedRate: Price;
+}
+
 class AMM {
   public readonly id: string;
   public readonly signer: Signer | null;
@@ -86,7 +93,7 @@ class AMM {
   public readonly underlyingToken: Token;
   public readonly sqrtPriceX96: JSBI;
   public readonly liquidity: JSBI;
-  public readonly tickSpacing: JSBI;
+  public readonly tickSpacing: number;
   public readonly tick: JSBI;
   public readonly txCount: JSBI;
   private _fixedRate?: Price;
@@ -121,12 +128,12 @@ class AMM {
     this.underlyingToken = underlyingToken;
     this.sqrtPriceX96 = JSBI.BigInt(sqrtPriceX96);
     this.liquidity = JSBI.BigInt(liquidity);
-    this.tickSpacing = JSBI.BigInt(tickSpacing);
+    this.tickSpacing = tickSpacing;
     this.tick = JSBI.BigInt(tick);
     this.txCount = JSBI.BigInt(txCount);
   }
 
-  public async getMinimumMarginRequirement({
+  public async getMinimumMarginRequirementPostSwap({
     recipient,
     isFT,
     notional,
@@ -334,6 +341,19 @@ class AMM {
 
   public get protocol(): string {
     return this.rateOracle.protocol;
+  }
+
+  public closestTickAndFixedRate(fixedRate: Price): ClosestTickAndFixedRate {
+    
+    const closestTick: number = fixedRateToClosestTick(fixedRate);
+    const closestUsableTick: number = nearestUsableTick(closestTick, this.tickSpacing)
+    const closestUsableFixedRate: Price = tickToFixedRate(closestUsableTick)
+
+    return {
+      closestUsableTick,
+      closestUsableFixedRate
+    }
+
   }
 }
 
