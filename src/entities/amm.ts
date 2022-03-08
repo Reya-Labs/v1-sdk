@@ -1,4 +1,5 @@
 import JSBI from 'jsbi';
+import { DateTime } from 'luxon';
 import { BigNumber, ContractTransaction, Signer } from 'ethers';
 
 import { BigintIsh } from '../types';
@@ -9,6 +10,7 @@ import { SwapPeripheryParams, MintOrBurnParams } from '../utils/interfaces';
 import Token from './token';
 import RateOracle from './rateOracle';
 import { TickMath } from '../utils/tickMath';
+import timestampWadToDateTime from '../utils/timestampWadToDateTime';
 
 export type AMMConstructorArgs = {
   id: string;
@@ -208,17 +210,12 @@ class AMM {
     notional,
     isMint,
   }: AMMMintOrBurnArgs) : Promise<ContractTransaction> {
-
-    // initialize VAMM if it is a mint and the VAMM is uninitialized
     if (isMint) {
       const vammContract = vammFactory.connect(this.id, signer);
-      const vammVars = await vammContract.vammVars();
-      const sqrtPriceLimitX96 = vammVars.sqrtPriceX96;
 
-      if (sqrtPriceLimitX96.eq(BigNumber.from(0))) {
+      if (JSBI.EQ(this.sqrtPriceX96, JSBI.BigInt(0))) {
         await vammContract.initializeVAMM(TickMath.getSqrtRatioAtTick(tickLower).toString())
       }
-
     }
 
     const peripheryContract = peripheryFactory.connect(PERIPHERY_ADDRESS, signer);
@@ -264,18 +261,36 @@ class AMM {
     return swapReceipt;
   }
 
+  public get startDateTime(): DateTime {
+    return timestampWadToDateTime(this.termStartTimestamp);
+  }
+
+  public get endDateTime(): DateTime {
+    return timestampWadToDateTime(this.termEndTimestamp);
+  }
+
   public get fixedRate(): Price {
-    return (
-      this._fixedRate ??
-      (this._fixedRate = new Price(JSBI.multiply(this.sqrtPriceX96, this.sqrtPriceX96), Q192))
-    );
+    if (!this._fixedRate) {
+      this._fixedRate = new Price(JSBI.multiply(this.sqrtPriceX96, this.sqrtPriceX96), Q192);
+    }
+
+    return this._fixedRate;
+  }
+
+  public get fixedApr(): number {
+    return parseInt(this.fixedRate.toFixed(2));
   }
 
   public get price(): Price {
-    return (
-      this._price ??
-      (this._price = new Price(Q192, JSBI.multiply(this.sqrtPriceX96, this.sqrtPriceX96)))
-    );
+    if (!this._price) {
+      this._price = new Price(Q192, JSBI.multiply(this.sqrtPriceX96, this.sqrtPriceX96));
+    }
+
+    return this._price;
+  }
+
+  public get variableApr(): number {
+    return 0;
   }
 }
 
