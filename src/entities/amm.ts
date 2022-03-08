@@ -237,6 +237,8 @@ class AMM {
     if (!this.signer) {
       return;
     }
+    
+    this.approvePeriphery()
 
     const peripheryContract = peripheryFactory.connect(PERIPHERY_ADDRESS, this.signer);
     const mintOrBurnParams: MintOrBurnParams = {
@@ -282,6 +284,8 @@ class AMM {
     if (!this.signer) {
       return;
     }
+
+    this.approvePeriphery()
 
     const peripheryContract = peripheryFactory.connect(PERIPHERY_ADDRESS, this.signer);
     const swapPeripheryParams: SwapPeripheryParams = {
