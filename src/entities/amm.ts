@@ -9,11 +9,13 @@ import {
   Periphery__factory as peripheryFactory,
   MarginEngine__factory as marginEngineFactory,
   VAMM__factory as vammFactory,
+  Factory__factory as factoryFactory
 } from '../typechain';
 import Token from './token';
 import RateOracle from './rateOracle';
 import { TickMath } from '../utils/tickMath';
 import timestampWadToDateTime from '../utils/timestampWadToDateTime';
+import { FACTORY_ADDRESS } from '../../dist/types/constants';
 
 export type AMMConstructorArgs = {
   id: string;
@@ -224,7 +226,7 @@ class AMM {
   public async burn(args: Omit<AMMMintOrBurnArgs, 'isMint'>): Promise<ContractTransaction | void> {
     return this.mintOrBurn({ ...args, isMint: false });
   }
-
+ 
   public async mintOrBurn({
     recipient,
     tickLower,
@@ -249,6 +251,26 @@ class AMM {
     return peripheryContract.mintOrBurn(mintOrBurnParams);
   }
 
+  public async approvePeriphery(): Promise<ContractTransaction | void> {
+
+    if (!this.signer) {
+      return;
+    }
+    
+    const factoryContract = factoryFactory.connect(FACTORY_ADDRESS, this.signer);
+    const signerAddress = await this.signer.getAddress();
+
+    // check if already approved
+    const isApproved = await factoryContract.isApproved(signerAddress, PERIPHERY_ADDRESS);
+
+    if (!isApproved) {
+      return await factoryContract.setApproval(PERIPHERY_ADDRESS, true);
+    } else {
+      return;
+    }
+
+  }
+  
   public async swap({
     recipient,
     isFT,
