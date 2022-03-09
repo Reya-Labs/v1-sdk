@@ -22,7 +22,7 @@ export function tickToPrice(tick: number) {
 
 
 export function priceToFixedRate(price: Price) {
-  return new Price(price.denominator, price.numerator);
+  return new Price(price.numerator, price.denominator);
 }
 
 /**
@@ -64,13 +64,9 @@ export function priceToClosestTick(price: Price): number {
 
 
 export function fixedRateToPrice(fixedRate: Price) {
-  const fixedRateNumerator = fixedRate.numerator;
-  const fixedRateDenominator = fixedRate.denominator;
-
-  const fixedRateDenominatorMulBy100 = JSBI.multiply(fixedRateDenominator, JSBI.BigInt(100));
-  
-  return new Price(fixedRateDenominatorMulBy100, fixedRateNumerator)
-
+  // the fixed rate is the reciprocal of the price
+  // NOTE: below the first argument to the Price constructor is the denominator and the second argument is the numerator 
+  return new Price(fixedRate.numerator, fixedRate.denominator)
 }
 
 export function fixedRateToClosestTick(fixedRate: Price) {
