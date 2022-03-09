@@ -32,7 +32,7 @@ export type AMMConstructorArgs = {
   sqrtPriceX96: BigIntish;
   liquidity: BigIntish;
   tick: BigIntish;
-  tickSpacing: number;
+  tickSpacing: BigIntish;
   txCount: number;
 };
 
@@ -93,7 +93,7 @@ class AMM {
   public readonly underlyingToken: Token;
   public readonly sqrtPriceX96: JSBI;
   public readonly liquidity: JSBI;
-  public readonly tickSpacing: number;
+  public readonly tickSpacing: JSBI;
   public readonly tick: JSBI;
   public readonly txCount: JSBI;
   private _fixedRate?: Price;
@@ -128,7 +128,7 @@ class AMM {
     this.underlyingToken = underlyingToken;
     this.sqrtPriceX96 = JSBI.BigInt(sqrtPriceX96);
     this.liquidity = JSBI.BigInt(liquidity);
-    this.tickSpacing = tickSpacing;
+    this.tickSpacing = JSBI.BigInt(tickSpacing);
     this.tick = JSBI.BigInt(tick);
     this.txCount = JSBI.BigInt(txCount);
   }
@@ -340,20 +340,22 @@ class AMM {
   }
 
   public get protocol(): string {
-    return this.rateOracle.protocol;
+    const firstProtocolCharacter = this.rateOracle.protocol[0];
+    const tokenName = this.underlyingToken.name;
+
+    return `${firstProtocolCharacter.toLowerCase()}${tokenName}`;
   }
 
-  public closestTickAndFixedRate(fixedRate: Price): ClosestTickAndFixedRate {
-    
-    const closestTick: number = fixedRateToClosestTick(fixedRate);
-    const closestUsableTick: number = nearestUsableTick(closestTick, this.tickSpacing)
+  public closestTickAndFixedRate(fixedRate: number): ClosestTickAndFixedRate {
+    const fixedRatePrice = Price.fromNumber(fixedRate);
+    const closestTick: number = fixedRateToClosestTick(fixedRatePrice);
+    const closestUsableTick: number = nearestUsableTick(closestTick, JSBI.toNumber(this.tickSpacing))
     const closestUsableFixedRate: Price = tickToFixedRate(closestUsableTick)
 
     return {
       closestUsableTick,
-      closestUsableFixedRate
-    }
-
+      closestUsableFixedRate,
+    };
   }
 }
 

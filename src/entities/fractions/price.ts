@@ -13,6 +13,10 @@ export class Price extends Fraction {
     super(numerator, denominator);
   }
 
+  public static fromNumber(value: number): Price {
+    return super.fromNumber(value) as Price;
+  }
+
   /**
    * Flip the price (convert to the fixed rate)
    */

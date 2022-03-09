@@ -1,6 +1,7 @@
 import JSBI from 'jsbi';
 import invariant from 'tiny-invariant';
 import toFormat from 'toformat';
+import Fractionjs from 'fraction.js';
 import _Decimal from 'decimal.js-light';
 import _Big, { RoundingMode } from 'big.js';
 
@@ -28,6 +29,12 @@ export class Fraction {
   public constructor(numerator: BigIntish, denominator: BigIntish = JSBI.BigInt(1)) {
     this.numerator = JSBI.BigInt(numerator);
     this.denominator = JSBI.BigInt(denominator);
+  }
+
+  public static fromNumber(value: number) {
+    const fraction = new Fractionjs(value);
+
+    return new Fraction(fraction.n, fraction.d);
   }
 
   private static tryParseFraction(fractionish: BigIntish | Fraction): Fraction {
