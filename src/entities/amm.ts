@@ -323,6 +323,16 @@ class AMM {
       return;
     }
 
+    if (sqrtPriceLimitX96.toString() === "0") {
+
+      if (isFT) {
+        sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MAX_TICK - 1).toString()
+      } else {
+        sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MIN_TICK + 1).toString()
+      }
+
+    }
+
     await this.approvePeriphery()
 
     const peripheryContract = peripheryFactory.connect(PERIPHERY_ADDRESS, this.signer);
