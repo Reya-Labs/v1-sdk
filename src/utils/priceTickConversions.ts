@@ -17,7 +17,7 @@ export function tickToPrice(tick: number) {
 
   const ratioX192 = JSBI.multiply(sqrtRatioX96, sqrtRatioX96);
 
-  return new Price(ratioX192, Q192);
+  return new Price(Q192, ratioX192);
 }
 
 
