@@ -48,10 +48,16 @@ export function priceToClosestTick(price: Price): number {
   const sqrtRatioX96 = encodeSqrtRatioX96(price.numerator, price.denominator);
 
   let tick = TickMath.getTickAtSqrtRatio(sqrtRatioX96);
+
   const nextTickPrice = tickToPrice(tick + 1);
-  if (!price.greaterThan(nextTickPrice)) {
-    tick++;
+
+  // this solution is a bit hacky, can be optimised
+  if (tick < 0) {
+    if (!price.lessThan(nextTickPrice)) {
+      tick++;
+    }
   }
+
   return tick;
 }
 

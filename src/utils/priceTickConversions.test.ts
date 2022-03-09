@@ -9,65 +9,49 @@ describe('priceTickConversions', () => {
         expect(tickToPrice(0).toSignificant(5)).toEqual('1')
     })
 
-    it('1800 t0/1 t1', () => {
+    it('price is 2.7181', () => {
         expect(tickToPrice(10000).toSignificant(5)).toEqual('2.7181')
     })
 
-    // it('1 t1/1800 t0', () => {
-    //   expect(tickToPrice(-74959).toSignificant(5)).toEqual('0.00055556')
-    // })
-
-    // it('1800 t1/1 t0', () => {
-    //   expect(tickToPrice(74959).toSignificant(5)).toEqual('1800')
-    // })
-
-    // it('1 t0/1800 t1', () => {
-    //   expect(tickToPrice(74959).toSignificant(5)).toEqual('0.00055556')
-    // })
+    it('price is 0.36789', () => {
+      expect(tickToPrice(-10000).toSignificant(5)).toEqual('0.3679')
+    })
 
   })
 
-//   describe('#priceToClosestTick', () => {
-//     it('1800 t0/1 t1', () => {
-//       expect(priceToClosestTick(new Price(1, 1800))).toEqual(-74960)
-//     })
+  describe('#priceToClosestTick', () => {
+    
 
-//     it('1 t1/1800 t0', () => {
-//       expect(priceToClosestTick(new Price(1800, 1))).toEqual(-74960)
-//     })
+    // NOTE: the first argument to the Price constructor is the denominator and the second one is the numerator
+    it('tick 10000', () => {
+        expect(priceToClosestTick(new Price(3679, 10000))).toEqual(9999) // investigate if this can be an issue
+    })
 
-//     it('1.01 t2/1 t0', () => {
-//       expect(priceToClosestTick(new Price(100e18, 101e6))).toEqual(-276225)
-//     })
+    it('tick -10000', () => {
+        expect(priceToClosestTick(new Price(10000, 3679))).toEqual(-10000)
+    })
 
-//     it('1 t0/1.01 t2', () => {
-//       expect(priceToClosestTick(new Price(101e6, 100e18))).toEqual(-276225)
-//     })
+    describe('reciprocal with tickToPrice', () => {
+      it('tick -10000', () => {
+        expect(priceToClosestTick(tickToPrice(-10000))).toEqual(-10000)
+      })
 
-//     describe('reciprocal with tickToPrice', () => {
-//       it('1800 t0/1 t1', () => {
-//         expect(priceToClosestTick(tickToPrice(-74960))).toEqual(-74960)
-//       })
+      it('tick 10000', () => {
+        expect(priceToClosestTick(tickToPrice(10000))).toEqual(10000)
+      })
 
-//       it('1 t0/1800 t1', () => {
-//         expect(priceToClosestTick(tickToPrice(74960))).toEqual(74960)
-//       })
+      it('tick 0', () => {
+        expect(priceToClosestTick(tickToPrice(0))).toEqual(0)
+      })
 
-//       it('1 t1/1800 t0', () => {
-//         expect(priceToClosestTick(tickToPrice(-74960))).toEqual(-74960)
-//       })
+      it('tick 30000', () => {
+        expect(priceToClosestTick(tickToPrice(30000))).toEqual(30000)
+      })
 
-//       it('1800 t1/1 t0', () => {
-//         expect(priceToClosestTick(tickToPrice(74960))).toEqual(74960)
-//       })
+      it('tick -30000', () => {
+        expect(priceToClosestTick(tickToPrice(-30000))).toEqual(-30000)
+      })
 
-//       it('1.01 t2/1 t0', () => {
-//         expect(priceToClosestTick(tickToPrice(-276225))).toEqual(-276225)
-//       })
-
-//       it('1 t0/1.01 t2', () => {
-//         expect(priceToClosestTick(tickToPrice(-276225))).toEqual(-276225)
-//       })
-//     })
-//   })
+    })
+  })
 })
