@@ -48,3 +48,15 @@ The address should be included in `--beneficiaries`:
 ## Run test functions
 
 Run `yarn test src/entities`
+
+## Functions that need testing
+
+```
+amm.
+  getMinimumMarginRequirementPostSwap
+  settlePosition
+  updatePositionMargin
+  mint
+  burn
+  swap
+```
