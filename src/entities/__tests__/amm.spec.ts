@@ -8,10 +8,7 @@ describe('amm', () => {
   describe('mint', () => {
     const vammAddress = '0xe451980132e65465d0a498c53f0b5227326dd73f';
     const marginEngineAddress = '0x75537828f2ce51be7289709686a69cbfdbb714f1';
-    const provider = new providers.JsonRpcProvider('http://localhost:8545', {
-      name: 'mainnet',
-      chainId: 31337,
-    });
+    const provider = new providers.JsonRpcProvider('http://0.0.0.0:8545/');
     const privateKey = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
     const wallet = new Wallet(privateKey, provider);
     const amm = new AMM({

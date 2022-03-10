@@ -42,6 +42,7 @@ The address should be included in `--beneficiaries`:
 
 ```
 (in core): npx hardhat mintTestTokens --network localhost --beneficiaries 0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266 --amount 10000
+(in core): npx hardhat updatePositionMargin --network localhost --meaddress "0x75537828f2ce51be7289709686A69CbFDbB714F1"  --owner 0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266 --tickupper 0 --ticklower -7000 --margindelta 100
 ```
 
 ## Run test functions
