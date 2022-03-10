@@ -45,3 +45,5 @@ The address should be included in `--beneficiaries`:
 ```
 
 ## Run test functions
+
+Run `yarn test src/entities`
