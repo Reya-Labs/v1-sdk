@@ -19,7 +19,6 @@ import { TickMath } from '../utils/tickMath';
 import timestampWadToDateTime from '../utils/timestampWadToDateTime';
 import { fixedRateToClosestTick, tickToFixedRate } from '../utils/priceTickConversions';
 import { nearestUsableTick } from '../utils/nearestUsableTick';
-import { Position } from '.';
 
 export type AMMConstructorArgs = {
   id: string;
@@ -215,7 +214,7 @@ class AMM {
       return;
     }
 
-    // approve the margin engine 
+    // approve the margin engine
     await this.approveMarginEngine(marginDelta);
 
     tickLower = parseInt(tickLower.toString())
@@ -231,7 +230,7 @@ class AMM {
 
     return updatePositionMarginReceipt;
   }
-  
+
   public async mint({ recipient, fixedLow, fixedHigh, margin, leverage }: AMMMintOrBurnArgs): Promise<ContractTransaction | void> {
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
