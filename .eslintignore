@@ -1,1 +1,2 @@
 src/entities/amm.ts
+*.spec.ts
