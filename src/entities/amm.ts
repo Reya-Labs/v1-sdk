@@ -100,7 +100,7 @@ export type AMMMintOrBurnArgs = {
 export type ClosestTickAndFixedRate = {
   closestUsableTick: number;
   closestUsableFixedRate: Price;
-}
+};
 
 class AMM {
   public readonly id: string;
@@ -113,7 +113,7 @@ class AMM {
   public readonly termStartTimestamp: JSBI;
   public readonly termEndTimestamp: JSBI;
   public readonly underlyingToken: Token;
-  public readonly sqrtPriceX96: JSBI;
+  public sqrtPriceX96: JSBI;
   public readonly liquidity: JSBI;
   public readonly tickSpacing: JSBI;
   public readonly tick: JSBI;
@@ -441,7 +441,9 @@ class AMM {
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
-    await this.approvePeriphery()
+    console.log(`approvePeriphery`);
+
+    await this.approvePeriphery();
 
     const peripheryContract = peripheryFactory.connect(PERIPHERY_ADDRESS, this.signer);
     
@@ -454,6 +456,7 @@ class AMM {
       isMint: false,
     };
 
+    console.log(`mintOrBurn`);
     return peripheryContract.mintOrBurn(mintOrBurnParams);
   }
 
@@ -471,7 +474,6 @@ class AMM {
     } else {
       return;
     }
-
   }
 
   public async approveFCM(): Promise<ContractTransaction | void> {
@@ -500,7 +502,6 @@ class AMM {
     const token = tokenFactory.connect(this.underlyingToken.id, this.signer);
 
     await token.approve(this.marginEngineAddress, marginDelta);
-
   }
 
   public async swap({
@@ -523,13 +524,13 @@ class AMM {
     }
     else {
       if (isFT) {
-        sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MAX_TICK - 1).toString()
+        sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MAX_TICK - 1).toString();
       } else {
-        sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MIN_TICK + 1).toString()
+        sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MIN_TICK + 1).toString();
       }
     }
 
-    await this.approvePeriphery()
+    await this.approvePeriphery();
 
     const peripheryContract = peripheryFactory.connect(PERIPHERY_ADDRESS, this.signer);
 
@@ -639,8 +640,11 @@ class AMM {
   public closestTickAndFixedRate(fixedRate: number): ClosestTickAndFixedRate {
     const fixedRatePrice = Price.fromNumber(fixedRate);
     const closestTick: number = fixedRateToClosestTick(fixedRatePrice);
-    const closestUsableTick: number = nearestUsableTick(closestTick, JSBI.toNumber(this.tickSpacing))
-    const closestUsableFixedRate: Price = tickToFixedRate(closestUsableTick)
+    const closestUsableTick: number = nearestUsableTick(
+      closestTick,
+      JSBI.toNumber(this.tickSpacing),
+    );
+    const closestUsableFixedRate: Price = tickToFixedRate(closestUsableTick);
 
     return {
       closestUsableTick,
