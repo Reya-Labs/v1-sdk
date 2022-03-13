@@ -4,7 +4,7 @@
 
 import { Contract, Signer, utils } from "ethers";
 import { Provider } from "@ethersproject/providers";
-import type { IFactory, IFactoryInterface } from "../IFactory";
+import type { IPeriphery, IPeripheryInterface } from "../IPeriphery";
 
 const _abi = [
   {
@@ -203,256 +203,186 @@ const _abi = [
     type: "error",
   },
   {
-    anonymous: false,
     inputs: [
       {
-        indexed: true,
         internalType: "address",
-        name: "underlyingToken",
+        name: "marginEngineAddress",
         type: "address",
       },
+    ],
+    name: "getMarginEngine",
+    outputs: [
       {
-        indexed: true,
-        internalType: "address",
-        name: "rateOracle",
+        internalType: "contract IMarginEngine",
+        name: "",
         type: "address",
       },
+    ],
+    stateMutability: "pure",
+    type: "function",
+  },
+  {
+    inputs: [
       {
-        indexed: false,
+        internalType: "address",
+        name: "marginEngineAddress",
+        type: "address",
+      },
+    ],
+    name: "getVAMM",
+    outputs: [
+      {
+        internalType: "contract IVAMM",
+        name: "",
+        type: "address",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        components: [
+          {
+            internalType: "address",
+            name: "marginEngineAddress",
+            type: "address",
+          },
+          {
+            internalType: "address",
+            name: "recipient",
+            type: "address",
+          },
+          {
+            internalType: "int24",
+            name: "tickLower",
+            type: "int24",
+          },
+          {
+            internalType: "int24",
+            name: "tickUpper",
+            type: "int24",
+          },
+          {
+            internalType: "uint256",
+            name: "notional",
+            type: "uint256",
+          },
+          {
+            internalType: "bool",
+            name: "isMint",
+            type: "bool",
+          },
+        ],
+        internalType: "struct IPeriphery.MintOrBurnParams",
+        name: "params",
+        type: "tuple",
+      },
+    ],
+    name: "mintOrBurn",
+    outputs: [
+      {
+        internalType: "int256",
+        name: "positionMarginRequirement",
+        type: "int256",
+      },
+    ],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        components: [
+          {
+            internalType: "address",
+            name: "marginEngineAddress",
+            type: "address",
+          },
+          {
+            internalType: "address",
+            name: "recipient",
+            type: "address",
+          },
+          {
+            internalType: "bool",
+            name: "isFT",
+            type: "bool",
+          },
+          {
+            internalType: "uint256",
+            name: "notional",
+            type: "uint256",
+          },
+          {
+            internalType: "uint160",
+            name: "sqrtPriceLimitX96",
+            type: "uint160",
+          },
+          {
+            internalType: "int24",
+            name: "tickLower",
+            type: "int24",
+          },
+          {
+            internalType: "int24",
+            name: "tickUpper",
+            type: "int24",
+          },
+        ],
+        internalType: "struct IPeriphery.SwapPeripheryParams",
+        name: "params",
+        type: "tuple",
+      },
+    ],
+    name: "swap",
+    outputs: [
+      {
+        internalType: "int256",
+        name: "_fixedTokenDelta",
+        type: "int256",
+      },
+      {
+        internalType: "int256",
+        name: "_variableTokenDelta",
+        type: "int256",
+      },
+      {
         internalType: "uint256",
-        name: "termStartTimestampWad",
+        name: "_cumulativeFeeIncurred",
         type: "uint256",
       },
       {
-        indexed: false,
-        internalType: "uint256",
-        name: "termEndTimestampWad",
-        type: "uint256",
+        internalType: "int256",
+        name: "_fixedTokenDeltaUnbalanced",
+        type: "int256",
       },
       {
-        indexed: false,
+        internalType: "int256",
+        name: "_marginRequirement",
+        type: "int256",
+      },
+      {
         internalType: "int24",
-        name: "tickSpacing",
+        name: "_tickAfter",
         type: "int24",
       },
-      {
-        indexed: false,
-        internalType: "address",
-        name: "marginEngine",
-        type: "address",
-      },
-      {
-        indexed: false,
-        internalType: "address",
-        name: "vamm",
-        type: "address",
-      },
-      {
-        indexed: false,
-        internalType: "address",
-        name: "fcm",
-        type: "address",
-      },
-      {
-        indexed: false,
-        internalType: "uint8",
-        name: "yieldBearingProtocolID",
-        type: "uint8",
-      },
     ],
-    name: "IrsInstanceDeployed",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: false,
-        internalType: "address",
-        name: "masterFCMAddressOld",
-        type: "address",
-      },
-      {
-        indexed: false,
-        internalType: "address",
-        name: "masterFCMAddress",
-        type: "address",
-      },
-      {
-        indexed: false,
-        internalType: "uint8",
-        name: "yieldBearingProtocolID",
-        type: "uint8",
-      },
-    ],
-    name: "MasterFCMSet",
-    type: "event",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "_underlyingToken",
-        type: "address",
-      },
-      {
-        internalType: "address",
-        name: "_rateOracle",
-        type: "address",
-      },
-      {
-        internalType: "uint256",
-        name: "_termStartTimestampWad",
-        type: "uint256",
-      },
-      {
-        internalType: "uint256",
-        name: "_termEndTimestampWad",
-        type: "uint256",
-      },
-      {
-        internalType: "int24",
-        name: "_tickSpacing",
-        type: "int24",
-      },
-    ],
-    name: "deployIrsInstance",
-    outputs: [
-      {
-        internalType: "address",
-        name: "marginEngineProxy",
-        type: "address",
-      },
-      {
-        internalType: "address",
-        name: "vammProxy",
-        type: "address",
-      },
-      {
-        internalType: "address",
-        name: "fcmProxy",
-        type: "address",
-      },
-    ],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "_owner",
-        type: "address",
-      },
-      {
-        internalType: "address",
-        name: "intAddress",
-        type: "address",
-      },
-    ],
-    name: "isApproved",
-    outputs: [
-      {
-        internalType: "bool",
-        name: "",
-        type: "bool",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "uint8",
-        name: "yieldBearingProtocolID",
-        type: "uint8",
-      },
-    ],
-    name: "masterFCMs",
-    outputs: [
-      {
-        internalType: "address",
-        name: "masterFCMAddress",
-        type: "address",
-      },
-    ],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "masterMarginEngine",
-    outputs: [
-      {
-        internalType: "address",
-        name: "",
-        type: "address",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "masterVAMM",
-    outputs: [
-      {
-        internalType: "address",
-        name: "",
-        type: "address",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "intAddress",
-        type: "address",
-      },
-      {
-        internalType: "bool",
-        name: "allowIntegration",
-        type: "bool",
-      },
-    ],
-    name: "setApproval",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "masterFCMAddress",
-        type: "address",
-      },
-      {
-        internalType: "address",
-        name: "_rateOracle",
-        type: "address",
-      },
-    ],
-    name: "setMasterFCM",
-    outputs: [],
     stateMutability: "nonpayable",
     type: "function",
   },
 ];
 
-export class IFactory__factory {
+export class IPeriphery__factory {
   static readonly abi = _abi;
-  static createInterface(): IFactoryInterface {
-    return new utils.Interface(_abi) as IFactoryInterface;
+  static createInterface(): IPeripheryInterface {
+    return new utils.Interface(_abi) as IPeripheryInterface;
   }
   static connect(
     address: string,
     signerOrProvider: Signer | Provider
-  ): IFactory {
-    return new Contract(address, _abi, signerOrProvider) as IFactory;
+  ): IPeriphery {
+    return new Contract(address, _abi, signerOrProvider) as IPeriphery;
   }
 }
