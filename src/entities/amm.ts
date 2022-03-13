@@ -8,7 +8,6 @@ import { Price } from './fractions/price';
 import {
   Periphery__factory as peripheryFactory,
   MarginEngine__factory as marginEngineFactory,
-  VAMM__factory as vammFactory,
   Factory__factory as factoryFactory,
   // todo: not very elegant to use the mock as a factory
   ERC20Mock__factory as tokenFactory,
@@ -48,8 +47,6 @@ export type AMMGetMinimumMarginRequirementArgs = {
   fixedLow: number;
   fixedUpper: number;
 };
-
-// TickMath.getSqrtRatioAtTick(closestUsableTick).toString()
 
 export type AMMUpdatePositionMarginArgs = {
   owner: string;
