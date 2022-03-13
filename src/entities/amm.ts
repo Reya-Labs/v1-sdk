@@ -46,28 +46,26 @@ export type AMMGetMinimumMarginRequirementArgs = {
   notional: BigNumberish;
   fixedRateLimit?: number;
   fixedLow: number;
-  fixedUpper: number;
+  fixedHigh: number;
 };
-
-// TickMath.getSqrtRatioAtTick(closestUsableTick).toString()
 
 export type AMMUpdatePositionMarginArgs = {
   owner: string;
   fixedLow: number;
-  fixedUpper: number;
+  fixedHigh: number;
   marginDelta: BigNumberish;
 };
 
 export type AMMLiquidatePositionArgs = {
   owner: string;
   fixedLow: number;
-  fixedUpper: number;
+  fixedHigh: number;
 }
 
 export type AMMSettlePositionArgs = {
   owner: string;
   fixedLow: number;
-  fixedUpper: number;
+  fixedHigh: number;
 };
 
 export type AMMSwapArgs = {
@@ -76,7 +74,7 @@ export type AMMSwapArgs = {
   notional: BigNumberish;
   fixedRateLimit?: number;
   fixedLow: number;
-  fixedUpper: number;
+  fixedHigh: number;
 };
 
 export type FCMSwapArgs = {
@@ -89,13 +87,15 @@ export type FCMUnwindArgs = {
   fixedRateLimit?: number;
 }
 
-export type AMMMintOrBurnArgs = {
+export type AMMMintArgs = {
   recipient: string;
   fixedLow: number;
   fixedHigh: number;
+  notional: number;
   margin: number;
-  leverage: number;
 };
+
+export type AMMBurnArgs = Omit<AMMMintArgs, 'margin'>;
 
 export type ClosestTickAndFixedRate = {
   closestUsableTick: number;
@@ -161,12 +161,14 @@ class AMM {
     notional,
     fixedRateLimit,
     fixedLow,
-    fixedUpper,
+    fixedHigh,
   }: AMMGetMinimumMarginRequirementArgs) : Promise<number | void> {
-    if (!this.signer) return;
+    if (!this.signer) {
+      return;  
+    }
 
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
-    const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedUpper);
+    const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
     let sqrtPriceLimitX96;
     if (fixedRateLimit) {
@@ -205,7 +207,7 @@ class AMM {
             .split(')')[0]
             .replaceAll(' ', '')
             .split(',');
-          
+
           console.log(error.message);
           marginRequirement = BigNumber.from(args[0]);
         } else {
@@ -223,12 +225,12 @@ class AMM {
     notional,
     fixedRateLimit,
     fixedLow,
-    fixedUpper,
+    fixedHigh,
   }: AMMGetMinimumMarginRequirementArgs) : Promise<number | void> {
     if (!this.signer) return;
 
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
-    const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedUpper);
+    const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
     let sqrtPriceLimitX96;
     if (fixedRateLimit) {
@@ -268,7 +270,7 @@ class AMM {
             .split(')')[0]
             .replaceAll(' ', '')
             .split(',');
-          
+
           console.log(error.message);
           tickAfter = parseInt(args[1]);
         } else {
@@ -288,12 +290,13 @@ class AMM {
     return fixedRateDeltaRaw;
   }
 
-  public async settlePosition({ owner, fixedLow, fixedUpper }: AMMSettlePositionArgs) : Promise<ContractTransaction | void>  {
-    if (!this.signer) return;
+  public async settlePosition({ owner, fixedLow, fixedHigh }: AMMSettlePositionArgs) : Promise<ContractTransaction | void>  {
+    if (!this.signer) {
+      return;
+    }
 
-    
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
-    const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedUpper);
+    const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
     const marginEngineContract = marginEngineFactory.connect(this.marginEngineAddress, this.signer);
     const settlePositionReceipt = await marginEngineContract.settlePosition(
@@ -307,15 +310,17 @@ class AMM {
   public async updatePositionMargin({
     owner,
     fixedLow,
-    fixedUpper,
+    fixedHigh,
     marginDelta,
   }: AMMUpdatePositionMarginArgs) : Promise<ContractTransaction | void>  {
-    if (!this.signer) return;
+    if (!this.signer) {
+      return;
+    }
 
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
-    const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedUpper);
+    const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
-    // approve the margin engine 
+    // approve the margin engine
     await this.approveMarginEngine(toBn(marginDelta.toString()));
 
     const marginEngineContract = marginEngineFactory.connect(this.marginEngineAddress, this.signer);
@@ -332,12 +337,14 @@ class AMM {
   public async liquidatePosition({
     owner,
     fixedLow,
-    fixedUpper,
+    fixedHigh,
   }: AMMLiquidatePositionArgs) : Promise<ContractTransaction | void>  {
-    if (!this.signer) return;
+    if (!this.signer) {
+      return;
+    }
 
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
-    const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedUpper);
+    const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
     const marginEngineContract = marginEngineFactory.connect(this.marginEngineAddress, this.signer);
     const receipt = await marginEngineContract.liquidatePosition(
@@ -352,12 +359,14 @@ class AMM {
   public async getLiquidationThreshold({
     owner,
     fixedLow,
-    fixedUpper,
+    fixedHigh,
   }: AMMLiquidatePositionArgs) : Promise<number | void>  {
-    if (!this.signer) return;
+    if (!this.signer) {
+      return;
+    }
 
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
-    const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedUpper);
+    const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
     const marginEngineContract = marginEngineFactory.connect(this.marginEngineAddress, this.signer);
     const threshold = await marginEngineContract.callStatic.getPositionMarginRequirement(
@@ -370,8 +379,10 @@ class AMM {
     return parseFloat(utils.formatEther(threshold));
   }
 
-  public async getMinimumMarginRequirementPostMint({ recipient, fixedLow, fixedHigh, margin, leverage }: AMMMintOrBurnArgs): Promise<number | void> {
-    if (!this.signer) return;
+  public async getMinimumMarginRequirementPostMint({ recipient, fixedLow, fixedHigh, notional }: AMMMintArgs): Promise<number | void> {
+    if (!this.signer) {
+      return;
+    }
 
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
@@ -379,13 +390,13 @@ class AMM {
     await this.approvePeriphery()
 
     const peripheryContract = peripheryFactory.connect(PERIPHERY_ADDRESS, this.signer);
-    
+
     const mintOrBurnParams: MintOrBurnParams = {
       marginEngineAddress: this.marginEngineAddress,
-      recipient: recipient,
-      tickLower: tickLower,
-      tickUpper: tickUpper,
-      notional: toBn((margin * leverage).toString()),
+      recipient,
+      tickLower,
+      tickUpper,
+      notional,
       isMint: true,
     };
 
@@ -412,31 +423,35 @@ class AMM {
 
     return parseFloat(utils.formatEther(marginRequirement));
   }
-  
-  public async mint({ recipient, fixedLow, fixedHigh, margin, leverage }: AMMMintOrBurnArgs): Promise<ContractTransaction | void> {
-    if (!this.signer) return;
-    
+
+  public async mint({ recipient, fixedLow, fixedHigh, notional, margin }: AMMMintArgs): Promise<ContractTransaction | void> {
+    if (!this.signer) {
+      return;
+    }
+
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
     await this.approvePeriphery()
 
     const peripheryContract = peripheryFactory.connect(PERIPHERY_ADDRESS, this.signer);
-    
+
     const mintOrBurnParams: MintOrBurnParams = {
       marginEngineAddress: this.marginEngineAddress,
-      recipient: recipient,
-      tickLower: tickLower,
-      tickUpper: tickUpper,
-      notional: toBn((margin * leverage).toString()),
+      recipient,
+      tickLower,
+      tickUpper,
+      notional,
       isMint: true,
     };
 
     return peripheryContract.mintOrBurn(mintOrBurnParams);
   }
 
-  public async burn({ recipient, fixedLow, fixedHigh, margin, leverage }: AMMMintOrBurnArgs): Promise<ContractTransaction | void> {
-    if (!this.signer) return;
+  public async burn({ recipient, fixedLow, fixedHigh, notional }: AMMBurnArgs): Promise<ContractTransaction | void> {
+    if (!this.signer) {
+      return;
+    }
 
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
@@ -446,13 +461,13 @@ class AMM {
     await this.approvePeriphery();
 
     const peripheryContract = peripheryFactory.connect(PERIPHERY_ADDRESS, this.signer);
-    
+
     const mintOrBurnParams: MintOrBurnParams = {
       marginEngineAddress: this.marginEngineAddress,
-      recipient: recipient,
-      tickLower: tickLower,
-      tickUpper: tickUpper,
-      notional: toBn((margin * leverage).toString()),
+      recipient,
+      tickLower,
+      tickUpper,
+      notional,
       isMint: false,
     };
 
@@ -496,8 +511,13 @@ class AMM {
   public async approveMarginEngine(
     marginDelta: BigNumberish
   ) {
-    if (!this.signer) return;
-    if (!this.underlyingToken.id) return;
+    if (!this.signer) {
+      return;
+    }
+
+    if (!this.underlyingToken.id) {
+      return;
+    }
 
     const token = tokenFactory.connect(this.underlyingToken.id, this.signer);
 
@@ -510,12 +530,14 @@ class AMM {
     notional,
     fixedRateLimit,
     fixedLow,
-    fixedUpper,
+    fixedHigh,
   }: AMMSwapArgs): Promise<ContractTransaction | void> {
-    if (!this.signer) return;
+    if (!this.signer) {
+      return;
+    }
 
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
-    const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedUpper);
+    const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
     let sqrtPriceLimitX96;
     if (fixedRateLimit) {
@@ -551,7 +573,9 @@ class AMM {
     notional,
     fixedRateLimit
   }: FCMSwapArgs): Promise<ContractTransaction | void> {
-    if (!this.signer) return;
+    if (!this.signer) {
+      return;
+    }
 
     await this.approveFCM();
 
@@ -567,12 +591,14 @@ class AMM {
     const fcmContract = fcmFactory.connect(this.fcmAddress, this.signer);
     return fcmContract.initiateFullyCollateralisedFixedTakerSwap(toBn(notional.toString()), sqrtPriceLimitX96);
   }
-  
+
   public async FCMunwind({
     notionalToUnwind,
     fixedRateLimit
   }: FCMUnwindArgs): Promise<ContractTransaction | void> {
-    if (!this.signer) return;
+    if (!this.signer) {
+      return;
+    }
 
     let sqrtPriceLimitX96;
     if (fixedRateLimit) {
@@ -590,13 +616,14 @@ class AMM {
   }
 
   public async settleFCMTrader() : Promise<ContractTransaction | void>  {
-    if (!this.signer) return;
+    if (!this.signer) {
+      return;
+    }
 
     const fcmContract = fcmFactory.connect(this.fcmAddress, this.signer);
     const receipt = await fcmContract.settleTrader();
     return receipt;
   }
-
 
   public get startDateTime(): DateTime {
     return timestampWadToDateTime(this.termStartTimestamp);
