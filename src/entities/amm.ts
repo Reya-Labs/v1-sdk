@@ -635,7 +635,7 @@ class AMM {
   public get fixedRate(): Price {
     if (!this._fixedRate) {
       if (JSBI.EQ(this.sqrtPriceX96, JSBI.BigInt(0))) {
-        return new Price(0, 1);
+        return new Price(1, 0);
       }
 
       this._fixedRate = new Price(JSBI.multiply(this.sqrtPriceX96, this.sqrtPriceX96), Q192);
