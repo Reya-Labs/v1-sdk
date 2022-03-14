@@ -44,39 +44,29 @@ describe('amm', () => {
       });
 
       const vammContract = vammFactory.connect(vammAddress, wallet);
-      await vammContract.initializeVAMM(TickMath.getSqrtRatioAtTick(0).toString()); // for periphery tests 
+      // await vammContract.initializeVAMM(TickMath.getSqrtRatioAtTick(0).toString()); // for periphery tests 
       // await vammContract.initializeVAMM(TickMath.getSqrtRatioAtTick(-7000).toString()); // for fcm tests
     });
 
     it.skip('fcm', async () => {
       const fixedLow = 1
       const fixedHigh = 2
-      const margin = 10000
-      const notional = 1000
 
       const mint_req = await amm.getMinimumMarginRequirementPostMint({
         recipient: wallet.address,
         fixedLow: fixedLow,
         fixedHigh: fixedHigh,
-        margin: margin,
-        notional: notional,
+        margin: 0,
+        notional: 100000,
       }) as number;
       console.log("pre-mint req", mint_req);
-
-      await amm.updatePositionMargin({
-        owner: wallet.address,
-        fixedLow: fixedLow,
-        fixedHigh: fixedHigh,
-        marginDelta: mint_req + 10
-      });
-      console.log("minter position margin updated");
 
       await amm.mint({
         recipient: wallet.address,
         fixedLow: fixedLow,
         fixedHigh: fixedHigh,
-        margin: margin,
-        notional: notional,
+        margin: mint_req + 10,
+        notional: 100000,
       });
       console.log("mint done");
 
@@ -101,37 +91,27 @@ describe('amm', () => {
       console.log("fcm settlement done");
     });
 
-    it('mints and swaps', async () => {
+    it.skip('mints and swaps', async () => {
       const fixedLowMinter = 1
       const fixedHighMinter = 2
       const fixedLowSwapper = 3
       const fixedHighSwapper = 6
-      const margin = 10000
-      const notional = 1000
 
       const mint_req = await amm.getMinimumMarginRequirementPostMint({
         recipient: wallet.address,
         fixedLow: fixedLowMinter,
         fixedHigh: fixedHighMinter,
-        margin: margin,
-        notional: notional,
+        margin: 0,
+        notional: 100000,
       }) as number;
       console.log("pre-mint req", mint_req);
-
-      await amm.updatePositionMargin({
-        owner: wallet.address,
-        fixedLow: fixedLowMinter,
-        fixedHigh: fixedHighMinter,
-        marginDelta: mint_req + 10
-      });
-      console.log("minter position margin updated");
 
       await amm.mint({
         recipient: wallet.address,
         fixedLow: fixedLowMinter,
         fixedHigh: fixedHighMinter,
-        margin: margin,
-        notional: notional,
+        margin: mint_req + 10,
+        notional: 100000,
       });
       console.log("mint done");
 
@@ -153,21 +133,13 @@ describe('amm', () => {
       }) as number;
       console.log("pre-swap slippage", swap_slippage);
 
-      await amm.updatePositionMargin({
-        owner: wallet.address,
-        fixedLow: fixedLowSwapper,
-        fixedHigh: fixedHighSwapper,
-        marginDelta: swap_req + 10
-      });
-      console.log("swapper position margin updated");
-
       await amm.swap({
         recipient: wallet.address,
         isFT: false,
         notional: 50000,
         fixedLow: fixedLowSwapper,
         fixedHigh: fixedHighSwapper,
-        margin: margin,
+        margin: swap_req + 10,
       });
       console.log("swap done");
 
