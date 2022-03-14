@@ -52,21 +52,21 @@ describe('amm', () => {
       const fixedLow = 1
       const fixedHigh = 2
       const margin = 10000
-      const leverage = 10
+      const notional = 1000
 
       const mint_req = await amm.getMinimumMarginRequirementPostMint({
         recipient: wallet.address,
         fixedLow: fixedLow,
         fixedHigh: fixedHigh,
         margin: margin,
-        leverage: leverage,
+        notional: notional,
       }) as number;
       console.log("pre-mint req", mint_req);
 
       await amm.updatePositionMargin({
         owner: wallet.address,
         fixedLow: fixedLow,
-        fixedUpper: fixedHigh,
+        fixedHigh: fixedHigh,
         marginDelta: mint_req + 10
       });
       console.log("minter position margin updated");
@@ -76,7 +76,7 @@ describe('amm', () => {
         fixedLow: fixedLow,
         fixedHigh: fixedHigh,
         margin: margin,
-        leverage: leverage,
+        notional: notional,
       });
       console.log("mint done");
 
@@ -107,21 +107,21 @@ describe('amm', () => {
       const fixedLowSwapper = 3
       const fixedHighSwapper = 6
       const margin = 10000
-      const leverage = 10
+      const notional = 1000
 
       const mint_req = await amm.getMinimumMarginRequirementPostMint({
         recipient: wallet.address,
         fixedLow: fixedLowMinter,
         fixedHigh: fixedHighMinter,
         margin: margin,
-        leverage: leverage,
+        notional: notional,
       }) as number;
       console.log("pre-mint req", mint_req);
 
       await amm.updatePositionMargin({
         owner: wallet.address,
         fixedLow: fixedLowMinter,
-        fixedUpper: fixedHighMinter,
+        fixedHigh: fixedHighMinter,
         marginDelta: mint_req + 10
       });
       console.log("minter position margin updated");
@@ -131,7 +131,7 @@ describe('amm', () => {
         fixedLow: fixedLowMinter,
         fixedHigh: fixedHighMinter,
         margin: margin,
-        leverage: leverage,
+        notional: notional,
       });
       console.log("mint done");
 
@@ -140,7 +140,7 @@ describe('amm', () => {
         isFT: false,
         notional: 50000,
         fixedLow: fixedLowSwapper,
-        fixedUpper: fixedHighSwapper
+        fixedHigh: fixedHighSwapper
       }) as number;
       console.log("pre-swap req", swap_req);
 
@@ -149,14 +149,14 @@ describe('amm', () => {
         isFT: false,
         notional: 50000,
         fixedLow: fixedLowSwapper,
-        fixedUpper: fixedHighSwapper
+        fixedHigh: fixedHighSwapper
       }) as number;
       console.log("pre-swap slippage", swap_slippage);
 
       await amm.updatePositionMargin({
         owner: wallet.address,
         fixedLow: fixedLowSwapper,
-        fixedUpper: fixedHighSwapper,
+        fixedHigh: fixedHighSwapper,
         marginDelta: swap_req + 10
       });
       console.log("swapper position margin updated");
@@ -166,14 +166,15 @@ describe('amm', () => {
         isFT: false,
         notional: 50000,
         fixedLow: fixedLowSwapper,
-        fixedUpper: fixedHighSwapper
+        fixedHigh: fixedHighSwapper,
+        margin: margin,
       });
       console.log("swap done");
 
       const liquidation_threshold = await amm.getLiquidationThreshold({
         owner: wallet.address,
         fixedLow: fixedLowMinter,
-        fixedUpper: fixedHighMinter
+        fixedHigh: fixedHighMinter
       }) as number;
       console.log("liquidation threshold", liquidation_threshold);
     });
@@ -189,13 +190,13 @@ describe('amm', () => {
       await amm.settlePosition({
         owner: wallet.address,
         fixedLow: fixedLowMinter,
-        fixedUpper: fixedHighMinter
+        fixedHigh: fixedHighMinter
       });
 
       await amm.settlePosition({
         owner: wallet.address,
         fixedLow: fixedLowSwapper,
-        fixedUpper: fixedHighSwapper
+        fixedHigh: fixedHighSwapper
       });
     });
   });
