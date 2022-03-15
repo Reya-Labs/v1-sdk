@@ -9,6 +9,7 @@ import {
   Periphery__factory as peripheryFactory,
   MarginEngine__factory as marginEngineFactory,
   Factory__factory as factoryFactory,
+  VAMM__factory as vammFactory,
   // todo: not very elegant to use the mock as a factory
   ERC20Mock__factory as tokenFactory,
   AaveFCM__factory as fcmFactory
@@ -428,6 +429,12 @@ class AMM {
       return;
     }
 
+    if (!this.initialized) {
+      const vammContract = vammFactory.connect(this.id, this.signer);
+
+      await vammContract.initializeVAMM(TickMath.getSqrtRatioAtTick(0).toString());
+    }
+
     await this.updatePositionMargin({ owner: recipient, fixedLow, fixedHigh, marginDelta: margin });
 
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
@@ -632,9 +639,13 @@ class AMM {
     return timestampWadToDateTime(this.termEndTimestamp);
   }
 
+  public get initialized(): boolean {
+    return !JSBI.EQ(this.sqrtPriceX96, JSBI.BigInt(0));
+  }
+
   public get fixedRate(): Price {
     if (!this._fixedRate) {
-      if (JSBI.EQ(this.sqrtPriceX96, JSBI.BigInt(0))) {
+      if (!this.initialized) {
         return new Price(1, 0);
       }
 
