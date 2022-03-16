@@ -1,9 +1,12 @@
 import JSBI from 'jsbi';
 
+import { DateTime } from 'luxon';
 import { BigIntish } from '../types';
 import { Price } from './fractions/price';
 import { tickToFixedRate, tickToPrice } from '../utils/priceTickConversions';
 import AMM from './amm';
+import { TickMath } from '../utils/tickMath';
+import { Q96 } from '../constants';
 
 export type PositionConstructorArgs = {
   id: string;
@@ -92,11 +95,42 @@ class Position {
   }
 
   public get fixedRateLower(): Price {
-    return tickToFixedRate(this.tickLower);
+    return tickToFixedRate(this.tickUpper);
   }
 
   public get fixedRateUpper(): Price {
     return tickToFixedRate(this.tickLower);
+  }
+
+  public get notional(): number {
+    const sqrtPriceLowerX96 = new Price(Q96, TickMath.getSqrtRatioAtTick(this.tickLower));
+    const sqrtPriceUpperX96 = new Price(Q96, TickMath.getSqrtRatioAtTick(this.tickUpper));
+
+    return sqrtPriceUpperX96
+      .subtract(sqrtPriceLowerX96)
+      .multiply(this.liquidity)
+      .divide(Price.fromNumber(10 ** 18))
+      .toNumber();
+  }
+
+  public get effectiveMargin(): number {
+    return JSBI.toNumber(this.margin) / 10 ** 18;
+  }
+
+  public get effectiveFixedTokenBalance(): number {
+    return JSBI.toNumber(this.fixedTokenBalance) / 10 ** 18;
+  }
+
+  public get effectiveVariableTokenBalance(): number {
+    return JSBI.toNumber(this.variableTokenBalance) / 10 ** 18;
+  }
+
+  public get createdDateTime(): DateTime {
+    return DateTime.fromMillis(JSBI.toNumber(this.createdTimestamp));
+  }
+
+  public get updatedDateTime(): DateTime {
+    return DateTime.fromMillis(JSBI.toNumber(this.updatedTimestamp));
   }
 }
 
