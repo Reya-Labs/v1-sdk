@@ -43,8 +43,8 @@ describe('amm', () => {
         updatedTimestamp: '1646856471',
       });
 
-      const vammContract = vammFactory.connect(vammAddress, wallet);
-      await vammContract.initializeVAMM(TickMath.getSqrtRatioAtTick(0).toString()); // for periphery tests
+      // const vammContract = vammFactory.connect(vammAddress, wallet);
+      // await vammContract.initializeVAMM(TickMath.getSqrtRatioAtTick(0).toString()); // for periphery tests
       // await vammContract.initializeVAMM(TickMath.getSqrtRatioAtTick(-7000).toString()); // for fcm tests
     });
 
