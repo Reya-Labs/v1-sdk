@@ -214,10 +214,9 @@ class AMM {
             .replaceAll(' ', '')
             .split(',');
 
-          console.log(error.message);
           marginRequirement = BigNumber.from(args[0]);
         } else {
-          console.log(error.message);
+          return;
         }
       },
     );
@@ -277,15 +276,12 @@ class AMM {
             .replaceAll(' ', '')
             .split(',');
 
-          console.log(error.message);
           tickAfter = parseInt(args[1]);
         } else {
-          console.log(error.message);
+          return;
         }
       },
     );
-
-    console.log("ticks:", tickBefore, tickAfter);
 
     const fixedRateBefore = tickToFixedRate(tickBefore);
     const fixedRateAfter = tickToFixedRate(tickAfter);
@@ -405,8 +401,6 @@ class AMM {
       isMint: true,
     };
 
-    console.log(mintOrBurnParams);
-
     let marginRequirement = BigNumber.from("0");
     await peripheryContract.callStatic.mintOrBurn(mintOrBurnParams)
       .then(
@@ -414,7 +408,6 @@ class AMM {
           marginRequirement = BigNumber.from(result);
         },
         (error) => {
-          console.log("there is an error");
           if (error.message.includes("MarginLessThanMinimum")) {
             const args: string[] = error.message.split("MarginLessThanMinimum")[1]
               .split("(")[1]
@@ -424,7 +417,7 @@ class AMM {
 
             marginRequirement = BigNumber.from(args[0]);
           } else {
-            console.log(error);
+            return;
           }
         }
       );
@@ -677,9 +670,9 @@ class AMM {
 
   public async variableApy(): Promise<number | void> {
     if (!this.provider) {
-      console.log("no provider");
       return;
     }
+    
     const marginEngineContract = marginEngineFactory.connect(this.marginEngineAddress, this.provider);
     const historicalApy = await marginEngineContract.callStatic.getHistoricalApy();
     return parseFloat(utils.formatEther(historicalApy));
