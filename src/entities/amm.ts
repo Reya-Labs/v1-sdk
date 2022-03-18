@@ -215,8 +215,6 @@ class AMM {
             .split(',');
 
           marginRequirement = BigNumber.from(args[0]);
-        } else {
-          return;
         }
       },
     );
@@ -277,8 +275,6 @@ class AMM {
             .split(',');
 
           tickAfter = parseInt(args[1]);
-        } else {
-          return;
         }
       },
     );
@@ -416,8 +412,6 @@ class AMM {
               .split(",");
 
             marginRequirement = BigNumber.from(args[0]);
-          } else {
-            return;
           }
         }
       );
@@ -576,7 +570,7 @@ class AMM {
     return peripheryContract.swap(swapPeripheryParams);
   }
 
-  public async FCMswap({
+  public async FCMSwap({
     notional,
     fixedRateLimit
   }: FCMSwapArgs): Promise<ContractTransaction | void> {
@@ -599,7 +593,7 @@ class AMM {
     return fcmContract.initiateFullyCollateralisedFixedTakerSwap(toBn(notional.toString()), sqrtPriceLimitX96);
   }
 
-  public async FCMunwind({
+  public async FCMUnwind({
     notionalToUnwind,
     fixedRateLimit
   }: FCMUnwindArgs): Promise<ContractTransaction | void> {
@@ -668,11 +662,11 @@ class AMM {
     return this._price;
   }
 
-  public async variableApy(): Promise<number | void> {
+  public async getVariableApy(): Promise<number | void> {
     if (!this.provider) {
       return;
     }
-    
+
     const marginEngineContract = marginEngineFactory.connect(this.marginEngineAddress, this.provider);
     const historicalApy = await marginEngineContract.callStatic.getHistoricalApy();
     return parseFloat(utils.formatEther(historicalApy));
