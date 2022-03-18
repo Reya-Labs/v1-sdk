@@ -26,7 +26,7 @@ import { providers } from 'ethers';
 export type AMMConstructorArgs = {
   id: string;
   signer: Signer | null;
-  provider: providers.JsonRpcProvider | null;
+  provider?: providers.Provider;
   marginEngineAddress: string;
   fcmAddress: string;
   rateOracle: RateOracle;
@@ -108,7 +108,7 @@ export type ClosestTickAndFixedRate = {
 class AMM {
   public readonly id: string;
   public readonly signer: Signer | null;
-  public readonly provider: providers.JsonRpcProvider | null;
+  public readonly provider?: providers.Provider;
   public readonly marginEngineAddress: string;
   public readonly fcmAddress: string;
   public readonly rateOracle: RateOracle;
@@ -145,7 +145,7 @@ class AMM {
   }: AMMConstructorArgs) {
     this.id = id;
     this.signer = signer;
-    this.provider = provider;
+    this.provider = provider || signer?.provider;
     this.marginEngineAddress = marginEngineAddress;
     this.fcmAddress = fcmAddress;
     this.rateOracle = rateOracle;
