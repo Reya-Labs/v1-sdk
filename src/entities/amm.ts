@@ -245,8 +245,16 @@ class AMM {
     const fixedRateDelta = fixedRateAfter.subtract(fixedRateBefore);
     const fixedRateDeltaRaw = fixedRateDelta.toNumber();
 
+    const marginEngineContract = marginEngineFactory.connect(this.marginEngineAddress, this.provider);
+    const currentMargin = (await marginEngineContract.callStatic.getPosition(recipient, tickLower, tickUpper)).margin;
+    
+    const scaledCurrentMargin = parseFloat(utils.formatEther(currentMargin));
+    const scaledMarginRequirement = parseFloat(utils.formatEther(marginRequirement));
+
+    const additionalMargin = (scaledMarginRequirement > scaledCurrentMargin) ? scaledMarginRequirement - scaledCurrentMargin : 0;
+
     return {
-      marginRequirement: parseFloat(utils.formatEther(marginRequirement)),
+      marginRequirement: additionalMargin,
       availableNotional: parseFloat(utils.formatEther(availableNotional)),
       fee: parseFloat(utils.formatEther(fee)),
       slippage: fixedRateDeltaRaw,
@@ -367,7 +375,6 @@ class AMM {
     };
 
     let marginRequirement = BigNumber.from("0");
-    console.log(mintOrBurnParams);
       await peripheryContract.callStatic.mintOrBurn(mintOrBurnParams)
         .then(
           (result) => {
@@ -386,7 +393,18 @@ class AMM {
           }
         );
 
-    return parseFloat(utils.formatEther(marginRequirement));
+    const marginEngineContract = marginEngineFactory.connect(this.marginEngineAddress, this.provider);
+    const currentMargin = (await marginEngineContract.callStatic.getPosition(recipient, tickLower, tickUpper)).margin;
+    
+    const scaledCurrentMargin = parseFloat(utils.formatEther(currentMargin));
+    const scaledMarginRequirement = parseFloat(utils.formatEther(marginRequirement));
+
+    if (scaledMarginRequirement > scaledCurrentMargin) {
+      return scaledMarginRequirement - scaledCurrentMargin;
+    }
+    else {
+      return 0;
+    }
   }
 
   public async mint({ recipient, fixedLow, fixedHigh, notional, margin }: AMMMintArgs): Promise<ContractTransaction | void> {
@@ -423,7 +441,7 @@ class AMM {
     return peripheryContract.mintOrBurn(mintOrBurnParams);
   }
 
-  public async burn({ recipient, fixedLow, fixedHigh, notional }: AMMBurnArgs): Promise<ContractTransaction | void> {
+  public async burn({ fixedLow, fixedHigh, notional }: AMMBurnArgs): Promise<ContractTransaction | void> {
     if (!this.signer) {
       return;
     }
