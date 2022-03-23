@@ -198,8 +198,7 @@ class AMM {
 
     const peripheryContract = peripheryFactory.connect(PERIPHERY_ADDRESS, this.provider);
     const swapPeripheryParams: SwapPeripheryParams = {
-      marginEngineAddress: this.marginEngineAddress,
-      recipient,
+      marginEngine: this.marginEngineAddress,
       isFT,
       notional: toBn(notional.toString()),
       sqrtPriceLimitX96,
@@ -260,9 +259,9 @@ class AMM {
 
     const marginEngineContract = marginEngineFactory.connect(this.marginEngineAddress, this.signer);
     const settlePositionReceipt = await marginEngineContract.settlePosition(
+      owner,
       tickLower,
       tickUpper,
-      owner,
     );
     return settlePositionReceipt;
   }
@@ -307,9 +306,9 @@ class AMM {
 
     const marginEngineContract = marginEngineFactory.connect(this.marginEngineAddress, this.signer);
     const receipt = await marginEngineContract.liquidatePosition(
+      owner,
       tickLower,
-      tickUpper,
-      owner
+      tickUpper
     );
 
     return receipt;
@@ -349,8 +348,7 @@ class AMM {
     const peripheryContract = peripheryFactory.connect(PERIPHERY_ADDRESS, this.provider);
 
     const mintOrBurnParams: MintOrBurnParams = {
-      marginEngineAddress: this.marginEngineAddress,
-      recipient,
+      marginEngine: this.marginEngineAddress,
       tickLower,
       tickUpper,
       notional: toBn(notional.toString()),
@@ -358,6 +356,7 @@ class AMM {
     };
 
     let marginRequirement = BigNumber.from("0");
+    console.log(mintOrBurnParams);
       await peripheryContract.callStatic.mintOrBurn(mintOrBurnParams)
         .then(
           (result) => {
@@ -400,8 +399,7 @@ class AMM {
     const peripheryContract = peripheryFactory.connect(PERIPHERY_ADDRESS, this.signer);
 
     const mintOrBurnParams: MintOrBurnParams = {
-      marginEngineAddress: this.marginEngineAddress,
-      recipient,
+      marginEngine: this.marginEngineAddress,
       tickLower,
       tickUpper,
       notional: toBn(notional.toString()),
@@ -424,8 +422,7 @@ class AMM {
     const peripheryContract = peripheryFactory.connect(PERIPHERY_ADDRESS, this.signer);
 
     const mintOrBurnParams: MintOrBurnParams = {
-      marginEngineAddress: this.marginEngineAddress,
-      recipient,
+      marginEngine: this.marginEngineAddress,
       tickLower,
       tickUpper,
       notional: toBn(notional.toString()),
@@ -518,8 +515,7 @@ class AMM {
     const peripheryContract = peripheryFactory.connect(PERIPHERY_ADDRESS, this.signer);
 
     const swapPeripheryParams: SwapPeripheryParams = {
-      marginEngineAddress: this.marginEngineAddress,
-      recipient,
+      marginEngine: this.marginEngineAddress,
       isFT,
       notional: toBn(notional.toString()),
       sqrtPriceLimitX96,

@@ -18,31 +18,25 @@ import { Listener, Provider } from "@ethersproject/providers";
 import { FunctionFragment, EventFragment, Result } from "@ethersproject/abi";
 import type { TypedEventFilter, TypedEvent, TypedListener } from "./common";
 
-interface MarginCalculatorInterface extends ethers.utils.Interface {
+interface OracleBufferInterface extends ethers.utils.Interface {
   functions: {
-    "ONE()": FunctionFragment;
-    "ONE_UINT()": FunctionFragment;
-    "SECONDS_IN_YEAR()": FunctionFragment;
+    "MAX_BUFFER_LENGTH()": FunctionFragment;
   };
 
-  encodeFunctionData(functionFragment: "ONE", values?: undefined): string;
-  encodeFunctionData(functionFragment: "ONE_UINT", values?: undefined): string;
   encodeFunctionData(
-    functionFragment: "SECONDS_IN_YEAR",
+    functionFragment: "MAX_BUFFER_LENGTH",
     values?: undefined
   ): string;
 
-  decodeFunctionResult(functionFragment: "ONE", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "ONE_UINT", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "SECONDS_IN_YEAR",
+    functionFragment: "MAX_BUFFER_LENGTH",
     data: BytesLike
   ): Result;
 
   events: {};
 }
 
-export class MarginCalculator extends BaseContract {
+export class OracleBuffer extends BaseContract {
   connect(signerOrProvider: Signer | Provider | string): this;
   attach(addressOrName: string): this;
   deployed(): Promise<this>;
@@ -83,45 +77,25 @@ export class MarginCalculator extends BaseContract {
     toBlock?: string | number | undefined
   ): Promise<Array<TypedEvent<EventArgsArray & EventArgsObject>>>;
 
-  interface: MarginCalculatorInterface;
+  interface: OracleBufferInterface;
 
   functions: {
-    ONE(overrides?: CallOverrides): Promise<[BigNumber]>;
-
-    ONE_UINT(overrides?: CallOverrides): Promise<[BigNumber]>;
-
-    SECONDS_IN_YEAR(overrides?: CallOverrides): Promise<[BigNumber]>;
+    MAX_BUFFER_LENGTH(overrides?: CallOverrides): Promise<[BigNumber]>;
   };
 
-  ONE(overrides?: CallOverrides): Promise<BigNumber>;
-
-  ONE_UINT(overrides?: CallOverrides): Promise<BigNumber>;
-
-  SECONDS_IN_YEAR(overrides?: CallOverrides): Promise<BigNumber>;
+  MAX_BUFFER_LENGTH(overrides?: CallOverrides): Promise<BigNumber>;
 
   callStatic: {
-    ONE(overrides?: CallOverrides): Promise<BigNumber>;
-
-    ONE_UINT(overrides?: CallOverrides): Promise<BigNumber>;
-
-    SECONDS_IN_YEAR(overrides?: CallOverrides): Promise<BigNumber>;
+    MAX_BUFFER_LENGTH(overrides?: CallOverrides): Promise<BigNumber>;
   };
 
   filters: {};
 
   estimateGas: {
-    ONE(overrides?: CallOverrides): Promise<BigNumber>;
-
-    ONE_UINT(overrides?: CallOverrides): Promise<BigNumber>;
-
-    SECONDS_IN_YEAR(overrides?: CallOverrides): Promise<BigNumber>;
+    MAX_BUFFER_LENGTH(overrides?: CallOverrides): Promise<BigNumber>;
   };
 
   populateTransaction: {
-    ONE(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    ONE_UINT(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    SECONDS_IN_YEAR(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+    MAX_BUFFER_LENGTH(overrides?: CallOverrides): Promise<PopulatedTransaction>;
   };
 }
