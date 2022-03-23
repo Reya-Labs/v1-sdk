@@ -291,6 +291,10 @@ class AMM {
       return;
     }
 
+    if (marginDelta === 0) {
+      return;
+    }
+
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
