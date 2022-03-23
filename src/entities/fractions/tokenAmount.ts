@@ -3,7 +3,7 @@ import JSBI from 'jsbi';
 import Token from "../token";
 import _Big from 'big.js';
 import toFormat from 'toformat';
-import { BigintIsh, Rounding, MaxUint256 } from '../../constants';
+import { BigintIsh, MaxUint256 } from '../../constants';
 import { Fraction } from './fraction';
 
 const Big = toFormat(_Big)
@@ -42,26 +42,11 @@ export class TokenAmount<T extends Token> extends Fraction {
     this.decimalScale = JSBI.exponentiate(JSBI.BigInt(10), JSBI.BigInt(token.decimals))
   }
 
-  public toSignificant(
-    significantDigits: number = 6,
-    format?: object,
-    rounding: Rounding = Rounding.ROUND_DOWN
-  ): string {
-    return super.divide(this.decimalScale).toSignificant(significantDigits, format, rounding)
-  }
-
-  public toFixed(
+  public scale(
     decimalPlaces: number = this.token.decimals,
-    format?: object,
-    rounding: Rounding = Rounding.ROUND_DOWN
   ): string {
     invariant(decimalPlaces <= this.token.decimals, 'DECIMALS')
-    return super.divide(this.decimalScale).toFixed(decimalPlaces, format, rounding)
-  }
-
-  public toExact(format: object = { groupSeparator: '' }): string {
-    Big.DP = this.token.decimals
-    return new Big(this.quotient.toString()).div(this.decimalScale.toString()).toFormat(format)
+    return super.multiply(this.decimalScale).quotient.toString()
   }
 
 

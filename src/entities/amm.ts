@@ -201,7 +201,7 @@ class AMM {
 
     const _notionalFraction = Price.fromNumber(notional);
     const _notionalTA = TokenAmount.fromFractionalAmount(this.underlyingToken, _notionalFraction.numerator, _notionalFraction.denominator);
-    const _notional = _notionalTA.toFixed();
+    const _notional = _notionalTA.scale()
   
     const peripheryContract = peripheryFactory.connect(PERIPHERY_ADDRESS, this.provider);
     const swapPeripheryParams: SwapPeripheryParams = {
@@ -296,7 +296,7 @@ class AMM {
 
     const _marginDeltaFraction = Price.fromNumber(marginDelta);
     const _marginDeltaTA = TokenAmount.fromFractionalAmount(this.underlyingToken, _marginDeltaFraction.numerator, _marginDeltaFraction.denominator);
-    const _marginDelta = _marginDeltaTA.toFixed();
+    const _marginDelta = _marginDeltaTA.scale()
 
     await this.approveMarginEngine(_marginDelta);
 
@@ -368,7 +368,7 @@ class AMM {
     
     const _notionalFraction = Price.fromNumber(notional);
     const _notionalTA = TokenAmount.fromFractionalAmount(this.underlyingToken, _notionalFraction.numerator, _notionalFraction.denominator);
-    const _notional = _notionalTA.toFixed();
+    const _notional = _notionalTA.scale()
 
     const mintOrBurnParams: MintOrBurnParams = {
       marginEngine: this.marginEngineAddress,
@@ -433,7 +433,7 @@ class AMM {
 
     const _notionalFraction = Price.fromNumber(notional);
     const _notionalTA = TokenAmount.fromFractionalAmount(this.underlyingToken, _notionalFraction.numerator, _notionalFraction.denominator);
-    const _notional = _notionalTA.toFixed();
+    const _notional = _notionalTA.scale()
 
     const mintOrBurnParams: MintOrBurnParams = {
       marginEngine: this.marginEngineAddress,
@@ -460,7 +460,7 @@ class AMM {
 
     const _notionalFraction = Price.fromNumber(notional);
     const _notionalTA = TokenAmount.fromFractionalAmount(this.underlyingToken, _notionalFraction.numerator, _notionalFraction.denominator);
-    const _notional = _notionalTA.toFixed();
+    const _notional = _notionalTA.scale()
 
     const mintOrBurnParams: MintOrBurnParams = {
       marginEngine: this.marginEngineAddress,
@@ -558,7 +558,7 @@ class AMM {
 
     const _notionalFraction = Price.fromNumber(notional);
     const _notionalTA = TokenAmount.fromFractionalAmount(this.underlyingToken, _notionalFraction.numerator, _notionalFraction.denominator);
-    const _notional = _notionalTA.toFixed();
+    const _notional = _notionalTA.scale()
 
     const swapPeripheryParams: SwapPeripheryParams = {
       marginEngine: this.marginEngineAddress,
@@ -595,7 +595,7 @@ class AMM {
 
     const _notionalFraction = Price.fromNumber(notional);
     const _notionalTA = TokenAmount.fromFractionalAmount(this.underlyingToken, _notionalFraction.numerator, _notionalFraction.denominator);
-    const _notional = _notionalTA.toFixed();
+    const _notional = _notionalTA.scale()
     
     return fcmContract.initiateFullyCollateralisedFixedTakerSwap(_notional, sqrtPriceLimitX96);
   }
@@ -623,7 +623,7 @@ class AMM {
     
     const _notionalFraction = Price.fromNumber(notionalToUnwind);
     const _notionalTA = TokenAmount.fromFractionalAmount(this.underlyingToken, _notionalFraction.numerator, _notionalFraction.denominator);
-    const _notional = _notionalTA.toFixed();
+    const _notional = _notionalTA.scale()
 
     return fcmContract.unwindFullyCollateralisedFixedTakerSwap(_notional, sqrtPriceLimitX96);
   }

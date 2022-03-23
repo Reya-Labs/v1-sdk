@@ -7,6 +7,8 @@ import { TickMath } from '../../utils/tickMath';
 import {
   VAMM__factory as vammFactory,
 } from '../../typechain';
+import { Price } from '../fractions/price';
+import { TokenAmount } from '../fractions/tokenAmount';
 
 describe('amm', () => {
   describe('amm init', () => {
@@ -108,11 +110,27 @@ describe('amm', () => {
       }) as number;
       console.log("pre-mint req", mint_req);
 
+      const underlyingToken = new Token(
+        {
+          id: "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+          name: "Voltz",
+          decimals: 18
+        }
+      );
+
+      const _notionalFraction = Price.fromNumber(100000.5);
+      const _notionalTA = TokenAmount.fromFractionalAmount(underlyingToken, _notionalFraction.numerator, _notionalFraction.denominator);
+      console.log("_notionalTA", _notionalTA.numerator, _notionalTA.denominator);
+
+      const _notional = _notionalTA.scale()
+      
+      console.log(_notional.toString());
+
       await amm.mint({
         recipient: wallet.address,
         fixedLow: fixedLowMinter,
         fixedHigh: fixedHighMinter,
-        margin: mint_req + 10,
+        margin: 0.00001,
         notional: 100000,
       });
       console.log("mint done");
