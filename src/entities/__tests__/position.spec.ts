@@ -39,6 +39,7 @@ describe('amm', () => {
         underlyingToken: new Token({
           id: '0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9',
           name: 'USDC',
+          decimals: 18
         }),
         sqrtPriceX96: TickMath.getSqrtRatioAtTick(0).toString(),
         termEndTimestamp:   '1649458800000000000000000000',

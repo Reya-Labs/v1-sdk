@@ -20,8 +20,8 @@ import { TickMath } from '../utils/tickMath';
 import timestampWadToDateTime from '../utils/timestampWadToDateTime';
 import { fixedRateToClosestTick, tickToFixedRate } from '../utils/priceTickConversions';
 import { nearestUsableTick } from '../utils/nearestUsableTick';
-import { toBn } from 'evm-bn';
 import { providers } from 'ethers';
+import { TokenAmount } from './fractions/tokenAmount';
 
 export type AMMConstructorArgs = {
   id: string;
@@ -196,11 +196,15 @@ class AMM {
       }
     }
 
+    // todo: this might not work for decimal numbers
+    const _notionalTA = TokenAmount.fromRawAmount(this.underlyingToken, notional.toString());
+    const _notional = _notionalTA.toFixed();
+  
     const peripheryContract = peripheryFactory.connect(PERIPHERY_ADDRESS, this.provider);
     const swapPeripheryParams: SwapPeripheryParams = {
       marginEngine: this.marginEngineAddress,
       isFT,
-      notional: toBn(notional.toString()),
+      notional: _notional,
       sqrtPriceLimitX96,
       tickLower,
       tickUpper,
@@ -279,14 +283,18 @@ class AMM {
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
-    await this.approveMarginEngine(toBn(marginDelta.toString()));
+
+    const _marginDeltaTA = TokenAmount.fromRawAmount(this.underlyingToken, marginDelta.toString());
+    const _marginDelta = _marginDeltaTA.toFixed();
+
+    await this.approveMarginEngine(_marginDelta);
 
     const marginEngineContract = marginEngineFactory.connect(this.marginEngineAddress, this.signer);
     const updatePositionMarginReceipt = await marginEngineContract.updatePositionMargin(
       owner,
       tickLower,
       tickUpper,
-      toBn(marginDelta.toString())
+      _marginDelta
     );
 
     return updatePositionMarginReceipt;
@@ -346,12 +354,15 @@ class AMM {
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
     const peripheryContract = peripheryFactory.connect(PERIPHERY_ADDRESS, this.provider);
+    
+    const _notionalTA = TokenAmount.fromRawAmount(this.underlyingToken, notional.toString());
+    const _notional = _notionalTA.toFixed();
 
     const mintOrBurnParams: MintOrBurnParams = {
       marginEngine: this.marginEngineAddress,
       tickLower,
       tickUpper,
-      notional: toBn(notional.toString()),
+      notional: _notional,
       isMint: true,
     };
 
@@ -398,11 +409,14 @@ class AMM {
 
     const peripheryContract = peripheryFactory.connect(PERIPHERY_ADDRESS, this.signer);
 
+    const _notionalTA = TokenAmount.fromRawAmount(this.underlyingToken, notional.toString());
+    const _notional = _notionalTA.toFixed();    
+
     const mintOrBurnParams: MintOrBurnParams = {
       marginEngine: this.marginEngineAddress,
       tickLower,
       tickUpper,
-      notional: toBn(notional.toString()),
+      notional: _notional,
       isMint: true,
     };
 
@@ -421,11 +435,14 @@ class AMM {
 
     const peripheryContract = peripheryFactory.connect(PERIPHERY_ADDRESS, this.signer);
 
+    const _notionalTA = TokenAmount.fromRawAmount(this.underlyingToken, notional.toString());
+    const _notional = _notionalTA.toFixed();
+
     const mintOrBurnParams: MintOrBurnParams = {
       marginEngine: this.marginEngineAddress,
       tickLower,
       tickUpper,
-      notional: toBn(notional.toString()),
+      notional: _notional,
       isMint: false,
     };
 
@@ -514,10 +531,13 @@ class AMM {
 
     const peripheryContract = peripheryFactory.connect(PERIPHERY_ADDRESS, this.signer);
 
+    const _notionalTA = TokenAmount.fromRawAmount(this.underlyingToken, notional.toString());
+    const _notional = _notionalTA.toFixed();
+
     const swapPeripheryParams: SwapPeripheryParams = {
       marginEngine: this.marginEngineAddress,
       isFT,
-      notional: toBn(notional.toString()),
+      notional: _notional,
       sqrtPriceLimitX96,
       tickLower,
       tickUpper,
@@ -546,7 +566,11 @@ class AMM {
     }
 
     const fcmContract = fcmFactory.connect(this.fcmAddress, this.signer);
-    return fcmContract.initiateFullyCollateralisedFixedTakerSwap(toBn(notional.toString()), sqrtPriceLimitX96);
+
+    const _notionalTA = TokenAmount.fromRawAmount(this.underlyingToken, notional.toString());
+    const _notional = _notionalTA.toFixed();
+    
+    return fcmContract.initiateFullyCollateralisedFixedTakerSwap(_notional, sqrtPriceLimitX96);
   }
 
   public async FCMUnwind({
@@ -569,7 +593,11 @@ class AMM {
     await this.approveFCM();
 
     const fcmContract = fcmFactory.connect(this.fcmAddress, this.signer);
-    return fcmContract.unwindFullyCollateralisedFixedTakerSwap(toBn(notionalToUnwind.toString()), sqrtPriceLimitX96);
+
+    const _notionalToUnwindTA = TokenAmount.fromRawAmount(this.underlyingToken, notionalToUnwind.toString());
+    const _notionalToUnwind = _notionalToUnwindTA.toFixed();
+
+    return fcmContract.unwindFullyCollateralisedFixedTakerSwap(_notionalToUnwind, sqrtPriceLimitX96);
   }
 
   public async settleFCMTrader() : Promise<ContractTransaction | void>  {
