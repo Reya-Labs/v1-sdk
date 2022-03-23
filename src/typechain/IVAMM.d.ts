@@ -40,7 +40,6 @@ interface IVAMMInterface extends ethers.utils.Interface {
     "tickBitmap(int16)": FunctionFragment;
     "tickSpacing()": FunctionFragment;
     "ticks(int24)": FunctionFragment;
-    "unlocked()": FunctionFragment;
     "updateProtocolFees(uint256)": FunctionFragment;
     "vammVars()": FunctionFragment;
     "variableTokenGrowthGlobalX128()": FunctionFragment;
@@ -118,7 +117,6 @@ interface IVAMMInterface extends ethers.utils.Interface {
     values?: undefined
   ): string;
   encodeFunctionData(functionFragment: "ticks", values: [BigNumberish]): string;
-  encodeFunctionData(functionFragment: "unlocked", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "updateProtocolFees",
     values: [BigNumberish]
@@ -175,7 +173,6 @@ interface IVAMMInterface extends ethers.utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "ticks", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "unlocked", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "updateProtocolFees",
     data: BytesLike
@@ -320,8 +317,8 @@ export class IVAMM extends BaseContract {
     fixedTokenGrowthGlobalX128(overrides?: CallOverrides): Promise<[BigNumber]>;
 
     initialize(
-      _marginEngineAddress: string,
-      _tickSpacing: BigNumberish,
+      __marginEngine: string,
+      __tickSpacing: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -378,17 +375,17 @@ export class IVAMM extends BaseContract {
       tick: BigNumberish,
       overrides?: CallOverrides
     ): Promise<
-      [BigNumber, BigNumber, BigNumber, BigNumber, BigNumber, boolean] & {
-        liquidityGross: BigNumber;
-        liquidityNet: BigNumber;
-        fixedTokenGrowthOutside: BigNumber;
-        variableTokenGrowthOutside: BigNumber;
-        feeGrowthOutside: BigNumber;
-        initialized: boolean;
-      }
+      [
+        [BigNumber, BigNumber, BigNumber, BigNumber, BigNumber, boolean] & {
+          liquidityGross: BigNumber;
+          liquidityNet: BigNumber;
+          fixedTokenGrowthOutsideX128: BigNumber;
+          variableTokenGrowthOutsideX128: BigNumber;
+          feeGrowthOutsideX128: BigNumber;
+          initialized: boolean;
+        }
+      ]
     >;
-
-    unlocked(overrides?: CallOverrides): Promise<[boolean]>;
 
     updateProtocolFees(
       protocolFeesCollected: BigNumberish,
@@ -398,11 +395,13 @@ export class IVAMM extends BaseContract {
     vammVars(
       overrides?: CallOverrides
     ): Promise<
-      [BigNumber, number, number] & {
-        sqrtPriceX96: BigNumber;
-        tick: number;
-        feeProtocol: number;
-      }
+      [
+        [BigNumber, number, number] & {
+          sqrtPriceX96: BigNumber;
+          tick: number;
+          feeProtocol: number;
+        }
+      ]
     >;
 
     variableTokenGrowthGlobalX128(
@@ -439,8 +438,8 @@ export class IVAMM extends BaseContract {
   fixedTokenGrowthGlobalX128(overrides?: CallOverrides): Promise<BigNumber>;
 
   initialize(
-    _marginEngineAddress: string,
-    _tickSpacing: BigNumberish,
+    __marginEngine: string,
+    __tickSpacing: BigNumberish,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -500,14 +499,12 @@ export class IVAMM extends BaseContract {
     [BigNumber, BigNumber, BigNumber, BigNumber, BigNumber, boolean] & {
       liquidityGross: BigNumber;
       liquidityNet: BigNumber;
-      fixedTokenGrowthOutside: BigNumber;
-      variableTokenGrowthOutside: BigNumber;
-      feeGrowthOutside: BigNumber;
+      fixedTokenGrowthOutsideX128: BigNumber;
+      variableTokenGrowthOutsideX128: BigNumber;
+      feeGrowthOutsideX128: BigNumber;
       initialized: boolean;
     }
   >;
-
-  unlocked(overrides?: CallOverrides): Promise<boolean>;
 
   updateProtocolFees(
     protocolFeesCollected: BigNumberish,
@@ -533,7 +530,7 @@ export class IVAMM extends BaseContract {
       tickUpper: BigNumberish,
       amount: BigNumberish,
       overrides?: CallOverrides
-    ): Promise<void>;
+    ): Promise<BigNumber>;
 
     computeGrowthInside(
       tickLower: BigNumberish,
@@ -556,8 +553,8 @@ export class IVAMM extends BaseContract {
     fixedTokenGrowthGlobalX128(overrides?: CallOverrides): Promise<BigNumber>;
 
     initialize(
-      _marginEngineAddress: string,
-      _tickSpacing: BigNumberish,
+      __marginEngine: string,
+      __tickSpacing: BigNumberish,
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -578,7 +575,7 @@ export class IVAMM extends BaseContract {
       tickUpper: BigNumberish,
       amount: BigNumberish,
       overrides?: CallOverrides
-    ): Promise<void>;
+    ): Promise<BigNumber>;
 
     protocolFees(overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -599,11 +596,12 @@ export class IVAMM extends BaseContract {
       },
       overrides?: CallOverrides
     ): Promise<
-      [BigNumber, BigNumber, BigNumber, BigNumber] & {
+      [BigNumber, BigNumber, BigNumber, BigNumber, BigNumber] & {
         _fixedTokenDelta: BigNumber;
         _variableTokenDelta: BigNumber;
         _cumulativeFeeIncurred: BigNumber;
         _fixedTokenDeltaUnbalanced: BigNumber;
+        _marginRequirement: BigNumber;
       }
     >;
 
@@ -621,14 +619,12 @@ export class IVAMM extends BaseContract {
       [BigNumber, BigNumber, BigNumber, BigNumber, BigNumber, boolean] & {
         liquidityGross: BigNumber;
         liquidityNet: BigNumber;
-        fixedTokenGrowthOutside: BigNumber;
-        variableTokenGrowthOutside: BigNumber;
-        feeGrowthOutside: BigNumber;
+        fixedTokenGrowthOutsideX128: BigNumber;
+        variableTokenGrowthOutsideX128: BigNumber;
+        feeGrowthOutsideX128: BigNumber;
         initialized: boolean;
       }
     >;
-
-    unlocked(overrides?: CallOverrides): Promise<boolean>;
 
     updateProtocolFees(
       protocolFeesCollected: BigNumberish,
@@ -834,8 +830,8 @@ export class IVAMM extends BaseContract {
     fixedTokenGrowthGlobalX128(overrides?: CallOverrides): Promise<BigNumber>;
 
     initialize(
-      _marginEngineAddress: string,
-      _tickSpacing: BigNumberish,
+      __marginEngine: string,
+      __tickSpacing: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -890,8 +886,6 @@ export class IVAMM extends BaseContract {
 
     ticks(tick: BigNumberish, overrides?: CallOverrides): Promise<BigNumber>;
 
-    unlocked(overrides?: CallOverrides): Promise<BigNumber>;
-
     updateProtocolFees(
       protocolFeesCollected: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -932,8 +926,8 @@ export class IVAMM extends BaseContract {
     ): Promise<PopulatedTransaction>;
 
     initialize(
-      _marginEngineAddress: string,
-      _tickSpacing: BigNumberish,
+      __marginEngine: string,
+      __tickSpacing: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
@@ -992,8 +986,6 @@ export class IVAMM extends BaseContract {
       tick: BigNumberish,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
-
-    unlocked(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     updateProtocolFees(
       protocolFeesCollected: BigNumberish,

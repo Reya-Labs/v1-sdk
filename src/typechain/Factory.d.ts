@@ -22,9 +22,6 @@ import type { TypedEventFilter, TypedEvent, TypedListener } from "./common";
 interface FactoryInterface extends ethers.utils.Interface {
   functions: {
     "deployIrsInstance(address,address,uint256,uint256,int24)": FunctionFragment;
-    "getFCMAddress(address,address,uint256,uint256,int24)": FunctionFragment;
-    "getMarginEngineAddress(address,address,uint256,uint256,int24)": FunctionFragment;
-    "getVAMMAddress(address,address,uint256,uint256,int24)": FunctionFragment;
     "isApproved(address,address)": FunctionFragment;
     "masterFCMs(uint8)": FunctionFragment;
     "masterMarginEngine()": FunctionFragment;
@@ -32,24 +29,12 @@ interface FactoryInterface extends ethers.utils.Interface {
     "owner()": FunctionFragment;
     "renounceOwnership()": FunctionFragment;
     "setApproval(address,bool)": FunctionFragment;
-    "setMasterFCM(address,address)": FunctionFragment;
+    "setMasterFCM(address,uint8)": FunctionFragment;
     "transferOwnership(address)": FunctionFragment;
   };
 
   encodeFunctionData(
     functionFragment: "deployIrsInstance",
-    values: [string, string, BigNumberish, BigNumberish, BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getFCMAddress",
-    values: [string, string, BigNumberish, BigNumberish, BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getMarginEngineAddress",
-    values: [string, string, BigNumberish, BigNumberish, BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getVAMMAddress",
     values: [string, string, BigNumberish, BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(
@@ -79,7 +64,7 @@ interface FactoryInterface extends ethers.utils.Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "setMasterFCM",
-    values: [string, string]
+    values: [string, BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "transferOwnership",
@@ -88,18 +73,6 @@ interface FactoryInterface extends ethers.utils.Interface {
 
   decodeFunctionResult(
     functionFragment: "deployIrsInstance",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getFCMAddress",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getMarginEngineAddress",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getVAMMAddress",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "isApproved", data: BytesLike): Result;
@@ -128,18 +101,38 @@ interface FactoryInterface extends ethers.utils.Interface {
   ): Result;
 
   events: {
-    "IrsInstanceDeployed(address,address,uint256,uint256,int24,address,address,address)": EventFragment;
+    "ApprovalSet(address,address,bool)": EventFragment;
+    "IrsInstanceDeployed(address,address,uint256,uint256,int24,address,address,address,uint8)": EventFragment;
     "MasterFCMSet(address,address,uint8)": EventFragment;
     "OwnershipTransferred(address,address)": EventFragment;
   };
 
+  getEvent(nameOrSignatureOrTopic: "ApprovalSet"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "IrsInstanceDeployed"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "MasterFCMSet"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "OwnershipTransferred"): EventFragment;
 }
 
+export type ApprovalSetEvent = TypedEvent<
+  [string, string, boolean] & {
+    owner: string;
+    intAddress: string;
+    isApproved: boolean;
+  }
+>;
+
 export type IrsInstanceDeployedEvent = TypedEvent<
-  [string, string, BigNumber, BigNumber, number, string, string, string] & {
+  [
+    string,
+    string,
+    BigNumber,
+    BigNumber,
+    number,
+    string,
+    string,
+    string,
+    number
+  ] & {
     underlyingToken: string;
     rateOracle: string;
     termStartTimestampWad: BigNumber;
@@ -148,6 +141,7 @@ export type IrsInstanceDeployedEvent = TypedEvent<
     marginEngine: string;
     vamm: string;
     fcm: string;
+    yieldBearingProtocolID: number;
   }
 >;
 
@@ -216,36 +210,9 @@ export class Factory extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    getFCMAddress(
-      _underlyingToken: string,
-      _rateOracle: string,
-      _termStartTimestampWad: BigNumberish,
-      _termEndTimestampWad: BigNumberish,
-      _tickSpacing: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<[string]>;
-
-    getMarginEngineAddress(
-      _underlyingToken: string,
-      _rateOracle: string,
-      _termStartTimestampWad: BigNumberish,
-      _termEndTimestampWad: BigNumberish,
-      _tickSpacing: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<[string]>;
-
-    getVAMMAddress(
-      _underlyingToken: string,
-      _rateOracle: string,
-      _termStartTimestampWad: BigNumberish,
-      _termEndTimestampWad: BigNumberish,
-      _tickSpacing: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<[string]>;
-
     isApproved(
-      _owner: string,
-      intAddress: string,
+      arg0: string,
+      arg1: string,
       overrides?: CallOverrides
     ): Promise<[boolean]>;
 
@@ -271,8 +238,8 @@ export class Factory extends BaseContract {
     ): Promise<ContractTransaction>;
 
     setMasterFCM(
-      masterFCMAddress: string,
-      _rateOracle: string,
+      masterFCM: string,
+      yieldBearingProtocolID: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -291,36 +258,9 @@ export class Factory extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  getFCMAddress(
-    _underlyingToken: string,
-    _rateOracle: string,
-    _termStartTimestampWad: BigNumberish,
-    _termEndTimestampWad: BigNumberish,
-    _tickSpacing: BigNumberish,
-    overrides?: CallOverrides
-  ): Promise<string>;
-
-  getMarginEngineAddress(
-    _underlyingToken: string,
-    _rateOracle: string,
-    _termStartTimestampWad: BigNumberish,
-    _termEndTimestampWad: BigNumberish,
-    _tickSpacing: BigNumberish,
-    overrides?: CallOverrides
-  ): Promise<string>;
-
-  getVAMMAddress(
-    _underlyingToken: string,
-    _rateOracle: string,
-    _termStartTimestampWad: BigNumberish,
-    _termEndTimestampWad: BigNumberish,
-    _tickSpacing: BigNumberish,
-    overrides?: CallOverrides
-  ): Promise<string>;
-
   isApproved(
-    _owner: string,
-    intAddress: string,
+    arg0: string,
+    arg1: string,
     overrides?: CallOverrides
   ): Promise<boolean>;
 
@@ -343,8 +283,8 @@ export class Factory extends BaseContract {
   ): Promise<ContractTransaction>;
 
   setMasterFCM(
-    masterFCMAddress: string,
-    _rateOracle: string,
+    masterFCM: string,
+    yieldBearingProtocolID: BigNumberish,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -369,36 +309,9 @@ export class Factory extends BaseContract {
       }
     >;
 
-    getFCMAddress(
-      _underlyingToken: string,
-      _rateOracle: string,
-      _termStartTimestampWad: BigNumberish,
-      _termEndTimestampWad: BigNumberish,
-      _tickSpacing: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<string>;
-
-    getMarginEngineAddress(
-      _underlyingToken: string,
-      _rateOracle: string,
-      _termStartTimestampWad: BigNumberish,
-      _termEndTimestampWad: BigNumberish,
-      _tickSpacing: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<string>;
-
-    getVAMMAddress(
-      _underlyingToken: string,
-      _rateOracle: string,
-      _termStartTimestampWad: BigNumberish,
-      _termEndTimestampWad: BigNumberish,
-      _tickSpacing: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<string>;
-
     isApproved(
-      _owner: string,
-      intAddress: string,
+      arg0: string,
+      arg1: string,
       overrides?: CallOverrides
     ): Promise<boolean>;
 
@@ -419,8 +332,8 @@ export class Factory extends BaseContract {
     ): Promise<void>;
 
     setMasterFCM(
-      masterFCMAddress: string,
-      _rateOracle: string,
+      masterFCM: string,
+      yieldBearingProtocolID: BigNumberish,
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -431,7 +344,25 @@ export class Factory extends BaseContract {
   };
 
   filters: {
-    "IrsInstanceDeployed(address,address,uint256,uint256,int24,address,address,address)"(
+    "ApprovalSet(address,address,bool)"(
+      owner?: string | null,
+      intAddress?: string | null,
+      isApproved?: boolean | null
+    ): TypedEventFilter<
+      [string, string, boolean],
+      { owner: string; intAddress: string; isApproved: boolean }
+    >;
+
+    ApprovalSet(
+      owner?: string | null,
+      intAddress?: string | null,
+      isApproved?: boolean | null
+    ): TypedEventFilter<
+      [string, string, boolean],
+      { owner: string; intAddress: string; isApproved: boolean }
+    >;
+
+    "IrsInstanceDeployed(address,address,uint256,uint256,int24,address,address,address,uint8)"(
       underlyingToken?: string | null,
       rateOracle?: string | null,
       termStartTimestampWad?: null,
@@ -439,9 +370,20 @@ export class Factory extends BaseContract {
       tickSpacing?: null,
       marginEngine?: null,
       vamm?: null,
-      fcm?: null
+      fcm?: null,
+      yieldBearingProtocolID?: null
     ): TypedEventFilter<
-      [string, string, BigNumber, BigNumber, number, string, string, string],
+      [
+        string,
+        string,
+        BigNumber,
+        BigNumber,
+        number,
+        string,
+        string,
+        string,
+        number
+      ],
       {
         underlyingToken: string;
         rateOracle: string;
@@ -451,6 +393,7 @@ export class Factory extends BaseContract {
         marginEngine: string;
         vamm: string;
         fcm: string;
+        yieldBearingProtocolID: number;
       }
     >;
 
@@ -462,9 +405,20 @@ export class Factory extends BaseContract {
       tickSpacing?: null,
       marginEngine?: null,
       vamm?: null,
-      fcm?: null
+      fcm?: null,
+      yieldBearingProtocolID?: null
     ): TypedEventFilter<
-      [string, string, BigNumber, BigNumber, number, string, string, string],
+      [
+        string,
+        string,
+        BigNumber,
+        BigNumber,
+        number,
+        string,
+        string,
+        string,
+        number
+      ],
       {
         underlyingToken: string;
         rateOracle: string;
@@ -474,6 +428,7 @@ export class Factory extends BaseContract {
         marginEngine: string;
         vamm: string;
         fcm: string;
+        yieldBearingProtocolID: number;
       }
     >;
 
@@ -530,36 +485,9 @@ export class Factory extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    getFCMAddress(
-      _underlyingToken: string,
-      _rateOracle: string,
-      _termStartTimestampWad: BigNumberish,
-      _termEndTimestampWad: BigNumberish,
-      _tickSpacing: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
-    getMarginEngineAddress(
-      _underlyingToken: string,
-      _rateOracle: string,
-      _termStartTimestampWad: BigNumberish,
-      _termEndTimestampWad: BigNumberish,
-      _tickSpacing: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
-    getVAMMAddress(
-      _underlyingToken: string,
-      _rateOracle: string,
-      _termStartTimestampWad: BigNumberish,
-      _termEndTimestampWad: BigNumberish,
-      _tickSpacing: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
     isApproved(
-      _owner: string,
-      intAddress: string,
+      arg0: string,
+      arg1: string,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
@@ -585,8 +513,8 @@ export class Factory extends BaseContract {
     ): Promise<BigNumber>;
 
     setMasterFCM(
-      masterFCMAddress: string,
-      _rateOracle: string,
+      masterFCM: string,
+      yieldBearingProtocolID: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -606,36 +534,9 @@ export class Factory extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    getFCMAddress(
-      _underlyingToken: string,
-      _rateOracle: string,
-      _termStartTimestampWad: BigNumberish,
-      _termEndTimestampWad: BigNumberish,
-      _tickSpacing: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    getMarginEngineAddress(
-      _underlyingToken: string,
-      _rateOracle: string,
-      _termStartTimestampWad: BigNumberish,
-      _termEndTimestampWad: BigNumberish,
-      _tickSpacing: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    getVAMMAddress(
-      _underlyingToken: string,
-      _rateOracle: string,
-      _termStartTimestampWad: BigNumberish,
-      _termEndTimestampWad: BigNumberish,
-      _tickSpacing: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
     isApproved(
-      _owner: string,
-      intAddress: string,
+      arg0: string,
+      arg1: string,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
@@ -663,8 +564,8 @@ export class Factory extends BaseContract {
     ): Promise<PopulatedTransaction>;
 
     setMasterFCM(
-      masterFCMAddress: string,
-      _rateOracle: string,
+      masterFCM: string,
+      yieldBearingProtocolID: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 

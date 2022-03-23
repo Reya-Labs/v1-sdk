@@ -22,14 +22,25 @@ import type { TypedEventFilter, TypedEvent, TypedListener } from "./common";
 interface ActorInterface extends ethers.utils.Interface {
   functions: {
     "burn(address,address,int24,int24,uint128)": FunctionFragment;
+    "initiateFullyCollateralisedFixedTakerSwap(address,uint256,uint160)": FunctionFragment;
     "liquidatePosition(address,int24,int24,address)": FunctionFragment;
     "mint(address,address,int24,int24,uint128)": FunctionFragment;
+    "mintOrBurnViaPeriphery(address,(address,address,int24,int24,uint256,bool))": FunctionFragment;
+    "setIntegrationApproval(address,address,bool)": FunctionFragment;
+    "settleYBATrader(address)": FunctionFragment;
     "swap(address,(address,int256,uint160,int24,int24))": FunctionFragment;
+    "swapViaPeriphery(address,(address,address,bool,uint256,uint160,int24,int24))": FunctionFragment;
+    "unwindFullyCollateralisedFixedTakerSwap(address,uint256,uint160)": FunctionFragment;
+    "updatePositionMargin(address,address,int24,int24,int256)": FunctionFragment;
   };
 
   encodeFunctionData(
     functionFragment: "burn",
     values: [string, string, BigNumberish, BigNumberish, BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "initiateFullyCollateralisedFixedTakerSwap",
+    values: [string, BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "liquidatePosition",
@@ -38,6 +49,28 @@ interface ActorInterface extends ethers.utils.Interface {
   encodeFunctionData(
     functionFragment: "mint",
     values: [string, string, BigNumberish, BigNumberish, BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "mintOrBurnViaPeriphery",
+    values: [
+      string,
+      {
+        marginEngineAddress: string;
+        recipient: string;
+        tickLower: BigNumberish;
+        tickUpper: BigNumberish;
+        notional: BigNumberish;
+        isMint: boolean;
+      }
+    ]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "setIntegrationApproval",
+    values: [string, string, boolean]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "settleYBATrader",
+    values: [string]
   ): string;
   encodeFunctionData(
     functionFragment: "swap",
@@ -52,14 +85,65 @@ interface ActorInterface extends ethers.utils.Interface {
       }
     ]
   ): string;
+  encodeFunctionData(
+    functionFragment: "swapViaPeriphery",
+    values: [
+      string,
+      {
+        marginEngineAddress: string;
+        recipient: string;
+        isFT: boolean;
+        notional: BigNumberish;
+        sqrtPriceLimitX96: BigNumberish;
+        tickLower: BigNumberish;
+        tickUpper: BigNumberish;
+      }
+    ]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "unwindFullyCollateralisedFixedTakerSwap",
+    values: [string, BigNumberish, BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "updatePositionMargin",
+    values: [string, string, BigNumberish, BigNumberish, BigNumberish]
+  ): string;
 
   decodeFunctionResult(functionFragment: "burn", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "initiateFullyCollateralisedFixedTakerSwap",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "liquidatePosition",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "mint", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "mintOrBurnViaPeriphery",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "setIntegrationApproval",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "settleYBATrader",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "swap", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "swapViaPeriphery",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "unwindFullyCollateralisedFixedTakerSwap",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "updatePositionMargin",
+    data: BytesLike
+  ): Result;
 
   events: {};
 }
@@ -117,6 +201,13 @@ export class Actor extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
+    initiateFullyCollateralisedFixedTakerSwap(
+      FCMAddress: string,
+      notional: BigNumberish,
+      sqrtPriceLimitX96: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
     liquidatePosition(
       MEAddress: string,
       tickLower: BigNumberish,
@@ -134,6 +225,31 @@ export class Actor extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
+    mintOrBurnViaPeriphery(
+      peripheryAddress: string,
+      params: {
+        marginEngineAddress: string;
+        recipient: string;
+        tickLower: BigNumberish;
+        tickUpper: BigNumberish;
+        notional: BigNumberish;
+        isMint: boolean;
+      },
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    setIntegrationApproval(
+      MEAddress: string,
+      intAddress: string,
+      allowIntegration: boolean,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    settleYBATrader(
+      FCMAddress: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
     swap(
       VAMMAddress: string,
       params: {
@@ -145,6 +261,36 @@ export class Actor extends BaseContract {
       },
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
+
+    swapViaPeriphery(
+      peripheryAddress: string,
+      params: {
+        marginEngineAddress: string;
+        recipient: string;
+        isFT: boolean;
+        notional: BigNumberish;
+        sqrtPriceLimitX96: BigNumberish;
+        tickLower: BigNumberish;
+        tickUpper: BigNumberish;
+      },
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    unwindFullyCollateralisedFixedTakerSwap(
+      FCMAddress: string,
+      notionalToUnwind: BigNumberish,
+      sqrtPriceLimitX96: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    updatePositionMargin(
+      MEAddress: string,
+      _owner: string,
+      tickLower: BigNumberish,
+      tickUpper: BigNumberish,
+      marginDelta: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
   };
 
   burn(
@@ -153,6 +299,13 @@ export class Actor extends BaseContract {
     tickLower: BigNumberish,
     tickUpper: BigNumberish,
     amount: BigNumberish,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  initiateFullyCollateralisedFixedTakerSwap(
+    FCMAddress: string,
+    notional: BigNumberish,
+    sqrtPriceLimitX96: BigNumberish,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -173,6 +326,31 @@ export class Actor extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  mintOrBurnViaPeriphery(
+    peripheryAddress: string,
+    params: {
+      marginEngineAddress: string;
+      recipient: string;
+      tickLower: BigNumberish;
+      tickUpper: BigNumberish;
+      notional: BigNumberish;
+      isMint: boolean;
+    },
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  setIntegrationApproval(
+    MEAddress: string,
+    intAddress: string,
+    allowIntegration: boolean,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  settleYBATrader(
+    FCMAddress: string,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
   swap(
     VAMMAddress: string,
     params: {
@@ -185,6 +363,36 @@ export class Actor extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  swapViaPeriphery(
+    peripheryAddress: string,
+    params: {
+      marginEngineAddress: string;
+      recipient: string;
+      isFT: boolean;
+      notional: BigNumberish;
+      sqrtPriceLimitX96: BigNumberish;
+      tickLower: BigNumberish;
+      tickUpper: BigNumberish;
+    },
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  unwindFullyCollateralisedFixedTakerSwap(
+    FCMAddress: string,
+    notionalToUnwind: BigNumberish,
+    sqrtPriceLimitX96: BigNumberish,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  updatePositionMargin(
+    MEAddress: string,
+    _owner: string,
+    tickLower: BigNumberish,
+    tickUpper: BigNumberish,
+    marginDelta: BigNumberish,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
   callStatic: {
     burn(
       VAMMAddress: string,
@@ -192,6 +400,13 @@ export class Actor extends BaseContract {
       tickLower: BigNumberish,
       tickUpper: BigNumberish,
       amount: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    initiateFullyCollateralisedFixedTakerSwap(
+      FCMAddress: string,
+      notional: BigNumberish,
+      sqrtPriceLimitX96: BigNumberish,
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -209,6 +424,31 @@ export class Actor extends BaseContract {
       tickLower: BigNumberish,
       tickUpper: BigNumberish,
       amount: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    mintOrBurnViaPeriphery(
+      peripheryAddress: string,
+      params: {
+        marginEngineAddress: string;
+        recipient: string;
+        tickLower: BigNumberish;
+        tickUpper: BigNumberish;
+        notional: BigNumberish;
+        isMint: boolean;
+      },
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    setIntegrationApproval(
+      MEAddress: string,
+      intAddress: string,
+      allowIntegration: boolean,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    settleYBATrader(
+      FCMAddress: string,
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -230,6 +470,44 @@ export class Actor extends BaseContract {
         _fixedTokenDeltaUnbalanced: BigNumber;
       }
     >;
+
+    swapViaPeriphery(
+      peripheryAddress: string,
+      params: {
+        marginEngineAddress: string;
+        recipient: string;
+        isFT: boolean;
+        notional: BigNumberish;
+        sqrtPriceLimitX96: BigNumberish;
+        tickLower: BigNumberish;
+        tickUpper: BigNumberish;
+      },
+      overrides?: CallOverrides
+    ): Promise<
+      [BigNumber, BigNumber, BigNumber, BigNumber, BigNumber] & {
+        _fixedTokenDelta: BigNumber;
+        _variableTokenDelta: BigNumber;
+        _cumulativeFeeIncurred: BigNumber;
+        _fixedTokenDeltaUnbalanced: BigNumber;
+        _marginRequirement: BigNumber;
+      }
+    >;
+
+    unwindFullyCollateralisedFixedTakerSwap(
+      FCMAddress: string,
+      notionalToUnwind: BigNumberish,
+      sqrtPriceLimitX96: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    updatePositionMargin(
+      MEAddress: string,
+      _owner: string,
+      tickLower: BigNumberish,
+      tickUpper: BigNumberish,
+      marginDelta: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<void>;
   };
 
   filters: {};
@@ -244,6 +522,13 @@ export class Actor extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
+    initiateFullyCollateralisedFixedTakerSwap(
+      FCMAddress: string,
+      notional: BigNumberish,
+      sqrtPriceLimitX96: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
     liquidatePosition(
       MEAddress: string,
       tickLower: BigNumberish,
@@ -261,6 +546,31 @@ export class Actor extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
+    mintOrBurnViaPeriphery(
+      peripheryAddress: string,
+      params: {
+        marginEngineAddress: string;
+        recipient: string;
+        tickLower: BigNumberish;
+        tickUpper: BigNumberish;
+        notional: BigNumberish;
+        isMint: boolean;
+      },
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    setIntegrationApproval(
+      MEAddress: string,
+      intAddress: string,
+      allowIntegration: boolean,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    settleYBATrader(
+      FCMAddress: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
     swap(
       VAMMAddress: string,
       params: {
@@ -270,6 +580,36 @@ export class Actor extends BaseContract {
         tickLower: BigNumberish;
         tickUpper: BigNumberish;
       },
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    swapViaPeriphery(
+      peripheryAddress: string,
+      params: {
+        marginEngineAddress: string;
+        recipient: string;
+        isFT: boolean;
+        notional: BigNumberish;
+        sqrtPriceLimitX96: BigNumberish;
+        tickLower: BigNumberish;
+        tickUpper: BigNumberish;
+      },
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    unwindFullyCollateralisedFixedTakerSwap(
+      FCMAddress: string,
+      notionalToUnwind: BigNumberish,
+      sqrtPriceLimitX96: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    updatePositionMargin(
+      MEAddress: string,
+      _owner: string,
+      tickLower: BigNumberish,
+      tickUpper: BigNumberish,
+      marginDelta: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
   };
@@ -284,6 +624,13 @@ export class Actor extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
+    initiateFullyCollateralisedFixedTakerSwap(
+      FCMAddress: string,
+      notional: BigNumberish,
+      sqrtPriceLimitX96: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
     liquidatePosition(
       MEAddress: string,
       tickLower: BigNumberish,
@@ -301,6 +648,31 @@ export class Actor extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
+    mintOrBurnViaPeriphery(
+      peripheryAddress: string,
+      params: {
+        marginEngineAddress: string;
+        recipient: string;
+        tickLower: BigNumberish;
+        tickUpper: BigNumberish;
+        notional: BigNumberish;
+        isMint: boolean;
+      },
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    setIntegrationApproval(
+      MEAddress: string,
+      intAddress: string,
+      allowIntegration: boolean,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    settleYBATrader(
+      FCMAddress: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
     swap(
       VAMMAddress: string,
       params: {
@@ -310,6 +682,36 @@ export class Actor extends BaseContract {
         tickLower: BigNumberish;
         tickUpper: BigNumberish;
       },
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    swapViaPeriphery(
+      peripheryAddress: string,
+      params: {
+        marginEngineAddress: string;
+        recipient: string;
+        isFT: boolean;
+        notional: BigNumberish;
+        sqrtPriceLimitX96: BigNumberish;
+        tickLower: BigNumberish;
+        tickUpper: BigNumberish;
+      },
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    unwindFullyCollateralisedFixedTakerSwap(
+      FCMAddress: string,
+      notionalToUnwind: BigNumberish,
+      sqrtPriceLimitX96: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    updatePositionMargin(
+      MEAddress: string,
+      _owner: string,
+      tickLower: BigNumberish,
+      tickUpper: BigNumberish,
+      marginDelta: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
   };

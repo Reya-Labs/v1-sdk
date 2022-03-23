@@ -21,11 +21,13 @@ import type { TypedEventFilter, TypedEvent, TypedListener } from "./common";
 
 interface IMarginEngineInterface extends ethers.utils.Interface {
   functions: {
+    "cacheMaxAgeInSeconds()": FunctionFragment;
     "collectProtocol(address,uint256)": FunctionFragment;
     "factory()": FunctionFragment;
     "fcm()": FunctionFragment;
     "getHistoricalApy()": FunctionFragment;
     "getPosition(address,int24,int24)": FunctionFragment;
+    "getPositionMarginRequirement(address,int24,int24,bool)": FunctionFragment;
     "initialize(address,address,uint256,uint256)": FunctionFragment;
     "liquidatePosition(int24,int24,address)": FunctionFragment;
     "liquidatorRewardWad()": FunctionFragment;
@@ -44,10 +46,14 @@ interface IMarginEngineInterface extends ethers.utils.Interface {
     "underlyingToken()": FunctionFragment;
     "updatePositionMargin(address,int24,int24,int256)": FunctionFragment;
     "updatePositionPostVAMMInducedMintBurn((address,int24,int24,int128))": FunctionFragment;
-    "updatePositionPostVAMMInducedSwap(address,int24,int24,int256,int256,uint256)": FunctionFragment;
+    "updatePositionPostVAMMInducedSwap(address,int24,int24,int256,int256,uint256,int256)": FunctionFragment;
     "vamm()": FunctionFragment;
   };
 
+  encodeFunctionData(
+    functionFragment: "cacheMaxAgeInSeconds",
+    values?: undefined
+  ): string;
   encodeFunctionData(
     functionFragment: "collectProtocol",
     values: [string, BigNumberish]
@@ -61,6 +67,10 @@ interface IMarginEngineInterface extends ethers.utils.Interface {
   encodeFunctionData(
     functionFragment: "getPosition",
     values: [string, BigNumberish, BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getPositionMarginRequirement",
+    values: [string, BigNumberish, BigNumberish, boolean]
   ): string;
   encodeFunctionData(
     functionFragment: "initialize",
@@ -164,11 +174,16 @@ interface IMarginEngineInterface extends ethers.utils.Interface {
       BigNumberish,
       BigNumberish,
       BigNumberish,
+      BigNumberish,
       BigNumberish
     ]
   ): string;
   encodeFunctionData(functionFragment: "vamm", values?: undefined): string;
 
+  decodeFunctionResult(
+    functionFragment: "cacheMaxAgeInSeconds",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "collectProtocol",
     data: BytesLike
@@ -181,6 +196,10 @@ interface IMarginEngineInterface extends ethers.utils.Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "getPosition",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getPositionMarginRequirement",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "initialize", data: BytesLike): Result;
@@ -570,6 +589,8 @@ export class IMarginEngine extends BaseContract {
   interface: IMarginEngineInterface;
 
   functions: {
+    cacheMaxAgeInSeconds(overrides?: CallOverrides): Promise<[BigNumber]>;
+
     collectProtocol(
       recipient: string,
       amount: BigNumberish,
@@ -588,60 +609,22 @@ export class IMarginEngine extends BaseContract {
       _owner: string,
       tickLower: BigNumberish,
       tickUpper: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<
-      [
-        [
-          boolean,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber
-        ] & {
-          isSettled: boolean;
-          _liquidity: BigNumber;
-          margin: BigNumber;
-          fixedTokenGrowthInsideLastX128: BigNumber;
-          variableTokenGrowthInsideLastX128: BigNumber;
-          fixedTokenBalance: BigNumber;
-          variableTokenBalance: BigNumber;
-          feeGrowthInsideLastX128: BigNumber;
-          rewardPerAmount: BigNumber;
-        }
-      ] & {
-        position: [
-          boolean,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber
-        ] & {
-          isSettled: boolean;
-          _liquidity: BigNumber;
-          margin: BigNumber;
-          fixedTokenGrowthInsideLastX128: BigNumber;
-          variableTokenGrowthInsideLastX128: BigNumber;
-          fixedTokenBalance: BigNumber;
-          variableTokenBalance: BigNumber;
-          feeGrowthInsideLastX128: BigNumber;
-          rewardPerAmount: BigNumber;
-        };
-      }
-    >;
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    getPositionMarginRequirement(
+      recipient: string,
+      tickLower: BigNumberish,
+      tickUpper: BigNumberish,
+      isLM: boolean,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
 
     initialize(
-      _underlyingToken: string,
-      _rateOracleAddress: string,
-      _termStartTimestampWad: BigNumberish,
-      _termEndTimestampWad: BigNumberish,
+      __underlyingToken: string,
+      __rateOracle: string,
+      __termStartTimestampWad: BigNumberish,
+      __termEndTimestampWad: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -664,7 +647,7 @@ export class IMarginEngine extends BaseContract {
     ): Promise<ContractTransaction>;
 
     setFCM(
-      _fcm: string,
+      _newFCM: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -703,7 +686,7 @@ export class IMarginEngine extends BaseContract {
     ): Promise<ContractTransaction>;
 
     setVAMM(
-      _vAMMAddress: string,
+      _vAMM: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -751,11 +734,14 @@ export class IMarginEngine extends BaseContract {
       fixedTokenDelta: BigNumberish,
       variableTokenDelta: BigNumberish,
       cumulativeFeeIncurred: BigNumberish,
+      fixedTokenDeltaUnbalanced: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
     vamm(overrides?: CallOverrides): Promise<[string]>;
   };
+
+  cacheMaxAgeInSeconds(overrides?: CallOverrides): Promise<BigNumber>;
 
   collectProtocol(
     recipient: string,
@@ -775,36 +761,22 @@ export class IMarginEngine extends BaseContract {
     _owner: string,
     tickLower: BigNumberish,
     tickUpper: BigNumberish,
-    overrides?: CallOverrides
-  ): Promise<
-    [
-      boolean,
-      BigNumber,
-      BigNumber,
-      BigNumber,
-      BigNumber,
-      BigNumber,
-      BigNumber,
-      BigNumber,
-      BigNumber
-    ] & {
-      isSettled: boolean;
-      _liquidity: BigNumber;
-      margin: BigNumber;
-      fixedTokenGrowthInsideLastX128: BigNumber;
-      variableTokenGrowthInsideLastX128: BigNumber;
-      fixedTokenBalance: BigNumber;
-      variableTokenBalance: BigNumber;
-      feeGrowthInsideLastX128: BigNumber;
-      rewardPerAmount: BigNumber;
-    }
-  >;
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  getPositionMarginRequirement(
+    recipient: string,
+    tickLower: BigNumberish,
+    tickUpper: BigNumberish,
+    isLM: boolean,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
 
   initialize(
-    _underlyingToken: string,
-    _rateOracleAddress: string,
-    _termStartTimestampWad: BigNumberish,
-    _termEndTimestampWad: BigNumberish,
+    __underlyingToken: string,
+    __rateOracle: string,
+    __termStartTimestampWad: BigNumberish,
+    __termEndTimestampWad: BigNumberish,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -827,7 +799,7 @@ export class IMarginEngine extends BaseContract {
   ): Promise<ContractTransaction>;
 
   setFCM(
-    _fcm: string,
+    _newFCM: string,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -866,7 +838,7 @@ export class IMarginEngine extends BaseContract {
   ): Promise<ContractTransaction>;
 
   setVAMM(
-    _vAMMAddress: string,
+    _vAMM: string,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -914,12 +886,15 @@ export class IMarginEngine extends BaseContract {
     fixedTokenDelta: BigNumberish,
     variableTokenDelta: BigNumberish,
     cumulativeFeeIncurred: BigNumberish,
+    fixedTokenDeltaUnbalanced: BigNumberish,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   vamm(overrides?: CallOverrides): Promise<string>;
 
   callStatic: {
+    cacheMaxAgeInSeconds(overrides?: CallOverrides): Promise<BigNumber>;
+
     collectProtocol(
       recipient: string,
       amount: BigNumberish,
@@ -961,11 +936,19 @@ export class IMarginEngine extends BaseContract {
       }
     >;
 
+    getPositionMarginRequirement(
+      recipient: string,
+      tickLower: BigNumberish,
+      tickUpper: BigNumberish,
+      isLM: boolean,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
     initialize(
-      _underlyingToken: string,
-      _rateOracleAddress: string,
-      _termStartTimestampWad: BigNumberish,
-      _termEndTimestampWad: BigNumberish,
+      __underlyingToken: string,
+      __rateOracle: string,
+      __termStartTimestampWad: BigNumberish,
+      __termEndTimestampWad: BigNumberish,
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -987,7 +970,7 @@ export class IMarginEngine extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
-    setFCM(_fcm: string, overrides?: CallOverrides): Promise<void>;
+    setFCM(_newFCM: string, overrides?: CallOverrides): Promise<void>;
 
     setLiquidatorReward(
       _liquidatorRewardWad: BigNumberish,
@@ -1023,7 +1006,7 @@ export class IMarginEngine extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
-    setVAMM(_vAMMAddress: string, overrides?: CallOverrides): Promise<void>;
+    setVAMM(_vAMM: string, overrides?: CallOverrides): Promise<void>;
 
     settlePosition(
       tickLower: BigNumberish,
@@ -1060,7 +1043,7 @@ export class IMarginEngine extends BaseContract {
         liquidityDelta: BigNumberish;
       },
       overrides?: CallOverrides
-    ): Promise<void>;
+    ): Promise<BigNumber>;
 
     updatePositionPostVAMMInducedSwap(
       _owner: string,
@@ -1069,8 +1052,9 @@ export class IMarginEngine extends BaseContract {
       fixedTokenDelta: BigNumberish,
       variableTokenDelta: BigNumberish,
       cumulativeFeeIncurred: BigNumberish,
+      fixedTokenDeltaUnbalanced: BigNumberish,
       overrides?: CallOverrides
-    ): Promise<void>;
+    ): Promise<BigNumber>;
 
     vamm(overrides?: CallOverrides): Promise<string>;
   };
@@ -1678,6 +1662,8 @@ export class IMarginEngine extends BaseContract {
   };
 
   estimateGas: {
+    cacheMaxAgeInSeconds(overrides?: CallOverrides): Promise<BigNumber>;
+
     collectProtocol(
       recipient: string,
       amount: BigNumberish,
@@ -1696,14 +1682,22 @@ export class IMarginEngine extends BaseContract {
       _owner: string,
       tickLower: BigNumberish,
       tickUpper: BigNumberish,
-      overrides?: CallOverrides
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    getPositionMarginRequirement(
+      recipient: string,
+      tickLower: BigNumberish,
+      tickUpper: BigNumberish,
+      isLM: boolean,
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     initialize(
-      _underlyingToken: string,
-      _rateOracleAddress: string,
-      _termStartTimestampWad: BigNumberish,
-      _termEndTimestampWad: BigNumberish,
+      __underlyingToken: string,
+      __rateOracle: string,
+      __termStartTimestampWad: BigNumberish,
+      __termEndTimestampWad: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -1726,7 +1720,7 @@ export class IMarginEngine extends BaseContract {
     ): Promise<BigNumber>;
 
     setFCM(
-      _fcm: string,
+      _newFCM: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -1765,7 +1759,7 @@ export class IMarginEngine extends BaseContract {
     ): Promise<BigNumber>;
 
     setVAMM(
-      _vAMMAddress: string,
+      _vAMM: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -1813,6 +1807,7 @@ export class IMarginEngine extends BaseContract {
       fixedTokenDelta: BigNumberish,
       variableTokenDelta: BigNumberish,
       cumulativeFeeIncurred: BigNumberish,
+      fixedTokenDeltaUnbalanced: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -1820,6 +1815,10 @@ export class IMarginEngine extends BaseContract {
   };
 
   populateTransaction: {
+    cacheMaxAgeInSeconds(
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
     collectProtocol(
       recipient: string,
       amount: BigNumberish,
@@ -1838,14 +1837,22 @@ export class IMarginEngine extends BaseContract {
       _owner: string,
       tickLower: BigNumberish,
       tickUpper: BigNumberish,
-      overrides?: CallOverrides
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    getPositionMarginRequirement(
+      recipient: string,
+      tickLower: BigNumberish,
+      tickUpper: BigNumberish,
+      isLM: boolean,
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     initialize(
-      _underlyingToken: string,
-      _rateOracleAddress: string,
-      _termStartTimestampWad: BigNumberish,
-      _termEndTimestampWad: BigNumberish,
+      __underlyingToken: string,
+      __rateOracle: string,
+      __termStartTimestampWad: BigNumberish,
+      __termEndTimestampWad: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
@@ -1870,7 +1877,7 @@ export class IMarginEngine extends BaseContract {
     ): Promise<PopulatedTransaction>;
 
     setFCM(
-      _fcm: string,
+      _newFCM: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
@@ -1909,7 +1916,7 @@ export class IMarginEngine extends BaseContract {
     ): Promise<PopulatedTransaction>;
 
     setVAMM(
-      _vAMMAddress: string,
+      _vAMM: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
@@ -1961,6 +1968,7 @@ export class IMarginEngine extends BaseContract {
       fixedTokenDelta: BigNumberish,
       variableTokenDelta: BigNumberish,
       cumulativeFeeIncurred: BigNumberish,
+      fixedTokenDeltaUnbalanced: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
