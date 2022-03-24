@@ -71,13 +71,15 @@ describe('amm', () => {
       // await vammContract.initializeVAMM(TickMath.getSqrtRatioAtTick(0).toString()); // for periphery tests
     });
 
-    it.skip('position', async () => {
+    it('position', async () => {
       console.log(position.effectiveMargin);
       console.log(position.fixedRateLower.toNumber());
       console.log(position.fixedRateUpper.toNumber());
       console.log(position.createdDateTime);
       console.log(position.updatedDateTime);
       console.log(position.notional);
+      console.log(position.effectiveFixedTokenBalance);
+      console.log(position.effectiveVariableTokenBalance);
     });
   });
 });
