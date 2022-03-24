@@ -362,6 +362,21 @@ class AMM {
       return;
     }
 
+    // check if the vamm is unlocked
+
+    if (!this.initialized) {
+
+      // need the signer object to initialize the vamm
+      if (!this.signer) {
+        return;
+      }
+
+      const vammContract = vammFactory.connect(this.id, this.signer);
+
+      // todo: add logic to initialize at a more reasonable price
+      await vammContract.initializeVAMM(TickMath.getSqrtRatioAtTick(0).toString());
+    }
+
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
@@ -378,21 +393,6 @@ class AMM {
       notional: _notional,
       isMint: true,
     };
-
-    // check if the vamm is unlocked
-
-    if (!this.initialized) {
-
-      // need the signer object to initialize the vamm
-      if (!this.signer) {
-        return;
-      }
-
-      const vammContract = vammFactory.connect(this.id, this.signer);
-
-      // todo: add logic to initialize at a more reasonable price
-      await vammContract.initializeVAMM(TickMath.getSqrtRatioAtTick(0).toString());
-    }
     
     let marginRequirement = BigNumber.from("0");
       await peripheryContract.callStatic.mintOrBurn(mintOrBurnParams)
