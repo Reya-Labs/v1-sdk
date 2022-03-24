@@ -196,9 +196,6 @@ class AMM {
       }
     }
 
-    // todo: this might not work for decimal numbers
-
-
     const _notionalFraction = Price.fromNumber(notional);
     const _notionalTA = TokenAmount.fromFractionalAmount(this.underlyingToken, _notionalFraction.numerator, _notionalFraction.denominator);
     const _notional = _notionalTA.scale()
