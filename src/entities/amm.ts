@@ -1,6 +1,7 @@
 import JSBI from 'jsbi';
 import { DateTime } from 'luxon';
 import { BigNumber, BigNumberish, ContractTransaction, Signer, utils } from 'ethers';
+import isNull from 'lodash/isNull';
 
 import { BigIntish, SwapPeripheryParams, MintOrBurnParams } from '../types';
 import { Q192, PERIPHERY_ADDRESS, FACTORY_ADDRESS, MIN_TICK, MAX_TICK } from '../constants';
@@ -20,6 +21,7 @@ import { TickMath } from '../utils/tickMath';
 import timestampWadToDateTime from '../utils/timestampWadToDateTime';
 import { fixedRateToClosestTick, tickToFixedRate } from '../utils/priceTickConversions';
 import { nearestUsableTick } from '../utils/nearestUsableTick';
+import extractErrorMessage from '../utils/extractErrorMessage';
 import { providers } from 'ethers';
 import { TokenAmount } from './fractions/tokenAmount';
 
@@ -418,7 +420,12 @@ class AMM {
             marginRequirement = BigNumber.from(result);
           },
           (error) => {
-            
+            const message = extractErrorMessage(error);
+
+            if (isNull(message)) {
+              throw new
+            }
+
             if (error.message && error.message.toString().includes("MarginLessThanMinimum")) {
               const args: string[] = error.message.toString().split("MarginLessThanMinimum")[1]
                 .split("(")[1]
@@ -630,20 +637,11 @@ class AMM {
       tickUpper,
     };
 
-    
-    await peripheryContract.callStatic.swap(swapPeripheryParams).then((_) => {}, 
-    (error) => {
-      let message: string;
-      if (error.message) { 
-        message = error.message.toString();
-      }
-      else {
-        if (error.data && error.data.message) {
-          message = error.data.message.toString();
-        }
-        else {
-          throw new Error("The failure reason cannot be decoded");
-        }
+    await peripheryContract.callStatic.swap(swapPeripheryParams).catch((error) => {
+      const message = extractErrorMessage(error);
+
+      if (isNull(message)) {
+        throw new Error("The failure reason cannot be decoded");
       }
 
       if (message.includes("closeToOrBeyondMaturity")) {
@@ -675,10 +673,9 @@ class AMM {
       }
     });
 
-    await peripheryContract.swap(swapPeripheryParams).then((_) => {}, 
-    (error) => {
+    await peripheryContract.swap(swapPeripheryParams).catch((error) => {
       let message: string;
-      if (error.message) { 
+      if (error.message) {
         message = error.message.toString();
       }
       else {
