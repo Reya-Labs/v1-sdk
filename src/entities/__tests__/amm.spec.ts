@@ -157,7 +157,7 @@ describe('amm', () => {
         fixedLow: fixedLowMinter,
         fixedHigh: fixedHighMinter,
         margin: mint_req + 10,
-        notional: 100000,
+        notional: 100000
       });
       console.log("mint done");
 

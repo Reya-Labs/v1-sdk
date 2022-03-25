@@ -181,7 +181,6 @@ class AMM {
     }
 
     const signerAddress = await this.signer.getAddress();
-    await this.approvePeriphery();
 
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
@@ -413,7 +412,7 @@ class AMM {
             const message = extractErrorMessage(error);
 
             if (isNull(message)) {
-              throw new
+              throw new Error("Unknown error has occured");
             }
 
             if (error.message && error.message.toString().includes("MarginLessThanMinimum")) {
