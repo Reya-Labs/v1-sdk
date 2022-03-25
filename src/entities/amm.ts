@@ -3,7 +3,7 @@ import { DateTime } from 'luxon';
 import { BigNumber, BigNumberish, ContractTransaction, Signer, utils } from 'ethers';
 
 import { BigIntish, SwapPeripheryParams, MintOrBurnParams } from '../types';
-import { Q192, PERIPHERY_ADDRESS, FACTORY_ADDRESS } from '../constants';
+import { Q192, PERIPHERY_ADDRESS, FACTORY_ADDRESS, MIN_TICK, MAX_TICK } from '../constants';
 import { Price } from './fractions/price';
 import {
   Periphery__factory as peripheryFactory,
@@ -182,6 +182,7 @@ class AMM {
     }
 
     const signerAddress = await this.signer.getAddress();
+    await this.approvePeriphery();
 
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
@@ -227,8 +228,8 @@ class AMM {
         tickAfter = parseInt(result[5]);
       },
       (error) => {
-        if (error.data.message.includes('MarginRequirementNotMet')) {
-          const args: string[] = error.data.message.split("MarginRequirementNotMet")[1]
+        if (error.message && error.message.toString().includes('MarginRequirementNotMet')) {
+          const args: string[] = error.message.toString().split("MarginRequirementNotMet")[1]
             .split('(')[1]
             .split(')')[0]
             .replaceAll(' ', '')
@@ -236,8 +237,21 @@ class AMM {
 
           marginRequirement = BigNumber.from(args[0]);
           tickAfter = parseInt(args[1]);
-          fee = BigNumber.from(args[3]);
-          availableNotional = BigNumber.from(args[4]);
+          fee = BigNumber.from(args[4]);
+          availableNotional = BigNumber.from(args[3]);
+        }
+
+        if (error.data && error.data.message && error.data.message.toString().includes('MarginRequirementNotMet')) {
+          const args: string[] = error.data.message.toString().split("MarginRequirementNotMet")[1]
+            .split('(')[1]
+            .split(')')[0]
+            .replaceAll(' ', '')
+            .split(',');
+
+          marginRequirement = BigNumber.from(args[0]);
+          tickAfter = parseInt(args[1]);
+          fee = BigNumber.from(args[4]);
+          availableNotional = BigNumber.from(args[3]);
         }
       },
     );
@@ -365,6 +379,8 @@ class AMM {
       return;
     }
 
+    await this.approvePeriphery();
+
     if (!this.initialized) {
       if (!this.signer) {
         return;
@@ -402,8 +418,19 @@ class AMM {
             marginRequirement = BigNumber.from(result);
           },
           (error) => {
-            if (error.data.message.includes("MarginLessThanMinimum")) {
-              const args: string[] = error.data.message.split("MarginLessThanMinimum")[1]
+            
+            if (error.message && error.message.toString().includes("MarginLessThanMinimum")) {
+              const args: string[] = error.message.toString().split("MarginLessThanMinimum")[1]
+                .split("(")[1]
+                .split(")")[0]
+                .replaceAll(" ", "")
+                .split(",");
+
+              marginRequirement = BigNumber.from(args[0]);
+            }
+
+            if (error.data && error.data.message && error.data.message.toString().includes("MarginLessThanMinimum")) {
+              const args: string[] = error.data.message.toString().split("MarginLessThanMinimum")[1]
                 .split("(")[1]
                 .split(")")[0]
                 .replaceAll(" ", "")
@@ -451,6 +478,8 @@ class AMM {
     const _notionalFraction = Price.fromNumber(notional);
     const _notionalTA = TokenAmount.fromFractionalAmount(this.underlyingToken, _notionalFraction.numerator, _notionalFraction.denominator);
     const _notional = _notionalTA.scale()
+
+    console.log(_notional);
 
     const mintOrBurnParams: MintOrBurnParams = {
       marginEngine: this.marginEngineAddress,
@@ -545,7 +574,7 @@ class AMM {
     fixedRateLimit,
     fixedLow,
     fixedHigh,
-  }: AMMSwapArgs): Promise<ContractTransaction | void> {
+  }: AMMSwapArgs): Promise<void> {
     if (!this.signer) {
       return;
     }
@@ -568,10 +597,25 @@ class AMM {
       }
     }
 
+    if (tickLower >= tickUpper) {
+      throw new Error("Lower Fixed Rate must be smaller than Upper Fixed Rate!");
+    }
+
+    if (tickLower < MIN_TICK) {
+      throw new Error("Lower Fixed Rate is too low!");
+    }
+
+    if (tickUpper > MAX_TICK) {
+      throw new Error("Upper Fixed Rate is too high!");
+    }
+
+    if (notional <= 0) {
+      throw new Error("Amount of notional must be greater than 0!");
+    }
+
     await this.approvePeriphery();
 
     const peripheryContract = peripheryFactory.connect(PERIPHERY_ADDRESS, this.signer);
-
 
     const _notionalFraction = Price.fromNumber(notional);
     const _notionalTA = TokenAmount.fromFractionalAmount(this.underlyingToken, _notionalFraction.numerator, _notionalFraction.denominator);
@@ -586,7 +630,96 @@ class AMM {
       tickUpper,
     };
 
-    return peripheryContract.swap(swapPeripheryParams);
+    
+    await peripheryContract.callStatic.swap(swapPeripheryParams).then((_) => {}, 
+    (error) => {
+      let message: string;
+      if (error.message) { 
+        message = error.message.toString();
+      }
+      else {
+        if (error.data && error.data.message) {
+          message = error.data.message.toString();
+        }
+        else {
+          throw new Error("The failure reason cannot be decoded");
+        }
+      }
+
+      if (message.includes("closeToOrBeyondMaturity")) {
+        throw new Error("The pool is close to or beyond maturity");
+      }
+
+      if (message.includes("LOK")) {
+        throw new Error("The pool has not been initialized yet");
+      }
+
+      if (message.includes("SPL")) {
+        throw new Error("No notional available in that direction");
+      }
+
+      if (message.includes("only sender or approved integration")) {
+        throw new Error("No approval to act on this address behalf");
+      }
+
+      if (message.includes("E<=S")) {
+        throw new Error("Internal error: The timestamps of the pool are not correct");
+      }
+
+      if (message.includes("B.T<S")) {
+        throw new Error("Internal error: Operations need current timestamp to be before maturity");
+      }
+
+      if (message.includes("MarginRequirementNotMet")) {
+        throw new Error("Margin Requirement Not Met");
+      }
+    });
+
+    await peripheryContract.swap(swapPeripheryParams).then((_) => {}, 
+    (error) => {
+      let message: string;
+      if (error.message) { 
+        message = error.message.toString();
+      }
+      else {
+        if (error.data && error.data.message) {
+          message = error.data.message.toString();
+        }
+        else {
+          throw new Error("The failure reason cannot be decoded");
+        }
+      }
+
+      if (message.includes("closeToOrBeyondMaturity")) {
+        throw new Error("The pool is close to or beyond maturity");
+      }
+
+      if (message.includes("LOK")) {
+        throw new Error("The pool has not been initialized yet");
+      }
+
+      if (message.includes("SPL")) {
+        throw new Error("No notional available in that direction");
+      }
+
+      if (message.includes("only sender or approved integration")) {
+        throw new Error("No approval to act on this address behalf");
+      }
+
+      if (message.includes("E<=S")) {
+        throw new Error("Internal error: The timestamps of the pool are not correct");
+      }
+
+      if (message.includes("B.T<S")) {
+        throw new Error("Internal error: Operations need current timestamp to be before maturity");
+      }
+
+      if (message.includes("MarginRequirementNotMet")) {
+        throw new Error("Margin Requirement Not Met");
+      }
+    });
+
+    return;
   }
 
   public async FCMSwap({
