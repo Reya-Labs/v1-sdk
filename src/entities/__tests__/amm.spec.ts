@@ -145,14 +145,6 @@ describe('amm', () => {
         }
       );
 
-      const _notionalFraction = Price.fromNumber(100000.5);
-      const _notionalTA = TokenAmount.fromFractionalAmount(underlyingToken, _notionalFraction.numerator, _notionalFraction.denominator);
-      console.log("_notionalTA", JSBI.toNumber(_notionalTA.numerator), JSBI.toNumber(_notionalTA.denominator));
-
-      const _notional = _notionalTA.scale()
-      
-      console.log(_notional.toString());
-
       await amm_wallet.mint({
         fixedLow: fixedLowMinter,
         fixedHigh: fixedHighMinter,
