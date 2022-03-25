@@ -13,7 +13,7 @@ import {
   VAMM__factory as vammFactory,
   // todo: not very elegant to use the mock as a factory
   ERC20Mock__factory as tokenFactory,
-  AaveFCM__factory as fcmFactory
+  AaveFCM__factory as fcmFactory,
 } from '../typechain';
 import Token from './token';
 import RateOracle from './rateOracle';
@@ -21,7 +21,7 @@ import { TickMath } from '../utils/tickMath';
 import timestampWadToDateTime from '../utils/timestampWadToDateTime';
 import { fixedRateToClosestTick, tickToFixedRate } from '../utils/priceTickConversions';
 import { nearestUsableTick } from '../utils/nearestUsableTick';
-import extractErrorMessage from '../utils/extractErrorMessage';
+import { extractErrorMessage, getSwapError } from '../utils/extractErrorMessage';
 import { providers } from 'ethers';
 import { TokenAmount } from './fractions/tokenAmount';
 
@@ -45,7 +45,6 @@ export type AMMConstructorArgs = {
 };
 
 export type AMMGetInfoPostSwapArgs = {
-  recipient: string;
   isFT: boolean;
   notional: number;
   fixedRateLimit?: number;
@@ -64,7 +63,7 @@ export type AMMLiquidatePositionArgs = {
   owner: string;
   fixedLow: number;
   fixedHigh: number;
-}
+};
 
 export type AMMSettlePositionArgs = {
   owner: string;
@@ -73,7 +72,6 @@ export type AMMSettlePositionArgs = {
 };
 
 export type AMMSwapArgs = {
-  recipient: string;
   isFT: boolean;
   notional: number;
   margin: number;
@@ -85,15 +83,14 @@ export type AMMSwapArgs = {
 export type FCMSwapArgs = {
   notional: number;
   fixedRateLimit?: number;
-}
+};
 
 export type FCMUnwindArgs = {
   notionalToUnwind: number;
   fixedRateLimit?: number;
-}
+};
 
 export type AMMMintArgs = {
-  recipient: string;
   fixedLow: number;
   fixedHigh: number;
   notional: number;
@@ -107,7 +104,7 @@ export type InfoPostSwap = {
   availableNotional: number;
   fee: number;
   slippage: number;
-}
+};
 
 export type AMMBurnArgs = Omit<AMMMintArgs, 'margin'>;
 
@@ -178,7 +175,7 @@ class AMM {
     fixedRateLimit,
     fixedLow,
     fixedHigh,
-  }: AMMGetInfoPostSwapArgs) : Promise<InfoPostSwap | void> {
+  }: AMMGetInfoPostSwapArgs): Promise<InfoPostSwap | void> {
     if (!this.signer) {
       return;
     }
@@ -193,18 +190,21 @@ class AMM {
     if (fixedRateLimit) {
       const { closestUsableTick: tickLimit } = this.closestTickAndFixedRate(fixedRateLimit);
       sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(tickLimit).toString();
-    }
-    else {
+    } else {
       if (isFT) {
-        sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MAX_TICK - 1).toString()
+        sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MAX_TICK - 1).toString();
       } else {
-        sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MIN_TICK + 1).toString()
+        sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MIN_TICK + 1).toString();
       }
     }
 
     const _notionalFraction = Price.fromNumber(notional);
-    const _notionalTA = TokenAmount.fromFractionalAmount(this.underlyingToken, _notionalFraction.numerator, _notionalFraction.denominator);
-    const _notional = _notionalTA.scale()
+    const _notionalTA = TokenAmount.fromFractionalAmount(
+      this.underlyingToken,
+      _notionalFraction.numerator,
+      _notionalFraction.denominator,
+    );
+    const _notional = _notionalTA.scale();
 
     const peripheryContract = peripheryFactory.connect(PERIPHERY_ADDRESS, this.signer);
     const swapPeripheryParams: SwapPeripheryParams = {
@@ -230,21 +230,15 @@ class AMM {
         tickAfter = parseInt(result[5]);
       },
       (error) => {
-        if (error.message && error.message.toString().includes('MarginRequirementNotMet')) {
-          const args: string[] = error.message.toString().split("MarginRequirementNotMet")[1]
-            .split('(')[1]
-            .split(')')[0]
-            .replaceAll(' ', '')
-            .split(',');
+        const message = extractErrorMessage(error);
 
-          marginRequirement = BigNumber.from(args[0]);
-          tickAfter = parseInt(args[1]);
-          fee = BigNumber.from(args[4]);
-          availableNotional = BigNumber.from(args[3]);
+        if (isNull(message)) {
+          throw new Error('Cannot decode additional margin amount');
         }
 
-        if (error.data && error.data.message && error.data.message.toString().includes('MarginRequirementNotMet')) {
-          const args: string[] = error.data.message.toString().split("MarginRequirementNotMet")[1]
+        if (message.includes('MarginRequirementNotMet')) {
+          const args: string[] = message
+            .split('MarginRequirementNotMet')[1]
             .split('(')[1]
             .split(')')[0]
             .replaceAll(' ', '')
@@ -265,22 +259,31 @@ class AMM {
     const fixedRateDeltaRaw = fixedRateDelta.toNumber();
 
     const marginEngineContract = marginEngineFactory.connect(this.marginEngineAddress, this.signer);
-    const currentMargin = (await marginEngineContract.callStatic.getPosition(signerAddress, tickLower, tickUpper)).margin;
+    const currentMargin = (
+      await marginEngineContract.callStatic.getPosition(signerAddress, tickLower, tickUpper)
+    ).margin;
 
     const scaledCurrentMargin = parseFloat(utils.formatEther(currentMargin));
     const scaledMarginRequirement = parseFloat(utils.formatEther(marginRequirement));
 
-    const additionalMargin = (scaledMarginRequirement > scaledCurrentMargin) ? scaledMarginRequirement - scaledCurrentMargin : 0;
+    const additionalMargin =
+      scaledMarginRequirement > scaledCurrentMargin
+        ? scaledMarginRequirement - scaledCurrentMargin
+        : 0;
 
     return {
       marginRequirement: additionalMargin,
       availableNotional: parseFloat(utils.formatEther(availableNotional)),
       fee: parseFloat(utils.formatEther(fee)),
       slippage: fixedRateDeltaRaw,
-    }
+    };
   }
 
-  public async settlePosition({ owner, fixedLow, fixedHigh }: AMMSettlePositionArgs) : Promise<ContractTransaction | void>  {
+  public async settlePosition({
+    owner,
+    fixedLow,
+    fixedHigh,
+  }: AMMSettlePositionArgs): Promise<ContractTransaction | void> {
     if (!this.signer) {
       return;
     }
@@ -302,7 +305,7 @@ class AMM {
     fixedLow,
     fixedHigh,
     marginDelta,
-  }: AMMUpdatePositionMarginArgs) : Promise<ContractTransaction | void>  {
+  }: AMMUpdatePositionMarginArgs): Promise<ContractTransaction | void> {
     if (!this.signer) {
       return;
     }
@@ -315,8 +318,12 @@ class AMM {
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
     const _marginDeltaFraction = Price.fromNumber(marginDelta);
-    const _marginDeltaTA = TokenAmount.fromFractionalAmount(this.underlyingToken, _marginDeltaFraction.numerator, _marginDeltaFraction.denominator);
-    const _marginDelta = _marginDeltaTA.scale()
+    const _marginDeltaTA = TokenAmount.fromFractionalAmount(
+      this.underlyingToken,
+      _marginDeltaFraction.numerator,
+      _marginDeltaFraction.denominator,
+    );
+    const _marginDelta = _marginDeltaTA.scale();
 
     await this.approveMarginEngine(_marginDelta);
 
@@ -325,7 +332,7 @@ class AMM {
       owner,
       tickLower,
       tickUpper,
-      _marginDelta
+      _marginDelta,
     );
 
     return updatePositionMarginReceipt;
@@ -335,7 +342,7 @@ class AMM {
     owner,
     fixedLow,
     fixedHigh,
-  }: AMMLiquidatePositionArgs) : Promise<ContractTransaction | void>  {
+  }: AMMLiquidatePositionArgs): Promise<ContractTransaction | void> {
     if (!this.signer) {
       return;
     }
@@ -344,11 +351,7 @@ class AMM {
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
     const marginEngineContract = marginEngineFactory.connect(this.marginEngineAddress, this.signer);
-    const receipt = await marginEngineContract.liquidatePosition(
-      owner,
-      tickLower,
-      tickUpper
-    );
+    const receipt = await marginEngineContract.liquidatePosition(owner, tickLower, tickUpper);
 
     return receipt;
   }
@@ -357,7 +360,7 @@ class AMM {
     owner,
     fixedLow,
     fixedHigh,
-  }: AMMLiquidatePositionArgs) : Promise<number | void>  {
+  }: AMMLiquidatePositionArgs): Promise<number | void> {
     if (!this.signer) {
       return;
     }
@@ -370,13 +373,17 @@ class AMM {
       owner,
       tickLower,
       tickUpper,
-      false
+      false,
     );
 
     return parseFloat(utils.formatEther(threshold));
   }
 
-  public async getMinimumMarginRequirementPostMint({ fixedLow, fixedHigh, notional }: AMMGetMinimumMarginRequirementPostMintArgs): Promise<number | void> {
+  public async getMinimumMarginRequirementPostMint({
+    fixedLow,
+    fixedHigh,
+    notional,
+  }: AMMGetMinimumMarginRequirementPostMintArgs): Promise<number | void> {
     if (!this.signer) {
       return;
     }
@@ -402,8 +409,12 @@ class AMM {
     const peripheryContract = peripheryFactory.connect(PERIPHERY_ADDRESS, this.signer);
 
     const _notionalFraction = Price.fromNumber(notional);
-    const _notionalTA = TokenAmount.fromFractionalAmount(this.underlyingToken, _notionalFraction.numerator, _notionalFraction.denominator);
-    const _notional = _notionalTA.scale()
+    const _notionalTA = TokenAmount.fromFractionalAmount(
+      this.underlyingToken,
+      _notionalFraction.numerator,
+      _notionalFraction.denominator,
+    );
+    const _notional = _notionalTA.scale();
 
     const mintOrBurnParams: MintOrBurnParams = {
       marginEngine: this.marginEngineAddress,
@@ -413,56 +424,52 @@ class AMM {
       isMint: true,
     };
 
-    let marginRequirement = BigNumber.from("0");
-      await peripheryContract.callStatic.mintOrBurn(mintOrBurnParams)
-        .then(
-          (result) => {
-            marginRequirement = BigNumber.from(result);
-          },
-          (error) => {
-            const message = extractErrorMessage(error);
+    let marginRequirement = BigNumber.from('0');
+    await peripheryContract.callStatic.mintOrBurn(mintOrBurnParams).then(
+      (result) => {
+        marginRequirement = BigNumber.from(result);
+      },
+      (error) => {
+        const message = extractErrorMessage(error);
 
-            if (isNull(message)) {
-              throw new
-            }
+        if (isNull(message)) {
+          throw new Error('Cannot decode additional margin amount');
+        }
 
-            if (error.message && error.message.toString().includes("MarginLessThanMinimum")) {
-              const args: string[] = error.message.toString().split("MarginLessThanMinimum")[1]
-                .split("(")[1]
-                .split(")")[0]
-                .replaceAll(" ", "")
-                .split(",");
+        if (message.includes('MarginLessThanMinimum')) {
+          const args: string[] = message
+            .split('MarginLessThanMinimum')[1]
+            .split('(')[1]
+            .split(')')[0]
+            .replaceAll(' ', '')
+            .split(',');
 
-              marginRequirement = BigNumber.from(args[0]);
-            }
-
-            if (error.data && error.data.message && error.data.message.toString().includes("MarginLessThanMinimum")) {
-              const args: string[] = error.data.message.toString().split("MarginLessThanMinimum")[1]
-                .split("(")[1]
-                .split(")")[0]
-                .replaceAll(" ", "")
-                .split(",");
-
-              marginRequirement = BigNumber.from(args[0]);
-            }
-          }
-        );
+          marginRequirement = BigNumber.from(args[0]);
+        }
+      },
+    );
 
     const marginEngineContract = marginEngineFactory.connect(this.marginEngineAddress, this.signer);
-    const currentMargin = (await marginEngineContract.callStatic.getPosition(signerAddress, tickLower, tickUpper)).margin;
+    const currentMargin = (
+      await marginEngineContract.callStatic.getPosition(signerAddress, tickLower, tickUpper)
+    ).margin;
 
     const scaledCurrentMargin = parseFloat(utils.formatEther(currentMargin));
     const scaledMarginRequirement = parseFloat(utils.formatEther(marginRequirement));
 
     if (scaledMarginRequirement > scaledCurrentMargin) {
       return scaledMarginRequirement - scaledCurrentMargin;
-    }
-    else {
+    } else {
       return 0;
     }
   }
 
-  public async mint({ recipient, fixedLow, fixedHigh, notional, margin }: AMMMintArgs): Promise<ContractTransaction | void> {
+  public async mint({
+    fixedLow,
+    fixedHigh,
+    notional,
+    margin,
+  }: AMMMintArgs): Promise<ContractTransaction | void> {
     if (!this.signer) {
       return;
     }
@@ -473,7 +480,9 @@ class AMM {
       await vammContract.initializeVAMM(TickMath.getSqrtRatioAtTick(0).toString());
     }
 
-    await this.updatePositionMargin({ owner: recipient, fixedLow, fixedHigh, marginDelta: margin });
+    const signerAddress = await this.signer.getAddress();
+
+    await this.updatePositionMargin({ owner: signerAddress, fixedLow, fixedHigh, marginDelta: margin });
 
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
@@ -483,8 +492,12 @@ class AMM {
     const peripheryContract = peripheryFactory.connect(PERIPHERY_ADDRESS, this.signer);
 
     const _notionalFraction = Price.fromNumber(notional);
-    const _notionalTA = TokenAmount.fromFractionalAmount(this.underlyingToken, _notionalFraction.numerator, _notionalFraction.denominator);
-    const _notional = _notionalTA.scale()
+    const _notionalTA = TokenAmount.fromFractionalAmount(
+      this.underlyingToken,
+      _notionalFraction.numerator,
+      _notionalFraction.denominator,
+    );
+    const _notional = _notionalTA.scale();
 
     console.log(_notional);
 
@@ -499,7 +512,11 @@ class AMM {
     return peripheryContract.mintOrBurn(mintOrBurnParams);
   }
 
-  public async burn({ fixedLow, fixedHigh, notional }: AMMBurnArgs): Promise<ContractTransaction | void> {
+  public async burn({
+    fixedLow,
+    fixedHigh,
+    notional,
+  }: AMMBurnArgs): Promise<ContractTransaction | void> {
     if (!this.signer) {
       return;
     }
@@ -512,8 +529,12 @@ class AMM {
     const peripheryContract = peripheryFactory.connect(PERIPHERY_ADDRESS, this.signer);
 
     const _notionalFraction = Price.fromNumber(notional);
-    const _notionalTA = TokenAmount.fromFractionalAmount(this.underlyingToken, _notionalFraction.numerator, _notionalFraction.denominator);
-    const _notional = _notionalTA.scale()
+    const _notionalTA = TokenAmount.fromFractionalAmount(
+      this.underlyingToken,
+      _notionalFraction.numerator,
+      _notionalFraction.denominator,
+    );
+    const _notional = _notionalTA.scale();
 
     const mintOrBurnParams: MintOrBurnParams = {
       marginEngine: this.marginEngineAddress,
@@ -523,7 +544,8 @@ class AMM {
       isMint: false,
     };
 
-    return peripheryContract.mintOrBurn(mintOrBurnParams);
+    await peripheryContract.mintOrBurn(mintOrBurnParams);
+    return;
   }
 
   public async approvePeriphery(): Promise<ContractTransaction | void> {
@@ -554,12 +576,9 @@ class AMM {
     } else {
       return;
     }
-
   }
 
-  public async approveMarginEngine(
-    marginDelta: BigNumberish
-  ) {
+  public async approveMarginEngine(marginDelta: BigNumberish) {
     if (!this.signer) {
       return;
     }
@@ -574,7 +593,6 @@ class AMM {
   }
 
   public async swap({
-    recipient,
     isFT,
     notional,
     margin,
@@ -586,7 +604,9 @@ class AMM {
       return;
     }
 
-    await this.updatePositionMargin({ owner: recipient, fixedLow, fixedHigh, marginDelta: margin });
+    const signerAddress = await this.signer.getAddress();
+
+    await this.updatePositionMargin({ owner: signerAddress, fixedLow, fixedHigh, marginDelta: margin });
 
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
@@ -595,8 +615,7 @@ class AMM {
     if (fixedRateLimit) {
       const { closestUsableTick: tickLimit } = this.closestTickAndFixedRate(fixedRateLimit);
       sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(tickLimit).toString();
-    }
-    else {
+    } else {
       if (isFT) {
         sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MAX_TICK - 1).toString();
       } else {
@@ -605,19 +624,19 @@ class AMM {
     }
 
     if (tickLower >= tickUpper) {
-      throw new Error("Lower Fixed Rate must be smaller than Upper Fixed Rate!");
+      throw new Error('Lower Fixed Rate must be smaller than Upper Fixed Rate!');
     }
 
     if (tickLower < MIN_TICK) {
-      throw new Error("Lower Fixed Rate is too low!");
+      throw new Error('Lower Fixed Rate is too low!');
     }
 
     if (tickUpper > MAX_TICK) {
-      throw new Error("Upper Fixed Rate is too high!");
+      throw new Error('Upper Fixed Rate is too high!');
     }
 
     if (notional <= 0) {
-      throw new Error("Amount of notional must be greater than 0!");
+      throw new Error('Amount of notional must be greater than 0!');
     }
 
     await this.approvePeriphery();
@@ -625,8 +644,12 @@ class AMM {
     const peripheryContract = peripheryFactory.connect(PERIPHERY_ADDRESS, this.signer);
 
     const _notionalFraction = Price.fromNumber(notional);
-    const _notionalTA = TokenAmount.fromFractionalAmount(this.underlyingToken, _notionalFraction.numerator, _notionalFraction.denominator);
-    const _notional = _notionalTA.scale()
+    const _notionalTA = TokenAmount.fromFractionalAmount(
+      this.underlyingToken,
+      _notionalFraction.numerator,
+      _notionalFraction.denominator,
+    );
+    const _notional = _notionalTA.scale();
 
     const swapPeripheryParams: SwapPeripheryParams = {
       marginEngine: this.marginEngineAddress,
@@ -641,79 +664,20 @@ class AMM {
       const message = extractErrorMessage(error);
 
       if (isNull(message)) {
-        throw new Error("The failure reason cannot be decoded");
+        throw new Error('The failure reason cannot be decoded');
       }
 
-      if (message.includes("closeToOrBeyondMaturity")) {
-        throw new Error("The pool is close to or beyond maturity");
-      }
-
-      if (message.includes("LOK")) {
-        throw new Error("The pool has not been initialized yet");
-      }
-
-      if (message.includes("SPL")) {
-        throw new Error("No notional available in that direction");
-      }
-
-      if (message.includes("only sender or approved integration")) {
-        throw new Error("No approval to act on this address behalf");
-      }
-
-      if (message.includes("E<=S")) {
-        throw new Error("Internal error: The timestamps of the pool are not correct");
-      }
-
-      if (message.includes("B.T<S")) {
-        throw new Error("Internal error: Operations need current timestamp to be before maturity");
-      }
-
-      if (message.includes("MarginRequirementNotMet")) {
-        throw new Error("Margin Requirement Not Met");
-      }
+      throw new Error(getSwapError(message));
     });
 
     await peripheryContract.swap(swapPeripheryParams).catch((error) => {
-      let message: string;
-      if (error.message) {
-        message = error.message.toString();
-      }
-      else {
-        if (error.data && error.data.message) {
-          message = error.data.message.toString();
-        }
-        else {
-          throw new Error("The failure reason cannot be decoded");
-        }
+      const message = extractErrorMessage(error);
+
+      if (isNull(message)) {
+        throw new Error('The failure reason cannot be decoded');
       }
 
-      if (message.includes("closeToOrBeyondMaturity")) {
-        throw new Error("The pool is close to or beyond maturity");
-      }
-
-      if (message.includes("LOK")) {
-        throw new Error("The pool has not been initialized yet");
-      }
-
-      if (message.includes("SPL")) {
-        throw new Error("No notional available in that direction");
-      }
-
-      if (message.includes("only sender or approved integration")) {
-        throw new Error("No approval to act on this address behalf");
-      }
-
-      if (message.includes("E<=S")) {
-        throw new Error("Internal error: The timestamps of the pool are not correct");
-      }
-
-      if (message.includes("B.T<S")) {
-        throw new Error("Internal error: Operations need current timestamp to be before maturity");
-      }
-
-      if (message.includes("MarginRequirementNotMet")) {
-        throw new Error("Margin Requirement Not Met");
-      }
+      throw new Error(getSwapError(message));
     });
 
     return;
@@ -721,7 +685,7 @@ class AMM {
 
   public async FCMSwap({
     notional,
-    fixedRateLimit
+    fixedRateLimit,
   }: FCMSwapArgs): Promise<ContractTransaction | void> {
     if (!this.signer) {
       return;
@@ -733,23 +697,26 @@ class AMM {
     if (fixedRateLimit) {
       const { closestUsableTick: tickLimit } = this.closestTickAndFixedRate(fixedRateLimit);
       sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(tickLimit).toString();
-    }
-    else {
-      sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MAX_TICK - 1).toString()
+    } else {
+      sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MAX_TICK - 1).toString();
     }
 
     const fcmContract = fcmFactory.connect(this.fcmAddress, this.signer);
 
     const _notionalFraction = Price.fromNumber(notional);
-    const _notionalTA = TokenAmount.fromFractionalAmount(this.underlyingToken, _notionalFraction.numerator, _notionalFraction.denominator);
-    const _notional = _notionalTA.scale()
+    const _notionalTA = TokenAmount.fromFractionalAmount(
+      this.underlyingToken,
+      _notionalFraction.numerator,
+      _notionalFraction.denominator,
+    );
+    const _notional = _notionalTA.scale();
 
     return fcmContract.initiateFullyCollateralisedFixedTakerSwap(_notional, sqrtPriceLimitX96);
   }
 
   public async FCMUnwind({
     notionalToUnwind,
-    fixedRateLimit
+    fixedRateLimit,
   }: FCMUnwindArgs): Promise<ContractTransaction | void> {
     if (!this.signer) {
       return;
@@ -759,9 +726,8 @@ class AMM {
     if (fixedRateLimit) {
       const { closestUsableTick: tickLimit } = this.closestTickAndFixedRate(fixedRateLimit);
       sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(tickLimit).toString();
-    }
-    else {
-      sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MIN_TICK + 1).toString()
+    } else {
+      sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MIN_TICK + 1).toString();
     }
 
     await this.approveFCM();
@@ -769,13 +735,17 @@ class AMM {
     const fcmContract = fcmFactory.connect(this.fcmAddress, this.signer);
 
     const _notionalFraction = Price.fromNumber(notionalToUnwind);
-    const _notionalTA = TokenAmount.fromFractionalAmount(this.underlyingToken, _notionalFraction.numerator, _notionalFraction.denominator);
-    const _notional = _notionalTA.scale()
+    const _notionalTA = TokenAmount.fromFractionalAmount(
+      this.underlyingToken,
+      _notionalFraction.numerator,
+      _notionalFraction.denominator,
+    );
+    const _notional = _notionalTA.scale();
 
     return fcmContract.unwindFullyCollateralisedFixedTakerSwap(_notional, sqrtPriceLimitX96);
   }
 
-  public async settleFCMTrader() : Promise<ContractTransaction | void>  {
+  public async settleFCMTrader(): Promise<ContractTransaction | void> {
     if (!this.signer) {
       return;
     }
@@ -826,7 +796,10 @@ class AMM {
       return;
     }
 
-    const marginEngineContract = marginEngineFactory.connect(this.marginEngineAddress, this.provider);
+    const marginEngineContract = marginEngineFactory.connect(
+      this.marginEngineAddress,
+      this.provider,
+    );
     const historicalApy = await marginEngineContract.callStatic.getHistoricalApy();
     return parseFloat(utils.formatEther(historicalApy));
   }
