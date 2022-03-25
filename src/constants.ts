@@ -26,10 +26,19 @@ export const Q96 = JSBI.exponentiate(JSBI.BigInt(2), JSBI.BigInt(96));
 export const Q192 = JSBI.exponentiate(Q96, JSBI.BigInt(2));
 
 // exports for external consumption
-export type BigintIsh = JSBI | string | number
+export type BigintIsh = JSBI | string | number;
 
 export enum Rounding {
   ROUND_DOWN,
   ROUND_HALF_UP,
-  ROUND_UP
+  ROUND_UP,
 }
+
+/**
+ * The minimum tick that can be used on any pool.
+ */
+export const MIN_TICK = -69100;
+/**
+ * The maximum tick that can be used on any pool.
+ */
+export const MAX_TICK = 69100;
