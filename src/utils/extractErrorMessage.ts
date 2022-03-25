@@ -7,12 +7,12 @@ export const extractErrorMessage = (error: any): string | null => {
     return null;
   }
 
-  if (error.message) {
-    return error.message.toString();
+  if (error.data.message) {
+    return error.data.message.toString();
   }
 
-  if (error.message.data) {
-    return error.message.data.toString();
+  if (error.message) {
+    return error.message.toString();
   }
 
   return null;
