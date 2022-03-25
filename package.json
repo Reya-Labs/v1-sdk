@@ -20,7 +20,8 @@
     "eslint:fix": "eslint --fix 'src/**/*.ts'",
     "test": "jest",
     "test:watch": "jest --watch",
-    "release": "semantic-release"
+    "release": "semantic-release",
+    "irs-setup": "jest src/entities/__tests__/setup.spec.ts"
   },
   "devDependencies": {
     "@commitlint/cli": "^13.1.0",
