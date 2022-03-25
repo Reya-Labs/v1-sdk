@@ -89,7 +89,6 @@ export type FCMUnwindArgs = {
 }
 
 export type AMMMintArgs = {
-  recipient: string;
   fixedLow: number;
   fixedHigh: number;
   notional: number;
@@ -223,7 +222,7 @@ class AMM {
         marginRequirement = result[4];
         tickAfter = parseInt(result[5]);
       },
-      (error) => {
+      (error: any) => {
         if (error.data.message.includes('MarginRequirementNotMet')) {
           const args: string[] = error.data.message.split("MarginRequirementNotMet")[1]
             .split('(')[1]
@@ -391,10 +390,10 @@ class AMM {
     let marginRequirement = BigNumber.from("0");
       await peripheryContract.callStatic.mintOrBurn(mintOrBurnParams)
         .then(
-          (result) => {
+          (result: any) => {
             marginRequirement = BigNumber.from(result);
           },
-          (error) => {
+          (error: any) => {
             if (error.data.message.includes("MarginLessThanMinimum")) {
               const args: string[] = error.data.message.split("MarginLessThanMinimum")[1]
                 .split("(")[1]
