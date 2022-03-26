@@ -21,7 +21,7 @@ import { TickMath } from '../utils/tickMath';
 import timestampWadToDateTime from '../utils/timestampWadToDateTime';
 import { fixedRateToClosestTick, tickToFixedRate } from '../utils/priceTickConversions';
 import { nearestUsableTick } from '../utils/nearestUsableTick';
-import { extractErrorMessage, getSwapError } from '../utils/extractErrorMessage';
+import { extractErrorMessage, getError } from '../utils/extractErrorMessage';
 import { providers } from 'ethers';
 import { TokenAmount } from './fractions/tokenAmount';
 
@@ -243,6 +243,9 @@ class AMM {
           fee = BigNumber.from(args[4]);
           availableNotional = BigNumber.from(args[3]);
         }
+        else {
+          throw new Error('Additional margin amount cannot be established');
+        }
       },
     );
 
@@ -426,6 +429,9 @@ class AMM {
 
           marginRequirement = BigNumber.from(args[0]);
         }
+        else {
+          throw new Error('Additional margin amount cannot be established');
+        }
       },
     );
 
@@ -457,13 +463,31 @@ class AMM {
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
+    if (tickLower >= tickUpper) {
+      throw new Error('Lower Fixed Rate must be smaller than Upper Fixed Rate!');
+    }
+
+    if (tickLower < MIN_TICK) {
+      throw new Error('Lower Fixed Rate is too low!');
+    }
+
+    if (tickUpper > MAX_TICK) {
+      throw new Error('Upper Fixed Rate is too high!');
+    }
+
+    if (notional <= 0) {
+      throw new Error('Amount of notional must be greater than 0!');
+    }
+
+    if (margin < 0) {
+      throw new Error('Amount of margin cannot be negative!');
+    }
+
     const peripheryContract = peripheryFactory.connect(PERIPHERY_ADDRESS, this.signer);
     const _notional = this.scale(notional);
     const _marginDelta = this.scale(margin);
 
     await this.approveERC20(_marginDelta, peripheryContract.address);
-
-    console.log(_notional);
 
     const mintOrBurnParams: MintOrBurnParams = {
       marginEngine: this.marginEngineAddress,
@@ -474,7 +498,27 @@ class AMM {
       marginDelta: _marginDelta
     };
 
-    return peripheryContract.mintOrBurn(mintOrBurnParams);
+    await peripheryContract.callStatic.mintOrBurn(mintOrBurnParams).catch((error) => {
+      const message = extractErrorMessage(error);
+
+      if (isNull(message)) {
+        throw new Error('The failure reason cannot be decoded');
+      }
+
+      throw new Error(getError(message));
+    });
+
+    await peripheryContract.mintOrBurn(mintOrBurnParams).catch((error) => {
+      const message = extractErrorMessage(error);
+
+      if (isNull(message)) {
+        throw new Error('The failure reason cannot be decoded');
+      }
+
+      throw new Error(getError(message));
+    });
+
+    return ;
   }
 
   public async burn({
@@ -489,6 +533,22 @@ class AMM {
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
+    if (tickLower >= tickUpper) {
+      throw new Error('Lower Fixed Rate must be smaller than Upper Fixed Rate!');
+    }
+
+    if (tickLower < MIN_TICK) {
+      throw new Error('Lower Fixed Rate is too low!');
+    }
+
+    if (tickUpper > MAX_TICK) {
+      throw new Error('Upper Fixed Rate is too high!');
+    }
+
+    if (notional <= 0) {
+      throw new Error('Amount of notional must be greater than 0!');
+    }
+
     const peripheryContract = peripheryFactory.connect(PERIPHERY_ADDRESS, this.signer);
 
     const _notional = this.scale(notional);
@@ -502,8 +562,27 @@ class AMM {
       marginDelta: "0"
     };
 
-    await peripheryContract.mintOrBurn(mintOrBurnParams);
-    return;
+    await peripheryContract.callStatic.mintOrBurn(mintOrBurnParams).catch((error) => {
+      const message = extractErrorMessage(error);
+
+      if (isNull(message)) {
+        throw new Error('The failure reason cannot be decoded');
+      }
+
+      throw new Error(getError(message));
+    });
+
+    await peripheryContract.mintOrBurn(mintOrBurnParams).catch((error) => {
+      const message = extractErrorMessage(error);
+
+      if (isNull(message)) {
+        throw new Error('The failure reason cannot be decoded');
+      }
+
+      throw new Error(getError(message));
+    });
+
+    return ;
   }
 
 
@@ -606,7 +685,7 @@ class AMM {
         throw new Error('The failure reason cannot be decoded');
       }
 
-      throw new Error(getSwapError(message));
+      throw new Error(getError(message));
     });
 
     await peripheryContract.swap(swapPeripheryParams).catch((error) => {
@@ -616,7 +695,7 @@ class AMM {
         throw new Error('The failure reason cannot be decoded');
       }
 
-      throw new Error(getSwapError(message));
+      throw new Error(getError(message));
     });
 
     return;
