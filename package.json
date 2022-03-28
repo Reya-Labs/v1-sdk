@@ -21,7 +21,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "release": "semantic-release",
-    "irs-setup": "jest src/entities/__tests__/setup.spec.ts"
+    "irs-setup": "ts-node scripts/setup.ts"
   },
   "devDependencies": {
     "@commitlint/cli": "^13.1.0",
