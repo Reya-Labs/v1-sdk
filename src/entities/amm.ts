@@ -736,7 +736,6 @@ class AMM {
       }
 
       const errorMessage = getError(message);
-      console.log("error:", errorMessage);
       throw new Error(errorMessage);
     });
 
