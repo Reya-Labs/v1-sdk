@@ -90,7 +90,8 @@ describe('amm', () => {
         }
         catch (error) {
             failure = true;
-            expect(error).toBe("Lower Fixed Rate must be smaller than Upper Fixed Rate!");
+            expect(error instanceof Error);
+            expect((error as Error).message).toBe("Lower Fixed Rate must be smaller than Upper Fixed Rate!");
         }
 
         expect(failure).toBe(true);
@@ -108,7 +109,164 @@ describe('amm', () => {
         }
         catch (error) {
             failure = true;
-            expect(error).toBe("Lower Fixed Rate must be smaller than Upper Fixed Rate!");
+            expect(error instanceof Error);
+            expect((error as Error).message).toBe("Lower Fixed Rate must be smaller than Upper Fixed Rate!");
+        }
+
+        expect(failure).toBe(true);
+    });
+
+    it("Fixed rate too low in swap", async() => { 
+        let failure = false;
+        try {
+            await amm_other.swap({
+                isFT: true,
+                notional: 5000000,
+                fixedLow: 0.000001,
+                fixedHigh: 1,
+                margin: 0,
+            });
+        }
+        catch (error) {
+            failure = true;
+            expect(error instanceof Error);
+            expect((error as Error).message).toBe("Lower Fixed Rate is too low!");
+        }
+
+        expect(failure).toBe(true);
+    });
+
+    it("Fixed rate too low in mint", async() => { 
+        let failure = false;
+        try {
+            await amm_wallet.mint({
+                fixedLow: 0.000001,
+                fixedHigh: 1,
+                margin: 0,
+                notional: 5000000
+            });
+        }
+        catch (error) {
+            failure = true;
+            expect(error instanceof Error);
+            expect((error as Error).message).toBe("Lower Fixed Rate is too low!");
+        }
+
+        expect(failure).toBe(true);
+    });
+
+    it("Fixed rate too high in swap", async() => { 
+        let failure = false;
+        try {
+            await amm_other.swap({
+                isFT: true,
+                notional: 5000000,
+                fixedLow: 1,
+                fixedHigh: 1500,
+                margin: 0,
+            });
+        }
+        catch (error) {
+            failure = true;
+            expect(error instanceof Error);
+            expect((error as Error).message).toBe("Upper Fixed Rate is too high!");
+        }
+
+        expect(failure).toBe(true);
+    });
+
+    it("Fixed rate too high in mint", async() => { 
+        let failure = false;
+        try {
+            await amm_wallet.mint({
+                fixedLow: 1,
+                fixedHigh: 1500,
+                margin: 0,
+                notional: 5000000
+            });
+        }
+        catch (error) {
+            failure = true;
+            expect(error instanceof Error);
+            expect((error as Error).message).toBe("Upper Fixed Rate is too high!");
+        }
+
+        expect(failure).toBe(true);
+    });
+
+    it("Notional 0 in swap", async() => { 
+        let failure = false;
+        try {
+            await amm_other.swap({
+                isFT: true,
+                notional: 0,
+                fixedLow: 1,
+                fixedHigh: 2,
+                margin: 0,
+            });
+        }
+        catch (error) {
+            failure = true;
+            expect(error instanceof Error);
+            expect((error as Error).message).toBe("Amount of notional must be greater than 0!");
+        }
+
+        expect(failure).toBe(true);
+    });
+
+    it("Notional 0 in mint", async() => { 
+        let failure = false;
+        try {
+            await amm_wallet.mint({
+                fixedLow: 1,
+                fixedHigh: 2,
+                margin: 0,
+                notional: 0
+            });
+        }
+        catch (error) {
+            failure = true;
+            expect(error instanceof Error);
+            expect((error as Error).message).toBe("Amount of notional must be greater than 0!");
+        }
+
+        expect(failure).toBe(true);
+    });
+
+    it("Negative margin in swap", async() => { 
+        let failure = false;
+        try {
+            await amm_other.swap({
+                isFT: true,
+                notional: 5000000,
+                fixedLow: 1,
+                fixedHigh: 2,
+                margin: -10,
+            });
+        }
+        catch (error) {
+            failure = true;
+            expect(error instanceof Error);
+            expect((error as Error).message).toBe("Amount of margin cannot be negative!");
+        }
+
+        expect(failure).toBe(true);
+    });
+
+    it("Negative margin in mint", async() => { 
+        let failure = false;
+        try {
+            await amm_wallet.mint({
+                fixedLow: 1,
+                fixedHigh: 2,
+                margin: -10,
+                notional: 5000000
+            });
+        }
+        catch (error) {
+            failure = true;
+            expect(error instanceof Error);
+            expect((error as Error).message).toBe("Amount of margin cannot be negative!");
         }
 
         expect(failure).toBe(true);
@@ -127,7 +285,8 @@ describe('amm', () => {
         }
         catch (error) {
             failure = true;
-            expect(error).toBe("No enough margin for this operation");
+            expect(error instanceof Error);
+            expect((error as Error).message).toBe("No enough margin for this operation");
         }
 
         expect(failure).toBe(true);
@@ -145,13 +304,11 @@ describe('amm', () => {
         }
         catch (error) {
             failure = true;
-            expect(error).toBe("No enough margin for this operation");
+            expect(error instanceof Error);
+            expect((error as Error).message).toBe("No enough margin for this operation");
         }
 
         expect(failure).toBe(true);
     });
-
 });
-
-
 });

@@ -4,7 +4,7 @@ import { BigNumber, BigNumberish, ContractTransaction, Signer, utils } from 'eth
 import isNull from 'lodash/isNull';
 
 import { BigIntish, SwapPeripheryParams, MintOrBurnParams } from '../types';
-import { Q192, PERIPHERY_ADDRESS, FACTORY_ADDRESS, MIN_TICK, MAX_TICK } from '../constants';
+import { Q192, PERIPHERY_ADDRESS, FACTORY_ADDRESS, MIN_TICK, MAX_TICK, MIN_FIXED_RATE, MAX_FIXED_RATE } from '../constants';
 import { Price } from './fractions/price';
 import {
   Periphery__factory as peripheryFactory,
@@ -24,6 +24,7 @@ import { nearestUsableTick } from '../utils/nearestUsableTick';
 import { extractErrorMessage, getError } from '../utils/extractErrorMessage';
 import { providers } from 'ethers';
 import { TokenAmount } from './fractions/tokenAmount';
+import { isUndefined } from 'lodash';
 
 export type AMMConstructorArgs = {
   id: string;
@@ -78,6 +79,7 @@ export type AMMSwapArgs = {
   fixedRateLimit?: number;
   fixedLow: number;
   fixedHigh: number;
+  validationOnly?: boolean;
 };
 
 export type FCMSwapArgs = {
@@ -95,6 +97,7 @@ export type AMMMintArgs = {
   fixedHigh: number;
   notional: number;
   margin: number;
+  validationOnly?: boolean;
 };
 
 export type AMMGetMinimumMarginRequirementPostMintArgs = AMMMintArgs;
@@ -180,6 +183,22 @@ class AMM {
       return;
     }
 
+    if (fixedLow >= fixedHigh) {
+      throw new Error('Lower Fixed Rate must be smaller than Upper Fixed Rate!');
+    }
+
+    if (fixedLow < MIN_FIXED_RATE) {
+      throw new Error( 'Lower Fixed Rate is too low!');
+    }
+
+    if (fixedHigh > MAX_FIXED_RATE) {
+      throw new Error( 'Upper Fixed Rate is too high!');
+    }
+
+    if (notional <= 0) {
+      throw new Error( 'Amount of notional must be greater than 0!');
+    }
+
     const signerAddress = await this.signer.getAddress();
 
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
@@ -227,7 +246,7 @@ class AMM {
         const message = extractErrorMessage(error);
 
         if (isNull(message)) {
-          throw 'Cannot decode additional margin amount';
+          throw new Error('Cannot decode additional margin amount');
         }
 
         if (message.includes('MarginRequirementNotMet')) {
@@ -244,7 +263,7 @@ class AMM {
           availableNotional = BigNumber.from(args[3]);
         }
         else {
-          throw 'Additional margin amount cannot be established';
+          throw new Error('Additional margin amount cannot be established');
         }
       },
     );
@@ -389,6 +408,22 @@ class AMM {
       return;
     }
 
+    if (fixedLow >= fixedHigh) {
+      throw new Error('Lower Fixed Rate must be smaller than Upper Fixed Rate!');
+    }
+
+    if (fixedLow < MIN_FIXED_RATE) {
+      throw new Error('Lower Fixed Rate is too low!');
+    }
+
+    if (fixedHigh > MAX_FIXED_RATE) {
+      throw new Error('Upper Fixed Rate is too high!');
+    }
+
+    if (notional <= 0) {
+      throw new Error('Amount of notional must be greater than 0!');
+    }
+
     const signerAddress = await this.signer.getAddress();
 
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
@@ -416,7 +451,7 @@ class AMM {
         const message = extractErrorMessage(error);
 
         if (isNull(message)) {
-          throw 'Cannot decode additional margin amount';
+          throw new Error('Cannot decode additional margin amount');
         }
 
         if (message.includes('MarginLessThanMinimum')) {
@@ -430,7 +465,7 @@ class AMM {
           marginRequirement = BigNumber.from(args[0]);
         }
         else {
-          throw 'Additional margin amount cannot be established';
+          throw new Error('Additional margin amount cannot be established');
         }
       },
     );
@@ -455,33 +490,34 @@ class AMM {
     fixedHigh,
     notional,
     margin,
+    validationOnly
   }: AMMMintArgs): Promise<ContractTransaction | void> {
     if (!this.signer) {
       return;
     }
 
-    const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
-    const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
-
-    if (tickLower >= tickUpper) {
-      throw 'Lower Fixed Rate must be smaller than Upper Fixed Rate!';
+    if (fixedLow >= fixedHigh) {
+      throw new Error('Lower Fixed Rate must be smaller than Upper Fixed Rate!');
     }
 
-    if (tickLower < MIN_TICK) {
-      throw 'Lower Fixed Rate is too low!';
+    if (fixedLow < MIN_FIXED_RATE) {
+      throw new Error('Lower Fixed Rate is too low!');
     }
 
-    if (tickUpper > MAX_TICK) {
-      throw 'Upper Fixed Rate is too high!';
+    if (fixedHigh > MAX_FIXED_RATE) {
+      throw new Error('Upper Fixed Rate is too high!');
     }
 
     if (notional <= 0) {
-      throw 'Amount of notional must be greater than 0!';
+      throw new Error('Amount of notional must be greater than 0!');
     }
 
     if (margin < 0) {
-      throw 'Amount of margin cannot be negative!';
+      throw new Error('Amount of margin cannot be negative!');
     }
+
+    const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
+    const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
     const peripheryContract = peripheryFactory.connect(PERIPHERY_ADDRESS, this.signer);
     const _notional = this.scale(notional);
@@ -502,20 +538,24 @@ class AMM {
       const message = extractErrorMessage(error);
 
       if (isNull(message)) {
-        throw 'The failure reason cannot be decoded';
+        throw new Error('The failure reason cannot be decoded');
       }
 
-      throw getError(message);
+      throw new Error(getError(message));
     });
+
+    if (validationOnly) {
+      return;
+    }
 
     await peripheryContract.mintOrBurn(mintOrBurnParams).catch((error) => {
       const message = extractErrorMessage(error);
 
       if (isNull(message)) {
-        throw 'The failure reason cannot be decoded';
+        throw new Error('The failure reason cannot be decoded');
       }
 
-      throw getError(message);
+      throw new Error(getError(message));
     });
 
     return ;
@@ -525,29 +565,30 @@ class AMM {
     fixedLow,
     fixedHigh,
     notional,
+    validationOnly
   }: AMMBurnArgs): Promise<ContractTransaction | void> {
     if (!this.signer) {
       return;
     }
 
-    const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
-    const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
-
-    if (tickLower >= tickUpper) {
-      throw 'Lower Fixed Rate must be smaller than Upper Fixed Rate!';
+    if (fixedLow >= fixedHigh) {
+      throw new Error('Lower Fixed Rate must be smaller than Upper Fixed Rate!');
     }
 
-    if (tickLower < MIN_TICK) {
-      throw 'Lower Fixed Rate is too low!';
+    if (fixedLow < MIN_FIXED_RATE) {
+      throw new Error('Lower Fixed Rate is too low!');
     }
 
-    if (tickUpper > MAX_TICK) {
-      throw 'Upper Fixed Rate is too high!';
+    if (fixedHigh > MAX_FIXED_RATE) {
+      throw new Error('Upper Fixed Rate is too high!');
     }
 
     if (notional <= 0) {
-      throw 'Amount of notional must be greater than 0!';
+      throw new Error('Amount of notional must be greater than 0!');
     }
+
+    const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
+    const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
     const peripheryContract = peripheryFactory.connect(PERIPHERY_ADDRESS, this.signer);
 
@@ -566,20 +607,24 @@ class AMM {
       const message = extractErrorMessage(error);
 
       if (isNull(message)) {
-        throw 'The failure reason cannot be decoded';
+        throw new Error('The failure reason cannot be decoded');
       }
 
-      throw getError(message);
+      throw new Error(getError(message));
     });
+
+    if (validationOnly) {
+      return;
+    }
 
     await peripheryContract.mintOrBurn(mintOrBurnParams).catch((error) => {
       const message = extractErrorMessage(error);
 
       if (isNull(message)) {
-        throw 'The failure reason cannot be decoded';
+        throw new Error('The failure reason cannot be decoded');
       }
 
-      throw getError(message);
+      throw new Error(getError(message));
     });
 
     return ;
@@ -626,9 +671,30 @@ class AMM {
     fixedRateLimit,
     fixedLow,
     fixedHigh,
+    validationOnly
   }: AMMSwapArgs): Promise<void> {
     if (!this.signer) {
       return;
+    }
+
+    if (fixedLow >= fixedHigh) {
+      throw new Error('Lower Fixed Rate must be smaller than Upper Fixed Rate!');
+    }
+
+    if (fixedLow < MIN_FIXED_RATE) {
+      throw new Error( 'Lower Fixed Rate is too low!');
+    }
+
+    if (fixedHigh > MAX_FIXED_RATE) {
+      throw new Error( 'Upper Fixed Rate is too high!');
+    }
+
+    if (notional <= 0) {
+      throw new Error( 'Amount of notional must be greater than 0!');
+    }
+
+    if (margin < 0) {
+      throw new Error( 'Amount of margin cannot be negative!');
     }
 
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
@@ -644,22 +710,6 @@ class AMM {
       } else {
         sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MIN_TICK + 1).toString();
       }
-    }
-
-    if (tickLower >= tickUpper) {
-      throw 'Lower Fixed Rate must be smaller than Upper Fixed Rate!';
-    }
-
-    if (tickLower < MIN_TICK) {
-      throw 'Lower Fixed Rate is too low!';
-    }
-
-    if (tickUpper > MAX_TICK) {
-      throw 'Upper Fixed Rate is too high!';
-    }
-
-    if (notional <= 0) {
-      throw 'Amount of notional must be greater than 0!';
     }
 
     const peripheryContract = peripheryFactory.connect(PERIPHERY_ADDRESS, this.signer);
@@ -682,22 +732,26 @@ class AMM {
       const message = extractErrorMessage(error);
 
       if (isNull(message)) {
-        throw 'The failure reason cannot be decoded';
+        throw new Error('The failure reason cannot be decoded');
       }
 
       const errorMessage = getError(message);
       console.log("error:", errorMessage);
-      throw errorMessage;
+      throw new Error(errorMessage);
     });
+
+    if (validationOnly) {
+      return;
+    }
 
     await peripheryContract.swap(swapPeripheryParams).catch((error) => {
       const message = extractErrorMessage(error);
 
       if (isNull(message)) {
-        throw 'The failure reason cannot be decoded';
+        throw new Error('The failure reason cannot be decoded');
       }
 
-      throw getError(message);
+      throw new Error(getError(message));
     });
 
     return;
