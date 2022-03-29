@@ -4,7 +4,15 @@ import { BigNumber, BigNumberish, ContractTransaction, Signer, utils } from 'eth
 import isNull from 'lodash/isNull';
 
 import { BigIntish, SwapPeripheryParams, MintOrBurnParams } from '../types';
-import { Q192, PERIPHERY_ADDRESS, FACTORY_ADDRESS, MIN_TICK, MAX_TICK, MIN_FIXED_RATE, MAX_FIXED_RATE } from '../constants';
+import {
+  Q192,
+  PERIPHERY_ADDRESS,
+  FACTORY_ADDRESS,
+  MIN_TICK,
+  MAX_TICK,
+  MIN_FIXED_RATE,
+  MAX_FIXED_RATE,
+} from '../constants';
 import { Price } from './fractions/price';
 import {
   Periphery__factory as peripheryFactory,
@@ -188,15 +196,15 @@ class AMM {
     }
 
     if (fixedLow < MIN_FIXED_RATE) {
-      throw new Error( 'Lower Fixed Rate is too low!');
+      throw new Error('Lower Fixed Rate is too low!');
     }
 
     if (fixedHigh > MAX_FIXED_RATE) {
-      throw new Error( 'Upper Fixed Rate is too high!');
+      throw new Error('Upper Fixed Rate is too high!');
     }
 
     if (notional <= 0) {
-      throw new Error( 'Amount of notional must be greater than 0!');
+      throw new Error('Amount of notional must be greater than 0!');
     }
 
     const signerAddress = await this.signer.getAddress();
@@ -226,7 +234,7 @@ class AMM {
       sqrtPriceLimitX96,
       tickLower,
       tickUpper,
-      marginDelta: "0"
+      marginDelta: '0',
     };
 
     let tickBefore = await peripheryContract.getCurrentTick(this.marginEngineAddress);
@@ -261,8 +269,7 @@ class AMM {
           tickAfter = parseInt(args[1]);
           fee = BigNumber.from(args[4]);
           availableNotional = BigNumber.from(args[3]);
-        }
-        else {
+        } else {
           throw new Error('Additional margin amount cannot be established');
         }
       },
@@ -317,15 +324,17 @@ class AMM {
   }
 
   private scale(_number: number): string {
-    
     const _fraction = Price.fromNumber(_number);
-    const _tokenAmount = TokenAmount.fromFractionalAmount(this.underlyingToken, _fraction.numerator, _fraction.denominator);
+    const _tokenAmount = TokenAmount.fromFractionalAmount(
+      this.underlyingToken,
+      _fraction.numerator,
+      _fraction.denominator,
+    );
     const _scaledValue = _tokenAmount.scale();
 
     return _scaledValue;
-
   }
-  
+
   public async updatePositionMargin({
     owner,
     fixedLow,
@@ -439,7 +448,7 @@ class AMM {
       tickUpper,
       notional: _notional,
       isMint: true,
-      marginDelta: "0"
+      marginDelta: '0',
     };
 
     let marginRequirement = BigNumber.from('0');
@@ -463,8 +472,7 @@ class AMM {
             .split(',');
 
           marginRequirement = BigNumber.from(args[0]);
-        }
-        else {
+        } else {
           throw new Error('Additional margin amount cannot be established');
         }
       },
@@ -490,7 +498,7 @@ class AMM {
     fixedHigh,
     notional,
     margin,
-    validationOnly
+    validationOnly,
   }: AMMMintArgs): Promise<ContractTransaction | void> {
     if (!this.signer) {
       return;
@@ -516,6 +524,8 @@ class AMM {
       throw new Error('Amount of margin cannot be negative!');
     }
 
+    console.log(`I've started mintiiing`);
+
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
@@ -523,7 +533,17 @@ class AMM {
     const _notional = this.scale(notional);
     const _marginDelta = this.scale(margin);
 
-    await this.approveERC20(_marginDelta, peripheryContract.address);
+    console.log(`I'm approviiing`);
+
+    const trx = await this.approveERC20(_marginDelta, peripheryContract.address);
+    console.log(`Approval submitted to mempool`);
+
+    if (trx) {
+      await trx.wait();
+      console.log(`Approval confirmed`);
+    } else {
+      console.log(`No approval trx`);
+    }
 
     const mintOrBurnParams: MintOrBurnParams = {
       marginEngine: this.marginEngineAddress,
@@ -531,11 +551,14 @@ class AMM {
       tickUpper,
       notional: _notional,
       isMint: true,
-      marginDelta: _marginDelta
+      marginDelta: _marginDelta,
     };
+
+    console.log(`callStatic mint`);
 
     await peripheryContract.callStatic.mintOrBurn(mintOrBurnParams).catch((error) => {
       const message = extractErrorMessage(error);
+      console.log(`callStatic mint: error: ${message}`);
 
       if (isNull(message)) {
         throw new Error('The failure reason cannot be decoded');
@@ -548,8 +571,11 @@ class AMM {
       return;
     }
 
+    console.log(`4realz mint`);
+
     await peripheryContract.mintOrBurn(mintOrBurnParams).catch((error) => {
       const message = extractErrorMessage(error);
+      console.log(`4realz mint: error: ${message}`);
 
       if (isNull(message)) {
         throw new Error('The failure reason cannot be decoded');
@@ -558,14 +584,14 @@ class AMM {
       throw new Error(getError(message));
     });
 
-    return ;
+    return;
   }
 
   public async burn({
     fixedLow,
     fixedHigh,
     notional,
-    validationOnly
+    validationOnly,
   }: AMMBurnArgs): Promise<ContractTransaction | void> {
     if (!this.signer) {
       return;
@@ -600,7 +626,7 @@ class AMM {
       tickUpper,
       notional: _notional,
       isMint: false,
-      marginDelta: "0"
+      marginDelta: '0',
     };
 
     await peripheryContract.callStatic.mintOrBurn(mintOrBurnParams).catch((error) => {
@@ -627,9 +653,8 @@ class AMM {
       throw new Error(getError(message));
     });
 
-    return ;
+    return;
   }
-
 
   public async approveFCM(): Promise<ContractTransaction | void> {
     if (!this.signer) return;
@@ -646,22 +671,33 @@ class AMM {
     }
   }
 
-  
   public async approveERC20(
     marginDelta: BigNumberish,
-    addressToApprove: string
-  ) {
+    addressToApprove: string,
+  ): Promise<ContractTransaction | null> {
     if (!this.signer) {
-      return;
+      console.error('No signer');
+      return null;
     }
 
     if (!this.underlyingToken.id) {
-      return;
+      console.error('No token');
+      return null;
     }
 
     const token = tokenFactory.connect(this.underlyingToken.id, this.signer);
 
-    await token.approve(addressToApprove, marginDelta);
+    const currentApproval = await token.allowance(await this.signer.getAddress(), addressToApprove);
+    console.log(`Req'd   approval = ${marginDelta}`);
+    console.log(`Current approval = ${currentApproval}`);
+
+    if (BigNumber.from(marginDelta).gt(currentApproval)) {
+      console.log('Granting allowance');
+      return token.approve(addressToApprove, marginDelta);
+    } else {
+      console.log('Allowance already exists');
+      return null;
+    }
   }
 
   public async swap({
@@ -671,7 +707,7 @@ class AMM {
     fixedRateLimit,
     fixedLow,
     fixedHigh,
-    validationOnly
+    validationOnly,
   }: AMMSwapArgs): Promise<void> {
     if (!this.signer) {
       return;
@@ -682,19 +718,19 @@ class AMM {
     }
 
     if (fixedLow < MIN_FIXED_RATE) {
-      throw new Error( 'Lower Fixed Rate is too low!');
+      throw new Error('Lower Fixed Rate is too low!');
     }
 
     if (fixedHigh > MAX_FIXED_RATE) {
-      throw new Error( 'Upper Fixed Rate is too high!');
+      throw new Error('Upper Fixed Rate is too high!');
     }
 
     if (notional <= 0) {
-      throw new Error( 'Amount of notional must be greater than 0!');
+      throw new Error('Amount of notional must be greater than 0!');
     }
 
     if (margin < 0) {
-      throw new Error( 'Amount of margin cannot be negative!');
+      throw new Error('Amount of margin cannot be negative!');
     }
 
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
@@ -725,7 +761,7 @@ class AMM {
       sqrtPriceLimitX96,
       tickLower,
       tickUpper,
-      marginDelta: _marginDelta
+      marginDelta: _marginDelta,
     };
 
     await peripheryContract.callStatic.swap(swapPeripheryParams).catch(async (error: any) => {
