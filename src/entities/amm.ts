@@ -1,6 +1,7 @@
 import JSBI from 'jsbi';
+import { providers } from 'ethers';
 import { DateTime } from 'luxon';
-import { BigNumber, BigNumberish, ContractTransaction, Signer, utils } from 'ethers';
+import { BigNumber, BigNumberish, ContractReceipt, Signer, utils } from 'ethers';
 import isNull from 'lodash/isNull';
 
 import { BigIntish, SwapPeripheryParams, MintOrBurnParams } from '../types';
@@ -8,31 +9,26 @@ import {
   Q192,
   PERIPHERY_ADDRESS,
   FACTORY_ADDRESS,
-  MIN_TICK,
-  MAX_TICK,
   MIN_FIXED_RATE,
   MAX_FIXED_RATE,
 } from '../constants';
-import { Price } from './fractions/price';
 import {
   Periphery__factory as peripheryFactory,
   MarginEngine__factory as marginEngineFactory,
   Factory__factory as factoryFactory,
-  VAMM__factory as vammFactory,
   // todo: not very elegant to use the mock as a factory
   ERC20Mock__factory as tokenFactory,
   AaveFCM__factory as fcmFactory,
 } from '../typechain';
-import Token from './token';
 import RateOracle from './rateOracle';
 import { TickMath } from '../utils/tickMath';
 import timestampWadToDateTime from '../utils/timestampWadToDateTime';
 import { fixedRateToClosestTick, tickToFixedRate } from '../utils/priceTickConversions';
 import { nearestUsableTick } from '../utils/nearestUsableTick';
 import { extractErrorMessage, getError } from '../utils/extractErrorMessage';
-import { providers } from 'ethers';
+import Token from './token';
+import { Price } from './fractions/price';
 import { TokenAmount } from './fractions/tokenAmount';
-import { isUndefined } from 'lodash';
 
 export type AMMConstructorArgs = {
   id: string;
@@ -186,9 +182,9 @@ class AMM {
     fixedRateLimit,
     fixedLow,
     fixedHigh,
-  }: AMMGetInfoPostSwapArgs): Promise<InfoPostSwap | void> {
+  }: AMMGetInfoPostSwapArgs): Promise<InfoPostSwap> {
     if (!this.signer) {
-      return;
+      throw new Error('Wallet not connected!');
     }
 
     if (fixedLow >= fixedHigh) {
@@ -224,13 +220,13 @@ class AMM {
       }
     }
 
-    const _notional = this.scale(notional);
+    const scaledNotional = this.scale(notional);
 
     const peripheryContract = peripheryFactory.connect(PERIPHERY_ADDRESS, this.signer);
     const swapPeripheryParams: SwapPeripheryParams = {
       marginEngine: this.marginEngineAddress,
       isFT,
-      notional: _notional,
+      notional: scaledNotional,
       sqrtPriceLimitX96,
       tickLower,
       tickUpper,
@@ -244,7 +240,7 @@ class AMM {
     let availableNotional = BigNumber.from(0);
 
     await peripheryContract.callStatic.swap(swapPeripheryParams).then(
-      async (result: any) => {
+      (result: any) => {
         availableNotional = result[1];
         fee = result[2];
         marginRequirement = result[4];
@@ -306,33 +302,34 @@ class AMM {
     owner,
     fixedLow,
     fixedHigh,
-  }: AMMSettlePositionArgs): Promise<ContractTransaction | void> {
+  }: AMMSettlePositionArgs): Promise<ContractReceipt> {
     if (!this.signer) {
-      return;
+      throw new Error('Wallet not connected!');
     }
 
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
-
     const marginEngineContract = marginEngineFactory.connect(this.marginEngineAddress, this.signer);
-    const settlePositionReceipt = await marginEngineContract.settlePosition(
+
+    const settlePositionTransaction = await marginEngineContract.settlePosition(
       owner,
       tickLower,
       tickUpper,
     );
-    return settlePositionReceipt;
+
+    return settlePositionTransaction.wait();
   }
 
-  private scale(_number: number): string {
-    const _fraction = Price.fromNumber(_number);
-    const _tokenAmount = TokenAmount.fromFractionalAmount(
+  private scale(value: number): string {
+    const price = Price.fromNumber(value);
+    const tokenAmount = TokenAmount.fromFractionalAmount(
       this.underlyingToken,
-      _fraction.numerator,
-      _fraction.denominator,
+      price.numerator,
+      price.denominator,
     );
-    const _scaledValue = _tokenAmount.scale();
+    const scaledValue = tokenAmount.scale();
 
-    return _scaledValue;
+    return scaledValue;
   }
 
   public async updatePositionMargin({
@@ -340,58 +337,57 @@ class AMM {
     fixedLow,
     fixedHigh,
     marginDelta,
-  }: AMMUpdatePositionMarginArgs): Promise<ContractTransaction | void> {
+  }: AMMUpdatePositionMarginArgs): Promise<ContractReceipt> {
     if (!this.signer) {
-      return;
+      throw new Error('Wallet not connected!');
     }
 
     if (marginDelta === 0) {
-      return;
+      throw new Error('No margin delta to update!');
     }
 
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
+    const scaledMarginDelta = this.scale(marginDelta);
 
-    const _marginDelta = this.scale(marginDelta);
-
-    await this.approveERC20(_marginDelta, this.marginEngineAddress);
+    await this.approveERC20(scaledMarginDelta, this.marginEngineAddress);
 
     const marginEngineContract = marginEngineFactory.connect(this.marginEngineAddress, this.signer);
-    const updatePositionMarginReceipt = await marginEngineContract.updatePositionMargin(
+    const updatePositionMarginTransaction = await marginEngineContract.updatePositionMargin(
       owner,
       tickLower,
       tickUpper,
-      _marginDelta,
+      scaledMarginDelta,
     );
 
-    return updatePositionMarginReceipt;
+    return updatePositionMarginTransaction.wait();
   }
 
   public async liquidatePosition({
     owner,
     fixedLow,
     fixedHigh,
-  }: AMMLiquidatePositionArgs): Promise<ContractTransaction | void> {
+  }: AMMLiquidatePositionArgs): Promise<ContractReceipt> {
     if (!this.signer) {
-      return;
+      throw new Error('Wallet not connected!');
     }
 
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
     const marginEngineContract = marginEngineFactory.connect(this.marginEngineAddress, this.signer);
-    const receipt = await marginEngineContract.liquidatePosition(owner, tickLower, tickUpper);
+    const liquidatePositionTransaction = await marginEngineContract.liquidatePosition(owner, tickLower, tickUpper);
 
-    return receipt;
+    return liquidatePositionTransaction.wait();
   }
 
   public async getLiquidationThreshold({
     owner,
     fixedLow,
     fixedHigh,
-  }: AMMLiquidatePositionArgs): Promise<number | void> {
+  }: AMMLiquidatePositionArgs): Promise<number> {
     if (!this.signer) {
-      return;
+      throw new Error('Wallet not connected!');
     }
 
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
@@ -412,9 +408,9 @@ class AMM {
     fixedLow,
     fixedHigh,
     notional,
-  }: AMMGetMinimumMarginRequirementPostMintArgs): Promise<number | void> {
+  }: AMMGetMinimumMarginRequirementPostMintArgs): Promise<number> {
     if (!this.signer) {
-      return;
+      throw new Error('Wallet not connected!');
     }
 
     if (fixedLow >= fixedHigh) {
@@ -434,19 +430,15 @@ class AMM {
     }
 
     const signerAddress = await this.signer.getAddress();
-
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
-
     const peripheryContract = peripheryFactory.connect(PERIPHERY_ADDRESS, this.signer);
-
-    const _notional = this.scale(notional);
-
+    const scaledNotional = this.scale(notional);
     const mintOrBurnParams: MintOrBurnParams = {
       marginEngine: this.marginEngineAddress,
       tickLower,
       tickUpper,
-      notional: _notional,
+      notional: scaledNotional,
       isMint: true,
       marginDelta: '0',
     };
@@ -499,9 +491,9 @@ class AMM {
     notional,
     margin,
     validationOnly,
-  }: AMMMintArgs): Promise<ContractTransaction | void> {
+  }: AMMMintArgs): Promise<ContractReceipt | void> {
     if (!this.signer) {
-      return;
+      throw new Error('Wallet not connected!');
     }
 
     if (fixedLow >= fixedHigh) {
@@ -524,7 +516,9 @@ class AMM {
       throw new Error('Amount of margin cannot be negative!');
     }
 
-    console.log(`I've started mintiiing`);
+    if (validationOnly) {
+      return;
+    }
 
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
@@ -533,16 +527,10 @@ class AMM {
     const _notional = this.scale(notional);
     const _marginDelta = this.scale(margin);
 
-    console.log(`I'm approviiing`);
-
-    const trx = await this.approveERC20(_marginDelta, peripheryContract.address);
-    console.log(`Approval submitted to mempool`);
-
-    if (trx) {
-      await trx.wait();
-      console.log(`Approval confirmed`);
-    } else {
-      console.log(`No approval trx`);
+    try {
+      await this.approveERC20(_marginDelta, peripheryContract.address);
+    } catch (approvalError) {
+      throw approvalError;
     }
 
     const mintOrBurnParams: MintOrBurnParams = {
@@ -554,11 +542,8 @@ class AMM {
       marginDelta: _marginDelta,
     };
 
-    console.log(`callStatic mint`);
-
     await peripheryContract.callStatic.mintOrBurn(mintOrBurnParams).catch((error) => {
       const message = extractErrorMessage(error);
-      console.log(`callStatic mint: error: ${message}`);
 
       if (isNull(message)) {
         throw new Error('The failure reason cannot be decoded');
@@ -567,15 +552,8 @@ class AMM {
       throw new Error(getError(message));
     });
 
-    if (validationOnly) {
-      return;
-    }
-
-    console.log(`4realz mint`);
-
-    await peripheryContract.mintOrBurn(mintOrBurnParams).catch((error) => {
+    const mintTransaction = await peripheryContract.mintOrBurn(mintOrBurnParams).catch((error) => {
       const message = extractErrorMessage(error);
-      console.log(`4realz mint: error: ${message}`);
 
       if (isNull(message)) {
         throw new Error('The failure reason cannot be decoded');
@@ -584,7 +562,7 @@ class AMM {
       throw new Error(getError(message));
     });
 
-    return;
+    return mintTransaction.wait();
   }
 
   public async burn({
@@ -592,9 +570,9 @@ class AMM {
     fixedHigh,
     notional,
     validationOnly,
-  }: AMMBurnArgs): Promise<ContractTransaction | void> {
+  }: AMMBurnArgs): Promise<ContractReceipt | void> {
     if (!this.signer) {
-      return;
+      throw new Error('Wallet not connected!');
     }
 
     if (fixedLow >= fixedHigh) {
@@ -611,6 +589,10 @@ class AMM {
 
     if (notional <= 0) {
       throw new Error('Amount of notional must be greater than 0!');
+    }
+
+    if (validationOnly) {
+      return;
     }
 
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
@@ -639,11 +621,7 @@ class AMM {
       throw new Error(getError(message));
     });
 
-    if (validationOnly) {
-      return;
-    }
-
-    await peripheryContract.mintOrBurn(mintOrBurnParams).catch((error) => {
+    const burnTransaction = await peripheryContract.mintOrBurn(mintOrBurnParams).catch((error) => {
       const message = extractErrorMessage(error);
 
       if (isNull(message)) {
@@ -653,51 +631,49 @@ class AMM {
       throw new Error(getError(message));
     });
 
-    return;
+    return burnTransaction.wait();
   }
 
-  public async approveFCM(): Promise<ContractTransaction | void> {
-    if (!this.signer) return;
+  public async approveFCM(): Promise<ContractReceipt | void> {
+    if (!this.signer) {
+      throw new Error('Wallet not connected!');
+    }
 
     const factoryContract = factoryFactory.connect(FACTORY_ADDRESS, this.signer);
     const signerAddress = await this.signer.getAddress();
-
     const isApproved = await factoryContract.isApproved(signerAddress, this.fcmAddress);
 
-    if (!isApproved) {
-      return await factoryContract.setApproval(this.fcmAddress, true);
-    } else {
+    if (isApproved) {
       return;
     }
+
+    const approvalTransaction = await factoryContract.setApproval(this.fcmAddress, true);
+
+    return approvalTransaction.wait();
   }
 
   public async approveERC20(
     marginDelta: BigNumberish,
     addressToApprove: string,
-  ): Promise<ContractTransaction | null> {
+  ): Promise<ContractReceipt | void> {
     if (!this.signer) {
-      console.error('No signer');
-      return null;
+      throw new Error('Wallet not connected!');
     }
 
     if (!this.underlyingToken.id) {
-      console.error('No token');
-      return null;
+      throw new Error('No underlying token!');
     }
 
     const token = tokenFactory.connect(this.underlyingToken.id, this.signer);
-
     const currentApproval = await token.allowance(await this.signer.getAddress(), addressToApprove);
-    console.log(`Req'd   approval = ${marginDelta}`);
-    console.log(`Current approval = ${currentApproval}`);
 
-    if (BigNumber.from(marginDelta).gt(currentApproval)) {
-      console.log('Granting allowance');
-      return token.approve(addressToApprove, marginDelta);
-    } else {
-      console.log('Allowance already exists');
-      return null;
+    if (BigNumber.from(marginDelta).lt(currentApproval)) {
+      return;
     }
+
+    const approvalTransaction = await token.approve(addressToApprove, marginDelta);
+
+    return approvalTransaction.wait();
   }
 
   public async swap({
@@ -708,9 +684,9 @@ class AMM {
     fixedLow,
     fixedHigh,
     validationOnly,
-  }: AMMSwapArgs): Promise<void> {
+  }: AMMSwapArgs): Promise<ContractReceipt | void> {
     if (!this.signer) {
-      return;
+      throw new Error('Wallet not connected!');
     }
 
     if (fixedLow >= fixedHigh) {
@@ -733,6 +709,10 @@ class AMM {
       throw new Error('Amount of margin cannot be negative!');
     }
 
+    if (validationOnly) {
+      return;
+    }
+
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
@@ -749,19 +729,23 @@ class AMM {
     }
 
     const peripheryContract = peripheryFactory.connect(PERIPHERY_ADDRESS, this.signer);
-    const _notional = this.scale(notional);
-    const _marginDelta = this.scale(margin);
+    const scaledNotional = this.scale(notional);
+    const scaledMarginDelta = this.scale(margin);
 
-    await this.approveERC20(_marginDelta, peripheryContract.address);
+    try {
+      await this.approveERC20(scaledMarginDelta, peripheryContract.address);
+    } catch (approvalError) {
+      throw approvalError;
+    }
 
     const swapPeripheryParams: SwapPeripheryParams = {
       marginEngine: this.marginEngineAddress,
       isFT,
-      notional: _notional,
+      notional: scaledNotional,
       sqrtPriceLimitX96,
       tickLower,
       tickUpper,
-      marginDelta: _marginDelta,
+      marginDelta: scaledMarginDelta,
     };
 
     await peripheryContract.callStatic.swap(swapPeripheryParams).catch(async (error: any) => {
@@ -775,11 +759,7 @@ class AMM {
       throw new Error(errorMessage);
     });
 
-    if (validationOnly) {
-      return;
-    }
-
-    await peripheryContract.swap(swapPeripheryParams).catch((error) => {
+    const swapTransaction = await peripheryContract.swap(swapPeripheryParams).catch((error) => {
       const message = extractErrorMessage(error);
 
       if (isNull(message)) {
@@ -789,18 +769,22 @@ class AMM {
       throw new Error(getError(message));
     });
 
-    return;
+    return swapTransaction.wait();
   }
 
   public async FCMSwap({
     notional,
     fixedRateLimit,
-  }: FCMSwapArgs): Promise<ContractTransaction | void> {
+  }: FCMSwapArgs): Promise<ContractReceipt> {
     if (!this.signer) {
-      return;
+      throw new Error('Wallet not connected!');
     }
 
-    await this.approveFCM();
+    try {
+      await this.approveFCM();
+    } catch (approvalError) {
+      throw approvalError;
+    }
 
     let sqrtPriceLimitX96;
     if (fixedRateLimit) {
@@ -811,17 +795,22 @@ class AMM {
     }
 
     const fcmContract = fcmFactory.connect(this.fcmAddress, this.signer);
-    const _notional = this.scale(notional);
+    const scaledNotional = this.scale(notional);
 
-    return fcmContract.initiateFullyCollateralisedFixedTakerSwap(_notional, sqrtPriceLimitX96);
+    const fcmSwapTransaction = await fcmContract.initiateFullyCollateralisedFixedTakerSwap(
+      scaledNotional,
+      sqrtPriceLimitX96,
+    );
+
+    return fcmSwapTransaction.wait();
   }
 
   public async FCMUnwind({
     notionalToUnwind,
     fixedRateLimit,
-  }: FCMUnwindArgs): Promise<ContractTransaction | void> {
+  }: FCMUnwindArgs): Promise<ContractReceipt> {
     if (!this.signer) {
-      return;
+      throw new Error('Wallet not connected!');
     }
 
     let sqrtPriceLimitX96;
@@ -832,23 +821,31 @@ class AMM {
       sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MIN_TICK + 1).toString();
     }
 
-    await this.approveFCM();
-
-    const fcmContract = fcmFactory.connect(this.fcmAddress, this.signer);
-
-    const _notional = this.scale(notionalToUnwind);
-
-    return fcmContract.unwindFullyCollateralisedFixedTakerSwap(_notional, sqrtPriceLimitX96);
-  }
-
-  public async settleFCMTrader(): Promise<ContractTransaction | void> {
-    if (!this.signer) {
-      return;
+    try {
+      await this.approveFCM();
+    } catch (approvalError) {
+      throw approvalError;
     }
 
     const fcmContract = fcmFactory.connect(this.fcmAddress, this.signer);
-    const receipt = await fcmContract.settleTrader();
-    return receipt;
+    const scaledNotional = this.scale(notionalToUnwind);
+    const fcmUnwindTransaction = await fcmContract.unwindFullyCollateralisedFixedTakerSwap(
+      scaledNotional,
+      sqrtPriceLimitX96,
+    );
+
+    return fcmUnwindTransaction.wait();
+  }
+
+  public async settleFCMTrader(): Promise<ContractReceipt> {
+    if (!this.signer) {
+      throw new Error('Wallet not connected!');
+    }
+
+    const fcmContract = fcmFactory.connect(this.fcmAddress, this.signer);
+    const fcmSettleTraderTransaction = await fcmContract.settleTrader();
+
+    return fcmSettleTraderTransaction.wait();
   }
 
   public get startDateTime(): DateTime {
@@ -887,9 +884,16 @@ class AMM {
     return this._price;
   }
 
-  public async getVariableApy(): Promise<number | void> {
+  public get protocol(): string {
+    const firstProtocolCharacter = this.rateOracle.protocol[0];
+    const tokenName = this.underlyingToken.name;
+
+    return `${firstProtocolCharacter.toLowerCase()}${tokenName}`;
+  }
+
+  public async getVariableApy(): Promise<number> {
     if (!this.provider) {
-      return;
+      throw new Error('Blockchain not connected!');
     }
 
     const marginEngineContract = marginEngineFactory.connect(
@@ -897,14 +901,8 @@ class AMM {
       this.provider,
     );
     const historicalApy = await marginEngineContract.callStatic.getHistoricalApy();
+
     return parseFloat(utils.formatEther(historicalApy));
-  }
-
-  public get protocol(): string {
-    const firstProtocolCharacter = this.rateOracle.protocol[0];
-    const tokenName = this.underlyingToken.name;
-
-    return `${firstProtocolCharacter.toLowerCase()}${tokenName}`;
   }
 
   public closestTickAndFixedRate(fixedRate: number): ClosestTickAndFixedRate {
