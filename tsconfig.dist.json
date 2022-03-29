@@ -1,5 +1,6 @@
 {
   "extends": "./tsconfig.build.json",
+  "rootDir": "src",
   "compilerOptions": {
     "declaration": true,
     "declarationMap": true,
@@ -7,6 +8,7 @@
     "declarationDir": "./dist/types"
   },
   "exclude": [
-    "./dist/**/*"
+    "./dist/**/*",
+    "./scripts/**/*"
   ]
 }
