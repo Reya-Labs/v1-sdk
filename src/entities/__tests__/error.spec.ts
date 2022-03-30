@@ -5,8 +5,20 @@ import RateOracle from '../rateOracle';
 import AMM from '../amm';
 import { TickMath } from '../../utils/tickMath';
 
+/**
+ * tests that need to pass when the VAMM has not been initialized
+ */
 const BEFORE_INITIALIZATION = false;
+
+/**
+ * tests that need to pass when the VAMM has been initialized 
+ * and is not close or beyond maturity
+*/
 const DURING_POOL = false;
+
+/**
+ * tests that need to pass when the VAMM is close or beyond maturity
+*/
 const AFTER_MATURITY = false;
 
 describe('amm', () => {
