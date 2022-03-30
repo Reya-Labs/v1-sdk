@@ -1,5 +1,5 @@
 {
-  "extends": "./tsconfig.build.json",
+  "extends": "./tsconfig.json",
   "rootDir": "src",
   "compilerOptions": {
     "declaration": true,
@@ -8,6 +8,7 @@
     "declarationDir": "./dist/types"
   },
   "exclude": [
+    "./**/__tests__/**/*.spec.ts",
     "./dist/**/*",
     "./scripts/**/*"
   ]
