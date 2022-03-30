@@ -4,13 +4,12 @@ import { BigNumber, BigNumberish, ContractTransaction, Signer, utils } from 'eth
 import isNull from 'lodash/isNull';
 
 import { BigIntish, SwapPeripheryParams, MintOrBurnParams } from '../types';
-import { Q192, PERIPHERY_ADDRESS, FACTORY_ADDRESS, MIN_TICK, MAX_TICK, MIN_FIXED_RATE, MAX_FIXED_RATE } from '../constants';
+import { Q192, PERIPHERY_ADDRESS, FACTORY_ADDRESS, MIN_FIXED_RATE, MAX_FIXED_RATE } from '../constants';
 import { Price } from './fractions/price';
 import {
   Periphery__factory as peripheryFactory,
   MarginEngine__factory as marginEngineFactory,
   Factory__factory as factoryFactory,
-  VAMM__factory as vammFactory,
   // todo: not very elegant to use the mock as a factory
   ERC20Mock__factory as tokenFactory,
   AaveFCM__factory as fcmFactory,
@@ -24,7 +23,6 @@ import { nearestUsableTick } from '../utils/nearestUsableTick';
 import { extractErrorMessage, getError } from '../utils/extractErrorMessage';
 import { providers } from 'ethers';
 import { TokenAmount } from './fractions/tokenAmount';
-import { isUndefined } from 'lodash';
 
 export type AMMConstructorArgs = {
   id: string;

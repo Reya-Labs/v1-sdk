@@ -2,16 +2,12 @@ import { providers, Wallet } from 'ethers';
 
 import Token from '../token';
 import RateOracle from '../rateOracle';
-import AMM, { InfoPostSwap } from '../amm';
+import AMM from '../amm';
 import { TickMath } from '../../utils/tickMath';
-import { VAMM__factory as vammFactory } from '../../typechain';
-import { Price } from '../fractions/price';
-import { TokenAmount } from '../fractions/tokenAmount';
-import JSBI from 'jsbi';
 
 const BEFORE_INITIALIZATION = false;
 const DURING_POOL = false;
-const AFTER_MATURITY = true;
+const AFTER_MATURITY = false;
 
 describe('amm', () => {
   describe('amm init', () => {
@@ -80,6 +76,8 @@ describe('amm', () => {
         updatedTimestamp: '1646856471',
       });
     });
+
+    it("Introduction", () => {});
 
     if (DURING_POOL) {
         it("Disordered ticks in swap", async() => { 

@@ -45,38 +45,6 @@ const _abi = [
   {
     inputs: [
       {
-        internalType: "uint256",
-        name: "x",
-        type: "uint256",
-      },
-      {
-        internalType: "uint256",
-        name: "y",
-        type: "uint256",
-      },
-    ],
-    name: "DebugError",
-    type: "error",
-  },
-  {
-    inputs: [
-      {
-        internalType: "int256",
-        name: "amount0",
-        type: "int256",
-      },
-      {
-        internalType: "int256",
-        name: "amount1",
-        type: "int256",
-      },
-    ],
-    name: "ExpectedOppositeSigns",
-    type: "error",
-  },
-  {
-    inputs: [
-      {
         internalType: "uint160",
         name: "sqrtPriceX96",
         type: "uint160",
@@ -263,11 +231,6 @@ const _abi = [
       },
     ],
     name: "PRBMath__MulDivOverflow",
-    type: "error",
-  },
-  {
-    inputs: [],
-    name: "PositionNetZero",
     type: "error",
   },
   {
