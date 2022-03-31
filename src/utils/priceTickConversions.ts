@@ -33,8 +33,12 @@ export function priceToFixedRate(price: Price) {
  */
 export function tickToFixedRate(tick: number) {
   let inRangeTick = tick;
-  if (tick < MIN_TICK) inRangeTick = MIN_TICK;
-  if (tick > MAX_TICK) inRangeTick = MAX_TICK;
+  if (tick < MIN_TICK) {
+    inRangeTick = MIN_TICK;
+  }
+  if (tick > MAX_TICK) {
+    inRangeTick = MAX_TICK;
+  }
 
   const price: Price = tickToPrice(inRangeTick);
 

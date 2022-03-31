@@ -906,8 +906,12 @@ class AMM {
   }
 
   public closestTickAndFixedRate(fixedRate: number): ClosestTickAndFixedRate {
-    if (fixedRate < MIN_FIXED_RATE) fixedRate = MIN_FIXED_RATE;
-    if (fixedRate > MAX_FIXED_RATE) fixedRate = MAX_FIXED_RATE;
+    if (fixedRate < MIN_FIXED_RATE) {
+      fixedRate = MIN_FIXED_RATE;
+    }
+    if (fixedRate > MAX_FIXED_RATE) {
+      fixedRate = MAX_FIXED_RATE;
+    }
 
     const fixedRatePrice = Price.fromNumber(fixedRate);
     const closestTick: number = fixedRateToClosestTick(fixedRatePrice);
