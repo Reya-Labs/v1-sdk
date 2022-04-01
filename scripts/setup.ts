@@ -71,8 +71,9 @@ const setup = async () => {
   });
 
   const vammContract = vammFactory.connect(vammAddress, wallet);
-  await vammContract.initializeVAMM(TickMath.getSqrtRatioAtTick(-23000).toString()); // 10%
-
+  const initVAMMTx = await vammContract.initializeVAMM(TickMath.getSqrtRatioAtTick(-23000).toString()); // 10%
+  await initVAMMTx.wait();
+  
   const fixedLowMinter = 8;
   const fixedHighMinter = 12;
   const fixedLowSwapper1 = 3;
