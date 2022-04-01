@@ -1,11 +1,8 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable no-await-in-loop */
 import { providers, Wallet } from 'ethers';
 import { random } from 'lodash';
 
 import { Token, RateOracle, AMM, InfoPostSwap } from '../../src';
 import { TickMath } from '../../src/utils/tickMath';
-import { MAX_FIXED_RATE, MIN_FIXED_RATE } from '../constants';
 
 const setup = async () => {
   const vammAddress = '0xe451980132e65465d0a498c53f0b5227326dd73f';
@@ -95,7 +92,10 @@ const setup = async () => {
           notional,
         });
       } catch (error: any) {
-        console.log(error.message);
+          console.log(error.message);
+          if (error.message.toString().includes("Cannot read properties of undefined")) {
+              break;
+          }
       }
     } else {
       console.log('swap');
@@ -123,7 +123,10 @@ const setup = async () => {
           margin: swapMarginRequirement,
         });
       } catch (error: any) {
-        console.log(error.message);
+          console.log(error.message);
+          if (error.message.toString().includes("Cannot read properties of undefined")) {
+              break;
+          }
       }
     }
   }
