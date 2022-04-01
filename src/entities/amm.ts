@@ -283,17 +283,26 @@ class AMM {
     ).margin;
 
     const scaledCurrentMargin = parseFloat(utils.formatEther(currentMargin));
+    const scaledFee = parseFloat(utils.formatEther(fee));
+    const scaledAvailableNotional = parseFloat(utils.formatEther(availableNotional));
     const scaledMarginRequirement = parseFloat(utils.formatEther(marginRequirement));
 
+    const suggestedMargin = (scaledMarginRequirement + scaledFee) * 1.01;
+
     const additionalMargin =
-      scaledMarginRequirement > scaledCurrentMargin
-        ? scaledMarginRequirement - scaledCurrentMargin
+      suggestedMargin > scaledCurrentMargin
+        ? suggestedMargin - scaledCurrentMargin
         : 0;
+
+    console.log("scaledCurrentMargin", scaledCurrentMargin);
+    console.log("suggestedMargin", suggestedMargin);
+    console.log("additionalMargin", additionalMargin);
+    console.log("scaledFee", scaledFee);
 
     return {
       marginRequirement: additionalMargin,
-      availableNotional: parseFloat(utils.formatEther(availableNotional)),
-      fee: parseFloat(utils.formatEther(fee)),
+      availableNotional: scaledAvailableNotional,
+      fee: scaledFee,
       slippage: fixedRateDeltaRaw,
     };
   }
@@ -478,11 +487,17 @@ class AMM {
     const scaledCurrentMargin = parseFloat(utils.formatEther(currentMargin));
     const scaledMarginRequirement = parseFloat(utils.formatEther(marginRequirement));
 
-    if (scaledMarginRequirement > scaledCurrentMargin) {
-      return scaledMarginRequirement - scaledCurrentMargin;
-    } else {
-      return 0;
-    }
+    const suggestedMargin = scaledMarginRequirement * 1.01;
+    const additionalMargin =
+      suggestedMargin > scaledCurrentMargin
+        ? suggestedMargin - scaledCurrentMargin
+        : 0;
+
+    console.log("scaledCurrentMargin", scaledCurrentMargin);
+    console.log("suggestedMargin", suggestedMargin);
+    console.log("additionalMargin", additionalMargin);
+
+    return additionalMargin;
   }
 
   public async mint({
@@ -542,6 +557,8 @@ class AMM {
       marginDelta: _marginDelta,
     };
 
+    console.log(mintOrBurnParams);
+    console.log("before static call");
     await peripheryContract.callStatic.mintOrBurn(mintOrBurnParams).catch((error) => {
       const message = extractErrorMessage(error);
 
@@ -552,6 +569,7 @@ class AMM {
       throw new Error(getError(message));
     });
 
+    console.log("before actual call");
     const mintTransaction = await peripheryContract.mintOrBurn(mintOrBurnParams).catch((error) => {
       const message = extractErrorMessage(error);
 
@@ -748,7 +766,7 @@ class AMM {
       marginDelta: scaledMarginDelta,
     };
 
-    await peripheryContract.callStatic.swap(swapPeripheryParams).catch(async (error: any) => {
+    await peripheryContract.callStatic.swap(swapPeripheryParams).catch((error: any) => {
       const message = extractErrorMessage(error);
 
       if (isNull(message)) {
@@ -927,8 +945,8 @@ class AMM {
     };
   }
 
-  public getNextUsableFixedRate(fixedRate: number, count: number) : number {
-    let { closestUsableTick } =  this.closestTickAndFixedRate(fixedRate);
+  public getNextUsableFixedRate(fixedRate: number, count: number): number {
+    let { closestUsableTick } = this.closestTickAndFixedRate(fixedRate);
     closestUsableTick -= count * JSBI.toNumber(this.tickSpacing);
     return tickToFixedRate(closestUsableTick).toNumber();
   }

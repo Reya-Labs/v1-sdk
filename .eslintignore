@@ -1,3 +1,4 @@
 src/entities/amm.ts
 *.spec.ts
 src/utils/extractErrorMessage.ts
+src/e2e_tests/*
