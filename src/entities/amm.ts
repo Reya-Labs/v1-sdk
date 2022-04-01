@@ -580,6 +580,8 @@ class AMM {
       throw new Error(getError(message));
     });
 
+    console.log("after actual call");
+
     return mintTransaction.wait();
   }
 
