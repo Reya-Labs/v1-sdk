@@ -326,7 +326,8 @@ class AMM {
       tickUpper,
     );
 
-    return settlePositionTransaction.wait();
+    const receipt = await settlePositionTransaction.wait();
+    return receipt;
   }
 
   private scale(value: number): string {
@@ -369,7 +370,8 @@ class AMM {
       scaledMarginDelta,
     );
 
-    return updatePositionMarginTransaction.wait();
+    const receipt = await updatePositionMarginTransaction.wait();
+    return receipt;
   }
 
   public async liquidatePosition({
@@ -387,7 +389,8 @@ class AMM {
     const marginEngineContract = marginEngineFactory.connect(this.marginEngineAddress, this.signer);
     const liquidatePositionTransaction = await marginEngineContract.liquidatePosition(owner, tickLower, tickUpper);
 
-    return liquidatePositionTransaction.wait();
+    const receipt = await liquidatePositionTransaction.wait();
+    return receipt;
   }
 
   public async getLiquidationThreshold({
@@ -410,7 +413,8 @@ class AMM {
       false,
     );
 
-    return parseFloat(utils.formatEther(threshold));
+    const scaledLiquidationThreshold = parseFloat(utils.formatEther(threshold));
+    return scaledLiquidationThreshold;
   }
 
   public async getMinimumMarginRequirementPostMint({
@@ -439,9 +443,12 @@ class AMM {
     }
 
     const signerAddress = await this.signer.getAddress();
+
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
+
     const peripheryContract = peripheryFactory.connect(PERIPHERY_ADDRESS, this.signer);
+
     const scaledNotional = this.scale(notional);
     const mintOrBurnParams: MintOrBurnParams = {
       marginEngine: this.marginEngineAddress,
@@ -582,7 +589,8 @@ class AMM {
 
     console.log("after actual call");
 
-    return mintTransaction.wait();
+    const receipt = await mintTransaction.wait();
+    return receipt;
   }
 
   public async burn({
@@ -651,7 +659,8 @@ class AMM {
       throw new Error(getError(message));
     });
 
-    return burnTransaction.wait();
+    const receipt = await burnTransaction.wait()
+    return receipt;
   }
 
   public async approveFCM(): Promise<ContractReceipt | void> {
@@ -669,7 +678,8 @@ class AMM {
 
     const approvalTransaction = await factoryContract.setApproval(this.fcmAddress, true);
 
-    return approvalTransaction.wait();
+    const receipt = await approvalTransaction.wait();
+    return receipt;
   }
 
   public async approveERC20(
@@ -693,7 +703,8 @@ class AMM {
 
     const approvalTransaction = await token.approve(addressToApprove, marginDelta);
 
-    return approvalTransaction.wait();
+    const receipt = await approvalTransaction.wait();
+    return receipt;
   }
 
   public async swap({
@@ -789,7 +800,8 @@ class AMM {
       throw new Error(getError(message));
     });
 
-    return swapTransaction.wait();
+    const receipt = await swapTransaction.wait();
+    return receipt;
   }
 
   public async FCMSwap({
@@ -822,7 +834,8 @@ class AMM {
       sqrtPriceLimitX96,
     );
 
-    return fcmSwapTransaction.wait();
+    const receipt = await fcmSwapTransaction.wait();
+    return receipt;
   }
 
   public async FCMUnwind({
@@ -854,7 +867,8 @@ class AMM {
       sqrtPriceLimitX96,
     );
 
-    return fcmUnwindTransaction.wait();
+    const receipt = await fcmUnwindTransaction.wait();
+    return receipt;
   }
 
   public async settleFCMTrader(): Promise<ContractReceipt> {
@@ -865,7 +879,8 @@ class AMM {
     const fcmContract = fcmFactory.connect(this.fcmAddress, this.signer);
     const fcmSettleTraderTransaction = await fcmContract.settleTrader();
 
-    return fcmSettleTraderTransaction.wait();
+    const receipt = await fcmSettleTraderTransaction.wait();
+    return receipt;
   }
 
   public get startDateTime(): DateTime {

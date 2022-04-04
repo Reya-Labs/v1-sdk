@@ -1,6 +1,6 @@
 import { providers, Wallet } from 'ethers';
 
-import { Token, RateOracle, AMM, InfoPostSwap } from '../../src';
+import { Token, RateOracle, AMM } from '../../src';
 import { TickMath } from '../../src/utils/tickMath';
 
 const setup = async () => {
@@ -115,7 +115,7 @@ const setup = async () => {
             });
         } catch (error: any) {
             console.log(error.message);
-            if (error.message.toString().includes("Cannot read properties of undefined")) {
+            if (error.message.toString().includes("Transaction reverted and Hardhat couldn't infer the reason")) {
                 break;
             }
         }
