@@ -40,32 +40,6 @@ const setup = async () => {
         updatedTimestamp: '1646856471',
     });
 
-    const ammOther = new AMM({
-        id: vammAddress,
-        signer: other,
-        provider,
-        createdTimestamp: '1646856471',
-        fcmAddress: '0x5392a33f7f677f59e833febf4016cddd88ff9e67',
-        liquidity: '0',
-        marginEngineAddress,
-        rateOracle: new RateOracle({
-            id: '0x0165878a594ca255338adfa4d48449f69242eb8f',
-            protocolId: 1,
-        }),
-        underlyingToken: new Token({
-            id: '0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9',
-            name: 'USDC',
-            decimals: 18,
-        }),
-        sqrtPriceX96: TickMath.getSqrtRatioAtTick(0).toString(),
-        termEndTimestamp: '1649458800000000000000000000',
-        termStartTimestamp: '1646856441000000000000000000',
-        tick: '0',
-        tickSpacing: '1000',
-        txCount: 0,
-        updatedTimestamp: '1646856471',
-    });
-
     // const fixedLow = 4.05;
     // const fixedHigh = 11.02;
 
@@ -115,7 +89,7 @@ const setup = async () => {
             });
         } catch (error: any) {
             console.log(error.message);
-            if (error.message.toString().includes("Transaction reverted and Hardhat couldn't infer the reason")) {
+            if (error.message.toString().includes("Unrecognized error")) {
                 break;
             }
         }
