@@ -26,7 +26,6 @@ interface TestRateOracleInterface extends ethers.utils.Interface {
     "aaveLendingPool()": FunctionFragment;
     "binarySearch(uint32)": FunctionFragment;
     "getApyFromTo(uint256,uint256)": FunctionFragment;
-    "getOracleVars()": FunctionFragment;
     "getRate(uint16)": FunctionFragment;
     "getRateFromTo(uint256,uint256)": FunctionFragment;
     "increaseObservationCardinalityNext(uint16)": FunctionFragment;
@@ -76,10 +75,6 @@ interface TestRateOracleInterface extends ethers.utils.Interface {
   encodeFunctionData(
     functionFragment: "getApyFromTo",
     values: [BigNumberish, BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getOracleVars",
-    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "getRate",
@@ -200,10 +195,6 @@ interface TestRateOracleInterface extends ethers.utils.Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "getApyFromTo",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getOracleVars",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "getRate", data: BytesLike): Result;
@@ -422,8 +413,6 @@ export class TestRateOracle extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[BigNumber] & { apyFromToWad: BigNumber }>;
 
-    getOracleVars(overrides?: CallOverrides): Promise<[number, number, number]>;
-
     getRate(
       index: BigNumberish,
       overrides?: CallOverrides
@@ -599,8 +588,6 @@ export class TestRateOracle extends BaseContract {
     overrides?: CallOverrides
   ): Promise<BigNumber>;
 
-  getOracleVars(overrides?: CallOverrides): Promise<[number, number, number]>;
-
   getRate(
     index: BigNumberish,
     overrides?: CallOverrides
@@ -775,8 +762,6 @@ export class TestRateOracle extends BaseContract {
       to: BigNumberish,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
-
-    getOracleVars(overrides?: CallOverrides): Promise<[number, number, number]>;
 
     getRate(
       index: BigNumberish,
@@ -1002,8 +987,6 @@ export class TestRateOracle extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
-    getOracleVars(overrides?: CallOverrides): Promise<BigNumber>;
-
     getRate(index: BigNumberish, overrides?: CallOverrides): Promise<BigNumber>;
 
     getRateFromTo(
@@ -1138,8 +1121,6 @@ export class TestRateOracle extends BaseContract {
       to: BigNumberish,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
-
-    getOracleVars(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     getRate(
       index: BigNumberish,

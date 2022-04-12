@@ -27,35 +27,13 @@ const _abi = [
     type: "error",
   },
   {
-    inputs: [
-      {
-        internalType: "uint256",
-        name: "marginRequirement",
-        type: "uint256",
-      },
-    ],
+    inputs: [],
     name: "CannotLiquidate",
     type: "error",
   },
   {
     inputs: [],
     name: "CannotSettleBeforeMaturity",
-    type: "error",
-  },
-  {
-    inputs: [
-      {
-        internalType: "uint256",
-        name: "x",
-        type: "uint256",
-      },
-      {
-        internalType: "uint256",
-        name: "y",
-        type: "uint256",
-      },
-    ],
-    name: "DebugError",
     type: "error",
   },
   {

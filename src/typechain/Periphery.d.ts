@@ -21,11 +21,16 @@ import type { TypedEventFilter, TypedEvent, TypedListener } from "./common";
 
 interface PeripheryInterface extends ethers.utils.Interface {
   functions: {
+    "estimatedCashflowAtMaturity(address,address,int24,int24)": FunctionFragment;
     "getCurrentTick(address)": FunctionFragment;
     "mintOrBurn((address,int24,int24,uint256,bool,uint256))": FunctionFragment;
     "swap((address,bool,uint256,uint160,int24,int24,uint256))": FunctionFragment;
   };
 
+  encodeFunctionData(
+    functionFragment: "estimatedCashflowAtMaturity",
+    values: [string, string, BigNumberish, BigNumberish]
+  ): string;
   encodeFunctionData(
     functionFragment: "getCurrentTick",
     values: [string]
@@ -58,6 +63,10 @@ interface PeripheryInterface extends ethers.utils.Interface {
     ]
   ): string;
 
+  decodeFunctionResult(
+    functionFragment: "estimatedCashflowAtMaturity",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "getCurrentTick",
     data: BytesLike
@@ -112,6 +121,14 @@ export class Periphery extends BaseContract {
   interface: PeripheryInterface;
 
   functions: {
+    estimatedCashflowAtMaturity(
+      marginEngine: string,
+      _owner: string,
+      _tickLower: BigNumberish,
+      _tickUpper: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
     getCurrentTick(
       marginEngine: string,
       overrides?: CallOverrides
@@ -142,6 +159,14 @@ export class Periphery extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
   };
+
+  estimatedCashflowAtMaturity(
+    marginEngine: string,
+    _owner: string,
+    _tickLower: BigNumberish,
+    _tickUpper: BigNumberish,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
 
   getCurrentTick(
     marginEngine: string,
@@ -174,6 +199,14 @@ export class Periphery extends BaseContract {
   ): Promise<ContractTransaction>;
 
   callStatic: {
+    estimatedCashflowAtMaturity(
+      marginEngine: string,
+      _owner: string,
+      _tickLower: BigNumberish,
+      _tickUpper: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
     getCurrentTick(
       marginEngine: string,
       overrides?: CallOverrides
@@ -217,6 +250,14 @@ export class Periphery extends BaseContract {
   filters: {};
 
   estimateGas: {
+    estimatedCashflowAtMaturity(
+      marginEngine: string,
+      _owner: string,
+      _tickLower: BigNumberish,
+      _tickUpper: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
     getCurrentTick(
       marginEngine: string,
       overrides?: CallOverrides
@@ -249,6 +290,14 @@ export class Periphery extends BaseContract {
   };
 
   populateTransaction: {
+    estimatedCashflowAtMaturity(
+      marginEngine: string,
+      _owner: string,
+      _tickLower: BigNumberish,
+      _tickUpper: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
     getCurrentTick(
       marginEngine: string,
       overrides?: CallOverrides

@@ -534,7 +534,7 @@ interface TestMarginEngineInterface extends ethers.utils.Interface {
     "MarginCalculatorParametersSetting(tuple)": EventFragment;
     "OwnershipTransferred(address,address)": EventFragment;
     "Paused(address)": EventFragment;
-    "PositionLiquidation(address,int24,int24,int256,int256,int256,uint128)": EventFragment;
+    "PositionLiquidation(address,int24,int24,int256,int256,int256,uint128,address)": EventFragment;
     "PositionMarginUpdate(address,int24,int24,int256)": EventFragment;
     "PositionPostMintBurnUpdate(address,int24,int24,uint128)": EventFragment;
     "PositionPostSwapUpdate(address,int24,int24,int256,int256,int256)": EventFragment;
@@ -678,7 +678,16 @@ export type OwnershipTransferredEvent = TypedEvent<
 export type PausedEvent = TypedEvent<[string] & { account: string }>;
 
 export type PositionLiquidationEvent = TypedEvent<
-  [string, number, number, BigNumber, BigNumber, BigNumber, BigNumber] & {
+  [
+    string,
+    number,
+    number,
+    BigNumber,
+    BigNumber,
+    BigNumber,
+    BigNumber,
+    string
+  ] & {
     owner: string;
     tickLower: number;
     tickUpper: number;
@@ -686,6 +695,7 @@ export type PositionLiquidationEvent = TypedEvent<
     variableTokenBalance: BigNumber;
     margin: BigNumber;
     liquidity: BigNumber;
+    liquidator: string;
   }
 >;
 
@@ -1957,16 +1967,26 @@ export class TestMarginEngine extends BaseContract {
 
     Paused(account?: null): TypedEventFilter<[string], { account: string }>;
 
-    "PositionLiquidation(address,int24,int24,int256,int256,int256,uint128)"(
+    "PositionLiquidation(address,int24,int24,int256,int256,int256,uint128,address)"(
       owner?: string | null,
       tickLower?: BigNumberish | null,
       tickUpper?: BigNumberish | null,
       fixedTokenBalance?: null,
       variableTokenBalance?: null,
       margin?: null,
-      liquidity?: null
+      liquidity?: null,
+      liquidator?: null
     ): TypedEventFilter<
-      [string, number, number, BigNumber, BigNumber, BigNumber, BigNumber],
+      [
+        string,
+        number,
+        number,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        string
+      ],
       {
         owner: string;
         tickLower: number;
@@ -1975,6 +1995,7 @@ export class TestMarginEngine extends BaseContract {
         variableTokenBalance: BigNumber;
         margin: BigNumber;
         liquidity: BigNumber;
+        liquidator: string;
       }
     >;
 
@@ -1985,9 +2006,19 @@ export class TestMarginEngine extends BaseContract {
       fixedTokenBalance?: null,
       variableTokenBalance?: null,
       margin?: null,
-      liquidity?: null
+      liquidity?: null,
+      liquidator?: null
     ): TypedEventFilter<
-      [string, number, number, BigNumber, BigNumber, BigNumber, BigNumber],
+      [
+        string,
+        number,
+        number,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        string
+      ],
       {
         owner: string;
         tickLower: number;
@@ -1996,6 +2027,7 @@ export class TestMarginEngine extends BaseContract {
         variableTokenBalance: BigNumber;
         margin: BigNumber;
         liquidity: BigNumber;
+        liquidator: string;
       }
     >;
 

@@ -21,21 +21,23 @@ import type { TypedEventFilter, TypedEvent, TypedListener } from "./common";
 
 interface ActorInterface extends ethers.utils.Interface {
   functions: {
-    "burn(address,address,int24,int24,uint128)": FunctionFragment;
+    "burnViaAMM(address,address,int24,int24,uint128)": FunctionFragment;
     "initiateFullyCollateralisedFixedTakerSwap(address,uint256,uint160)": FunctionFragment;
     "liquidatePosition(address,int24,int24,address)": FunctionFragment;
-    "mint(address,address,int24,int24,uint128)": FunctionFragment;
     "mintOrBurnViaPeriphery(address,(address,int24,int24,uint256,bool,uint256))": FunctionFragment;
+    "mintViaAMM(address,address,int24,int24,uint128)": FunctionFragment;
     "setIntegrationApproval(address,address,bool)": FunctionFragment;
+    "settlePosition(address,address,int24,int24)": FunctionFragment;
+    "settlePositionViaAMM(address,address,int24,int24)": FunctionFragment;
     "settleYBATrader(address)": FunctionFragment;
-    "swap(address,(address,int256,uint160,int24,int24))": FunctionFragment;
+    "swapViaAMM(address,(address,int256,uint160,int24,int24))": FunctionFragment;
     "swapViaPeriphery(address,(address,bool,uint256,uint160,int24,int24,uint256))": FunctionFragment;
     "unwindFullyCollateralisedFixedTakerSwap(address,uint256,uint160)": FunctionFragment;
-    "updatePositionMargin(address,address,int24,int24,int256)": FunctionFragment;
+    "updatePositionMarginViaAMM(address,address,int24,int24,int256)": FunctionFragment;
   };
 
   encodeFunctionData(
-    functionFragment: "burn",
+    functionFragment: "burnViaAMM",
     values: [string, string, BigNumberish, BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(
@@ -45,10 +47,6 @@ interface ActorInterface extends ethers.utils.Interface {
   encodeFunctionData(
     functionFragment: "liquidatePosition",
     values: [string, BigNumberish, BigNumberish, string]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "mint",
-    values: [string, string, BigNumberish, BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "mintOrBurnViaPeriphery",
@@ -65,15 +63,27 @@ interface ActorInterface extends ethers.utils.Interface {
     ]
   ): string;
   encodeFunctionData(
+    functionFragment: "mintViaAMM",
+    values: [string, string, BigNumberish, BigNumberish, BigNumberish]
+  ): string;
+  encodeFunctionData(
     functionFragment: "setIntegrationApproval",
     values: [string, string, boolean]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "settlePosition",
+    values: [string, string, BigNumberish, BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "settlePositionViaAMM",
+    values: [string, string, BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "settleYBATrader",
     values: [string]
   ): string;
   encodeFunctionData(
-    functionFragment: "swap",
+    functionFragment: "swapViaAMM",
     values: [
       string,
       {
@@ -105,11 +115,11 @@ interface ActorInterface extends ethers.utils.Interface {
     values: [string, BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "updatePositionMargin",
+    functionFragment: "updatePositionMarginViaAMM",
     values: [string, string, BigNumberish, BigNumberish, BigNumberish]
   ): string;
 
-  decodeFunctionResult(functionFragment: "burn", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "burnViaAMM", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "initiateFullyCollateralisedFixedTakerSwap",
     data: BytesLike
@@ -118,20 +128,28 @@ interface ActorInterface extends ethers.utils.Interface {
     functionFragment: "liquidatePosition",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "mint", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "mintOrBurnViaPeriphery",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "mintViaAMM", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "setIntegrationApproval",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "settlePosition",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "settlePositionViaAMM",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
     functionFragment: "settleYBATrader",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "swap", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "swapViaAMM", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "swapViaPeriphery",
     data: BytesLike
@@ -141,7 +159,7 @@ interface ActorInterface extends ethers.utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "updatePositionMargin",
+    functionFragment: "updatePositionMarginViaAMM",
     data: BytesLike
   ): Result;
 
@@ -192,7 +210,7 @@ export class Actor extends BaseContract {
   interface: ActorInterface;
 
   functions: {
-    burn(
+    burnViaAMM(
       VAMMAddress: string,
       recipient: string,
       tickLower: BigNumberish,
@@ -216,15 +234,6 @@ export class Actor extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    mint(
-      VAMMAddress: string,
-      recipient: string,
-      tickLower: BigNumberish,
-      tickUpper: BigNumberish,
-      amount: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
-
     mintOrBurnViaPeriphery(
       peripheryAddress: string,
       params: {
@@ -238,10 +247,35 @@ export class Actor extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
+    mintViaAMM(
+      VAMMAddress: string,
+      recipient: string,
+      tickLower: BigNumberish,
+      tickUpper: BigNumberish,
+      amount: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
     setIntegrationApproval(
       MEAddress: string,
       intAddress: string,
       allowIntegration: boolean,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    settlePosition(
+      MEAdrress: string,
+      recipient: string,
+      tickLower: BigNumberish,
+      tickUpper: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    settlePositionViaAMM(
+      MEAddress: string,
+      _owner: string,
+      tickLower: BigNumberish,
+      tickUpper: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -250,7 +284,7 @@ export class Actor extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    swap(
+    swapViaAMM(
       VAMMAddress: string,
       params: {
         recipient: string;
@@ -283,7 +317,7 @@ export class Actor extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    updatePositionMargin(
+    updatePositionMarginViaAMM(
       MEAddress: string,
       _owner: string,
       tickLower: BigNumberish,
@@ -293,7 +327,7 @@ export class Actor extends BaseContract {
     ): Promise<ContractTransaction>;
   };
 
-  burn(
+  burnViaAMM(
     VAMMAddress: string,
     recipient: string,
     tickLower: BigNumberish,
@@ -317,15 +351,6 @@ export class Actor extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  mint(
-    VAMMAddress: string,
-    recipient: string,
-    tickLower: BigNumberish,
-    tickUpper: BigNumberish,
-    amount: BigNumberish,
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
-
   mintOrBurnViaPeriphery(
     peripheryAddress: string,
     params: {
@@ -339,10 +364,35 @@ export class Actor extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  mintViaAMM(
+    VAMMAddress: string,
+    recipient: string,
+    tickLower: BigNumberish,
+    tickUpper: BigNumberish,
+    amount: BigNumberish,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
   setIntegrationApproval(
     MEAddress: string,
     intAddress: string,
     allowIntegration: boolean,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  settlePosition(
+    MEAdrress: string,
+    recipient: string,
+    tickLower: BigNumberish,
+    tickUpper: BigNumberish,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  settlePositionViaAMM(
+    MEAddress: string,
+    _owner: string,
+    tickLower: BigNumberish,
+    tickUpper: BigNumberish,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -351,7 +401,7 @@ export class Actor extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  swap(
+  swapViaAMM(
     VAMMAddress: string,
     params: {
       recipient: string;
@@ -384,7 +434,7 @@ export class Actor extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  updatePositionMargin(
+  updatePositionMarginViaAMM(
     MEAddress: string,
     _owner: string,
     tickLower: BigNumberish,
@@ -394,7 +444,7 @@ export class Actor extends BaseContract {
   ): Promise<ContractTransaction>;
 
   callStatic: {
-    burn(
+    burnViaAMM(
       VAMMAddress: string,
       recipient: string,
       tickLower: BigNumberish,
@@ -418,15 +468,6 @@ export class Actor extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
-    mint(
-      VAMMAddress: string,
-      recipient: string,
-      tickLower: BigNumberish,
-      tickUpper: BigNumberish,
-      amount: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<void>;
-
     mintOrBurnViaPeriphery(
       peripheryAddress: string,
       params: {
@@ -440,10 +481,35 @@ export class Actor extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
+    mintViaAMM(
+      VAMMAddress: string,
+      recipient: string,
+      tickLower: BigNumberish,
+      tickUpper: BigNumberish,
+      amount: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
     setIntegrationApproval(
       MEAddress: string,
       intAddress: string,
       allowIntegration: boolean,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    settlePosition(
+      MEAdrress: string,
+      recipient: string,
+      tickLower: BigNumberish,
+      tickUpper: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    settlePositionViaAMM(
+      MEAddress: string,
+      _owner: string,
+      tickLower: BigNumberish,
+      tickUpper: BigNumberish,
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -452,7 +518,7 @@ export class Actor extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
-    swap(
+    swapViaAMM(
       VAMMAddress: string,
       params: {
         recipient: string;
@@ -463,11 +529,12 @@ export class Actor extends BaseContract {
       },
       overrides?: CallOverrides
     ): Promise<
-      [BigNumber, BigNumber, BigNumber, BigNumber] & {
+      [BigNumber, BigNumber, BigNumber, BigNumber, BigNumber] & {
         _fixedTokenDelta: BigNumber;
         _variableTokenDelta: BigNumber;
         _cumulativeFeeIncurred: BigNumber;
         _fixedTokenDeltaUnbalanced: BigNumber;
+        _marginRequirement: BigNumber;
       }
     >;
 
@@ -500,7 +567,7 @@ export class Actor extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
-    updatePositionMargin(
+    updatePositionMarginViaAMM(
       MEAddress: string,
       _owner: string,
       tickLower: BigNumberish,
@@ -513,7 +580,7 @@ export class Actor extends BaseContract {
   filters: {};
 
   estimateGas: {
-    burn(
+    burnViaAMM(
       VAMMAddress: string,
       recipient: string,
       tickLower: BigNumberish,
@@ -537,15 +604,6 @@ export class Actor extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    mint(
-      VAMMAddress: string,
-      recipient: string,
-      tickLower: BigNumberish,
-      tickUpper: BigNumberish,
-      amount: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
     mintOrBurnViaPeriphery(
       peripheryAddress: string,
       params: {
@@ -559,10 +617,35 @@ export class Actor extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
+    mintViaAMM(
+      VAMMAddress: string,
+      recipient: string,
+      tickLower: BigNumberish,
+      tickUpper: BigNumberish,
+      amount: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
     setIntegrationApproval(
       MEAddress: string,
       intAddress: string,
       allowIntegration: boolean,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    settlePosition(
+      MEAdrress: string,
+      recipient: string,
+      tickLower: BigNumberish,
+      tickUpper: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    settlePositionViaAMM(
+      MEAddress: string,
+      _owner: string,
+      tickLower: BigNumberish,
+      tickUpper: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -571,7 +654,7 @@ export class Actor extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    swap(
+    swapViaAMM(
       VAMMAddress: string,
       params: {
         recipient: string;
@@ -604,7 +687,7 @@ export class Actor extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    updatePositionMargin(
+    updatePositionMarginViaAMM(
       MEAddress: string,
       _owner: string,
       tickLower: BigNumberish,
@@ -615,7 +698,7 @@ export class Actor extends BaseContract {
   };
 
   populateTransaction: {
-    burn(
+    burnViaAMM(
       VAMMAddress: string,
       recipient: string,
       tickLower: BigNumberish,
@@ -639,15 +722,6 @@ export class Actor extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    mint(
-      VAMMAddress: string,
-      recipient: string,
-      tickLower: BigNumberish,
-      tickUpper: BigNumberish,
-      amount: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
     mintOrBurnViaPeriphery(
       peripheryAddress: string,
       params: {
@@ -661,10 +735,35 @@ export class Actor extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
+    mintViaAMM(
+      VAMMAddress: string,
+      recipient: string,
+      tickLower: BigNumberish,
+      tickUpper: BigNumberish,
+      amount: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
     setIntegrationApproval(
       MEAddress: string,
       intAddress: string,
       allowIntegration: boolean,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    settlePosition(
+      MEAdrress: string,
+      recipient: string,
+      tickLower: BigNumberish,
+      tickUpper: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    settlePositionViaAMM(
+      MEAddress: string,
+      _owner: string,
+      tickLower: BigNumberish,
+      tickUpper: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
@@ -673,7 +772,7 @@ export class Actor extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    swap(
+    swapViaAMM(
       VAMMAddress: string,
       params: {
         recipient: string;
@@ -706,7 +805,7 @@ export class Actor extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    updatePositionMargin(
+    updatePositionMarginViaAMM(
       MEAddress: string,
       _owner: string,
       tickLower: BigNumberish,

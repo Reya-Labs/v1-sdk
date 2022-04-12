@@ -30,42 +30,42 @@ interface E2ESetupInterface extends ethers.utils.Interface {
     "addYBATrader(address)": FunctionFragment;
     "allPositions(uint256)": FunctionFragment;
     "allYBATraders(uint256)": FunctionFragment;
-    "burn(address,int24,int24,uint128)": FunctionFragment;
+    "burnViaAMM(address,int24,int24,uint128)": FunctionFragment;
     "continuousInvariants()": FunctionFragment;
     "fcmFees()": FunctionFragment;
-    "getGasConsumedAtLastTx()": FunctionFragment;
     "getPositionHistory(address,int24,int24)": FunctionFragment;
     "getPositionSwapsHistory(address,int24,int24)": FunctionFragment;
-    "getSwapsHistory(address,int24,int24)": FunctionFragment;
     "indexAllPositions(bytes32)": FunctionFragment;
     "indexAllYBATraders(address)": FunctionFragment;
     "initialCashflow()": FunctionFragment;
     "initiateFullyCollateralisedFixedTakerSwap(address,uint256,uint160)": FunctionFragment;
     "invariantPostMaturity()": FunctionFragment;
     "keepInMindGas()": FunctionFragment;
-    "liquidatePosition(int24,int24,address,int24,int24,address)": FunctionFragment;
+    "liquidatePosition(address,int24,int24,address,int24,int24)": FunctionFragment;
     "liquidationRewards()": FunctionFragment;
-    "mint(address,int24,int24,uint128)": FunctionFragment;
-    "mintOrBurnViaPeriphery((address,int24,int24,uint256,bool,uint256))": FunctionFragment;
+    "mintOrBurnViaPeriphery(address,(address,int24,int24,uint256,bool,uint256))": FunctionFragment;
+    "mintViaAMM(address,int24,int24,uint128)": FunctionFragment;
     "peripheryAddress()": FunctionFragment;
     "positionHistory(bytes32,uint256)": FunctionFragment;
     "positionSwapsHistory(bytes32,uint256)": FunctionFragment;
     "rateOracleAddress()": FunctionFragment;
     "setFCMAddress(address)": FunctionFragment;
+    "setIntegrationApproval(address,address,bool)": FunctionFragment;
     "setMEAddress(address)": FunctionFragment;
     "setPeripheryAddress(address)": FunctionFragment;
     "setRateOracleAddress(address)": FunctionFragment;
     "setVAMMAddress(address)": FunctionFragment;
+    "settlePositionViaAMM(address,int24,int24)": FunctionFragment;
     "settleYBATrader(address)": FunctionFragment;
     "settlementCashflowBasedOnSwapSnapshots(address,int24,int24)": FunctionFragment;
     "sizeAllPositions()": FunctionFragment;
     "sizeAllYBATraders()": FunctionFragment;
     "sizeOfPositionHistory(bytes32)": FunctionFragment;
     "sizeOfPositionSwapsHistory(bytes32)": FunctionFragment;
-    "swap((address,int256,uint160,int24,int24))": FunctionFragment;
-    "swapViaPeriphery((address,bool,uint256,uint160,int24,int24,uint256))": FunctionFragment;
+    "swapViaAMM((address,int256,uint160,int24,int24))": FunctionFragment;
+    "swapViaPeriphery(address,(address,bool,uint256,uint160,int24,int24,uint256))": FunctionFragment;
     "unwindFullyCollateralisedFixedTakerSwap(address,uint256,uint160)": FunctionFragment;
-    "updatePositionMargin(address,int24,int24,int256)": FunctionFragment;
+    "updatePositionMarginViaAMM(address,int24,int24,int256)": FunctionFragment;
   };
 
   encodeFunctionData(
@@ -106,7 +106,7 @@ interface E2ESetupInterface extends ethers.utils.Interface {
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "burn",
+    functionFragment: "burnViaAMM",
     values: [string, BigNumberish, BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(
@@ -115,19 +115,11 @@ interface E2ESetupInterface extends ethers.utils.Interface {
   ): string;
   encodeFunctionData(functionFragment: "fcmFees", values?: undefined): string;
   encodeFunctionData(
-    functionFragment: "getGasConsumedAtLastTx",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
     functionFragment: "getPositionHistory",
     values: [string, BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "getPositionSwapsHistory",
-    values: [string, BigNumberish, BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getSwapsHistory",
     values: [string, BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(
@@ -157,12 +149,12 @@ interface E2ESetupInterface extends ethers.utils.Interface {
   encodeFunctionData(
     functionFragment: "liquidatePosition",
     values: [
+      string,
       BigNumberish,
       BigNumberish,
       string,
       BigNumberish,
-      BigNumberish,
-      string
+      BigNumberish
     ]
   ): string;
   encodeFunctionData(
@@ -170,12 +162,9 @@ interface E2ESetupInterface extends ethers.utils.Interface {
     values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "mint",
-    values: [string, BigNumberish, BigNumberish, BigNumberish]
-  ): string;
-  encodeFunctionData(
     functionFragment: "mintOrBurnViaPeriphery",
     values: [
+      string,
       {
         marginEngine: string;
         tickLower: BigNumberish;
@@ -185,6 +174,10 @@ interface E2ESetupInterface extends ethers.utils.Interface {
         marginDelta: BigNumberish;
       }
     ]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "mintViaAMM",
+    values: [string, BigNumberish, BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "peripheryAddress",
@@ -207,6 +200,10 @@ interface E2ESetupInterface extends ethers.utils.Interface {
     values: [string]
   ): string;
   encodeFunctionData(
+    functionFragment: "setIntegrationApproval",
+    values: [string, string, boolean]
+  ): string;
+  encodeFunctionData(
     functionFragment: "setMEAddress",
     values: [string]
   ): string;
@@ -221,6 +218,10 @@ interface E2ESetupInterface extends ethers.utils.Interface {
   encodeFunctionData(
     functionFragment: "setVAMMAddress",
     values: [string]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "settlePositionViaAMM",
+    values: [string, BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "settleYBATrader",
@@ -247,7 +248,7 @@ interface E2ESetupInterface extends ethers.utils.Interface {
     values: [BytesLike]
   ): string;
   encodeFunctionData(
-    functionFragment: "swap",
+    functionFragment: "swapViaAMM",
     values: [
       {
         recipient: string;
@@ -261,6 +262,7 @@ interface E2ESetupInterface extends ethers.utils.Interface {
   encodeFunctionData(
     functionFragment: "swapViaPeriphery",
     values: [
+      string,
       {
         marginEngine: string;
         isFT: boolean;
@@ -277,7 +279,7 @@ interface E2ESetupInterface extends ethers.utils.Interface {
     values: [string, BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "updatePositionMargin",
+    functionFragment: "updatePositionMarginViaAMM",
     values: [string, BigNumberish, BigNumberish, BigNumberish]
   ): string;
 
@@ -308,26 +310,18 @@ interface E2ESetupInterface extends ethers.utils.Interface {
     functionFragment: "allYBATraders",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "burn", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "burnViaAMM", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "continuousInvariants",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "fcmFees", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "getGasConsumedAtLastTx",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
     functionFragment: "getPositionHistory",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
     functionFragment: "getPositionSwapsHistory",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getSwapsHistory",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -362,11 +356,11 @@ interface E2ESetupInterface extends ethers.utils.Interface {
     functionFragment: "liquidationRewards",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "mint", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "mintOrBurnViaPeriphery",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "mintViaAMM", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "peripheryAddress",
     data: BytesLike
@@ -388,6 +382,10 @@ interface E2ESetupInterface extends ethers.utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "setIntegrationApproval",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "setMEAddress",
     data: BytesLike
   ): Result;
@@ -401,6 +399,10 @@ interface E2ESetupInterface extends ethers.utils.Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "setVAMMAddress",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "settlePositionViaAMM",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -427,7 +429,7 @@ interface E2ESetupInterface extends ethers.utils.Interface {
     functionFragment: "sizeOfPositionSwapsHistory",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: "swap", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "swapViaAMM", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "swapViaPeriphery",
     data: BytesLike
@@ -437,7 +439,7 @@ interface E2ESetupInterface extends ethers.utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "updatePositionMargin",
+    functionFragment: "updatePositionMarginViaAMM",
     data: BytesLike
   ): Result;
 
@@ -534,7 +536,7 @@ export class E2ESetup extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[string]>;
 
-    burn(
+    burnViaAMM(
       recipient: string,
       tickLower: BigNumberish,
       tickUpper: BigNumberish,
@@ -547,8 +549,6 @@ export class E2ESetup extends BaseContract {
     ): Promise<ContractTransaction>;
 
     fcmFees(overrides?: CallOverrides): Promise<[BigNumber]>;
-
-    getGasConsumedAtLastTx(overrides?: CallOverrides): Promise<[BigNumber]>;
 
     getPositionHistory(
       owner: string,
@@ -607,33 +607,6 @@ export class E2ESetup extends BaseContract {
       ]
     >;
 
-    getSwapsHistory(
-      owner: string,
-      tickLower: BigNumberish,
-      tickUpper: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<
-      [
-        ([
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          BigNumber,
-          boolean,
-          BigNumber,
-          BigNumber
-        ] & {
-          reserveNormalizedIncomeAtSwap: BigNumber;
-          swapInitiationTimestampWad: BigNumber;
-          termEndTimestampWad: BigNumber;
-          notional: BigNumber;
-          isFT: boolean;
-          fixedRateWad: BigNumber;
-          feePaidInUnderlyingTokens: BigNumber;
-        })[]
-      ]
-    >;
-
     indexAllPositions(
       arg0: BytesLike,
       overrides?: CallOverrides
@@ -660,26 +633,19 @@ export class E2ESetup extends BaseContract {
     keepInMindGas(overrides?: CallOverrides): Promise<[BigNumber]>;
 
     liquidatePosition(
+      liquidator: string,
       lowerTickLiquidator: BigNumberish,
       upperTickLiquidator: BigNumberish,
-      liquidator: string,
+      owner: string,
       tickLower: BigNumberish,
       tickUpper: BigNumberish,
-      owner: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
     liquidationRewards(overrides?: CallOverrides): Promise<[BigNumber]>;
 
-    mint(
-      recipient: string,
-      tickLower: BigNumberish,
-      tickUpper: BigNumberish,
-      amount: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<ContractTransaction>;
-
     mintOrBurnViaPeriphery(
+      trader: string,
       params: {
         marginEngine: string;
         tickLower: BigNumberish;
@@ -688,6 +654,14 @@ export class E2ESetup extends BaseContract {
         isMint: boolean;
         marginDelta: BigNumberish;
       },
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    mintViaAMM(
+      recipient: string,
+      tickLower: BigNumberish,
+      tickUpper: BigNumberish,
+      amount: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -750,6 +724,13 @@ export class E2ESetup extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
+    setIntegrationApproval(
+      recipient: string,
+      intAddress: string,
+      allowIntegration: boolean,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
     setMEAddress(
       _MEAddress: string,
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -767,6 +748,13 @@ export class E2ESetup extends BaseContract {
 
     setVAMMAddress(
       _VAMMAddress: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    settlePositionViaAMM(
+      recipient: string,
+      tickLower: BigNumberish,
+      tickUpper: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
@@ -796,7 +784,7 @@ export class E2ESetup extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[BigNumber]>;
 
-    swap(
+    swapViaAMM(
       params: {
         recipient: string;
         amountSpecified: BigNumberish;
@@ -808,6 +796,7 @@ export class E2ESetup extends BaseContract {
     ): Promise<ContractTransaction>;
 
     swapViaPeriphery(
+      trader: string,
       params: {
         marginEngine: string;
         isFT: boolean;
@@ -827,7 +816,7 @@ export class E2ESetup extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
-    updatePositionMargin(
+    updatePositionMarginViaAMM(
       _owner: string,
       tickLower: BigNumberish,
       tickUpper: BigNumberish,
@@ -879,7 +868,7 @@ export class E2ESetup extends BaseContract {
 
   allYBATraders(arg0: BigNumberish, overrides?: CallOverrides): Promise<string>;
 
-  burn(
+  burnViaAMM(
     recipient: string,
     tickLower: BigNumberish,
     tickUpper: BigNumberish,
@@ -892,8 +881,6 @@ export class E2ESetup extends BaseContract {
   ): Promise<ContractTransaction>;
 
   fcmFees(overrides?: CallOverrides): Promise<BigNumber>;
-
-  getGasConsumedAtLastTx(overrides?: CallOverrides): Promise<BigNumber>;
 
   getPositionHistory(
     owner: string,
@@ -950,31 +937,6 @@ export class E2ESetup extends BaseContract {
     ]
   >;
 
-  getSwapsHistory(
-    owner: string,
-    tickLower: BigNumberish,
-    tickUpper: BigNumberish,
-    overrides?: CallOverrides
-  ): Promise<
-    ([
-      BigNumber,
-      BigNumber,
-      BigNumber,
-      BigNumber,
-      boolean,
-      BigNumber,
-      BigNumber
-    ] & {
-      reserveNormalizedIncomeAtSwap: BigNumber;
-      swapInitiationTimestampWad: BigNumber;
-      termEndTimestampWad: BigNumber;
-      notional: BigNumber;
-      isFT: boolean;
-      fixedRateWad: BigNumber;
-      feePaidInUnderlyingTokens: BigNumber;
-    })[]
-  >;
-
   indexAllPositions(
     arg0: BytesLike,
     overrides?: CallOverrides
@@ -1001,26 +963,19 @@ export class E2ESetup extends BaseContract {
   keepInMindGas(overrides?: CallOverrides): Promise<BigNumber>;
 
   liquidatePosition(
+    liquidator: string,
     lowerTickLiquidator: BigNumberish,
     upperTickLiquidator: BigNumberish,
-    liquidator: string,
+    owner: string,
     tickLower: BigNumberish,
     tickUpper: BigNumberish,
-    owner: string,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   liquidationRewards(overrides?: CallOverrides): Promise<BigNumber>;
 
-  mint(
-    recipient: string,
-    tickLower: BigNumberish,
-    tickUpper: BigNumberish,
-    amount: BigNumberish,
-    overrides?: Overrides & { from?: string | Promise<string> }
-  ): Promise<ContractTransaction>;
-
   mintOrBurnViaPeriphery(
+    trader: string,
     params: {
       marginEngine: string;
       tickLower: BigNumberish;
@@ -1029,6 +984,14 @@ export class E2ESetup extends BaseContract {
       isMint: boolean;
       marginDelta: BigNumberish;
     },
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  mintViaAMM(
+    recipient: string,
+    tickLower: BigNumberish,
+    tickUpper: BigNumberish,
+    amount: BigNumberish,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -1091,6 +1054,13 @@ export class E2ESetup extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
+  setIntegrationApproval(
+    recipient: string,
+    intAddress: string,
+    allowIntegration: boolean,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
   setMEAddress(
     _MEAddress: string,
     overrides?: Overrides & { from?: string | Promise<string> }
@@ -1108,6 +1078,13 @@ export class E2ESetup extends BaseContract {
 
   setVAMMAddress(
     _VAMMAddress: string,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  settlePositionViaAMM(
+    recipient: string,
+    tickLower: BigNumberish,
+    tickUpper: BigNumberish,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
@@ -1137,7 +1114,7 @@ export class E2ESetup extends BaseContract {
     overrides?: CallOverrides
   ): Promise<BigNumber>;
 
-  swap(
+  swapViaAMM(
     params: {
       recipient: string;
       amountSpecified: BigNumberish;
@@ -1149,6 +1126,7 @@ export class E2ESetup extends BaseContract {
   ): Promise<ContractTransaction>;
 
   swapViaPeriphery(
+    trader: string,
     params: {
       marginEngine: string;
       isFT: boolean;
@@ -1168,7 +1146,7 @@ export class E2ESetup extends BaseContract {
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
-  updatePositionMargin(
+  updatePositionMarginViaAMM(
     _owner: string,
     tickLower: BigNumberish,
     tickUpper: BigNumberish,
@@ -1220,7 +1198,7 @@ export class E2ESetup extends BaseContract {
       overrides?: CallOverrides
     ): Promise<string>;
 
-    burn(
+    burnViaAMM(
       recipient: string,
       tickLower: BigNumberish,
       tickUpper: BigNumberish,
@@ -1231,8 +1209,6 @@ export class E2ESetup extends BaseContract {
     continuousInvariants(overrides?: CallOverrides): Promise<void>;
 
     fcmFees(overrides?: CallOverrides): Promise<BigNumber>;
-
-    getGasConsumedAtLastTx(overrides?: CallOverrides): Promise<BigNumber>;
 
     getPositionHistory(
       owner: string,
@@ -1289,31 +1265,6 @@ export class E2ESetup extends BaseContract {
       ]
     >;
 
-    getSwapsHistory(
-      owner: string,
-      tickLower: BigNumberish,
-      tickUpper: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<
-      ([
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        boolean,
-        BigNumber,
-        BigNumber
-      ] & {
-        reserveNormalizedIncomeAtSwap: BigNumber;
-        swapInitiationTimestampWad: BigNumber;
-        termEndTimestampWad: BigNumber;
-        notional: BigNumber;
-        isFT: boolean;
-        fixedRateWad: BigNumber;
-        feePaidInUnderlyingTokens: BigNumber;
-      })[]
-    >;
-
     indexAllPositions(
       arg0: BytesLike,
       overrides?: CallOverrides
@@ -1338,26 +1289,19 @@ export class E2ESetup extends BaseContract {
     keepInMindGas(overrides?: CallOverrides): Promise<BigNumber>;
 
     liquidatePosition(
+      liquidator: string,
       lowerTickLiquidator: BigNumberish,
       upperTickLiquidator: BigNumberish,
-      liquidator: string,
+      owner: string,
       tickLower: BigNumberish,
       tickUpper: BigNumberish,
-      owner: string,
       overrides?: CallOverrides
     ): Promise<void>;
 
     liquidationRewards(overrides?: CallOverrides): Promise<BigNumber>;
 
-    mint(
-      recipient: string,
-      tickLower: BigNumberish,
-      tickUpper: BigNumberish,
-      amount: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<void>;
-
     mintOrBurnViaPeriphery(
+      trader: string,
       params: {
         marginEngine: string;
         tickLower: BigNumberish;
@@ -1366,6 +1310,14 @@ export class E2ESetup extends BaseContract {
         isMint: boolean;
         marginDelta: BigNumberish;
       },
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    mintViaAMM(
+      recipient: string,
+      tickLower: BigNumberish,
+      tickUpper: BigNumberish,
+      amount: BigNumberish,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
@@ -1428,6 +1380,13 @@ export class E2ESetup extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
+    setIntegrationApproval(
+      recipient: string,
+      intAddress: string,
+      allowIntegration: boolean,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
     setMEAddress(_MEAddress: string, overrides?: CallOverrides): Promise<void>;
 
     setPeripheryAddress(
@@ -1442,6 +1401,13 @@ export class E2ESetup extends BaseContract {
 
     setVAMMAddress(
       _VAMMAddress: string,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    settlePositionViaAMM(
+      recipient: string,
+      tickLower: BigNumberish,
+      tickUpper: BigNumberish,
       overrides?: CallOverrides
     ): Promise<void>;
 
@@ -1468,7 +1434,7 @@ export class E2ESetup extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
-    swap(
+    swapViaAMM(
       params: {
         recipient: string;
         amountSpecified: BigNumberish;
@@ -1477,9 +1443,18 @@ export class E2ESetup extends BaseContract {
         tickUpper: BigNumberish;
       },
       overrides?: CallOverrides
-    ): Promise<void>;
+    ): Promise<
+      [BigNumber, BigNumber, BigNumber, BigNumber, BigNumber] & {
+        _fixedTokenDelta: BigNumber;
+        _variableTokenDelta: BigNumber;
+        _cumulativeFeeIncurred: BigNumber;
+        _fixedTokenDeltaUnbalanced: BigNumber;
+        _marginRequirement: BigNumber;
+      }
+    >;
 
     swapViaPeriphery(
+      trader: string,
       params: {
         marginEngine: string;
         isFT: boolean;
@@ -1491,9 +1466,12 @@ export class E2ESetup extends BaseContract {
       },
       overrides?: CallOverrides
     ): Promise<
-      [BigNumber, BigNumber] & {
-        positionMarginRequirement: BigNumber;
-        cumulativeFeeIncurred: BigNumber;
+      [BigNumber, BigNumber, BigNumber, BigNumber, BigNumber] & {
+        _fixedTokenDelta: BigNumber;
+        _variableTokenDelta: BigNumber;
+        _cumulativeFeeIncurred: BigNumber;
+        _fixedTokenDeltaUnbalanced: BigNumber;
+        _marginRequirement: BigNumber;
       }
     >;
 
@@ -1504,7 +1482,7 @@ export class E2ESetup extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
-    updatePositionMargin(
+    updatePositionMarginViaAMM(
       _owner: string,
       tickLower: BigNumberish,
       tickUpper: BigNumberish,
@@ -1556,7 +1534,7 @@ export class E2ESetup extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
-    burn(
+    burnViaAMM(
       recipient: string,
       tickLower: BigNumberish,
       tickUpper: BigNumberish,
@@ -1570,8 +1548,6 @@ export class E2ESetup extends BaseContract {
 
     fcmFees(overrides?: CallOverrides): Promise<BigNumber>;
 
-    getGasConsumedAtLastTx(overrides?: CallOverrides): Promise<BigNumber>;
-
     getPositionHistory(
       owner: string,
       tickLower: BigNumberish,
@@ -1580,13 +1556,6 @@ export class E2ESetup extends BaseContract {
     ): Promise<BigNumber>;
 
     getPositionSwapsHistory(
-      owner: string,
-      tickLower: BigNumberish,
-      tickUpper: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
-    getSwapsHistory(
       owner: string,
       tickLower: BigNumberish,
       tickUpper: BigNumberish,
@@ -1619,26 +1588,19 @@ export class E2ESetup extends BaseContract {
     keepInMindGas(overrides?: CallOverrides): Promise<BigNumber>;
 
     liquidatePosition(
+      liquidator: string,
       lowerTickLiquidator: BigNumberish,
       upperTickLiquidator: BigNumberish,
-      liquidator: string,
+      owner: string,
       tickLower: BigNumberish,
       tickUpper: BigNumberish,
-      owner: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     liquidationRewards(overrides?: CallOverrides): Promise<BigNumber>;
 
-    mint(
-      recipient: string,
-      tickLower: BigNumberish,
-      tickUpper: BigNumberish,
-      amount: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<BigNumber>;
-
     mintOrBurnViaPeriphery(
+      trader: string,
       params: {
         marginEngine: string;
         tickLower: BigNumberish;
@@ -1647,6 +1609,14 @@ export class E2ESetup extends BaseContract {
         isMint: boolean;
         marginDelta: BigNumberish;
       },
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    mintViaAMM(
+      recipient: string,
+      tickLower: BigNumberish,
+      tickUpper: BigNumberish,
+      amount: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -1671,6 +1641,13 @@ export class E2ESetup extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
+    setIntegrationApproval(
+      recipient: string,
+      intAddress: string,
+      allowIntegration: boolean,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
     setMEAddress(
       _MEAddress: string,
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -1688,6 +1665,13 @@ export class E2ESetup extends BaseContract {
 
     setVAMMAddress(
       _VAMMAddress: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    settlePositionViaAMM(
+      recipient: string,
+      tickLower: BigNumberish,
+      tickUpper: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
@@ -1717,7 +1701,7 @@ export class E2ESetup extends BaseContract {
       overrides?: CallOverrides
     ): Promise<BigNumber>;
 
-    swap(
+    swapViaAMM(
       params: {
         recipient: string;
         amountSpecified: BigNumberish;
@@ -1729,6 +1713,7 @@ export class E2ESetup extends BaseContract {
     ): Promise<BigNumber>;
 
     swapViaPeriphery(
+      trader: string,
       params: {
         marginEngine: string;
         isFT: boolean;
@@ -1748,7 +1733,7 @@ export class E2ESetup extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
-    updatePositionMargin(
+    updatePositionMarginViaAMM(
       _owner: string,
       tickLower: BigNumberish,
       tickUpper: BigNumberish,
@@ -1801,7 +1786,7 @@ export class E2ESetup extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    burn(
+    burnViaAMM(
       recipient: string,
       tickLower: BigNumberish,
       tickUpper: BigNumberish,
@@ -1815,10 +1800,6 @@ export class E2ESetup extends BaseContract {
 
     fcmFees(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
-    getGasConsumedAtLastTx(
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
     getPositionHistory(
       owner: string,
       tickLower: BigNumberish,
@@ -1827,13 +1808,6 @@ export class E2ESetup extends BaseContract {
     ): Promise<PopulatedTransaction>;
 
     getPositionSwapsHistory(
-      owner: string,
-      tickLower: BigNumberish,
-      tickUpper: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
-    getSwapsHistory(
       owner: string,
       tickLower: BigNumberish,
       tickUpper: BigNumberish,
@@ -1866,12 +1840,12 @@ export class E2ESetup extends BaseContract {
     keepInMindGas(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     liquidatePosition(
+      liquidator: string,
       lowerTickLiquidator: BigNumberish,
       upperTickLiquidator: BigNumberish,
-      liquidator: string,
+      owner: string,
       tickLower: BigNumberish,
       tickUpper: BigNumberish,
-      owner: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
@@ -1879,15 +1853,8 @@ export class E2ESetup extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    mint(
-      recipient: string,
-      tickLower: BigNumberish,
-      tickUpper: BigNumberish,
-      amount: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
-    ): Promise<PopulatedTransaction>;
-
     mintOrBurnViaPeriphery(
+      trader: string,
       params: {
         marginEngine: string;
         tickLower: BigNumberish;
@@ -1896,6 +1863,14 @@ export class E2ESetup extends BaseContract {
         isMint: boolean;
         marginDelta: BigNumberish;
       },
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    mintViaAMM(
+      recipient: string,
+      tickLower: BigNumberish,
+      tickUpper: BigNumberish,
+      amount: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
@@ -1920,6 +1895,13 @@ export class E2ESetup extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
+    setIntegrationApproval(
+      recipient: string,
+      intAddress: string,
+      allowIntegration: boolean,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
     setMEAddress(
       _MEAddress: string,
       overrides?: Overrides & { from?: string | Promise<string> }
@@ -1937,6 +1919,13 @@ export class E2ESetup extends BaseContract {
 
     setVAMMAddress(
       _VAMMAddress: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    settlePositionViaAMM(
+      recipient: string,
+      tickLower: BigNumberish,
+      tickUpper: BigNumberish,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
@@ -1966,7 +1955,7 @@ export class E2ESetup extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    swap(
+    swapViaAMM(
       params: {
         recipient: string;
         amountSpecified: BigNumberish;
@@ -1978,6 +1967,7 @@ export class E2ESetup extends BaseContract {
     ): Promise<PopulatedTransaction>;
 
     swapViaPeriphery(
+      trader: string,
       params: {
         marginEngine: string;
         isFT: boolean;
@@ -1997,7 +1987,7 @@ export class E2ESetup extends BaseContract {
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    updatePositionMargin(
+    updatePositionMarginViaAMM(
       _owner: string,
       tickLower: BigNumberish,
       tickUpper: BigNumberish,
