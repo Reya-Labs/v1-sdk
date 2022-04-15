@@ -85,12 +85,12 @@ export type AMMSwapArgs = {
   validationOnly?: boolean;
 };
 
-export type FCMSwapArgs = {
+export type fcmSwapArgs = {
   notional: number;
   fixedRateLimit?: number;
 };
 
-export type FCMUnwindArgs = {
+export type fcmUnwindArgs = {
   notionalToUnwind: number;
   fixedRateLimit?: number;
 };
@@ -909,10 +909,10 @@ class AMM {
     }
   }
 
-  public async FCMSwap({
+  public async fcmSwap({
     notional,
     fixedRateLimit,
-  }: FCMSwapArgs): Promise<ContractReceipt> {
+  }: fcmSwapArgs): Promise<ContractReceipt> {
     if (!this.signer) {
       throw new Error('Wallet not connected');
     }
@@ -948,10 +948,10 @@ class AMM {
     }
   }
 
-  public async FCMUnwind({
+  public async fcmUnwind({
     notionalToUnwind,
     fixedRateLimit,
-  }: FCMUnwindArgs): Promise<ContractReceipt> {
+  }: fcmUnwindArgs): Promise<ContractReceipt> {
     if (!this.signer) {
       throw new Error('Wallet not connected');
     }
