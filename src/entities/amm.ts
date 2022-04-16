@@ -57,7 +57,7 @@ export type AMMGetInfoPostSwapArgs = {
 };
 
 export type AMMUpdatePositionMarginArgs = {
-  owner: string;
+  owner?: string;
   fixedLow: number;
   fixedHigh: number;
   marginDelta: number;
@@ -370,7 +370,20 @@ class AMM {
     fixedLow,
     fixedHigh,
     marginDelta,
-  }: AMMUpdatePositionMarginArgs): Promise<ContractReceipt> {
+  }: AMMUpdatePositionMarginArgs): Promise<ContractReceipt | void> {
+
+    if (!this.signer) {
+      return;
+    }
+
+    let effectiveOwner: string;
+
+    if (!owner) {
+      effectiveOwner = await this.signer?.getAddress()
+    } else {
+      effectiveOwner = owner;
+    }
+
     if (!this.signer) {
       throw new Error('Wallet not connected');
     }
@@ -387,7 +400,7 @@ class AMM {
 
     const marginEngineContract = marginEngineFactory.connect(this.marginEngineAddress, this.signer);
     const updatePositionMarginTransaction = await marginEngineContract.updatePositionMargin(
-      owner,
+      effectiveOwner,
       tickLower,
       tickUpper,
       scaledMarginDelta,
