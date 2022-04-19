@@ -10,8 +10,6 @@
 4. Another repo -> In the dependent repository, run `yalc add @voltz-protocol/v1-sdk`
 5. To update another repo -> run `yalc update @voltz-protocol/v1-sdk`
 
-# Run test functions
-
 ## Setup
 
 First, set up the core using the following command:
@@ -48,15 +46,3 @@ The address should be included in `--beneficiaries`:
 ## Run test functions
 
 Run `yarn test src/entities`
-
-## Functions that need testing
-
-```
-amm.
-  getMinimumMarginRequirementPostSwap
-  settlePosition
-  updatePositionMargin
-  mint
-  burn
-  swap
-```
