@@ -2,7 +2,6 @@ import JSBI from 'jsbi';
 
 import { DateTime } from 'luxon';
 import { BigNumber } from 'ethers';
-import { BigIntish } from '../types';
 import { Price } from './fractions/price';
 import { tickToFixedRate, tickToPrice } from '../utils/priceTickConversions';
 import AMM from './amm';
@@ -23,11 +22,11 @@ export type PositionConstructorArgs = {
   tickLower: number;
   tickUpper: number;
   updatedTimestamp: JSBI;
-  liquidity: BigIntish;
-  margin: BigIntish;
-  fixedTokenBalance: BigIntish;
-  variableTokenBalance: BigIntish;
-  accumulatedFees: BigIntish;
+  liquidity: JSBI;
+  margin: JSBI;
+  fixedTokenBalance: JSBI;
+  variableTokenBalance: JSBI;
+  accumulatedFees: JSBI;
   isLiquidityProvider: boolean;
   isSettled: boolean;
   mints: Array<Mint>;
@@ -53,15 +52,15 @@ class Position {
 
   public readonly updatedTimestamp: JSBI;
 
-  public readonly liquidity: BigIntish;
+  public readonly liquidity: JSBI;
 
-  public readonly margin: BigIntish;
+  public readonly margin: JSBI;
 
-  public readonly fixedTokenBalance: BigIntish;
+  public readonly fixedTokenBalance: JSBI;
 
-  public readonly variableTokenBalance: BigIntish;
+  public readonly variableTokenBalance: JSBI;
 
-  public readonly accumulatedFees: BigIntish;
+  public readonly accumulatedFees: JSBI;
 
   public readonly isLiquidityProvider: boolean;
 

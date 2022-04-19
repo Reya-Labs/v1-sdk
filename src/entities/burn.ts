@@ -1,14 +1,13 @@
 import JSBI from 'jsbi';
-import { BigIntish } from '../types';
 
 export type BurnConstructorArgs = {
   id: string;
   transactionId: string;
-  transactionTimestamp: number;
+  transactionTimestamp: JSBI;
   ammId: string;
   positionId: string;
   sender: string;
-  amount: BigIntish;
+  amount: JSBI;
 };
 
 class Burn {
@@ -16,7 +15,7 @@ class Burn {
 
   public readonly transactionId: string;
 
-  public readonly transactionTimestamp: number;
+  public readonly transactionTimestamp: JSBI;
 
   public readonly ammId: string;
 
@@ -41,7 +40,7 @@ class Burn {
     this.ammId = ammId;
     this.positionId = positionId;
     this.sender = sender;
-    this.amount = JSBI.BigInt(amount);
+    this.amount = amount;
   }
 }
 

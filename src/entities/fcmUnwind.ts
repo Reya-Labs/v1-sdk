@@ -3,7 +3,7 @@ import JSBI from 'jsbi';
 export type FCMUnwindConstructorArgs = {
   id: string;
   transactionId: string;
-  transactionTimestamp: number;
+  transactionTimestamp: JSBI;
   ammId: string;
   fcmPositionId: string;
   desiredNotional: JSBI;
@@ -19,7 +19,7 @@ class FCMUnwind {
 
   public readonly transactionId: string;
 
-  public readonly transactionTimestamp: number;
+  public readonly transactionTimestamp: JSBI;
 
   public readonly ammId: string;
 

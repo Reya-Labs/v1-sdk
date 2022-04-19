@@ -2,7 +2,6 @@ import JSBI from 'jsbi';
 
 import { DateTime } from 'luxon';
 import { BigNumber } from 'ethers';
-import { BigIntish } from '../types';
 import AMM from './amm';
 import FCMSwap from './fcmSwap';
 import FCMUnwind from './fcmUnwind';
@@ -14,9 +13,9 @@ export type FCMPositionConstructorArgs = {
   amm: AMM;
   owner: string;
   updatedTimestamp: JSBI;
-  marginInScaledYieldBearingTokens: BigIntish;
-  fixedTokenBalance: BigIntish;
-  variableTokenBalance: BigIntish;
+  marginInScaledYieldBearingTokens: JSBI;
+  fixedTokenBalance: JSBI;
+  variableTokenBalance: JSBI;
   isSettled: boolean;
   fcmSwaps: Array<FCMSwap>;
   fcmUnwinds: Array<FCMUnwind>;
@@ -34,11 +33,11 @@ class FCMPosition {
 
   public readonly updatedTimestamp: JSBI;
 
-  public readonly marginInScaledYieldBearingTokens: BigIntish;
+  public readonly marginInScaledYieldBearingTokens: JSBI;
 
-  public readonly fixedTokenBalance: BigIntish;
+  public readonly fixedTokenBalance: JSBI;
 
-  public readonly variableTokenBalance: BigIntish;
+  public readonly variableTokenBalance: JSBI;
 
   public readonly isSettled: boolean;
 

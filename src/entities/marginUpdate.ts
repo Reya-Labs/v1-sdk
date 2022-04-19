@@ -1,14 +1,13 @@
 import JSBI from 'jsbi';
-import { BigIntish } from '../types';
 
 export type MarginUpdateConstructorArgs = {
   id: string;
   transactionId: string;
-  transactionTimestamp: number;
+  transactionTimestamp: JSBI;
   ammId: string;
   positionId: string;
   depositer: string;
-  marginDelta: BigIntish;
+  marginDelta: JSBI;
 };
 
 class MarginUpdate {
@@ -16,7 +15,7 @@ class MarginUpdate {
 
   public readonly transactionId: string;
 
-  public readonly transactionTimestamp: number;
+  public readonly transactionTimestamp: JSBI;
 
   public readonly ammId: string;
 
@@ -41,7 +40,7 @@ class MarginUpdate {
     this.ammId = ammId;
     this.positionId = positionId;
     this.depositer = depositer;
-    this.marginDelta = JSBI.BigInt(marginDelta);
+    this.marginDelta = marginDelta;
   }
 }
 

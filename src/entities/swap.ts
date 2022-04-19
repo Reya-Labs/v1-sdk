@@ -3,7 +3,7 @@ import JSBI from 'jsbi';
 export type SwapConstructorArgs = {
   id: string;
   transactionId: string;
-  transactionTimestamp: number;
+  transactionTimestamp: JSBI;
   ammId: string;
   positionId: string;
   sender: string;
@@ -20,7 +20,7 @@ class Swap {
 
   public readonly transactionId: string;
 
-  public readonly transactionTimestamp: number;
+  public readonly transactionTimestamp: JSBI;
 
   public readonly ammId: string;
 

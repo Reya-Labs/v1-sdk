@@ -1,13 +1,12 @@
 import JSBI from 'jsbi';
-import { BigIntish } from '../types';
 
 export type SettlementConstructorArgs = {
   id: string;
   transactionId: string;
-  transactionTimestamp: number;
+  transactionTimestamp: JSBI;
   ammId: string;
   positionId: string;
-  settlementCashflow: BigIntish;
+  settlementCashflow: JSBI;
 };
 
 class Settlement {
@@ -15,7 +14,7 @@ class Settlement {
 
   public readonly transactionId: string;
 
-  public readonly transactionTimestamp: number;
+  public readonly transactionTimestamp: JSBI;
 
   public readonly ammId: string;
 
@@ -36,7 +35,7 @@ class Settlement {
     this.transactionTimestamp = transactionTimestamp;
     this.ammId = ammId;
     this.positionId = positionId;
-    this.settlementCashflow = JSBI.BigInt(settlementCashflow);
+    this.settlementCashflow = settlementCashflow;
   }
 }
 

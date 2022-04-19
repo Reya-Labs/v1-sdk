@@ -1,15 +1,14 @@
 import JSBI from 'jsbi';
-import { BigIntish } from '../types';
 
 export type LiquidationConstructorArgs = {
   id: string;
   transactionId: string;
-  transactionTimestamp: number;
+  transactionTimestamp: JSBI;
   ammId: string;
   positionId: string;
   liquidator: string;
-  reward: BigIntish;
-  notionalUnwound: BigIntish;
+  reward: JSBI;
+  notionalUnwound: JSBI;
 };
 
 class Liquidation {
@@ -17,7 +16,7 @@ class Liquidation {
 
   public readonly transactionId: string;
 
-  public readonly transactionTimestamp: number;
+  public readonly transactionTimestamp: JSBI;
 
   public readonly ammId: string;
 
@@ -45,8 +44,8 @@ class Liquidation {
     this.ammId = ammId;
     this.positionId = positionId;
     this.liquidator = liquidator;
-    this.reward = JSBI.BigInt(reward);
-    this.notionalUnwound = JSBI.BigInt(notionalUnwound);
+    this.reward = reward;
+    this.notionalUnwound = notionalUnwound;
   }
 }
 
