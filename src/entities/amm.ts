@@ -3,7 +3,7 @@ import { ethers, providers } from 'ethers';
 import { DateTime } from 'luxon';
 import { BigNumber, BigNumberish, ContractReceipt, Signer, utils } from 'ethers';
 
-import { BigIntish, SwapPeripheryParams, MintOrBurnParams } from '../types';
+import { SwapPeripheryParams, MintOrBurnParams } from '../types';
 import {
   PERIPHERY_ADDRESS,
   FACTORY_ADDRESS,
@@ -35,12 +35,12 @@ export type AMMConstructorArgs = {
   marginEngineAddress: string;
   fcmAddress: string;
   rateOracle: RateOracle;
-  updatedTimestamp: BigIntish;
-  termStartTimestamp: BigIntish;
-  termEndTimestamp: BigIntish;
+  updatedTimestamp: JSBI;
+  termStartTimestamp: JSBI;
+  termEndTimestamp: JSBI;
   underlyingToken: Token;
-  tick: BigIntish;
-  tickSpacing: BigIntish;
+  tick: number;
+  tickSpacing: number;
   txCount: number;
 };
 
@@ -127,11 +127,9 @@ class AMM {
   public readonly termStartTimestamp: JSBI;
   public readonly termEndTimestamp: JSBI;
   public readonly underlyingToken: Token;
-  public readonly tickSpacing: JSBI;
-  public readonly tick: JSBI;
-  public readonly txCount: JSBI;
-  private _fixedRate?: Price;
-  private _price?: Price;
+  public readonly tickSpacing: number;
+  public readonly tick: number;
+  public readonly txCount: number;
 
   public constructor({
     id,
@@ -154,13 +152,13 @@ class AMM {
     this.marginEngineAddress = marginEngineAddress;
     this.fcmAddress = fcmAddress;
     this.rateOracle = rateOracle;
-    this.updatedTimestamp = JSBI.BigInt(updatedTimestamp);
-    this.termStartTimestamp = JSBI.BigInt(termStartTimestamp);
-    this.termEndTimestamp = JSBI.BigInt(termEndTimestamp);
+    this.updatedTimestamp = updatedTimestamp;
+    this.termStartTimestamp = termStartTimestamp;
+    this.termEndTimestamp = termEndTimestamp;
     this.underlyingToken = underlyingToken;
-    this.tickSpacing = JSBI.BigInt(tickSpacing);
-    this.tick = JSBI.BigInt(tick);
-    this.txCount = JSBI.BigInt(txCount);
+    this.tickSpacing = tickSpacing;
+    this.tick = tick;
+    this.txCount = txCount;
   }
 
   public async getInfoPostSwap({
@@ -1095,7 +1093,7 @@ class AMM {
     const closestTick: number = fixedRateToClosestTick(fixedRatePrice);
     const closestUsableTick: number = nearestUsableTick(
       closestTick,
-      JSBI.toNumber(this.tickSpacing),
+      this.tickSpacing,
     );
     const closestUsableFixedRate: Price = tickToFixedRate(closestUsableTick);
 
@@ -1107,7 +1105,7 @@ class AMM {
 
   public getNextUsableFixedRate(fixedRate: number, count: number): number {
     let { closestUsableTick } = this.closestTickAndFixedRate(fixedRate);
-    closestUsableTick -= count * JSBI.toNumber(this.tickSpacing);
+    closestUsableTick -= count * this.tickSpacing;
     return tickToFixedRate(closestUsableTick).toNumber();
   }
 }
