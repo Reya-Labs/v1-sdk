@@ -1,22 +1,19 @@
 import JSBI from 'jsbi';
+import { BigIntish } from '../types';
 
-export type MintOrBurnConstructorArgs = {
+export type SettlementConstructorArgs = {
   id: string;
   transactionId: string;
-  transactionBlockNumber: number;
   transactionTimestamp: number;
   ammId: string;
   positionId: string;
-  sender: string;
-  amount: JSBI;
+  settlementCashflow: BigIntish;
 };
 
-class MintOrBurn {
+class Settlement {
   public readonly id: string;
 
   public readonly transactionId: string;
-
-  public readonly transactionBlockNumber: number;
 
   public readonly transactionTimestamp: number;
 
@@ -24,25 +21,23 @@ class MintOrBurn {
 
   public readonly positionId: string;
 
-  public readonly sender: string;
+  public readonly settlementCashflow: JSBI;
 
   public constructor({
     id,
     transactionId,
-    transactionBlockNumber,
     transactionTimestamp,
     ammId,
     positionId,
-    sender,
-  }: MintOrBurnConstructorArgs) {
+    settlementCashflow,
+  }: SettlementConstructorArgs) {
     this.id = id;
     this.transactionId = transactionId;
-    this.transactionBlockNumber = transactionBlockNumber;
     this.transactionTimestamp = transactionTimestamp;
     this.ammId = ammId;
     this.positionId = positionId;
-    this.sender = sender;
+    this.settlementCashflow = JSBI.BigInt(settlementCashflow);
   }
 }
 
-export default MintOrBurn;
+export default Settlement;

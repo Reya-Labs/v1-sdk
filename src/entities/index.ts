@@ -17,5 +17,5 @@ export type {
 export { default as Position } from './position';
 export { default as Token } from './token';
 export { default as RateOracle } from './rateOracle';
-export { default as MintOrBurn } from './mintOrBurn';
+export { default as MintOrBurn } from './mint';
 export { default as Swap } from './swap';

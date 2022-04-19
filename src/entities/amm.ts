@@ -5,7 +5,6 @@ import { BigNumber, BigNumberish, ContractReceipt, Signer, utils } from 'ethers'
 
 import { BigIntish, SwapPeripheryParams, MintOrBurnParams } from '../types';
 import {
-  Q192,
   PERIPHERY_ADDRESS,
   FACTORY_ADDRESS,
   MIN_FIXED_RATE,
@@ -36,13 +35,10 @@ export type AMMConstructorArgs = {
   marginEngineAddress: string;
   fcmAddress: string;
   rateOracle: RateOracle;
-  createdTimestamp: BigIntish;
   updatedTimestamp: BigIntish;
   termStartTimestamp: BigIntish;
   termEndTimestamp: BigIntish;
   underlyingToken: Token;
-  sqrtPriceX96: BigIntish;
-  liquidity: BigIntish;
   tick: BigIntish;
   tickSpacing: BigIntish;
   txCount: number;
@@ -127,13 +123,10 @@ class AMM {
   public readonly marginEngineAddress: string;
   public readonly fcmAddress: string;
   public readonly rateOracle: RateOracle;
-  public readonly createdTimestamp: JSBI;
   public readonly updatedTimestamp: JSBI;
   public readonly termStartTimestamp: JSBI;
   public readonly termEndTimestamp: JSBI;
   public readonly underlyingToken: Token;
-  public sqrtPriceX96: JSBI;
-  public readonly liquidity: JSBI;
   public readonly tickSpacing: JSBI;
   public readonly tick: JSBI;
   public readonly txCount: JSBI;
@@ -147,13 +140,10 @@ class AMM {
     marginEngineAddress,
     fcmAddress,
     rateOracle,
-    createdTimestamp,
     updatedTimestamp,
     termStartTimestamp,
     termEndTimestamp,
     underlyingToken,
-    sqrtPriceX96,
-    liquidity,
     tick,
     tickSpacing,
     txCount,
@@ -164,13 +154,10 @@ class AMM {
     this.marginEngineAddress = marginEngineAddress;
     this.fcmAddress = fcmAddress;
     this.rateOracle = rateOracle;
-    this.createdTimestamp = JSBI.BigInt(createdTimestamp);
     this.updatedTimestamp = JSBI.BigInt(updatedTimestamp);
     this.termStartTimestamp = JSBI.BigInt(termStartTimestamp);
     this.termEndTimestamp = JSBI.BigInt(termEndTimestamp);
     this.underlyingToken = underlyingToken;
-    this.sqrtPriceX96 = JSBI.BigInt(sqrtPriceX96);
-    this.liquidity = JSBI.BigInt(liquidity);
     this.tickSpacing = JSBI.BigInt(tickSpacing);
     this.tick = JSBI.BigInt(tick);
     this.txCount = JSBI.BigInt(txCount);
@@ -1024,22 +1011,6 @@ class AMM {
     return timestampWadToDateTime(this.termEndTimestamp);
   }
 
-  public get initialized(): boolean {
-    return !JSBI.EQ(this.sqrtPriceX96, JSBI.BigInt(0));
-  }
-
-  public get fixedRate(): Price {
-    if (!this._fixedRate) {
-      if (!this.initialized) {
-        return new Price(1, 0);
-      }
-
-      this._fixedRate = new Price(JSBI.multiply(this.sqrtPriceX96, this.sqrtPriceX96), Q192);
-    }
-
-    return this._fixedRate;
-  }
-
   public async fixedApr(): Promise<number> {
     if (!this.provider) {
       throw new Error('Blockchain not connected');
@@ -1050,14 +1021,6 @@ class AMM {
     const apr = tickToFixedRate(currentTick).toNumber();
 
     return apr;
-  }
-
-  public get price(): Price {
-    if (!this._price) {
-      this._price = new Price(Q192, JSBI.multiply(this.sqrtPriceX96, this.sqrtPriceX96));
-    }
-
-    return this._price;
   }
 
   public get protocol(): string {
