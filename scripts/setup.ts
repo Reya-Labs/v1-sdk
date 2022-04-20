@@ -2,8 +2,6 @@ import { providers, Wallet } from 'ethers';
 
 import JSBI from 'jsbi';
 import { Token, RateOracle, AMM, InfoPostSwap } from '../src';
-import { TickMath } from '../src/utils/tickMath';
-import { VAMM__factory as vammFactory } from '../src/typechain';
 
 const setup = async () => {
   const vammAddress = '0xe451980132e65465d0a498c53f0b5227326dd73f';
@@ -20,6 +18,7 @@ const setup = async () => {
     id: vammAddress,
     signer: wallet,
     provider,
+    environment: 'LOCALHOST_SDK',
     fcmAddress: '0x5392a33f7f677f59e833febf4016cddd88ff9e67',
     marginEngineAddress,
     rateOracle: new RateOracle({
@@ -43,6 +42,7 @@ const setup = async () => {
     id: vammAddress,
     signer: other,
     provider,
+    environment: 'LOCALHOST_SDK',
     fcmAddress: '0x5392a33f7f677f59e833febf4016cddd88ff9e67',
     marginEngineAddress,
     rateOracle: new RateOracle({
@@ -62,9 +62,6 @@ const setup = async () => {
     updatedTimestamp: JSBI.BigInt('1646856471'),
   });
 
-  const vammContract = vammFactory.connect(vammAddress, wallet);
-  await vammContract.initializeVAMM(TickMath.getSqrtRatioAtTick(-23000).toString()); // 10%
-
   const fixedLowMinter = 8;
   const fixedHighMinter = 12;
   const fixedLowSwapper1 = 3;
@@ -73,10 +70,9 @@ const setup = async () => {
   const fixedHighSwapper2 = 7;
 
   {
-    const req = (await ammWallet.getMinimumMarginRequirementPostMint({
+    const req = (await ammWallet.getInfoPostMint({
       fixedLow: fixedLowMinter,
       fixedHigh: fixedHighMinter,
-      margin: 0,
       notional: 200000,
     })) as number;
 
