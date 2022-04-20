@@ -26,7 +26,7 @@ import { nearestUsableTick } from '../utils/nearestUsableTick';
 import Token from './token';
 import { Price } from './fractions/price';
 import { TokenAmount } from './fractions/tokenAmount';
-import { getErrorMessage, getErrorSignature } from '../utils/extractErrorMessage';
+import { getErrorMessage, getErrorSignature } from '../utils/errorHandling';
 
 export type AMMConstructorArgs = {
   id: string;
@@ -99,7 +99,12 @@ export type AMMMintArgs = {
   validationOnly?: boolean;
 };
 
-export type AMMGetMinimumMarginRequirementPostMintArgs = AMMMintArgs;
+export type AMMGetInfoPostMintArgs = {
+  fixedLow: number;
+  fixedHigh: number;
+  notional: number;
+  margin: number;
+}
 
 export type InfoPostSwap = {
   marginRequirement: number;
@@ -447,11 +452,11 @@ class AMM {
     return this.descale(threshold);
   }
 
-  public async getMinimumMarginRequirementPostMint({
+  public async getInfoPostMint({
     fixedLow,
     fixedHigh,
     notional,
-  }: AMMGetMinimumMarginRequirementPostMintArgs): Promise<number> {
+  }: AMMGetInfoPostMintArgs): Promise<number> {
     if (!this.signer) {
       throw new Error('Wallet not connected');
     }
@@ -479,8 +484,8 @@ class AMM {
     const scaledNotional = this.scale(notional);
     const mintOrBurnParams: MintOrBurnParams = {
       marginEngine: this.marginEngineAddress,
-      tickLower,
-      tickUpper,
+      tickLower: tickLower,
+      tickUpper: tickUpper,
       notional: scaledNotional,
       isMint: true,
       marginDelta: '0',
