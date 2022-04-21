@@ -1,11 +1,10 @@
 import JSBI from 'jsbi';
-import { ethers, providers } from 'ethers';
+import { providers } from 'ethers';
 import { DateTime } from 'luxon';
 import { BigNumber, BigNumberish, ContractReceipt, Signer, utils } from 'ethers';
 
-import { BigIntish, SwapPeripheryParams, MintOrBurnParams } from '../types';
+import { SwapPeripheryParams, MintOrBurnParams } from '../types';
 import {
-  Q192,
   PERIPHERY_ADDRESS,
   FACTORY_ADDRESS,
   MIN_FIXED_RATE,
@@ -27,24 +26,22 @@ import { nearestUsableTick } from '../utils/nearestUsableTick';
 import Token from './token';
 import { Price } from './fractions/price';
 import { TokenAmount } from './fractions/tokenAmount';
-import { getErrorMessage, getErrorSignature } from '../utils/extractErrorMessage';
+import { decodeInfoPostMint, decodeInfoPostSwap, getReadableErrorMessage } from '../utils/errors/errorHandling';
 
 export type AMMConstructorArgs = {
   id: string;
   signer: Signer | null;
   provider?: providers.Provider;
+  environment: string;
   marginEngineAddress: string;
   fcmAddress: string;
   rateOracle: RateOracle;
-  createdTimestamp: BigIntish;
-  updatedTimestamp: BigIntish;
-  termStartTimestamp: BigIntish;
-  termEndTimestamp: BigIntish;
+  updatedTimestamp: JSBI;
+  termStartTimestamp: JSBI;
+  termEndTimestamp: JSBI;
   underlyingToken: Token;
-  sqrtPriceX96: BigIntish;
-  liquidity: BigIntish;
-  tick: BigIntish;
-  tickSpacing: BigIntish;
+  tick: number;
+  tickSpacing: number;
   txCount: number;
 };
 
@@ -103,7 +100,11 @@ export type AMMMintArgs = {
   validationOnly?: boolean;
 };
 
-export type AMMGetMinimumMarginRequirementPostMintArgs = AMMMintArgs;
+export type AMMGetInfoPostMintArgs = {
+  fixedLow: number;
+  fixedHigh: number;
+  notional: number;
+}
 
 export type InfoPostSwap = {
   marginRequirement: number;
@@ -124,36 +125,33 @@ class AMM {
   public readonly id: string;
   public readonly signer: Signer | null;
   public readonly provider?: providers.Provider;
+  public readonly environment: string;
   public readonly marginEngineAddress: string;
   public readonly fcmAddress: string;
   public readonly rateOracle: RateOracle;
-  public readonly createdTimestamp: JSBI;
   public readonly updatedTimestamp: JSBI;
   public readonly termStartTimestamp: JSBI;
   public readonly termEndTimestamp: JSBI;
   public readonly underlyingToken: Token;
-  public sqrtPriceX96: JSBI;
-  public readonly liquidity: JSBI;
-  public readonly tickSpacing: JSBI;
-  public readonly tick: JSBI;
-  public readonly txCount: JSBI;
-  private _fixedRate?: Price;
-  private _price?: Price;
+  public readonly tickSpacing: number;
+  public readonly tick: number;
+  public readonly txCount: number;
+  public readonly overrides: {
+    gasLimit: number;
+  }
 
   public constructor({
     id,
     signer,
     provider,
+    environment,
     marginEngineAddress,
     fcmAddress,
     rateOracle,
-    createdTimestamp,
     updatedTimestamp,
     termStartTimestamp,
     termEndTimestamp,
     underlyingToken,
-    sqrtPriceX96,
-    liquidity,
     tick,
     tickSpacing,
     txCount,
@@ -161,19 +159,21 @@ class AMM {
     this.id = id;
     this.signer = signer;
     this.provider = provider || signer?.provider;
+    this.environment = environment;
     this.marginEngineAddress = marginEngineAddress;
     this.fcmAddress = fcmAddress;
     this.rateOracle = rateOracle;
-    this.createdTimestamp = JSBI.BigInt(createdTimestamp);
-    this.updatedTimestamp = JSBI.BigInt(updatedTimestamp);
-    this.termStartTimestamp = JSBI.BigInt(termStartTimestamp);
-    this.termEndTimestamp = JSBI.BigInt(termEndTimestamp);
+    this.updatedTimestamp = updatedTimestamp;
+    this.termStartTimestamp = termStartTimestamp;
+    this.termEndTimestamp = termEndTimestamp;
     this.underlyingToken = underlyingToken;
-    this.sqrtPriceX96 = JSBI.BigInt(sqrtPriceX96);
-    this.liquidity = JSBI.BigInt(liquidity);
-    this.tickSpacing = JSBI.BigInt(tickSpacing);
-    this.tick = JSBI.BigInt(tick);
-    this.txCount = JSBI.BigInt(txCount);
+    this.tickSpacing = tickSpacing;
+    this.tick = tick;
+    this.txCount = txCount;
+
+    this.overrides = {
+      gasLimit: 10000000,
+    }
   }
 
   public async getInfoPostSwap({
@@ -249,38 +249,12 @@ class AMM {
         tickAfter = parseInt(result[5]);
       },
       (error: any) => {
-        let errSig;
-        let reason;
-        try {
-          reason = error.data.toString().replace("Reverted ", "");
-          errSig = getErrorSignature(reason);
-        }
-        catch (_) {
-          throw new Error("Cannot decode trade information");
-        }
-
-        if (errSig) {
-          if (errSig === "MarginRequirementNotMet") {
-            try {
-              const iface = new ethers.utils.Interface(["error MarginRequirementNotMet(int256 marginRequirement,int24 tick,int256 fixedTokenDelta,int256 variableTokenDelta,uint256 cumulativeFeeIncurred,int256 fixedTokenDeltaUnbalanced)"]);
-              const result = iface.decodeErrorResult(
-                "MarginRequirementNotMet",
-                reason
-              );
-
-              marginRequirement = result.marginRequirement;
-              tickAfter = result.tick;
-              fee = result.cumulativeFeeIncurred;
-              availableNotional = result.variableTokenDelta;
-              fixedTokenDeltaUnbalanced = result.fixedTokenDeltaUnbalanced;
-            } catch (_) {
-              throw new Error("Cannot decode trade information");
-            }
-          }
-        }
-        else {
-          throw new Error("Cannot decode trade information");
-        }
+        const result = decodeInfoPostSwap(error, this.environment);
+        marginRequirement = result.marginRequirement;
+        tickAfter = result.tick;
+        fee = result.fee;
+        availableNotional = result.availableNotional;
+        fixedTokenDeltaUnbalanced = result.fixedTokenDeltaUnbalanced;
       },
     );
 
@@ -296,9 +270,9 @@ class AMM {
     ).margin;
 
     const scaledCurrentMargin = this.descale(currentMargin);
-    const scaledMarginRequirement = this.descale(marginRequirement);
     const scaledAvailableNotional = this.descale(availableNotional);
     const scaledFee = this.descale(fee);
+    const scaledMarginRequirement = (this.descale(marginRequirement) + scaledFee) * 1.01;
 
     const additionalMargin =
       scaledMarginRequirement > scaledCurrentMargin
@@ -333,6 +307,7 @@ class AMM {
       owner,
       tickLower,
       tickUpper,
+      this.overrides
     );
 
     try {
@@ -404,6 +379,7 @@ class AMM {
       tickLower,
       tickUpper,
       scaledMarginDelta,
+      this.overrides
     );
 
     try {
@@ -428,7 +404,7 @@ class AMM {
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
     const marginEngineContract = marginEngineFactory.connect(this.marginEngineAddress, this.signer);
-    const liquidatePositionTransaction = await marginEngineContract.liquidatePosition(owner, tickLower, tickUpper);
+    const liquidatePositionTransaction = await marginEngineContract.liquidatePosition(owner, tickLower, tickUpper, this.overrides);
 
     try {
       const receipt = await liquidatePositionTransaction.wait();
@@ -462,11 +438,11 @@ class AMM {
     return this.descale(threshold);
   }
 
-  public async getMinimumMarginRequirementPostMint({
+  public async getInfoPostMint({
     fixedLow,
     fixedHigh,
     notional,
-  }: AMMGetMinimumMarginRequirementPostMintArgs): Promise<number> {
+  }: AMMGetInfoPostMintArgs): Promise<number> {
     if (!this.signer) {
       throw new Error('Wallet not connected');
     }
@@ -494,8 +470,8 @@ class AMM {
     const scaledNotional = this.scale(notional);
     const mintOrBurnParams: MintOrBurnParams = {
       marginEngine: this.marginEngineAddress,
-      tickLower,
-      tickUpper,
+      tickLower: tickLower,
+      tickUpper: tickUpper,
       notional: scaledNotional,
       isMint: true,
       marginDelta: '0',
@@ -507,34 +483,8 @@ class AMM {
         marginRequirement = BigNumber.from(result);
       },
       (error) => {
-        let errSig;
-        let reason;
-        try {
-          reason = error.data.toString().replace("Reverted ", "");
-          errSig = getErrorSignature(reason);
-        }
-        catch (_) {
-          throw new Error("Cannot decode additional margin amount");
-        }
-
-        if (errSig) {
-          if (errSig === "MarginLessThanMinimum") {
-            try {
-              const iface = new ethers.utils.Interface(["error MarginLessThanMinimum(int256 marginRequirement)"]);
-              const result = iface.decodeErrorResult(
-                "MarginLessThanMinimum",
-                reason
-              );
-
-              marginRequirement = result.marginRequirement;
-            } catch (_) {
-              throw new Error("Cannot decode additional margin amount");
-            }
-          }
-        }
-        else {
-          throw new Error("Cannot decode additional margin amount");
-        }
+        const result = decodeInfoPostMint(error, this.environment);
+        marginRequirement = result.marginRequirement;
       },
     );
 
@@ -544,7 +494,7 @@ class AMM {
     ).margin;
 
     const scaledCurrentMargin = this.descale(currentMargin);
-    const scaledMarginRequirement = this.descale(marginRequirement);
+    const scaledMarginRequirement = this.descale(marginRequirement) * 1.01;
 
     if (scaledMarginRequirement > scaledCurrentMargin) {
       return scaledMarginRequirement - scaledCurrentMargin;
@@ -611,41 +561,13 @@ class AMM {
     };
 
     await peripheryContract.callStatic.mintOrBurn(mintOrBurnParams).catch((error) => {
-      let errSig;
-      try {
-        const reason = error.data.toString().replace("Reverted ", "");
-        errSig = getErrorSignature(reason);
-      }
-      catch (_) {
-        throw new Error("Unrecognized error");
-      }
-
-      if (errSig) {
-        throw new Error(getErrorMessage(errSig));
-      }
-      else {
-        throw new Error("Unrecognized error");
-      }
+      const errorMessage = getReadableErrorMessage(error, this.environment);
+      throw new Error(errorMessage);
     });
 
-    const mintTransaction = await peripheryContract.mintOrBurn(mintOrBurnParams, {
-      gasLimit: 1000000,
-    }).catch((error) => {
-      let errSig;
-      try {
-        const reason = error.data.toString().replace("Reverted ", "");
-        errSig = getErrorSignature(reason);
-      }
-      catch (_) {
-        throw new Error("Unrecognized error");
-      }
-
-      if (errSig) {
-        throw new Error(getErrorMessage(errSig));
-      }
-      else {
-        throw new Error("Unrecognized error");
-      }
+    const mintTransaction = await peripheryContract.mintOrBurn(mintOrBurnParams, this.overrides).catch((error) => {
+      const errorMessage = getReadableErrorMessage(error, this.environment);
+      throw new Error(errorMessage);
     });
 
     try {
@@ -704,39 +626,13 @@ class AMM {
     };
 
     await peripheryContract.callStatic.mintOrBurn(mintOrBurnParams).catch((error) => {
-      let errSig;
-      try {
-        const reason = error.data.toString().replace("Reverted ", "");
-        errSig = getErrorSignature(reason);
-      }
-      catch (_) {
-        throw new Error("Unrecognized error");
-      }
-
-      if (errSig) {
-        throw new Error(getErrorMessage(errSig));
-      }
-      else {
-        throw new Error("Unrecognized error");
-      }
+      const errorMessage = getReadableErrorMessage(error, this.environment);
+      throw new Error(errorMessage);
     });
 
-    const burnTransaction = await peripheryContract.mintOrBurn(mintOrBurnParams).catch((error) => {
-      let errSig;
-      try {
-        const reason = error.data.toString().replace("Reverted ", "");
-        errSig = getErrorSignature(reason);
-      }
-      catch (_) {
-        throw new Error("Unrecognized error");
-      }
-
-      if (errSig) {
-        throw new Error(getErrorMessage(errSig));
-      }
-      else {
-        throw new Error("Unrecognized error");
-      }
+    const burnTransaction = await peripheryContract.mintOrBurn(mintOrBurnParams, this.overrides).catch((error) => {
+      const errorMessage = getReadableErrorMessage(error, this.environment);
+      throw new Error(errorMessage);
     });
 
     try {
@@ -761,7 +657,7 @@ class AMM {
       return;
     }
 
-    const approvalTransaction = await factoryContract.setApproval(this.fcmAddress, true);
+    const approvalTransaction = await factoryContract.setApproval(this.fcmAddress, true, this.overrides);
 
     try {
       const receipt = await approvalTransaction.wait();
@@ -788,11 +684,11 @@ class AMM {
     const currentApproval = await token.allowance(await this.signer.getAddress(), addressToApprove);
 
     const amountToApproveBN = BigNumber.from(amountToApprove).mul(BigNumber.from("101")).div(BigNumber.from("100"));
-    if (amountToApproveBN.lt(currentApproval.mul(BigNumber.from("101")).div(BigNumber.from("100")))) {
+    if (amountToApproveBN.lt(currentApproval)) {
       return;
     }
 
-    const approvalTransaction = await token.approve(addressToApprove, amountToApproveBN);
+    const approvalTransaction = await token.approve(addressToApprove, amountToApproveBN, this.overrides);
 
     try {
       const receipt = await approvalTransaction.wait();
@@ -876,41 +772,13 @@ class AMM {
     };
 
     await peripheryContract.callStatic.swap(swapPeripheryParams).catch(async (error: any) => {
-      let errSig;
-      try {
-        const reason = error.data.toString().replace("Reverted ", "");
-        errSig = getErrorSignature(reason);
-      }
-      catch (_) {
-        throw new Error("Unrecognized error");
-      }
-
-      if (errSig) {
-        throw new Error(getErrorMessage(errSig));
-      }
-      else {
-        throw new Error("Unrecognized error");
-      }
+      const errorMessage = getReadableErrorMessage(error, this.environment);
+      throw new Error(errorMessage);
     });
 
-    const swapTransaction = await peripheryContract.swap(swapPeripheryParams, {
-      gasLimit: 1000000,
-    }).catch((error) => {
-      let errSig;
-      try {
-        const reason = error.data.toString().replace("Reverted ", "");
-        errSig = getErrorSignature(reason);
-      }
-      catch (_) {
-        throw new Error("Unrecognized error");
-      }
-
-      if (errSig) {
-        throw new Error(getErrorMessage(errSig));
-      }
-      else {
-        throw new Error("Unrecognized error");
-      }
+    const swapTransaction = await peripheryContract.swap(swapPeripheryParams, this.overrides).catch((error) => {
+      const errorMessage = getReadableErrorMessage(error, this.environment);
+      throw new Error(errorMessage);
     });
 
     try {
@@ -947,9 +815,12 @@ class AMM {
     const fcmContract = fcmFactory.connect(this.fcmAddress, this.signer);
     const scaledNotional = this.scale(notional);
 
+    await this.approveERC20(scaledNotional, this.fcmAddress);
+
     const fcmSwapTransaction = await fcmContract.initiateFullyCollateralisedFixedTakerSwap(
       scaledNotional,
       sqrtPriceLimitX96,
+      this.overrides
     );
 
     try {
@@ -988,6 +859,7 @@ class AMM {
     const fcmUnwindTransaction = await fcmContract.unwindFullyCollateralisedFixedTakerSwap(
       scaledNotional,
       sqrtPriceLimitX96,
+      this.overrides
     );
 
     try {
@@ -1005,7 +877,7 @@ class AMM {
     }
 
     const fcmContract = fcmFactory.connect(this.fcmAddress, this.signer);
-    const fcmSettleTraderTransaction = await fcmContract.settleTrader();
+    const fcmSettleTraderTransaction = await fcmContract.settleTrader(this.overrides);
 
     try {
       const receipt = await fcmSettleTraderTransaction.wait();
@@ -1024,22 +896,6 @@ class AMM {
     return timestampWadToDateTime(this.termEndTimestamp);
   }
 
-  public get initialized(): boolean {
-    return !JSBI.EQ(this.sqrtPriceX96, JSBI.BigInt(0));
-  }
-
-  public get fixedRate(): Price {
-    if (!this._fixedRate) {
-      if (!this.initialized) {
-        return new Price(1, 0);
-      }
-
-      this._fixedRate = new Price(JSBI.multiply(this.sqrtPriceX96, this.sqrtPriceX96), Q192);
-    }
-
-    return this._fixedRate;
-  }
-
   public async fixedApr(): Promise<number> {
     if (!this.provider) {
       throw new Error('Blockchain not connected');
@@ -1050,14 +906,6 @@ class AMM {
     const apr = tickToFixedRate(currentTick).toNumber();
 
     return apr;
-  }
-
-  public get price(): Price {
-    if (!this._price) {
-      this._price = new Price(Q192, JSBI.multiply(this.sqrtPriceX96, this.sqrtPriceX96));
-    }
-
-    return this._price;
   }
 
   public get protocol(): string {
@@ -1132,7 +980,7 @@ class AMM {
     const closestTick: number = fixedRateToClosestTick(fixedRatePrice);
     const closestUsableTick: number = nearestUsableTick(
       closestTick,
-      JSBI.toNumber(this.tickSpacing),
+      this.tickSpacing,
     );
     const closestUsableFixedRate: Price = tickToFixedRate(closestUsableTick);
 
@@ -1144,7 +992,7 @@ class AMM {
 
   public getNextUsableFixedRate(fixedRate: number, count: number): number {
     let { closestUsableTick } = this.closestTickAndFixedRate(fixedRate);
-    closestUsableTick -= count * JSBI.toNumber(this.tickSpacing);
+    closestUsableTick -= count * this.tickSpacing;
     return tickToFixedRate(closestUsableTick).toNumber();
   }
 }

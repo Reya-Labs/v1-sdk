@@ -1,12 +1,11 @@
 import JSBI from 'jsbi';
 
-export type SwapConstructorArgs = {
+export type FCMUnwindConstructorArgs = {
   id: string;
   transactionId: string;
   transactionTimestamp: JSBI;
   ammId: string;
-  positionId: string;
-  sender: string;
+  fcmPositionId: string;
   desiredNotional: JSBI;
   sqrtPriceLimitX96: JSBI;
   cumulativeFeeIncurred: JSBI;
@@ -15,7 +14,7 @@ export type SwapConstructorArgs = {
   fixedTokenDeltaUnbalanced: JSBI;
 };
 
-class Swap {
+class FCMUnwind {
   public readonly id: string;
 
   public readonly transactionId: string;
@@ -24,9 +23,7 @@ class Swap {
 
   public readonly ammId: string;
 
-  public readonly positionId: string;
-
-  public readonly sender: string;
+  public readonly fcmPositionId: string;
 
   public readonly desiredNotional: JSBI;
 
@@ -45,21 +42,19 @@ class Swap {
     transactionId,
     transactionTimestamp,
     ammId,
-    positionId,
-    sender,
+    fcmPositionId,
     desiredNotional,
     sqrtPriceLimitX96,
     cumulativeFeeIncurred,
     fixedTokenDelta,
     variableTokenDelta,
     fixedTokenDeltaUnbalanced,
-  }: SwapConstructorArgs) {
+  }: FCMUnwindConstructorArgs) {
     this.id = id;
     this.transactionId = transactionId;
     this.transactionTimestamp = transactionTimestamp;
     this.ammId = ammId;
-    this.positionId = positionId;
-    this.sender = sender;
+    this.fcmPositionId = fcmPositionId;
     this.desiredNotional = desiredNotional;
     this.sqrtPriceLimitX96 = sqrtPriceLimitX96;
     this.cumulativeFeeIncurred = cumulativeFeeIncurred;
@@ -69,4 +64,4 @@ class Swap {
   }
 }
 
-export default Swap;
+export default FCMUnwind;

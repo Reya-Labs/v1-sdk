@@ -1,48 +1,52 @@
 import JSBI from 'jsbi';
 
-export type MintOrBurnConstructorArgs = {
+export type LiquidationConstructorArgs = {
   id: string;
   transactionId: string;
-  transactionBlockNumber: number;
-  transactionTimestamp: number;
+  transactionTimestamp: JSBI;
   ammId: string;
   positionId: string;
-  sender: string;
-  amount: JSBI;
+  liquidator: string;
+  reward: JSBI;
+  notionalUnwound: JSBI;
 };
 
-class MintOrBurn {
+class Liquidation {
   public readonly id: string;
 
   public readonly transactionId: string;
 
-  public readonly transactionBlockNumber: number;
-
-  public readonly transactionTimestamp: number;
+  public readonly transactionTimestamp: JSBI;
 
   public readonly ammId: string;
 
   public readonly positionId: string;
 
-  public readonly sender: string;
+  public readonly liquidator: string;
+
+  public readonly reward: JSBI;
+
+  public readonly notionalUnwound: JSBI;
 
   public constructor({
     id,
     transactionId,
-    transactionBlockNumber,
     transactionTimestamp,
     ammId,
     positionId,
-    sender,
-  }: MintOrBurnConstructorArgs) {
+    liquidator,
+    reward,
+    notionalUnwound,
+  }: LiquidationConstructorArgs) {
     this.id = id;
     this.transactionId = transactionId;
-    this.transactionBlockNumber = transactionBlockNumber;
     this.transactionTimestamp = transactionTimestamp;
     this.ammId = ammId;
     this.positionId = positionId;
-    this.sender = sender;
+    this.liquidator = liquidator;
+    this.reward = reward;
+    this.notionalUnwound = notionalUnwound;
   }
 }
 
-export default MintOrBurn;
+export default Liquidation;
