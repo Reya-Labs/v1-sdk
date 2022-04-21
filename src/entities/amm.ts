@@ -136,6 +136,9 @@ class AMM {
   public readonly tickSpacing: number;
   public readonly tick: number;
   public readonly txCount: number;
+  public readonly overrides: {
+    gasLimit: number;
+  }
 
   public constructor({
     id,
@@ -167,6 +170,10 @@ class AMM {
     this.tickSpacing = tickSpacing;
     this.tick = tick;
     this.txCount = txCount;
+
+    this.overrides = {
+      gasLimit: 10000000,
+    }
   }
 
   public async getInfoPostSwap({
@@ -300,6 +307,7 @@ class AMM {
       owner,
       tickLower,
       tickUpper,
+      this.overrides
     );
 
     try {
@@ -371,6 +379,7 @@ class AMM {
       tickLower,
       tickUpper,
       scaledMarginDelta,
+      this.overrides
     );
 
     try {
@@ -395,7 +404,7 @@ class AMM {
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
     const marginEngineContract = marginEngineFactory.connect(this.marginEngineAddress, this.signer);
-    const liquidatePositionTransaction = await marginEngineContract.liquidatePosition(owner, tickLower, tickUpper);
+    const liquidatePositionTransaction = await marginEngineContract.liquidatePosition(owner, tickLower, tickUpper, this.overrides);
 
     try {
       const receipt = await liquidatePositionTransaction.wait();
@@ -556,9 +565,7 @@ class AMM {
       throw new Error(errorMessage);
     });
 
-    const mintTransaction = await peripheryContract.mintOrBurn(mintOrBurnParams, {
-      gasLimit: 1000000,
-    }).catch((error) => {
+    const mintTransaction = await peripheryContract.mintOrBurn(mintOrBurnParams, this.overrides).catch((error) => {
       const errorMessage = getReadableErrorMessage(error, this.environment);
       throw new Error(errorMessage);
     });
@@ -623,7 +630,7 @@ class AMM {
       throw new Error(errorMessage);
     });
 
-    const burnTransaction = await peripheryContract.mintOrBurn(mintOrBurnParams).catch((error) => {
+    const burnTransaction = await peripheryContract.mintOrBurn(mintOrBurnParams, this.overrides).catch((error) => {
       const errorMessage = getReadableErrorMessage(error, this.environment);
       throw new Error(errorMessage);
     });
@@ -650,7 +657,7 @@ class AMM {
       return;
     }
 
-    const approvalTransaction = await factoryContract.setApproval(this.fcmAddress, true);
+    const approvalTransaction = await factoryContract.setApproval(this.fcmAddress, true, this.overrides);
 
     try {
       const receipt = await approvalTransaction.wait();
@@ -681,7 +688,7 @@ class AMM {
       return;
     }
 
-    const approvalTransaction = await token.approve(addressToApprove, amountToApproveBN);
+    const approvalTransaction = await token.approve(addressToApprove, amountToApproveBN, this.overrides);
 
     try {
       const receipt = await approvalTransaction.wait();
@@ -769,9 +776,7 @@ class AMM {
       throw new Error(errorMessage);
     });
 
-    const swapTransaction = await peripheryContract.swap(swapPeripheryParams, {
-      gasLimit: 1000000,
-    }).catch((error) => {
+    const swapTransaction = await peripheryContract.swap(swapPeripheryParams, this.overrides).catch((error) => {
       const errorMessage = getReadableErrorMessage(error, this.environment);
       throw new Error(errorMessage);
     });
@@ -810,9 +815,12 @@ class AMM {
     const fcmContract = fcmFactory.connect(this.fcmAddress, this.signer);
     const scaledNotional = this.scale(notional);
 
+    await this.approveERC20(scaledNotional, this.fcmAddress);
+
     const fcmSwapTransaction = await fcmContract.initiateFullyCollateralisedFixedTakerSwap(
       scaledNotional,
       sqrtPriceLimitX96,
+      this.overrides
     );
 
     try {
@@ -851,6 +859,7 @@ class AMM {
     const fcmUnwindTransaction = await fcmContract.unwindFullyCollateralisedFixedTakerSwap(
       scaledNotional,
       sqrtPriceLimitX96,
+      this.overrides
     );
 
     try {
@@ -868,7 +877,7 @@ class AMM {
     }
 
     const fcmContract = fcmFactory.connect(this.fcmAddress, this.signer);
-    const fcmSettleTraderTransaction = await fcmContract.settleTrader();
+    const fcmSettleTraderTransaction = await fcmContract.settleTrader(this.overrides);
 
     try {
       const receipt = await fcmSettleTraderTransaction.wait();

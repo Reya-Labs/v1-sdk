@@ -82,6 +82,8 @@ const setup = async () => {
       margin: req + 10,
       notional: 200000,
     });
+
+    console.log('mint performed');
   }
 
   {
@@ -99,6 +101,8 @@ const setup = async () => {
       fixedHigh: fixedHighSwapper1,
       margin: req + 10,
     });
+
+    console.log('swap performed');
   }
 
   {
@@ -116,7 +120,15 @@ const setup = async () => {
       fixedHigh: fixedHighSwapper2,
       margin: req + 10,
     });
+
+    console.log('swap performed');
   }
+
+  await ammOther.fcmSwap({
+    notional: 25000,
+  });
+
+  console.log('fcm swap performed');
 };
 
 setup();
