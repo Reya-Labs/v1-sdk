@@ -235,9 +235,12 @@ class Position {
     return DateTime.fromMillis(JSBI.toNumber(this.updatedTimestamp));
   }
 
-  public get averageFixedRate(): number {
+  public get averageFixedRate(): number | undefined {
     const sumOfWeightedFixedRateBn = BigNumber.from(this.sumOfWeightedFixedRate.toString());
     const totalNotionalTradedBn = BigNumber.from(this.totalNotionalTraded.toString());
+    if (totalNotionalTradedBn.eq(BigNumber.from(0))) {
+      return undefined;
+    }
     const averageFixedRate =
       sumOfWeightedFixedRateBn.mul(BigNumber.from(1000)).div(totalNotionalTradedBn).toNumber() /
       1000;
