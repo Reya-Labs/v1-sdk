@@ -32,6 +32,7 @@ import { TokenAmount } from './fractions/tokenAmount';
 import { decodeInfoPostMint, decodeInfoPostSwap, getReadableErrorMessage } from '../utils/errors/errorHandling';
 import { toBn } from 'evm-bn';
 import Position from './position';
+import { isUndefined } from 'lodash';
 
 export type AMMConstructorArgs = {
   id: string;
@@ -136,6 +137,9 @@ export type PositionInfo = {
   accruedCashflow: number;
   variableRateSinceLastSwap?: number;
   fixedRateSinceLastSwap?: number;
+  beforeMaturity: boolean;
+  fixedApr?: number;
+  healthFactor?: number;
 }
 
 class AMM {
@@ -1038,13 +1042,21 @@ class AMM {
 
     let results: PositionInfo = {
       margin: 0,
-      accruedCashflow: 0
+      accruedCashflow: 0,
+      beforeMaturity: false
     };
 
     const signerAddress = await this.signer.getAddress();
-    let lastBlockTimestamp = BigNumber.from((await this.provider.getBlock("latest")).timestamp);
+    const lastBlock = await this.provider.getBlockNumber();
+    const lastBlockTimestamp = BigNumber.from((await this.provider.getBlock(lastBlock - 4)).timestamp);
 
-    const beforeMaturity = lastBlockTimestamp.lt(BigNumber.from(this.termEndTimestamp.toString()));
+    const beforeMaturity = (lastBlockTimestamp.mul(BigNumber.from(10).pow(18))).lt(BigNumber.from(this.termEndTimestamp.toString()));
+    results.beforeMaturity = beforeMaturity;
+
+    // fixed apr
+    if (beforeMaturity) {
+      results.fixedApr = await this.fixedApr();
+    }
 
     const allSwaps = this.getAllSwaps(position);
     const lenSwaps = allSwaps.length;
@@ -1078,6 +1090,10 @@ class AMM {
       const fcmContract = fcmFactory.connect(this.fcmAddress, this.signer);
       const margin = (await fcmContract.getTraderMarginInATokens(signerAddress));
       results.margin = this.descale(margin);
+
+      if (beforeMaturity) {
+        results.healthFactor = 3;
+      }
     }
     else {
       const tickLower = position.tickLower;
@@ -1096,26 +1112,32 @@ class AMM {
       results.margin = this.descale(rawPositionInfo.margin);
       results.fees = this.descale(rawPositionInfo.accumulatedFees);
 
-      try {
-        const liquidationThreshold = await marginEngineContract.callStatic.getPositionMarginRequirement(
-          signerAddress,
-          tickLower,
-          tickUpper,
-          true
-        );
-        results.liquidationThreshold = this.descale(liquidationThreshold);
-      } catch (_) { }
+      if (beforeMaturity) {
+        try {
+          const liquidationThreshold = await marginEngineContract.callStatic.getPositionMarginRequirement(
+            signerAddress,
+            tickLower,
+            tickUpper,
+            true
+          );
+          results.liquidationThreshold = this.descale(liquidationThreshold);
+        } catch (_) { }
 
-      try {
-        const safetyThreshold = await marginEngineContract.callStatic.getPositionMarginRequirement(
-          signerAddress,
-          tickLower,
-          tickUpper,
-          false
-        );
-        results.safetyThreshold = this.descale(safetyThreshold);
+        try {
+          const safetyThreshold = await marginEngineContract.callStatic.getPositionMarginRequirement(
+            signerAddress,
+            tickLower,
+            tickUpper,
+            false
+          );
+          results.safetyThreshold = this.descale(safetyThreshold);
+        }
+        catch (_) { }
+
+        if (!isUndefined(results.liquidationThreshold) && !isUndefined(results.safetyThreshold)) {
+          results.healthFactor = (results.margin < results.liquidationThreshold) ? 1 : (results.margin < results.safetyThreshold ? 2 : 3);
+        }
       }
-      catch (_) { }
     }
 
     return results;
@@ -1132,7 +1154,6 @@ class AMM {
       return resultScaled;
     }
     catch (error) {
-      console.log("Cannot get variable factor");
       throw new Error("Cannot get variable factor");
     }
   }
