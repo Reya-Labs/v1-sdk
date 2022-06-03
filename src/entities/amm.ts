@@ -155,10 +155,13 @@ export type fcmUnwindArgs = {
 // dynamic information about position
 
 export type PositionInfo = {
+  notionalInUSD: number;
+  marginInUSD: number;
   margin: number;
   fees?: number;
   liquidationThreshold?: number;
   safetyThreshold?: number;
+  accruedCashflowInUSD: number;
   accruedCashflow: number;
   variableRateSinceLastSwap?: number;
   fixedRateSinceLastSwap?: number;
@@ -409,11 +412,6 @@ class AMM {
     const scaledNotional = this.scale(notional);
     const scaledMarginDelta = this.scale(margin);
 
-    const isUnderlyingTokenApprovedForPeriphery = await this.isUnderlyingTokenApprovedForPeriphery();
-    if (!isUnderlyingTokenApprovedForPeriphery) {
-      await this.approveUnderlyingTokenForPeriphery();
-    }
-
     const swapPeripheryParams: SwapPeripheryParams = {
       marginEngine: this.marginEngineAddress,
       isFT,
@@ -564,11 +562,6 @@ class AMM {
     const _notional = this.scale(notional);
     const _marginDelta = this.scale(margin);
 
-    const isUnderlyingTokenApprovedForPeriphery = await this.isUnderlyingTokenApprovedForPeriphery();
-    if (!isUnderlyingTokenApprovedForPeriphery) {
-      await this.approveUnderlyingTokenForPeriphery();
-    }
-
     const mintOrBurnParams: MintOrBurnParams = {
       marginEngine: this.marginEngineAddress,
       tickLower,
@@ -705,11 +698,6 @@ class AMM {
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
     const scaledMarginDelta = this.scale(marginDelta);
-
-    const isUnderlyingTokenApprovedForPeriphery = await this.isUnderlyingTokenApprovedForPeriphery();
-    if (!isUnderlyingTokenApprovedForPeriphery) {
-      await this.approveUnderlyingTokenForPeriphery();
-    }
 
     const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.signer);
 
@@ -954,11 +942,6 @@ class AMM {
       throw new Error('No underlying error');
     }
 
-    const isFCMApproved = await this.isFCMApproved();
-    if (!isFCMApproved) {
-      await this.approveFCM();
-    }
-
     let sqrtPriceLimitX96;
     if (fixedRateLimit) {
       const { closestUsableTick: tickLimit } = this.closestTickAndFixedRate(fixedRateLimit);
@@ -983,16 +966,6 @@ class AMM {
         throw new Error("Unrecognized FCM");
     }
     const scaledNotional = this.scale(notional);
-
-    const isUnderlyingTokenApprovedForFCM = await this.isUnderlyingTokenApprovedForFCM();
-    if (!isUnderlyingTokenApprovedForFCM) {
-      await this.approveUnderlyingTokenForFCM();
-    }
-
-    const isYieldBearingTokenApprovedForFCM = await this.isYieldBearingTokenApprovedForFCM();
-    if (!isYieldBearingTokenApprovedForFCM) {
-      await this.approveUnderlyingTokenForFCM();
-    }
 
     await fcmContract.callStatic.initiateFullyCollateralisedFixedTakerSwap(
       scaledNotional,
@@ -1123,11 +1096,6 @@ class AMM {
       sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MIN_TICK + 1).toString();
     }
 
-    const isFCMApproved = await this.isFCMApproved();
-    if (!isFCMApproved) {
-      await this.approveFCM();
-    }
-
     let fcmContract;
     switch (this.rateOracle.protocolId) {
       case 1:
@@ -1143,11 +1111,6 @@ class AMM {
     }
 
     const scaledNotional = this.scale(notionalToUnwind);
-
-    const isUnderlyingTokenApprovedForFCM = await this.isUnderlyingTokenApprovedForFCM();
-    if (!isUnderlyingTokenApprovedForFCM) {
-      await this.approveUnderlyingTokenForFCM();
-    }
 
     await fcmContract.callStatic.unwindFullyCollateralisedFixedTakerSwap(
       scaledNotional,
@@ -1618,7 +1581,10 @@ class AMM {
     }
 
     let results: PositionInfo = {
+      notionalInUSD: 0,
+      marginInUSD: 0,
       margin: 0,
+      accruedCashflowInUSD: 0,
       accruedCashflow: 0,
       beforeMaturity: false
     };
@@ -1651,12 +1617,20 @@ class AMM {
 
           results.fixedRateSinceLastSwap = position.averageFixedRate;
 
-          results.accruedCashflow = await this.getAccruedCashflow(allSwaps, false);
+          const accruedCashflowInUnderlyingToken = await this.getAccruedCashflow(allSwaps, false);
+          results.accruedCashflow = accruedCashflowInUnderlyingToken;
+
+          // need to change when introduce non-stable coins
+          results.accruedCashflowInUSD = accruedCashflowInUnderlyingToken;
         }
       }
       else {
         if (!position.isSettled) {
-          results.accruedCashflow = await this.getAccruedCashflow(allSwaps, true);
+          const accruedCashflowInUnderlyingToken = await this.getAccruedCashflow(allSwaps, true);
+          results.accruedCashflow = accruedCashflowInUnderlyingToken;
+
+          // need to change when introduce non-stable coins
+          results.accruedCashflowInUSD = accruedCashflowInUnderlyingToken;
         }
       }
     }
@@ -1669,6 +1643,11 @@ class AMM {
           const fcmContract = fcmAaveFactory.connect(this.fcmAddress, this.signer);
           const margin = (await fcmContract.getTraderMarginInATokens(signerAddress));
           results.margin = this.descale(margin);
+
+          const marginInUnderlyingToken = results.margin;
+
+          // need to change when introduce non-stable coins
+          results.marginInUSD = marginInUnderlyingToken;
           break;
         }
 
@@ -1676,6 +1655,16 @@ class AMM {
           const fcmContract = fcmCompoundFactory.connect(this.fcmAddress, this.signer);
           const margin = (await fcmContract.getTraderMarginInCTokens(signerAddress));
           results.margin = margin.toNumber() / (10 ** 8);
+
+          const cTokenAddress = await (fcmContract as CompoundFCM).cToken();
+          const cTokenContract = ICToken__factory.connect(cTokenAddress, this.signer);
+          const rate = await cTokenContract.exchangeRateStored();
+          const scaledRate = this.descaleCompoundValue(rate);
+
+          const marginInUnderlyingToken = results.margin * scaledRate;
+
+          // need to change when introduce non-stable coins
+          results.marginInUSD = marginInUnderlyingToken;
           break;
         }
 
@@ -1702,6 +1691,12 @@ class AMM {
         tickUpper,
       );
       results.margin = this.descale(rawPositionInfo.margin);
+
+      const marginInUnderlyingToken = results.margin;
+
+      // need to change when introduce non-stable coins
+      results.marginInUSD = marginInUnderlyingToken;
+
       results.fees = this.descale(rawPositionInfo.accumulatedFees);
 
       if (beforeMaturity) {
@@ -1731,6 +1726,14 @@ class AMM {
         }
       }
     }
+
+    const notionalInUnderlyingToken =
+      (position.positionType === 3)
+        ? Math.abs(position.notional) // LP
+        : Math.abs(position.effectiveVariableTokenBalance); // FT, VT
+
+    // need to change when introduce non-stable coins
+    results.notionalInUSD = notionalInUnderlyingToken;
 
     return results;
   }

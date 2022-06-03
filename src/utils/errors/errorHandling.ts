@@ -158,6 +158,11 @@ export const errorMessageMapping: { [errSig: string]: string } = {
 
   /// @dev currentTime < queriedTime
   OOO: 'Internal error',
+
+  // @dev safeTransferLib error
+  'STL fail': 'Insufficient balance',
+
+  'Insufficient balance': 'Insufficient balance',
 };
 
 export const extractErrorSignature = (message: string): string => {
@@ -327,10 +332,7 @@ export const decodeInfoPostMint = (error: any, environment: string): RawInfoPost
       }
     }
   }
-  if (errSig in errorMessageMapping) {
-    throw new Error(errorMessageMapping[errSig]);
-  }
-  throw new Error('Unrecognized error');
+  throw new Error(getReadableErrorMessage(error, environment));
 };
 
 export type RawInfoPostSwap = {
@@ -432,8 +434,5 @@ export const decodeInfoPostSwap = (error: any, environment: string): RawInfoPost
       }
     }
   }
-  if (errSig in errorMessageMapping) {
-    throw new Error(errorMessageMapping[errSig]);
-  }
-  throw new Error('Unrecognized error');
+  throw new Error(getReadableErrorMessage(error, environment));
 };
