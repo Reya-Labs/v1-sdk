@@ -252,6 +252,19 @@ const _abi = [
     type: "event",
   },
   {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: "contract IWETH",
+        name: "_weth",
+        type: "address",
+      },
+    ],
+    name: "WETHSetting",
+    type: "event",
+  },
+  {
     inputs: [
       {
         internalType: "contract IMarginEngine",
@@ -356,7 +369,7 @@ const _abi = [
         type: "int256",
       },
     ],
-    stateMutability: "nonpayable",
+    stateMutability: "payable",
     type: "function",
   },
   {
@@ -483,7 +496,7 @@ const _abi = [
         type: "int24",
       },
     ],
-    stateMutability: "nonpayable",
+    stateMutability: "payable",
     type: "function",
   },
   {
@@ -516,7 +529,7 @@ const _abi = [
     ],
     name: "updatePositionMargin",
     outputs: [],
-    stateMutability: "nonpayable",
+    stateMutability: "payable",
     type: "function",
   },
 ];

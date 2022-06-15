@@ -1,5 +1,5 @@
 import JSBI from 'jsbi';
-import { providers } from 'ethers';
+import { ethers, providers } from 'ethers';
 import { DateTime } from 'luxon';
 import { BigNumber, ContractReceipt, Signer, utils } from 'ethers';
 
@@ -35,7 +35,7 @@ import { Price } from './fractions/price';
 import { TokenAmount } from './fractions/tokenAmount';
 import { decodeInfoPostMint, decodeInfoPostSwap, getReadableErrorMessage } from '../utils/errors/errorHandling';
 import Position from './position';
-import { isUndefined } from 'lodash';
+import { isNumber, isUndefined } from 'lodash';
 
 export type AMMConstructorArgs = {
   id: string;
@@ -73,6 +73,7 @@ export type AMMGetInfoPostSwapArgs = {
   fixedRateLimit?: number;
   fixedLow: number;
   fixedHigh: number;
+  eth?: number;
 };
 
 export type AMMSwapArgs = {
@@ -83,6 +84,7 @@ export type AMMSwapArgs = {
   fixedLow: number;
   fixedHigh: number;
   validationOnly?: boolean;
+  eth?: number;
 };
 
 export type InfoPostSwap = {
@@ -101,12 +103,14 @@ export type AMMMintArgs = {
   notional: number;
   margin: number;
   validationOnly?: boolean;
+  eth?: number;
 };
 
 export type AMMGetInfoPostMintArgs = {
   fixedLow: number;
   fixedHigh: number;
   notional: number;
+  eth?: number;
 }
 
 // burn
@@ -120,6 +124,7 @@ export type AMMUpdatePositionMarginArgs = {
   fixedLow: number;
   fixedHigh: number;
   marginDelta: number;
+  eth?: number;
 };
 
 // liquidation
@@ -244,6 +249,7 @@ class AMM {
     fixedRateLimit,
     fixedLow,
     fixedHigh,
+    eth,
   }: AMMGetInfoPostSwapArgs): Promise<InfoPostSwap> {
     if (!this.signer) {
       throw new Error('Wallet not connected');
@@ -263,6 +269,16 @@ class AMM {
 
     if (notional <= 0) {
       throw new Error('Amount of notional must be greater than 0');
+    }
+
+    const tempOverrides: {value?: BigNumber, gasLimit?: BigNumber} = {};
+    if (isNumber(eth)) {
+      if (eth < 0) {
+        throw new Error("Amount of ETH is negative");
+      }
+      if (eth > 0) {
+        tempOverrides.value = ethers.utils.parseEther(eth.toString());
+      }
     }
 
     const signerAddress = await this.signer.getAddress();
@@ -302,7 +318,7 @@ class AMM {
     let availableNotional = BigNumber.from(0);
     let fixedTokenDeltaUnbalanced = BigNumber.from(0);
 
-    await peripheryContract.callStatic.swap(swapPeripheryParams).then(
+    await peripheryContract.callStatic.swap(swapPeripheryParams, tempOverrides).then(
       (result: any) => {
         availableNotional = result[1];
         fee = result[2];
@@ -360,6 +376,7 @@ class AMM {
     fixedLow,
     fixedHigh,
     validationOnly,
+    eth,
   }: AMMSwapArgs): Promise<ContractReceipt | void> {
     if (!this.signer) {
       throw new Error('Wallet not connected');
@@ -387,6 +404,16 @@ class AMM {
 
     if (!this.underlyingToken.id) {
       throw new Error('No underlying error');
+    }
+
+    const tempOverrides: {value?: BigNumber, gasLimit?: BigNumber} = {};
+    if (isNumber(eth)) {
+      if (eth < 0) {
+        throw new Error("Amount of ETH is negative");
+      }
+      if (eth > 0) {
+        tempOverrides.value = ethers.utils.parseEther(eth.toString());
+      }
     }
 
     if (validationOnly) {
@@ -422,19 +449,19 @@ class AMM {
       marginDelta: scaledMarginDelta,
     };
 
-    await peripheryContract.callStatic.swap(swapPeripheryParams).catch(async (error: any) => {
+    await peripheryContract.callStatic.swap(swapPeripheryParams, tempOverrides).catch(async (error: any) => {
       const errorMessage = getReadableErrorMessage(error, this.environment);
       throw new Error(errorMessage);
     });
 
-    const estimatedGas = await peripheryContract.estimateGas.swap(swapPeripheryParams).catch((error) => {
+    const estimatedGas = await peripheryContract.estimateGas.swap(swapPeripheryParams, tempOverrides).catch((error) => {
       const errorMessage = getReadableErrorMessage(error, this.environment);
       throw new Error(errorMessage);
     });
 
-    const swapTransaction = await peripheryContract.swap(swapPeripheryParams, {
-      gasLimit: getGasBuffer(estimatedGas)
-    }).catch((error) => {
+    tempOverrides.gasLimit = getGasBuffer(estimatedGas);
+
+    const swapTransaction = await peripheryContract.swap(swapPeripheryParams, tempOverrides).catch((error) => {
       const errorMessage = getReadableErrorMessage(error, this.environment);
       throw new Error(errorMessage);
     });
@@ -454,6 +481,7 @@ class AMM {
     fixedLow,
     fixedHigh,
     notional,
+    eth,
   }: AMMGetInfoPostMintArgs): Promise<number> {
     if (!this.signer) {
       throw new Error('Wallet not connected');
@@ -475,6 +503,16 @@ class AMM {
       throw new Error('Amount of notional must be greater than 0');
     }
 
+    const tempOverrides: {value?: BigNumber, gasLimit?: BigNumber} = {};
+    if (isNumber(eth)) {
+      if (eth < 0) {
+        throw new Error("Amount of ETH is negative");
+      }
+      if (eth > 0) {
+        tempOverrides.value = ethers.utils.parseEther(eth.toString());
+      }
+    }
+
     const signerAddress = await this.signer.getAddress();
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
@@ -491,7 +529,7 @@ class AMM {
     };
 
     let marginRequirement = BigNumber.from('0');
-    await peripheryContract.callStatic.mintOrBurn(mintOrBurnParams).then(
+    await peripheryContract.callStatic.mintOrBurn(mintOrBurnParams, tempOverrides).then(
       (result) => {
         marginRequirement = BigNumber.from(result);
       },
@@ -522,6 +560,7 @@ class AMM {
     notional,
     margin,
     validationOnly,
+    eth
   }: AMMMintArgs): Promise<ContractReceipt | void> {
     if (!this.signer) {
       throw new Error('Wallet not connected');
@@ -551,6 +590,16 @@ class AMM {
       throw new Error('No underlying error');
     }
 
+    const tempOverrides: {value?: BigNumber, gasLimit?: BigNumber} = {};
+    if (isNumber(eth)) {
+      if (eth < 0) {
+        throw new Error("Amount of ETH is negative");
+      }
+      if (eth > 0) {
+        tempOverrides.value = ethers.utils.parseEther(eth.toString());
+      }
+    }
+
     if (validationOnly) {
       return;
     }
@@ -571,19 +620,19 @@ class AMM {
       marginDelta: _marginDelta,
     };
 
-    await peripheryContract.callStatic.mintOrBurn(mintOrBurnParams).catch((error) => {
+    await peripheryContract.callStatic.mintOrBurn(mintOrBurnParams, tempOverrides).catch((error) => {
       const errorMessage = getReadableErrorMessage(error, this.environment);
       throw new Error(errorMessage);
     });
 
-    const estimatedGas = await peripheryContract.estimateGas.mintOrBurn(mintOrBurnParams).catch((error) => {
+    const estimatedGas = await peripheryContract.estimateGas.mintOrBurn(mintOrBurnParams, tempOverrides).catch((error) => {
       const errorMessage = getReadableErrorMessage(error, this.environment);
       throw new Error(errorMessage);
     });
 
-    const mintTransaction = await peripheryContract.mintOrBurn(mintOrBurnParams, {
-      gasLimit: getGasBuffer(estimatedGas)
-    }).catch((error) => {
+    tempOverrides.gasLimit = getGasBuffer(estimatedGas);
+
+    const mintTransaction = await peripheryContract.mintOrBurn(mintOrBurnParams, tempOverrides).catch((error) => {
       const errorMessage = getReadableErrorMessage(error, this.environment);
       throw new Error(errorMessage);
     });
@@ -671,17 +720,15 @@ class AMM {
   // update position margin
 
   public async updatePositionMargin({
-    owner,
     fixedLow,
     fixedHigh,
     marginDelta,
+    eth
   }: AMMUpdatePositionMarginArgs): Promise<ContractReceipt | void> {
 
     if (!this.signer) {
       return;
     }
-
-    const effectiveOwner = (!owner) ? await this.signer.getAddress() : owner;
 
     if (!this.signer) {
       throw new Error('Wallet not connected');
@@ -701,12 +748,23 @@ class AMM {
 
     const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.signer);
 
+    const tempOverrides: {value?: BigNumber, gasLimit?: BigNumber} = {};
+    if (isNumber(eth)) {
+      if (eth < 0) {
+        throw new Error("Amount of ETH is negative");
+      }
+      if (eth > 0) {
+        tempOverrides.value = ethers.utils.parseEther(eth.toString());
+      }
+    }
+
     await peripheryContract.callStatic.updatePositionMargin(
       this.marginEngineAddress,
       tickLower,
       tickUpper,
       scaledMarginDelta,
-      false
+      false,
+      tempOverrides
     ).catch(async (error: any) => {
       const errorMessage = getReadableErrorMessage(error, this.environment);
       throw new Error(errorMessage);
@@ -717,8 +775,11 @@ class AMM {
       tickLower,
       tickUpper,
       scaledMarginDelta,
-      false
+      false,
+      tempOverrides
     );
+
+    tempOverrides.gasLimit = getGasBuffer(estimatedGas);
 
     const updatePositionMarginTransaction = await peripheryContract.updatePositionMargin(
       this.marginEngineAddress,
@@ -726,9 +787,7 @@ class AMM {
       tickUpper,
       scaledMarginDelta,
       false,
-      {
-        gasLimit: getGasBuffer(estimatedGas)
-      }
+      tempOverrides
     );
 
     try {
