@@ -1823,6 +1823,62 @@ class AMM {
     return currentBalance.gte(scaledAmount);
   }
 
+  public async underlyingTokens(): Promise<number> {
+    if (!this.signer) {
+      throw new Error('Wallet not connected');
+    }
+
+    if (!this.underlyingToken.id) {
+      throw new Error("No underlying token");
+    }
+
+    const signerAddress = await this.signer.getAddress();
+    const tokenAddress = this.underlyingToken.id;
+    const token = tokenFactory.connect(tokenAddress, this.signer);
+
+    const currentBalance = await token.balanceOf(signerAddress);
+
+    return this.descale(currentBalance);
+  }
+
+  public async yieldBearingTokens(): Promise<number> {
+    if (!this.signer) {
+      throw new Error('Wallet not connected');
+    }
+
+    const signerAddress = await this.signer.getAddress();
+
+    let tokenAddress;
+    switch (this.rateOracle.protocolId) {
+      case 1: {
+        const fcmContract = fcmAaveFactory.connect(this.fcmAddress, this.signer);
+        tokenAddress = await fcmContract.underlyingYieldBearingToken();
+        break;
+      }
+
+      case 2: {
+        const fcmContract = fcmCompoundFactory.connect(this.fcmAddress, this.signer);
+        tokenAddress = await fcmContract.cToken();
+        break;
+      }
+
+      default:
+        throw new Error("Unrecognized FCM");
+    }
+
+    const token = tokenFactory.connect(tokenAddress, this.signer);
+
+    const currentBalance = await token.balanceOf(signerAddress);
+    const decimals = await token.decimals();
+
+    if (decimals <= 3) {
+      return currentBalance.toNumber() / (10 ** decimals);
+    }
+    else {
+      return currentBalance.div(BigNumber.from(10).pow(decimals - 3)).toNumber() / 1000;
+    }
+  }
+
   // caps
 
   async setCap(amount: number) {
