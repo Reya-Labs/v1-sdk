@@ -1,5 +1,5 @@
 import JSBI from 'jsbi';
-import { providers } from 'ethers';
+import { constants, providers } from 'ethers';
 import { DateTime } from 'luxon';
 import { BigNumber, ContractReceipt, Signer, utils } from 'ethers';
 
@@ -36,7 +36,7 @@ import { Price } from './fractions/price';
 import { TokenAmount } from './fractions/tokenAmount';
 import { decodeInfoPostMint, decodeInfoPostSwap, getReadableErrorMessage } from '../utils/errors/errorHandling';
 import Position from './position';
-import { isUndefined } from 'lodash';
+import { isNumber, isUndefined } from 'lodash';
 
 export type AMMConstructorArgs = {
   id: string;
@@ -74,6 +74,8 @@ export type AMMGetInfoPostSwapArgs = {
   fixedRateLimit?: number;
   fixedLow: number;
   fixedHigh: number;
+  margin?: number;
+  expectedApr?: number;
 };
 
 export type AMMSwapArgs = {
@@ -92,6 +94,7 @@ export type InfoPostSwap = {
   fee: number;
   slippage: number;
   averageFixedRate: number;
+  expectedApy?: number;
 };
 
 // mint
@@ -196,6 +199,7 @@ class AMM {
   public readonly totalNotionalTraded: JSBI;
   public readonly totalLiquidity: JSBI;
   public readonly isETH: boolean;
+  public readonly isFCM: boolean;
 
   public constructor({
     id,
@@ -242,7 +246,25 @@ class AMM {
     else {
       this.isETH = false;
     }
+
+    this.isFCM = this.fcmAddress.startsWith("0x");
   }
+
+  // expected apy
+  expectedApy = (ft:number, vt: number, margin: number, predictedApr: number) => {
+    const timeInYears = 
+      BigNumber.from(this.termEndTimestamp.toString())
+        .sub(BigNumber.from(this.termStartTimestamp.toString()))
+        .div(BigNumber.from(10).pow(15))
+        .toNumber() / 1000 / ONE_YEAR_IN_SECONDS;
+      
+    const variableFactor = -Math.log(predictedApr) / Math.log(timeInYears) - 1;
+
+    const expectedCashflow = ft * timeInYears * 0.01 + vt * variableFactor;
+
+    const result = (1 + expectedCashflow / margin) ^ (1 / timeInYears) - 1;
+    return result;
+  };
 
   // swap
 
@@ -252,6 +274,8 @@ class AMM {
     fixedRateLimit,
     fixedLow,
     fixedHigh,
+    margin,
+    expectedApr
   }: AMMGetInfoPostSwapArgs): Promise<InfoPostSwap> {
     if (!this.signer) {
       throw new Error('Wallet not connected');
@@ -309,6 +333,7 @@ class AMM {
     let fee = BigNumber.from(0);
     let availableNotional = BigNumber.from(0);
     let fixedTokenDeltaUnbalanced = BigNumber.from(0);
+    let fixedTokenDelta = BigNumber.from(0);
 
     await peripheryContract.callStatic.swap(swapPeripheryParams).then(
       (result: any) => {
@@ -325,6 +350,7 @@ class AMM {
         fee = result.fee;
         availableNotional = result.availableNotional;
         fixedTokenDeltaUnbalanced = result.fixedTokenDeltaUnbalanced;
+        fixedTokenDelta = result.fixedTokenDelta;
       },
     );
 
@@ -351,13 +377,24 @@ class AMM {
 
     const averageFixedRate = (availableNotional.eq(BigNumber.from(0))) ? 0 : fixedTokenDeltaUnbalanced.mul(BigNumber.from(1000)).div(availableNotional).toNumber() / 1000;
 
-    return {
+    const result: InfoPostSwap = {
       marginRequirement: additionalMargin,
       availableNotional: scaledAvailableNotional < 0 ? -scaledAvailableNotional : scaledAvailableNotional,
       fee: scaledFee < 0 ? -scaledFee : scaledFee,
       slippage: fixedRateDeltaRaw < 0 ? -fixedRateDeltaRaw : fixedRateDeltaRaw,
       averageFixedRate: averageFixedRate < 0 ? -averageFixedRate : averageFixedRate,
     };
+
+    if (isNumber(expectedApr) && isNumber(margin)) {
+      result.expectedApy = this.expectedApy(
+        this.descale(fixedTokenDelta),
+        scaledAvailableNotional,
+        margin,
+        expectedApr
+      );
+    }
+
+    return result;
   }
 
   public async swap({
