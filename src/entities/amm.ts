@@ -11,6 +11,7 @@ import {
   MaxUint256Bn,
   TresholdApprovalBn,
   getGasBuffer,
+  WETH9,
 } from '../constants';
 import {
   Periphery__factory as peripheryFactory,
@@ -194,7 +195,7 @@ class AMM {
   public readonly txCount: number;
   public readonly totalNotionalTraded: JSBI;
   public readonly totalLiquidity: JSBI;
-
+  public readonly isETH: boolean;
 
   public constructor({
     id,
@@ -234,6 +235,13 @@ class AMM {
     this.txCount = txCount;
     this.totalNotionalTraded = totalNotionalTraded;
     this.totalLiquidity = totalLiquidity;
+
+    if (this.underlyingToken.id?.toLowerCase() === WETH9) {
+      this.isETH = true;
+    }
+    else {
+      this.isETH = false;
+    }
   }
 
   // swap
@@ -410,31 +418,50 @@ class AMM {
 
     const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.signer);
     const scaledNotional = this.scale(notional);
-    const scaledMarginDelta = this.scale(margin);
 
-    const swapPeripheryParams: SwapPeripheryParams = {
-      marginEngine: this.marginEngineAddress,
-      isFT,
-      notional: scaledNotional,
-      sqrtPriceLimitX96,
-      tickLower,
-      tickUpper,
-      marginDelta: scaledMarginDelta,
-    };
+    let swapPeripheryParams: SwapPeripheryParams;
+    let tempOverrides: {value?: BigNumber, gasLimit?: BigNumber} = {};
 
-    await peripheryContract.callStatic.swap(swapPeripheryParams).catch(async (error: any) => {
+    if (this.isETH) {
+      swapPeripheryParams = {
+        marginEngine: this.marginEngineAddress,
+        isFT,
+        notional: scaledNotional,
+        sqrtPriceLimitX96,
+        tickLower,
+        tickUpper,
+        marginDelta: 0,
+      };
+
+      tempOverrides.value = BigNumber.from(margin.toString());
+    }
+    else {
+      const scaledMarginDelta = this.scale(margin);
+
+      swapPeripheryParams = {
+        marginEngine: this.marginEngineAddress,
+        isFT,
+        notional: scaledNotional,
+        sqrtPriceLimitX96,
+        tickLower,
+        tickUpper,
+        marginDelta: scaledMarginDelta,
+      };
+    }
+
+    await peripheryContract.callStatic.swap(swapPeripheryParams, tempOverrides).catch(async (error: any) => {
       const errorMessage = getReadableErrorMessage(error, this.environment);
       throw new Error(errorMessage);
     });
 
-    const estimatedGas = await peripheryContract.estimateGas.swap(swapPeripheryParams).catch((error) => {
+    const estimatedGas = await peripheryContract.estimateGas.swap(swapPeripheryParams, tempOverrides).catch((error) => {
       const errorMessage = getReadableErrorMessage(error, this.environment);
       throw new Error(errorMessage);
     });
 
-    const swapTransaction = await peripheryContract.swap(swapPeripheryParams, {
-      gasLimit: getGasBuffer(estimatedGas)
-    }).catch((error) => {
+    tempOverrides.gasLimit = estimatedGas;
+
+    const swapTransaction = await peripheryContract.swap(swapPeripheryParams, tempOverrides).catch((error) => {
       const errorMessage = getReadableErrorMessage(error, this.environment);
       throw new Error(errorMessage);
     });
@@ -560,30 +587,48 @@ class AMM {
 
     const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.signer);
     const _notional = this.scale(notional);
-    const _marginDelta = this.scale(margin);
 
-    const mintOrBurnParams: MintOrBurnParams = {
-      marginEngine: this.marginEngineAddress,
-      tickLower,
-      tickUpper,
-      notional: _notional,
-      isMint: true,
-      marginDelta: _marginDelta,
-    };
+    let mintOrBurnParams: MintOrBurnParams;
+    let tempOverrides: {value?: BigNumber, gasLimit?: BigNumber} = {};
 
-    await peripheryContract.callStatic.mintOrBurn(mintOrBurnParams).catch((error) => {
+    if (this.isETH) {
+      mintOrBurnParams = {
+        marginEngine: this.marginEngineAddress,
+        tickLower,
+        tickUpper,
+        notional: _notional,
+        isMint: true,
+        marginDelta: 0,
+      };
+
+      tempOverrides.value = BigNumber.from(margin.toString());
+    }
+    else {
+      const scaledMarginDelta = this.scale(margin);
+
+      mintOrBurnParams = {
+        marginEngine: this.marginEngineAddress,
+        tickLower,
+        tickUpper,
+        notional: _notional,
+        isMint: true,
+        marginDelta: scaledMarginDelta,
+      };
+    }
+
+    await peripheryContract.callStatic.mintOrBurn(mintOrBurnParams, tempOverrides).catch((error) => {
       const errorMessage = getReadableErrorMessage(error, this.environment);
       throw new Error(errorMessage);
     });
 
-    const estimatedGas = await peripheryContract.estimateGas.mintOrBurn(mintOrBurnParams).catch((error) => {
+    const estimatedGas = await peripheryContract.estimateGas.mintOrBurn(mintOrBurnParams, tempOverrides).catch((error) => {
       const errorMessage = getReadableErrorMessage(error, this.environment);
       throw new Error(errorMessage);
     });
 
-    const mintTransaction = await peripheryContract.mintOrBurn(mintOrBurnParams, {
-      gasLimit: getGasBuffer(estimatedGas)
-    }).catch((error) => {
+    tempOverrides.gasLimit = estimatedGas;
+
+    const mintTransaction = await peripheryContract.mintOrBurn(mintOrBurnParams, tempOverrides).catch((error) => {
       const errorMessage = getReadableErrorMessage(error, this.environment);
       throw new Error(errorMessage);
     });
@@ -671,7 +716,6 @@ class AMM {
   // update position margin
 
   public async updatePositionMargin({
-    owner,
     fixedLow,
     fixedHigh,
     marginDelta,
@@ -680,8 +724,6 @@ class AMM {
     if (!this.signer) {
       return;
     }
-
-    const effectiveOwner = (!owner) ? await this.signer.getAddress() : owner;
 
     if (!this.signer) {
       throw new Error('Wallet not connected');
@@ -697,8 +739,17 @@ class AMM {
 
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
-    const scaledMarginDelta = this.scale(marginDelta);
 
+    let tempOverrides: {value?: BigNumber, gasLimit?: BigNumber} = {};
+    let scaledMarginDelta: string;
+
+    if (this.isETH && marginDelta > 0) {
+      tempOverrides.value = BigNumber.from(marginDelta);
+      scaledMarginDelta = "0";
+    }
+    else {
+      scaledMarginDelta = this.scale(marginDelta);
+    }
     const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.signer);
 
     await peripheryContract.callStatic.updatePositionMargin(
@@ -706,7 +757,8 @@ class AMM {
       tickLower,
       tickUpper,
       scaledMarginDelta,
-      false
+      false,
+      tempOverrides
     ).catch(async (error: any) => {
       const errorMessage = getReadableErrorMessage(error, this.environment);
       throw new Error(errorMessage);
@@ -717,8 +769,11 @@ class AMM {
       tickLower,
       tickUpper,
       scaledMarginDelta,
-      false
+      false,
+      tempOverrides
     );
+
+    tempOverrides.gasLimit = estimatedGas;
 
     const updatePositionMarginTransaction = await peripheryContract.updatePositionMargin(
       this.marginEngineAddress,
@@ -726,9 +781,7 @@ class AMM {
       tickUpper,
       scaledMarginDelta,
       false,
-      {
-        gasLimit: getGasBuffer(estimatedGas)
-      }
+      tempOverrides
     );
 
     try {
@@ -1776,15 +1829,27 @@ class AMM {
       throw new Error('Wallet not connected');
     }
 
-    if (!this.underlyingToken.id) {
-      throw new Error("No underlying token");
+    const signerAddress = await this.signer.getAddress();
+
+    let currentBalance: BigNumber;
+    if (this.isETH) {
+      if (!this.provider) {
+        throw new Error('Provider not connected');
+      }
+
+      currentBalance = await this.provider.getBalance(signerAddress);
+    }
+    else {
+      if (!this.underlyingToken.id) {
+        throw new Error("No underlying token");
+      }
+
+      const tokenAddress = this.underlyingToken.id;
+      const token = tokenFactory.connect(tokenAddress, this.signer);
+
+      currentBalance = await token.balanceOf(signerAddress);
     }
 
-    const signerAddress = await this.signer.getAddress();
-    const tokenAddress = this.underlyingToken.id;
-    const token = tokenFactory.connect(tokenAddress, this.signer);
-
-    const currentBalance = await token.balanceOf(signerAddress);
     const scaledAmount = BigNumber.from(this.scale(amount));
 
     return currentBalance.gte(scaledAmount);
@@ -1828,15 +1893,26 @@ class AMM {
       throw new Error('Wallet not connected');
     }
 
-    if (!this.underlyingToken.id) {
-      throw new Error("No underlying token");
-    }
-
     const signerAddress = await this.signer.getAddress();
-    const tokenAddress = this.underlyingToken.id;
-    const token = tokenFactory.connect(tokenAddress, this.signer);
 
-    const currentBalance = await token.balanceOf(signerAddress);
+    let currentBalance: BigNumber;
+    if (this.isETH) {
+      if (!this.provider) {
+        throw new Error('Provider not connected');
+      }
+
+      currentBalance = await this.provider.getBalance(signerAddress);
+    }
+    else {
+      if (!this.underlyingToken.id) {
+        throw new Error("No underlying token");
+      }
+
+      const tokenAddress = this.underlyingToken.id;
+      const token = tokenFactory.connect(tokenAddress, this.signer);
+
+      currentBalance = await token.balanceOf(signerAddress);
+    }
 
     return this.descale(currentBalance);
   }
