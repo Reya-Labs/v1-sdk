@@ -38,6 +38,24 @@ import { decodeInfoPostMint, decodeInfoPostSwap, getReadableErrorMessage } from 
 import Position from './position';
 import { isNumber, isUndefined } from 'lodash';
 
+//1. Import coingecko-api
+const CoinGecko = require('coingecko-api');
+
+//2. Initiate the CoinGecko API Client
+const CoinGeckoClient = new CoinGecko();
+
+//3. Make call to get the price of 1 eth in USD, so divide the value of USD by data
+// queries the json response body with price of 1eth in usd
+// returns the value of 1 eth in USD 
+var geckoEthToUsd = async () => {
+  let data = await CoinGeckoClient.simple.price({
+    ids: ['ethereum'],
+    vs_currencies: ['usd'],
+  });
+  return data.ethereum.usd;
+};
+
+
 export type AMMConstructorArgs = {
   id: string;
   signer: Signer | null;
@@ -1762,9 +1780,12 @@ class AMM {
           results.margin = this.descale(margin);
 
           const marginInUnderlyingToken = results.margin;
+          
+          // Get current exchange rate for eth/usd
+          const EthToUsdPrice = geckoEthToUsd();
 
           // need to change when introduce non-stable coins
-          results.marginInUSD = marginInUnderlyingToken;
+          results.marginInUSD = marginInUnderlyingToken * await EthToUsdPrice;
           break;
         }
 
@@ -1780,8 +1801,11 @@ class AMM {
 
           const marginInUnderlyingToken = results.margin * scaledRate;
 
+          // Get current exchange rate for eth/usd
+          const EthToUsdPrice = geckoEthToUsd();
+
           // need to change when introduce non-stable coins
-          results.marginInUSD = marginInUnderlyingToken;
+          results.marginInUSD = marginInUnderlyingToken * await EthToUsdPrice;
           break;
         }
 
@@ -1811,8 +1835,11 @@ class AMM {
 
       const marginInUnderlyingToken = results.margin;
 
+      // Get current exchange rate for eth/usd
+      const EthToUsdPrice = geckoEthToUsd();
+
       // need to change when introduce non-stable coins
-      results.marginInUSD = marginInUnderlyingToken;
+      results.marginInUSD = marginInUnderlyingToken * await EthToUsdPrice;
 
       results.fees = this.descale(rawPositionInfo.accumulatedFees);
 
