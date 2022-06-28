@@ -23,13 +23,11 @@ interface ERC1967UpgradeUpgradeableInterface extends ethers.utils.Interface {
   events: {
     "AdminChanged(address,address)": EventFragment;
     "BeaconUpgraded(address)": EventFragment;
-    "Initialized(uint8)": EventFragment;
     "Upgraded(address)": EventFragment;
   };
 
   getEvent(nameOrSignatureOrTopic: "AdminChanged"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "BeaconUpgraded"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "Initialized"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Upgraded"): EventFragment;
 }
 
@@ -38,8 +36,6 @@ export type AdminChangedEvent = TypedEvent<
 >;
 
 export type BeaconUpgradedEvent = TypedEvent<[string] & { beacon: string }>;
-
-export type InitializedEvent = TypedEvent<[number] & { version: number }>;
 
 export type UpgradedEvent = TypedEvent<[string] & { implementation: string }>;
 
@@ -114,14 +110,6 @@ export class ERC1967UpgradeUpgradeable extends BaseContract {
     BeaconUpgraded(
       beacon?: string | null
     ): TypedEventFilter<[string], { beacon: string }>;
-
-    "Initialized(uint8)"(
-      version?: null
-    ): TypedEventFilter<[number], { version: number }>;
-
-    Initialized(
-      version?: null
-    ): TypedEventFilter<[number], { version: number }>;
 
     "Upgraded(address)"(
       implementation?: string | null
