@@ -64,7 +64,8 @@
     "luxon": "^2.3.0",
     "tiny-invariant": "^1.2.0",
     "toformat": "^2.0.0",
-    "yalc": "^1.0.0-pre.53"
+    "yalc": "^1.0.0-pre.53",
+    "coingecko-api": "^1.0.10"
   },
   "lint-staged": {
     "src/**/*.ts": [
