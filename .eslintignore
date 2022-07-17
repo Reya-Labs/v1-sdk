@@ -2,3 +2,4 @@ src/entities/amm.ts
 *.spec.ts
 # src/utils/errors/errorHandling.ts
 src/utils/errors/*
+src/utils/time.ts
