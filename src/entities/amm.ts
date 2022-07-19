@@ -436,7 +436,9 @@ class AMM {
       }
     }
 
-    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.signer);
+    const factoryContract = factoryFactory.connect(this.factoryAddress, this.signer);
+    const peripheryAddress = await factoryContract.periphery();
+    const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
     const scaledNotional = this.scale(notional);
 
     let swapPeripheryParams: SwapPeripheryParams;
@@ -573,7 +575,9 @@ class AMM {
 
     const scaledNotional = this.scale(notional);
 
-    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.signer);
+    const factoryContract = factoryFactory.connect(this.factoryAddress, this.signer);
+    const peripheryAddress = await factoryContract.periphery();
+    const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
     const swapPeripheryParams: SwapPeripheryParams = {
       marginEngine: newMarginEngine,
       isFT,
@@ -718,7 +722,9 @@ class AMM {
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
-    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.signer);
+    const factoryContract = factoryFactory.connect(this.factoryAddress, this.signer);
+    const peripheryAddress = await factoryContract.periphery();
+    const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
     const _notional = this.scale(notional);
 
     let mintOrBurnParams: MintOrBurnParams;
@@ -824,7 +830,9 @@ class AMM {
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
-    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.signer);
+    const factoryContract = factoryFactory.connect(this.factoryAddress, this.signer);
+    const peripheryAddress = await factoryContract.periphery();
+    const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
     const scaledNotional = this.scale(notional);
     const mintOrBurnParams: MintOrBurnParams = {
       marginEngine: newMarginEngine,
@@ -1180,7 +1188,9 @@ class AMM {
       }
     }
 
-    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.signer);
+    const factoryContract = factoryFactory.connect(this.factoryAddress, this.signer);
+    const peripheryAddress = await factoryContract.periphery();
+    const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
     const scaledNotional = this.scale(notional);
 
     let swapPeripheryParams: SwapPeripheryParams;
@@ -1448,7 +1458,9 @@ class AMM {
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
-    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.signer);
+    const factoryContract = factoryFactory.connect(this.factoryAddress, this.signer);
+    const peripheryAddress = await factoryContract.periphery();
+    const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
     const _notional = this.scale(notional);
 
     let mintOrBurnParams: MintOrBurnParams;
@@ -2226,7 +2238,9 @@ class AMM {
     const signerAddress = await this.signer.getAddress();
     const token = tokenFactory.connect(this.wethAddress, this.signer);
 
-    const allowance = await token.allowance(signerAddress, this.peripheryAddress);
+    const factoryContract = factoryFactory.connect(this.factoryAddress, this.signer);
+    const peripheryAddress = await factoryContract.periphery();
+    const allowance = await token.allowance(signerAddress, peripheryAddress);
 
     return allowance.gte(TresholdApprovalBn);
   }
