@@ -360,7 +360,7 @@ class AMM {
 
     const expectedCashflow = ft * timeInYears * 0.01 + vt * variableFactor;
 
-    const result = (1 + expectedCashflow / margin) ^ (1 / timeInYears) - 1;
+    const result = Math.pow((1 + expectedCashflow / margin), (1 / timeInYears)) - 1;
     return result;
   };
 
