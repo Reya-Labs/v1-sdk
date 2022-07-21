@@ -364,7 +364,7 @@ class AMM {
     const timeInYearsFromStartToEnd = (end - start) / ONE_YEAR_IN_SECONDS;
 
     const timeInYearsFromNowToEnd = (end - now) / ONE_YEAR_IN_SECONDS;
-    
+
 
     const variableFactor = -Math.log(predictedApr) / Math.log(timeInYearsFromStartToEnd) - 1;
 
@@ -2832,7 +2832,7 @@ class AMM {
 
   // balance checks
 
-  public async hasEnoughUnderlyingTokens(amount: number): Promise<boolean> {
+  public async hasEnoughUnderlyingTokens(amount: number, rolloverPosition: { fixedLow: number, fixedHigh: number } | undefined): Promise<boolean> {
     if (!this.signer) {
       throw new Error('Wallet not connected');
     }
@@ -2859,6 +2859,44 @@ class AMM {
     }
 
     const scaledAmount = BigNumber.from(this.scale(amount));
+
+    if (rolloverPosition) {
+      if (rolloverPosition.fixedLow >= rolloverPosition.fixedHigh) {
+        throw new Error('Lower Rate must be smaller than Upper Rate');
+      }
+  
+      if (rolloverPosition.fixedLow < MIN_FIXED_RATE) {
+        throw new Error('Lower Rate is too low');
+      }
+  
+      if (rolloverPosition.fixedHigh > MAX_FIXED_RATE) {
+        throw new Error('Upper Rate is too high');
+      }
+
+      const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(rolloverPosition.fixedLow);
+      const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(rolloverPosition.fixedHigh);
+
+      const marginEngineContract = marginEngineFactory.connect(this.marginEngineAddress, this.signer);
+
+      const position = await marginEngineContract.callStatic.getPosition(signerAddress, tickLower, tickUpper);
+
+      const start = BigNumber.from(this.termStartTimestamp.toString());
+      const end = BigNumber.from(this.termEndTimestamp.toString());
+
+      const timeInYearsFromStartToEnd = (end.sub(start)).div(ONE_YEAR_IN_SECONDS);
+
+      const rateOracleContract = BaseRateOracle__factory.connect(this.rateOracle.id, this.signer);
+      const variableFactor = await rateOracleContract.callStatic.variableFactor(this.termStartTimestamp.toString(), this.termEndTimestamp.toString());
+
+      const fixedCashflow = position.fixedTokenBalance.mul(timeInYearsFromStartToEnd).div(BigNumber.from(100)).div(BigNumber.from(10).pow(18));
+      const variableCashflow = position.variableTokenBalance.mul(variableFactor).div(BigNumber.from(10).pow(18));
+
+      const cashflow = fixedCashflow.add(variableCashflow);
+
+      const marginAfterSettlement = position.margin.add(cashflow);
+
+      return (currentBalance.add(marginAfterSettlement)).gte(scaledAmount);
+    }
 
     return currentBalance.gte(scaledAmount);
   }
@@ -2896,7 +2934,7 @@ class AMM {
     return currentBalance.gte(scaledAmount);
   }
 
-  public async underlyingTokens(): Promise<number> {
+  public async underlyingTokens(rolloverPosition: { fixedLow: number, fixedHigh: number } | undefined): Promise<number> {
     if (!this.signer) {
       throw new Error('Wallet not connected');
     }
@@ -2920,6 +2958,44 @@ class AMM {
       const token = tokenFactory.connect(tokenAddress, this.signer);
 
       currentBalance = await token.balanceOf(signerAddress);
+    }
+
+    if (rolloverPosition) {
+      if (rolloverPosition.fixedLow >= rolloverPosition.fixedHigh) {
+        throw new Error('Lower Rate must be smaller than Upper Rate');
+      }
+  
+      if (rolloverPosition.fixedLow < MIN_FIXED_RATE) {
+        throw new Error('Lower Rate is too low');
+      }
+  
+      if (rolloverPosition.fixedHigh > MAX_FIXED_RATE) {
+        throw new Error('Upper Rate is too high');
+      }
+
+      const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(rolloverPosition.fixedLow);
+      const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(rolloverPosition.fixedHigh);
+
+      const marginEngineContract = marginEngineFactory.connect(this.marginEngineAddress, this.signer);
+
+      const position = await marginEngineContract.callStatic.getPosition(signerAddress, tickLower, tickUpper);
+
+      const start = BigNumber.from(this.termStartTimestamp.toString());
+      const end = BigNumber.from(this.termEndTimestamp.toString());
+
+      const timeInYearsFromStartToEnd = (end.sub(start)).div(ONE_YEAR_IN_SECONDS);
+
+      const rateOracleContract = BaseRateOracle__factory.connect(this.rateOracle.id, this.signer);
+      const variableFactor = await rateOracleContract.callStatic.variableFactor(this.termStartTimestamp.toString(), this.termEndTimestamp.toString());
+
+      const fixedCashflow = position.fixedTokenBalance.mul(timeInYearsFromStartToEnd).div(BigNumber.from(100)).div(BigNumber.from(10).pow(18));
+      const variableCashflow = position.variableTokenBalance.mul(variableFactor).div(BigNumber.from(10).pow(18));
+
+      const cashflow = fixedCashflow.add(variableCashflow);
+
+      const marginAfterSettlement = position.margin.add(cashflow);
+
+      return this.descale(currentBalance.add(marginAfterSettlement));
     }
 
     return this.descale(currentBalance);
