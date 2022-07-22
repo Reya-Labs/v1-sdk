@@ -349,29 +349,42 @@ class AMM {
   }
 
   // expected apy
-  expectedApy = (ft: number, vt: number, margin: number, predictedApr: number) => {
+  expectedApy = (ft: BigNumber, vt: BigNumber, margin: number, predictedApr: number) => {
 
     const start = BigNumber.from(this.termStartTimestamp.toString())
-      .div(BigNumber.from(10).pow(15))
-      .toNumber() / 1000;
+      .div(BigNumber.from(10).pow(12))
+      .toNumber() / 1000000;
 
     const now = Math.round((new Date()).getTime() / 1000);
 
     const end = BigNumber.from(this.termEndTimestamp.toString())
-      .div(BigNumber.from(10).pow(15))
-      .toNumber() / 1000;
+      .div(BigNumber.from(10).pow(12))
+      .toNumber() / 1000000;
+
+    let scaledFt = 0;
+    let scaledVt = 0;
+
+    if (this.underlyingToken.decimals <= 6) {
+      scaledFt = ft.toNumber() / (10 ** this.underlyingToken.decimals);
+      scaledVt = vt.toNumber() / (10 ** this.underlyingToken.decimals);
+    }
+    else {
+      scaledFt = ft.div(BigNumber.from(10).pow(this.underlyingToken.decimals - 6)).toNumber() / 1000000;
+      scaledVt = vt.div(BigNumber.from(10).pow(this.underlyingToken.decimals - 6)).toNumber() / 1000000;
+    }
+    
 
     const timeInYearsFromStartToEnd = (end - start) / ONE_YEAR_IN_SECONDS;
 
     const timeInYearsFromNowToEnd = (end - now) / ONE_YEAR_IN_SECONDS;
 
 
-    const variableFactor = -Math.log(predictedApr) / Math.log(timeInYearsFromStartToEnd) - 1;
+    const variableFactor = Math.pow(predictedApr / 100 + 1, timeInYearsFromStartToEnd) - 1;
 
-    const expectedCashflow = ft * timeInYearsFromStartToEnd * 0.01 + vt * variableFactor;
+    const expectedCashflow = scaledFt * timeInYearsFromStartToEnd * 0.01 + scaledVt * variableFactor;
 
     const result = Math.pow((1 + expectedCashflow / margin), (1 / timeInYearsFromNowToEnd)) - 1;
-    return result;
+    return result * 100;
   };
 
   // rollover with swap
@@ -664,8 +677,8 @@ class AMM {
 
     if (isNumber(expectedApr) && isNumber(margin)) {
       result.expectedApy = this.expectedApy(
-        this.descale(fixedTokenDelta),
-        scaledAvailableNotional,
+        fixedTokenDelta,
+        availableNotional,
         margin,
         expectedApr
       );
@@ -1009,8 +1022,8 @@ class AMM {
 
     if (isNumber(expectedApr) && isNumber(margin)) {
       result.expectedApy = this.expectedApy(
-        this.descale(fixedTokenDelta),
-        scaledAvailableNotional,
+        fixedTokenDelta,
+        availableNotional,
         margin,
         expectedApr
       );
