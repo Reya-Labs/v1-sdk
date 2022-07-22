@@ -1,0 +1,1 @@
+yarn build-release && yalc publish
