@@ -41,6 +41,7 @@ import { isNumber, isUndefined } from 'lodash';
 //1. Import coingecko-api
 import CoinGecko from 'coingecko-api';
 import { toBn } from 'evm-bn';
+import { getExpectedApy } from '../services/getExpectedApy';
 
 //2. Initiate the CoinGecko API Client
 const CoinGeckoClient = new CoinGecko();
@@ -350,11 +351,6 @@ class AMM {
 
   // expected apy
   expectedApy = (ft: BigNumber, vt: BigNumber, margin: number, predictedApr: number) => {
-
-    const start = BigNumber.from(this.termStartTimestamp.toString())
-      .div(BigNumber.from(10).pow(12))
-      .toNumber() / 1000000;
-
     const now = Math.round((new Date()).getTime() / 1000);
 
     const end = BigNumber.from(this.termEndTimestamp.toString())
@@ -372,19 +368,10 @@ class AMM {
       scaledFt = ft.div(BigNumber.from(10).pow(this.underlyingToken.decimals - 6)).toNumber() / 1000000;
       scaledVt = vt.div(BigNumber.from(10).pow(this.underlyingToken.decimals - 6)).toNumber() / 1000000;
     }
-    
 
-    const timeInYearsFromStartToEnd = (end - start) / ONE_YEAR_IN_SECONDS;
-
-    const timeInYearsFromNowToEnd = (end - now) / ONE_YEAR_IN_SECONDS;
-
-
-    const variableFactor = Math.pow(predictedApr / 100 + 1, timeInYearsFromStartToEnd) - 1;
-
-    const expectedCashflow = scaledFt * timeInYearsFromStartToEnd * 0.01 + scaledVt * variableFactor;
-
-    const result = Math.pow((1 + expectedCashflow / margin), (1 / timeInYearsFromNowToEnd)) - 1;
-    return result * 100;
+    const accruedCashflow = 0;
+    const pnl = getExpectedApy(now, end, scaledFt, scaledVt, margin + accruedCashflow, predictedApr / 100);
+    return pnl * 100;
   };
 
   // rollover with swap
