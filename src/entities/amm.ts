@@ -12,6 +12,7 @@ import {
   TresholdApprovalBn,
   getGasBuffer,
   WETH9,
+  ADDRESS_ZERO,
 } from '../constants';
 import {
   Periphery__factory as peripheryFactory,
@@ -346,6 +347,13 @@ class AMM {
       this.isETH = false;
       this.isFCM = true;
     }
+
+    if (this.fcmAddress === ADDRESS_ZERO) {
+      this.isFCM = false;
+    } else {
+      this.isFCM = true;
+    }
+    
   }
 
   // expected apy
