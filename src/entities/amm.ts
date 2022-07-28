@@ -632,6 +632,7 @@ class AMM {
         fixedTokenDeltaUnbalanced = result[3];
         marginRequirement = result[4];
         tickAfter = parseInt(result[5]);
+        fixedTokenDelta = result[0];
       },
       (error: any) => {
         const result = decodeInfoPostSwap(error, this.environment);
@@ -977,6 +978,7 @@ class AMM {
         fixedTokenDeltaUnbalanced = result[3];
         marginRequirement = result[4];
         tickAfter = parseInt(result[5]);
+        fixedTokenDelta = result[0];
       },
       (error: any) => {
         const result = decodeInfoPostSwap(error, this.environment);
