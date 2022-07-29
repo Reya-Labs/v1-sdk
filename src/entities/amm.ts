@@ -1,5 +1,5 @@
 import JSBI from 'jsbi';
-import { constants, ethers, providers } from 'ethers';
+import { ethers, providers } from 'ethers';
 import { DateTime } from 'luxon';
 import { BigNumber, ContractReceipt, Signer, utils } from 'ethers';
 
@@ -11,7 +11,6 @@ import {
   MaxUint256Bn,
   TresholdApprovalBn,
   getGasBuffer,
-  WETH9,
 } from '../constants';
 import {
   Periphery__factory as peripheryFactory,
@@ -40,7 +39,6 @@ import { isNumber, isUndefined } from 'lodash';
 
 //1. Import coingecko-api
 import CoinGecko from 'coingecko-api';
-import { toBn } from 'evm-bn';
 import { getExpectedApy } from '../services/getExpectedApy';
 
 //2. Initiate the CoinGecko API Client
@@ -89,13 +87,13 @@ export type CapInfo = {
 // swap
 
 export type AMMGetInfoPostSwapArgs = {
+  position?: Position;
   isFT: boolean;
   notional: number;
   fixedRateLimit?: number;
   fixedLow: number;
   fixedHigh: number;
   margin?: number;
-  expectedApr?: number;
 };
 
 export type AMMSwapArgs = {
@@ -125,7 +123,7 @@ export type InfoPostSwap = {
   fee: number;
   slippage: number;
   averageFixedRate: number;
-  expectedApy?: number;
+  expectedApy?: number[][];
 };
 
 // rollover with swap
@@ -143,20 +141,6 @@ export type AMMRolloverWithSwapArgs = {
   oldFixedLow: number;
   oldFixedHigh: number;
   validationOnly?: boolean;
-};
-
-export type AMMGetInfoPostRolloverWithSwapArgs = {
-  isFT: boolean;
-  notional: number;
-  fixedRateLimit?: number;
-  fixedLow: number;
-  fixedHigh: number;
-  margin?: number;
-  owner: string;
-  newMarginEngine: string;
-  oldFixedLow: number;
-  oldFixedHigh: number;
-  expectedApr?: number;
 };
 
 // mint
@@ -350,7 +334,7 @@ class AMM {
   }
 
   // expected apy
-  expectedApy = (ft: BigNumber, vt: BigNumber, margin: number, predictedApr: number) => {
+  expectedApy = async (ft: BigNumber, vt: BigNumber, margin: number) => {
     const now = Math.round((new Date()).getTime() / 1000);
 
     const end = BigNumber.from(this.termEndTimestamp.toString())
@@ -369,9 +353,20 @@ class AMM {
       scaledVt = vt.div(BigNumber.from(10).pow(this.underlyingToken.decimals - 6)).toNumber() / 1000000;
     }
 
-    const accruedCashflow = 0;
-    const pnl = getExpectedApy(now, end, scaledFt, scaledVt, margin + accruedCashflow, predictedApr / 100);
-    return pnl * 100;
+    const varApy = await this.getVariableApy();
+    const samples = [0, varApy / 2, varApy, 2 * varApy, 3 * varApy];
+
+    const predictedAprs = [];
+    const predictedPnls = [];
+
+    for (let rate of samples) {
+      const pnl = getExpectedApy(now, end, scaledFt, scaledVt, margin, rate);
+
+      predictedAprs.push(100 * rate);
+      predictedPnls.push(100 * pnl);
+    }
+
+    return [predictedAprs, predictedPnls];
   };
 
   // rollover with swap
@@ -529,151 +524,6 @@ class AMM {
     }
   }
 
-  public async getInfoPostRolloverWithSwap({
-    isFT,
-    notional,
-    fixedRateLimit,
-    fixedLow,
-    fixedHigh,
-    margin,
-    owner,
-    newMarginEngine,
-    oldFixedLow,
-    oldFixedHigh,
-    expectedApr
-  }: AMMGetInfoPostRolloverWithSwapArgs): Promise<InfoPostSwap> {
-
-    if (!this.signer) {
-      throw new Error('Wallet not connected');
-    }
-
-    if (fixedLow >= fixedHigh && oldFixedLow >= oldFixedHigh) {
-      throw new Error('Lower Rate must be smaller than Upper Rate');
-    }
-
-    if (fixedLow < MIN_FIXED_RATE && oldFixedLow < MIN_FIXED_RATE) {
-      throw new Error('Lower Rate is too low');
-    }
-
-    if (fixedHigh > MAX_FIXED_RATE && oldFixedHigh > MAX_FIXED_RATE) {
-      throw new Error('Upper Rate is too high');
-    }
-
-    if (notional <= 0) {
-      throw new Error('Amount of notional must be greater than 0');
-    }
-
-    const effectiveOwner = (!owner) ? await this.signer.getAddress() : owner;
-
-    const { closestUsableTick: oldTickUpper } = this.closestTickAndFixedRate(oldFixedLow);
-    const { closestUsableTick: oldTickLower } = this.closestTickAndFixedRate(oldFixedHigh);
-
-    const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
-    const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
-
-    let sqrtPriceLimitX96;
-    if (fixedRateLimit) {
-      const { closestUsableTick: tickLimit } = this.closestTickAndFixedRate(fixedRateLimit);
-      sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(tickLimit).toString();
-    } else {
-      if (isFT) {
-        sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MAX_TICK - 1).toString();
-      } else {
-        sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MIN_TICK + 1).toString();
-      }
-    }
-
-    const scaledNotional = this.scale(notional);
-
-    const factoryContract = factoryFactory.connect(this.factoryAddress, this.signer);
-    const peripheryAddress = await factoryContract.periphery();
-    const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
-    const swapPeripheryParams: SwapPeripheryParams = {
-      marginEngine: newMarginEngine,
-      isFT,
-      notional: scaledNotional,
-      sqrtPriceLimitX96,
-      tickLower,
-      tickUpper,
-      marginDelta: 0
-    };
-
-    let tickBefore = await peripheryContract.getCurrentTick(this.marginEngineAddress);
-    let tickAfter = 0;
-    let marginRequirement: BigNumber = BigNumber.from(0);
-    let fee = BigNumber.from(0);
-    let availableNotional = BigNumber.from(0);
-    let fixedTokenDeltaUnbalanced = BigNumber.from(0);
-    let fixedTokenDelta = BigNumber.from(0);
-
-    await peripheryContract.callStatic.rolloverWithSwap(
-      this.marginEngineAddress,
-      effectiveOwner,
-      oldTickLower,
-      oldTickUpper,
-      swapPeripheryParams
-    ).then(
-      (result: any) => {
-        availableNotional = result[1];
-        fee = result[2];
-        fixedTokenDeltaUnbalanced = result[3];
-        marginRequirement = result[4];
-        tickAfter = parseInt(result[5]);
-      },
-      (error: any) => {
-        const result = decodeInfoPostSwap(error, this.environment);
-        marginRequirement = result.marginRequirement;
-        tickAfter = result.tick;
-        fee = result.fee;
-        availableNotional = result.availableNotional;
-        fixedTokenDeltaUnbalanced = result.fixedTokenDeltaUnbalanced;
-        fixedTokenDelta = result.fixedTokenDelta;
-      },
-    );
-
-    const fixedRateBefore = tickToFixedRate(tickBefore);
-    const fixedRateAfter = tickToFixedRate(tickAfter);
-
-    const fixedRateDelta = fixedRateAfter.subtract(fixedRateBefore);
-    const fixedRateDeltaRaw = fixedRateDelta.toNumber();
-
-    const marginEngineContract = marginEngineFactory.connect(newMarginEngine, this.signer);
-    const currentMargin = (
-      await marginEngineContract.callStatic.getPosition(effectiveOwner, tickLower, tickUpper)
-    ).margin;
-
-    const scaledCurrentMargin = this.descale(currentMargin);
-    const scaledAvailableNotional = this.descale(availableNotional);
-    const scaledFee = this.descale(fee);
-    const scaledMarginRequirement = (this.descale(marginRequirement) + scaledFee) * 1.01;
-
-    const additionalMargin =
-      scaledMarginRequirement > scaledCurrentMargin
-        ? scaledMarginRequirement - scaledCurrentMargin
-        : 0;
-
-    const averageFixedRate = (availableNotional.eq(BigNumber.from(0))) ? 0 : fixedTokenDeltaUnbalanced.mul(BigNumber.from(1000)).div(availableNotional).toNumber() / 1000;
-
-    const result: InfoPostSwap = {
-      marginRequirement: additionalMargin,
-      availableNotional: scaledAvailableNotional < 0 ? -scaledAvailableNotional : scaledAvailableNotional,
-      fee: scaledFee < 0 ? -scaledFee : scaledFee,
-      slippage: fixedRateDeltaRaw < 0 ? -fixedRateDeltaRaw : fixedRateDeltaRaw,
-      averageFixedRate: averageFixedRate < 0 ? -averageFixedRate : averageFixedRate,
-    };
-
-    if (isNumber(expectedApr) && isNumber(margin)) {
-      result.expectedApy = this.expectedApy(
-        fixedTokenDelta,
-        availableNotional,
-        margin,
-        expectedApr
-      );
-    }
-
-    return result;
-  }
-
   // rollover with mint
 
   public async rolloverWithMint({
@@ -803,98 +653,16 @@ class AMM {
     }
   }
 
-  public async getInfoPostRolloverWithMint({
-    fixedLow,
-    fixedHigh,
-    notional,
-    owner,
-    newMarginEngine,
-    oldFixedLow,
-    oldFixedHigh
-  }: AMMGetInfoPostRolloverWithMintArgs): Promise<number> {
-    if (!this.signer) {
-      throw new Error('Wallet not connected');
-    }
-
-    if (fixedLow >= fixedHigh && oldFixedLow >= oldFixedHigh) {
-      throw new Error('Lower Rate must be smaller than Upper Rate');
-    }
-
-    if (fixedLow < MIN_FIXED_RATE && oldFixedLow < MIN_FIXED_RATE) {
-      throw new Error('Lower Rate is too low');
-    }
-
-    if (fixedHigh > MAX_FIXED_RATE && oldFixedHigh > MAX_FIXED_RATE) {
-      throw new Error('Upper Rate is too high');
-    }
-
-    if (notional <= 0) {
-      throw new Error('Amount of notional must be greater than 0');
-    }
-
-    const effectiveOwner = (!owner) ? await this.signer.getAddress() : owner;
-
-    const { closestUsableTick: oldTickUpper } = this.closestTickAndFixedRate(oldFixedLow);
-    const { closestUsableTick: oldTickLower } = this.closestTickAndFixedRate(oldFixedHigh);
-
-    const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
-    const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
-
-    const factoryContract = factoryFactory.connect(this.factoryAddress, this.signer);
-    const peripheryAddress = await factoryContract.periphery();
-    const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
-    const scaledNotional = this.scale(notional);
-    const mintOrBurnParams: MintOrBurnParams = {
-      marginEngine: newMarginEngine,
-      tickLower: tickLower,
-      tickUpper: tickUpper,
-      notional: scaledNotional,
-      isMint: true,
-      marginDelta: '0',
-    };
-
-    let marginRequirement = BigNumber.from('0');
-    await peripheryContract.callStatic.rolloverWithMint(
-      this.marginEngineAddress,
-      effectiveOwner,
-      oldTickLower,
-      oldTickUpper,
-      mintOrBurnParams
-    ).then(
-      (result) => {
-        marginRequirement = BigNumber.from(result);
-      },
-      (error) => {
-        const result = decodeInfoPostMint(error, this.environment);
-        marginRequirement = result.marginRequirement;
-      },
-    );
-
-    const marginEngineContract = marginEngineFactory.connect(newMarginEngine, this.signer);
-    const currentMargin = (
-      await marginEngineContract.callStatic.getPosition(effectiveOwner, tickLower, tickUpper)
-    ).margin;
-
-    const scaledCurrentMargin = this.descale(currentMargin);
-    const scaledMarginRequirement = this.descale(marginRequirement) * 1.01;
-
-    if (scaledMarginRequirement > scaledCurrentMargin) {
-      return scaledMarginRequirement - scaledCurrentMargin;
-    } else {
-      return 0;
-    }
-  }
-
   // swap
 
   public async getInfoPostSwap({
+    position,
     isFT,
     notional,
     fixedRateLimit,
     fixedLow,
     fixedHigh,
     margin,
-    expectedApr
   }: AMMGetInfoPostSwapArgs): Promise<InfoPostSwap> {
     if (!this.signer) {
       throw new Error('Wallet not connected');
@@ -1007,12 +775,30 @@ class AMM {
       averageFixedRate: averageFixedRate < 0 ? -averageFixedRate : averageFixedRate,
     };
 
-    if (isNumber(expectedApr) && isNumber(margin)) {
-      result.expectedApy = this.expectedApy(
-        fixedTokenDelta,
-        availableNotional,
-        margin,
-        expectedApr
+    if (position && isNumber(margin)) {
+      let accruedCashflow = 0;
+      let positionUft = BigNumber.from(0);
+      let positionVt = BigNumber.from(0);
+
+      try {
+        const allSwaps = this.getAllSwaps(position);
+        const lenSwaps = allSwaps.length;
+
+        if (lenSwaps > 0){
+          accruedCashflow = await this.getAccruedCashflow(allSwaps, false);
+
+          for (let swap of allSwaps) {
+            positionUft = positionUft.add(swap.fDelta);
+            positionVt = positionVt.add(swap.vDelta);
+          }
+        }
+        
+      } catch {}
+
+      result.expectedApy = await this.expectedApy(
+        positionUft.add(fixedTokenDeltaUnbalanced),
+        positionVt.add(availableNotional),
+        scaledCurrentMargin + margin + accruedCashflow
       );
     }
 
