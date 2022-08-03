@@ -210,6 +210,8 @@ class BorrowAMM {
     
     const protocolId = this.rateOracle.protocolId;
 
+    let borrowBalance = BigNumber.from(0);
+
     if (protocolId === 6) { // compound
         // get cToken
         const compoundRateOracle = ICompoundRateOracle__factory.connect(this.rateOracle.id, this.signer)
@@ -218,21 +220,7 @@ class BorrowAMM {
 
         //last updated balance
         const userAddress = await this.signer.getAddress();
-        const borrowBalance = await cToken.callStatic.borrowBalanceCurrent(userAddress);
-        console.log("Borrow balance compound ", borrowBalance.toString());
-        const allSwaps = this.getAllSwaps(position);
-        
-        // is past maturity?
-        const lastBlock = await this.provider.getBlockNumber();
-        const lastBlockTimestamp = BigNumber.from((await this.provider.getBlock(lastBlock - 1)).timestamp);
-        const pastMaturity = (BigNumber.from(this.termEndTimestamp.toString())).lt(lastBlockTimestamp.mul(BigNumber.from(10).pow(18)));
-
-        const accruedCashFlow = await this.getAccruedCashflow(allSwaps, pastMaturity);
-        console.log("accruedCashFlow ", accruedCashFlow);
-        const notional = BigNumber.from(position.marginInScaledYieldBearingTokens.toString()).toNumber();
-        const actualBalance = this.descale(borrowBalance) - notional - accruedCashFlow; // check scaling
-
-        return actualBalance;
+        borrowBalance = await cToken.callStatic.borrowBalanceCurrent(userAddress);
     }
 
     if (protocolId === 5) { // aave
@@ -250,23 +238,22 @@ class BorrowAMM {
 
         //last updated balance
         const userAddress = await this.signer.getAddress();
-        const borrowBalance = await variableDebtToken.balanceOf(userAddress);
-        const allSwaps = this.getAllSwaps(position);
-        
-        // is past maturity?
-        const lastBlock = await this.provider.getBlockNumber();
-        const lastBlockTimestamp = BigNumber.from((await this.provider.getBlock(lastBlock - 1)).timestamp);
-        const pastMaturity = (BigNumber.from(this.termEndTimestamp.toString())).lt(lastBlockTimestamp.mul(BigNumber.from(10).pow(18)));
-
-        const accruedCashFlow = await this.getAccruedCashflow(allSwaps, pastMaturity);
-        const notional = BigNumber.from(position.marginInScaledYieldBearingTokens.toString()).toNumber();
-        const actualBalance = this.descale(borrowBalance) - notional - accruedCashFlow; // check scaling
-
-        return actualBalance;
-        
+        borrowBalance = await variableDebtToken.balanceOf(userAddress);
     }
 
-    throw new Error('Unable to retrieve borrow balance');
+    const allSwaps = this.getAllSwaps(position);
+    
+    // is past maturity?
+    const lastBlock = await this.provider.getBlockNumber();
+    const lastBlockTimestamp = BigNumber.from((await this.provider.getBlock(lastBlock - 1)).timestamp);
+    const pastMaturity = (BigNumber.from(this.termEndTimestamp.toString())).lt(lastBlockTimestamp.mul(BigNumber.from(10).pow(18)));
+
+    const accruedCashFlow = await this.getAccruedCashflow(allSwaps, pastMaturity);
+    const notional = BigNumber.from(position.marginInScaledYieldBearingTokens.toString()).toNumber();
+    const actualBalance = this.descale(borrowBalance) - notional - accruedCashFlow;
+
+    return actualBalance;
+
   }
   
 }
