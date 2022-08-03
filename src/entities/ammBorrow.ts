@@ -106,7 +106,7 @@ class BorrowAMM {
     if (signer) {
       if ( protocolId === 6) {
         const compoundRateOracle = ICompoundRateOracle__factory.connect(this.rateOracle.id, signer)
-        const cTokenAddress = compoundRateOracle.ctoken().then( (cTokenAddress) => {
+        compoundRateOracle.ctoken().then( (cTokenAddress) => {
           this.cToken = cTokenFactory.connect(cTokenAddress, signer);
         });
       } else {
