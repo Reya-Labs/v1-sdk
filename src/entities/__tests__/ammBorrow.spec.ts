@@ -106,8 +106,8 @@ describe('amm Borrow', () => {
               sqrtPriceLimitX96: JSBI.BigInt('0'),
               cumulativeFeeIncurred: JSBI.BigInt('0'),
               fixedTokenDelta: JSBI.BigInt('0'), 
-              variableTokenDelta: JSBI.BigInt('-'+ borrowNotionalScaled),
-              fixedTokenDeltaUnbalanced: JSBI.BigInt(borrowNotionalScaled), // 1000*1e18
+              variableTokenDelta: JSBI.BigInt( borrowNotionalScaled),
+              fixedTokenDeltaUnbalanced: JSBI.BigInt('-'+borrowNotionalScaled), // 1000*1e18
             });
       
             const halfTerm = BigNumber.from(start).sub(BigNumber.from(end)).div(2).add(BigNumber.from(start));
@@ -123,8 +123,8 @@ describe('amm Borrow', () => {
               sqrtPriceLimitX96: JSBI.BigInt('0'),
               cumulativeFeeIncurred: JSBI.BigInt('0'),
               fixedTokenDelta: JSBI.BigInt('0'),
-              variableTokenDelta: JSBI.BigInt("-"+ borrowNotionalScaled),
-              fixedTokenDeltaUnbalanced: JSBI.BigInt(borrowNotionalScaled), // 1000*1e18
+              variableTokenDelta: JSBI.BigInt(borrowNotionalScaled),
+              fixedTokenDeltaUnbalanced: JSBI.BigInt("-"+ borrowNotionalScaled), // 1000*1e18
             });
       
             position = new Position({
@@ -164,7 +164,7 @@ describe('amm Borrow', () => {
           });
       
           it('gets the borrow balance in Compound', async () => {
-              const balance = await borrowAmm.getBorrowBalance(position);
+              const balance = await borrowAmm.getAggregatedBorrowBalance(position);
               
               expect(balance).toBeGreaterThan(borrowNotional*0.99);
               expect(balance).toBeLessThan(borrowNotional);
@@ -237,8 +237,8 @@ describe('amm Borrow', () => {
               sqrtPriceLimitX96: JSBI.BigInt('0'),
               cumulativeFeeIncurred: JSBI.BigInt('0'),
               fixedTokenDelta: JSBI.BigInt('0'), 
-              variableTokenDelta: JSBI.BigInt("-"+ borrowNotionalScaled),
-              fixedTokenDeltaUnbalanced: JSBI.BigInt(borrowNotionalScaled), // 1000*1e18
+              variableTokenDelta: JSBI.BigInt(borrowNotionalScaled),
+              fixedTokenDeltaUnbalanced: JSBI.BigInt("-"+ borrowNotionalScaled), // 1000*1e18
             });
       
             const halfTerm = BigNumber.from(start).sub(BigNumber.from(end)).div(2).add(BigNumber.from(start));
@@ -254,8 +254,8 @@ describe('amm Borrow', () => {
               sqrtPriceLimitX96: JSBI.BigInt('0'),
               cumulativeFeeIncurred: JSBI.BigInt('0'),
               fixedTokenDelta: JSBI.BigInt('0'),
-              variableTokenDelta: JSBI.BigInt("-"+ borrowNotionalScaled),
-              fixedTokenDeltaUnbalanced: JSBI.BigInt(borrowNotionalScaled), // 1000*1e18
+              variableTokenDelta: JSBI.BigInt(borrowNotionalScaled),
+              fixedTokenDeltaUnbalanced: JSBI.BigInt("-"+ borrowNotionalScaled), // 1000*1e18
             });
       
             position = new Position({
@@ -297,7 +297,7 @@ describe('amm Borrow', () => {
           });
       
           it('gets the borrow balance in Aave', async () => {
-              const balance = await borrowAmm.getBorrowBalance(position);
+              const balance = await borrowAmm.getAggregatedBorrowBalance(position);
               console.log(balance);
               
               expect(balance).toBeGreaterThan(borrowNotional*0.99);

@@ -11,6 +11,8 @@ import {
   IAaveRateOracle__factory,
   IAaveV2LendingPool__factory,
   IERC20Minimal__factory,
+  ICToken,
+  IERC20Minimal,
 } from '../typechain';
 import RateOracle from './rateOracle';
 import Token from './token';
@@ -66,6 +68,9 @@ class BorrowAMM {
   public readonly tickSpacing: number;
   public readonly tick: number;
 
+  public cToken?: ICToken;
+  public aaveVariableDebtToken?: IERC20Minimal;
+
   public constructor({
     id,
     signer,
@@ -96,6 +101,30 @@ class BorrowAMM {
     const protocolId = this.rateOracle.protocolId;
     if ( protocolId !== 6 && protocolId !== 5 ) {
         throw new Error("Not a borrow market");
+    }
+
+    if (signer) {
+      if ( protocolId === 6) {
+        const compoundRateOracle = ICompoundRateOracle__factory.connect(this.rateOracle.id, signer)
+        const cTokenAddress = compoundRateOracle.ctoken().then( (cTokenAddress) => {
+          this.cToken = cTokenFactory.connect(cTokenAddress, signer);
+        });
+      } else {
+        const aaveRateOracle = IAaveRateOracle__factory.connect(this.rateOracle.id, signer)
+
+        aaveRateOracle.aaveLendingPool().then( (lendingPoolAddress) => {
+            const lendingPool = IAaveV2LendingPool__factory.connect(lendingPoolAddress, signer);
+
+            if(!this.underlyingToken.id){
+                throw new Error('missing underlying token address');
+            }
+  
+            lendingPool.getReserveData(this.underlyingToken.id).then( (reserve) => {
+              const variableDebtTokenAddress = reserve.variableDebtTokenAddress;
+              this.aaveVariableDebtToken = IERC20Minimal__factory.connect(variableDebtTokenAddress, signer);
+            });
+          });
+      }
     }
   }
 
@@ -198,49 +227,65 @@ class BorrowAMM {
 
   // get user's borrow balance in underlying protocol
 
-  public async getBorrowBalance(position: Position): Promise<number> {
+  // public async getActualBorrowBalance(position: Position): Promise<number> {
 
-    if (!this.signer) {
-        throw new Error('Wallet not connected');
-    }
+  //   if (!this.signer) {
+  //       throw new Error('Wallet not connected');
+  //   }
 
-    if (!this.provider) {
-        throw new Error('Blockchain not connected');
-      }
+  //   if (!this.provider) {
+  //       throw new Error('Blockchain not connected');
+  //   }
     
-    const protocolId = this.rateOracle.protocolId;
+  //   const protocolId = this.rateOracle.protocolId;
+
+  //   // last updated balance in underlying protocol
+  //   let borrowBalance = BigNumber.from(0);
+  //   if (this.cToken) { // compound
+  //       const userAddress = await this.signer.getAddress();
+  //       borrowBalance = await this.cToken.callStatic.borrowBalanceCurrent(userAddress);
+  //   } else if ( this.aaveVariableDebtToken ) { // aave
+  //       const userAddress = await this.signer.getAddress();
+  //       borrowBalance = await this.aaveVariableDebtToken.balanceOf(userAddress);
+  //   }
+
+  //   const allSwaps = this.getAllSwaps(position);
+    
+  //   // is past maturity?
+  //   const lastBlock = await this.provider.getBlockNumber();
+  //   const lastBlockTimestamp = BigNumber.from((await this.provider.getBlock(lastBlock - 1)).timestamp);
+  //   const pastMaturity = (BigNumber.from(this.termEndTimestamp.toString())).lt(lastBlockTimestamp.mul(BigNumber.from(10).pow(18)));
+
+  //   // balance in Voltz
+  //   const accruedCashFlow = await this.getAccruedCashflow(allSwaps, pastMaturity);
+  //   const notional = BigNumber.from(position.marginInScaledYieldBearingTokens.toString()).toNumber();
+  //   const actualBalance = this.descale(borrowBalance) - notional - accruedCashFlow;
+
+  //   return actualBalance;
+
+  // }
+  
+  public async getUnderlyingBorrowBalance(): Promise<number> {
+    if (!this.signer) {
+      throw new Error('Wallet not connected');
+    }
 
     let borrowBalance = BigNumber.from(0);
-
-    if (protocolId === 6) { // compound
-        // get cToken
-        const compoundRateOracle = ICompoundRateOracle__factory.connect(this.rateOracle.id, this.signer)
-        const cTokenAddress = await compoundRateOracle.ctoken();
-        const cToken = cTokenFactory.connect(cTokenAddress, this.signer);
-
-        //last updated balance
+    if (this.cToken) { // compound
         const userAddress = await this.signer.getAddress();
-        borrowBalance = await cToken.callStatic.borrowBalanceCurrent(userAddress);
-    }
-
-    if (protocolId === 5) { // aave
-
-        const aaveRateOracle = IAaveRateOracle__factory.connect(this.rateOracle.id, this.signer)
-        const lendingPoolAddress = await aaveRateOracle.aaveLendingPool();
-        const lendingPool = IAaveV2LendingPool__factory.connect(lendingPoolAddress, this.signer);
-
-        if(!this.underlyingToken.id){
-            throw new Error('missing underlying token address');
-        }
-
-        const variableDebtTokenAddress = (await lendingPool.getReserveData(this.underlyingToken.id)).variableDebtTokenAddress;
-        const variableDebtToken = IERC20Minimal__factory.connect(variableDebtTokenAddress, this.signer);
-
-        //last updated balance
+        borrowBalance = await this.cToken.callStatic.borrowBalanceCurrent(userAddress);
+    } else if ( this.aaveVariableDebtToken ) { // aave
         const userAddress = await this.signer.getAddress();
-        borrowBalance = await variableDebtToken.balanceOf(userAddress);
+        borrowBalance = await this.aaveVariableDebtToken.balanceOf(userAddress);
     }
+    return this.descale(borrowBalance);
+  }
 
+  public async getFixedBorrowBalance(position: Position): Promise<number> {
+    if (!this.provider) {
+      throw new Error('Blockchain not connected');
+    }
+  
     const allSwaps = this.getAllSwaps(position);
     
     // is past maturity?
@@ -248,14 +293,27 @@ class BorrowAMM {
     const lastBlockTimestamp = BigNumber.from((await this.provider.getBlock(lastBlock - 1)).timestamp);
     const pastMaturity = (BigNumber.from(this.termEndTimestamp.toString())).lt(lastBlockTimestamp.mul(BigNumber.from(10).pow(18)));
 
+    // balance in Voltz
     const accruedCashFlow = await this.getAccruedCashflow(allSwaps, pastMaturity);
     const notional = BigNumber.from(position.marginInScaledYieldBearingTokens.toString()).toNumber();
-    const actualBalance = this.descale(borrowBalance) - notional - accruedCashFlow;
-
-    return actualBalance;
-
+    return notional + accruedCashFlow;
   }
-  
+
+  // get variable debt: debt from underlying protocol - fixed debt on Voltz
+  public async getAggregatedBorrowBalance(position: Position): Promise<number> {
+    const fixedBorrowBalance = await this.getFixedBorrowBalance(position);
+    const underlyingBorrowBalance = await this.getUnderlyingBorrowBalance();
+
+    if (underlyingBorrowBalance >= fixedBorrowBalance) {
+      return underlyingBorrowBalance - fixedBorrowBalance;
+    } else {
+      return 0;
+    }
+  }
+
+  public getVariableBorrowBalance(aggregatedDebt: number, fixedDebt: number): number {
+    return aggregatedDebt - fixedDebt;
+  }
 }
 
 export default BorrowAMM;
