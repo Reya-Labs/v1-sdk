@@ -1,4 +1,5 @@
 src/entities/amm.ts
+src/entities/ammBorrow.ts
 *.spec.ts
 # src/utils/errors/errorHandling.ts
 src/utils/errors/*
