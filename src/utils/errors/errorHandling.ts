@@ -198,6 +198,7 @@ export const getErrorSignature = (error: any, environment: string): string => {
         const errSig = decodedError.signature.split('(')[0];
         return errSig;
       } catch {
+        console.log(error);
         throw new Error('Unrecognized error type');
       }
     }
@@ -211,6 +212,7 @@ export const getErrorSignature = (error: any, environment: string): string => {
         const errSig = decodedError.signature.split('(')[0];
         return errSig;
       } catch {
+        console.log(error);
         throw new Error('Unrecognized error type');
       }
     }
@@ -229,6 +231,7 @@ export const getErrorSignature = (error: any, environment: string): string => {
         const errSig = decodedError.signature.split('(')[0];
         return errSig;
       } catch {
+        console.log(error);
         throw new Error('Unrecognized error type');
       }
     }
@@ -329,6 +332,7 @@ export const decodeInfoPostMint = (error: any, environment: string): RawInfoPost
           const result = { marginRequirement: BigNumber.from(args[0]) };
           return result;
         } catch {
+          console.log(error);
           throw new Error('Unrecognized error type');
         }
       }
@@ -341,6 +345,7 @@ export const decodeInfoPostMint = (error: any, environment: string): RawInfoPost
           };
           return result;
         } catch {
+          console.log(error);
           throw new Error('Unrecognized error type');
         }
       }
@@ -353,6 +358,7 @@ export const decodeInfoPostMint = (error: any, environment: string): RawInfoPost
           };
           return result;
         } catch {
+          console.log(error);
           throw new Error('Unrecognized error type');
         }
       }
@@ -370,6 +376,7 @@ export const decodeInfoPostMint = (error: any, environment: string): RawInfoPost
           };
           return result;
         } catch {
+          console.log(error);
           throw new Error('Unrecognized error type');
         }
       }
@@ -415,6 +422,7 @@ export const decodeInfoPostSwap = (error: any, environment: string): RawInfoPost
           };
           return result;
         } catch {
+          console.log(error);
           throw new Error('Unrecognized error type');
         }
       }
@@ -432,6 +440,7 @@ export const decodeInfoPostSwap = (error: any, environment: string): RawInfoPost
           };
           return result;
         } catch {
+          console.log(error);
           throw new Error('Unrecognized error type');
         }
       }
@@ -449,6 +458,7 @@ export const decodeInfoPostSwap = (error: any, environment: string): RawInfoPost
           };
           return result;
         } catch {
+          console.log(error);
           throw new Error('Unrecognized error type');
         }
       }
@@ -471,6 +481,7 @@ export const decodeInfoPostSwap = (error: any, environment: string): RawInfoPost
           };
           return result;
         } catch {
+          console.log(error);
           throw new Error('Unrecognized error type');
         }
       }
