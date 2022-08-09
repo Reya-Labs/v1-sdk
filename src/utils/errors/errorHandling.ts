@@ -223,7 +223,14 @@ export const getErrorSignature = (error: any, environment: string): string => {
         // const afterData = afterOriginalError.split("data")[1];
         // const beforeMessage = afterData.split("message")[0];
         // const reason = beforeMessage.substring(3, beforeMessage.length - 3);
-        const reason = error.error.data.originalError.data;
+
+        let reason: string;
+
+        if (typeof error.error.data === 'string') {
+          reason = error.error.data;
+        } else {
+          reason = error.error.data.originalError.data;
+        }
 
         if (reason.startsWith('0x08c379a0')) {
           return 'Error';
@@ -288,7 +295,13 @@ export const getReadableErrorMessage = (error: any, environment: string): string
         // let reason = beforeMessage.substring(3, beforeMessage.length - 3);
         // reason = `0x${reason.substring(10)}`;
 
-        const reason = error.error.data.originalError.data;
+        let reason: string;
+
+        if (typeof error.error.data === 'string') {
+          reason = error.error.data;
+        } else {
+          reason = error.error.data.originalError.data;
+        }
 
         try {
           const rawErrorMessage = utils.defaultAbiCoder.decode(['string'], reason)[0];
@@ -372,7 +385,13 @@ export const decodeInfoPostMint = (error: any, environment: string): RawInfoPost
           // const afterData = afterOriginalError.split("data")[1];
           // const beforeMessage = afterData.split("message")[0];
           // const reason = beforeMessage.substring(3, beforeMessage.length - 3);
-          const reason = error.error.data.originalError.data;
+          let reason: string;
+
+          if (typeof error.error.data === 'string') {
+            reason = error.error.data;
+          } else {
+            reason = error.error.data.originalError.data;
+          }
 
           const decodingResult = iface.decodeErrorResult(errSig, reason);
           const result = {
@@ -473,7 +492,16 @@ export const decodeInfoPostSwap = (error: any, environment: string): RawInfoPost
           // const afterData = afterOriginalError.split("data")[1];
           // const beforeMessage = afterData.split("message")[0];
           // const reason = beforeMessage.substring(3, beforeMessage.length - 3);
-          const reason = error.error.data.originalError.data;
+
+          let reason: string;
+
+          if (typeof error.error.data === 'string') {
+            reason = error.error.data;
+          } else {
+            reason = error.error.data.originalError.data;
+          }
+
+
           const decodingResult = iface.decodeErrorResult(errSig, reason);
           const result = {
             marginRequirement: decodingResult.marginRequirement,
