@@ -13,6 +13,8 @@ import {
   IERC20Minimal__factory,
   ICToken,
   IERC20Minimal,
+  CompoundBorrowRateOracle__factory,
+  AaveBorrowRateOracle__factory,
 } from '../typechain';
 import RateOracle from './rateOracle';
 import Token from './token';
@@ -69,14 +71,14 @@ class BorrowAMM {
 
     if (this.signer) {
       if ( protocolId === 6) {
-        const compoundRateOracle = ICompoundRateOracle__factory.connect(this.rateOracle.id, this.signer)
+        const compoundRateOracle = CompoundBorrowRateOracle__factory.connect(this.rateOracle.id, this.signer)
         compoundRateOracle.ctoken().then( (cTokenAddress) => {
           if (this.signer !== null) {
           this.cToken = cTokenFactory.connect(cTokenAddress, this.signer);
           }
         });
       } else {
-        const aaveRateOracle = IAaveRateOracle__factory.connect(this.rateOracle.id, this.signer)
+        const aaveRateOracle = AaveBorrowRateOracle__factory.connect(this.rateOracle.id, this.signer)
 
         aaveRateOracle.aaveLendingPool().then( (lendingPoolAddress) => {
           if (this.signer !== null) {
