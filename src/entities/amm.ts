@@ -131,6 +131,9 @@ export type InfoPostSwap = {
   slippage: number;
   averageFixedRate: number;
   expectedApy?: number[][];
+  fixedTokenDeltaBalance: number;
+  variableTokenDeltaBalance: number;
+  fixedTokenDeltaUnbalanced: number;
 };
 
 // rollover with swap
@@ -781,6 +784,9 @@ class AMM {
       fee: scaledFee < 0 ? -scaledFee : scaledFee,
       slippage: fixedRateDeltaRaw < 0 ? -fixedRateDeltaRaw : fixedRateDeltaRaw,
       averageFixedRate: averageFixedRate < 0 ? -averageFixedRate : averageFixedRate,
+      fixedTokenDeltaBalance: this.descale(fixedTokenDelta),
+      variableTokenDeltaBalance: this.descale(availableNotional),
+      fixedTokenDeltaUnbalanced: this.descale(fixedTokenDeltaUnbalanced)
     };
 
     if (isNumber(margin)) {
@@ -1611,12 +1617,14 @@ class AMM {
     let tickAfter = 0;
     let fee = BigNumber.from(0);
     let availableNotional = BigNumber.from(0);
+    let fixedTokenDelta = BigNumber.from(0);
     let fixedTokenDeltaUnbalanced = BigNumber.from(0);
 
     await fcmContract.callStatic.initiateFullyCollateralisedFixedTakerSwap(
       scaledNotional,
       sqrtPriceLimitX96
     ).then(async (result: any) => {
+      fixedTokenDelta = result[0];
       availableNotional = result[1];
       fee = result[2];
       fixedTokenDeltaUnbalanced = result[3];
@@ -1624,6 +1632,7 @@ class AMM {
     },
       (error: any) => {
         const result = decodeInfoPostSwap(error, this.environment);
+        fixedTokenDelta = result.fixedTokenDelta;
         tickAfter = result.tick;
         fee = result.fee;
         availableNotional = result.availableNotional;
@@ -1667,6 +1676,9 @@ class AMM {
       fee: scaledFee < 0 ? -scaledFee : scaledFee,
       slippage: fixedRateDeltaRaw < 0 ? -fixedRateDeltaRaw : fixedRateDeltaRaw,
       averageFixedRate: averageFixedRate < 0 ? -averageFixedRate : averageFixedRate,
+      fixedTokenDeltaBalance: this.descale(fixedTokenDelta),
+      variableTokenDeltaBalance: this.descale(availableNotional),
+      fixedTokenDeltaUnbalanced: this.descale(fixedTokenDeltaUnbalanced)
     };
   }
 
@@ -1780,12 +1792,14 @@ class AMM {
     let tickAfter = 0;
     let fee = BigNumber.from(0);
     let availableNotional = BigNumber.from(0);
+    let fixedTokenDelta = BigNumber.from(0);
     let fixedTokenDeltaUnbalanced = BigNumber.from(0);
 
     await fcmContract.callStatic.unwindFullyCollateralisedFixedTakerSwap(
       scaledNotional,
       sqrtPriceLimitX96
     ).then(async (result: any) => {
+      fixedTokenDelta = result[0];
       availableNotional = result[1];
       fee = result[2];
       fixedTokenDeltaUnbalanced = result[3];
@@ -1793,6 +1807,7 @@ class AMM {
     },
       (error: any) => {
         const result = decodeInfoPostSwap(error, this.environment);
+        fixedTokenDelta = result.fixedTokenDelta;
         tickAfter = result.tick;
         fee = result.fee;
         availableNotional = result.availableNotional;
@@ -1816,6 +1831,9 @@ class AMM {
       fee: scaledFee < 0 ? -scaledFee : scaledFee,
       slippage: fixedRateDeltaRaw < 0 ? -fixedRateDeltaRaw : fixedRateDeltaRaw,
       averageFixedRate: averageFixedRate < 0 ? -averageFixedRate : averageFixedRate,
+      fixedTokenDeltaBalance: this.descale(fixedTokenDelta),
+      variableTokenDeltaBalance: this.descale(availableNotional),
+      fixedTokenDeltaUnbalanced: this.descale(fixedTokenDeltaUnbalanced)
     };
   }
 
