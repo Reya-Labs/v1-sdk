@@ -63,12 +63,12 @@ class BorrowAMM {
     this.amm = amm;
 
     const protocolId = this.rateOracle.protocolId;
-    if ( protocolId !== 6 && protocolId !== 5 ) {
+    if ( protocolId !== 1 && protocolId !== 2 ) {
         throw new Error("Not a borrow market");
     }
 
     if (this.signer) {
-      if ( protocolId === 6) {
+      if ( protocolId === 1) {
         const compoundRateOracle = ICompoundRateOracle__factory.connect(this.rateOracle.id, this.signer)
         compoundRateOracle.ctoken().then( (cTokenAddress) => {
           if (this.signer !== null) {
@@ -240,11 +240,13 @@ class BorrowAMM {
     const fixedBorrowBalance = await this.getFixedBorrowBalance(position);
     const underlyingBorrowBalance = await this.getUnderlyingBorrowBalance();
 
-    if (underlyingBorrowBalance >= fixedBorrowBalance) {
-      return underlyingBorrowBalance - fixedBorrowBalance;
-    } else {
-      return 0;
-    }
+    // if (underlyingBorrowBalance >= fixedBorrowBalance) {
+    //   return underlyingBorrowBalance - fixedBorrowBalance;
+    // } else {
+    //   return 0;
+    // }
+
+    return underlyingBorrowBalance - fixedBorrowBalance;
   }
 
   public async getFullyCollateralisedMarginRequirement(fixedTokenBalance: number, variableTokenBalance: number): Promise<number> {
