@@ -271,11 +271,6 @@ describe('amm Borrow', () => {
               expect(balance).toBeGreaterThan(borrowNotional*0.99);
               expect(balance).toBeLessThan(borrowNotional);
           });
-
-          it('test min req', async () => {
-            const minreq = await borrowAmm.getFullyCollateralisedMarginRequirement(118.228, -96);
-            console.log(minreq);
-          });
     });
 
 
