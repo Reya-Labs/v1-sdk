@@ -3020,7 +3020,7 @@ class AMM {
 
         const reservesData = await lendingPool.getReserveData(this.underlyingToken.id);
 
-        const rateInRay = reservesData.currentVariableBorrowRate; // minus 1%
+        const rateInRay = reservesData.currentVariableBorrowRate;
 
         return rateInRay.div(BigNumber.from(10).pow(27)).toNumber();
       }
