@@ -3032,7 +3032,8 @@ class AMM {
         const lendingPool = IAaveV2LendingPool__factory.connect(lendingPoolAddress, this.provider);
         const reservesData = await lendingPool.getReserveData(this.underlyingToken.id);
         const rateInRay = reservesData.currentVariableBorrowRate;
-        return rateInRay.toNumber() / 1e27;
+        const result = rateInRay.div(BigNumber.from(10).pow(21)).toNumber() / 1000000;
+        return result;
       }
 
       case 6: {
