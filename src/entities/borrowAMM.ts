@@ -197,47 +197,6 @@ class BorrowAMM {
     return this.descale(accruedCashflow);
   }
 
-  // get user's borrow balance in underlying protocol
-
-  // public async getActualBorrowBalance(position: Position): Promise<number> {
-
-  //   if (!this.signer) {
-  //       throw new Error('Wallet not connected');
-  //   }
-
-  //   if (!this.provider) {
-  //       throw new Error('Blockchain not connected');
-  //   }
-    
-  //   const protocolId = this.rateOracle.protocolId;
-
-  //   // last updated balance in underlying protocol
-  //   let borrowBalance = BigNumber.from(0);
-  //   if (this.cToken) { // compound
-  //       const userAddress = await this.signer.getAddress();
-  //       borrowBalance = await this.cToken.callStatic.borrowBalanceCurrent(userAddress);
-  //   } else if ( this.aaveVariableDebtToken ) { // aave
-  //       const userAddress = await this.signer.getAddress();
-  //       borrowBalance = await this.aaveVariableDebtToken.balanceOf(userAddress);
-  //   }
-
-  //   const allSwaps = this.getAllSwaps(position);
-    
-  //   // is past maturity?
-  //   const lastBlock = await this.provider.getBlockNumber();
-  //   const lastBlockTimestamp = BigNumber.from((await this.provider.getBlock(lastBlock - 1)).timestamp);
-  //   const pastMaturity = (BigNumber.from(this.termEndTimestamp.toString())).lt(lastBlockTimestamp.mul(BigNumber.from(10).pow(18)));
-
-  //   // balance in Voltz
-  //   const accruedCashFlow = await this.getAccruedCashflow(allSwaps, pastMaturity);
-  //   const notional = BigNumber.from(position.marginInScaledYieldBearingTokens.toString()).toNumber();
-  //   const actualBalance = this.descale(borrowBalance) - notional - accruedCashFlow;
-
-  //   return actualBalance;
-
-  // }
-  
-
   public async getUnderlyingBorrowBalance(): Promise<number> {
     if (!this.signer) {
       throw new Error('Wallet not connected');
@@ -272,7 +231,7 @@ class BorrowAMM {
 
     // balance in Voltz
     const accruedCashFlow = await this.getAccruedCashflow(allSwaps, pastMaturity);
-    const notional = BigNumber.from(position.marginInScaledYieldBearingTokens.toString()).toNumber();
+    const notional = this.descale(BigNumber.from(position.variableTokenBalance.toString()));
     return notional + accruedCashFlow;
   }
 
@@ -286,10 +245,6 @@ class BorrowAMM {
     } else {
       return 0;
     }
-  }
-
-  public getVariableBorrowBalance(aggregatedDebt: number, fixedDebt: number): number {
-    return aggregatedDebt - fixedDebt;
   }
 }
 
