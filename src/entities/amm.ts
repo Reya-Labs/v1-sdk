@@ -2980,13 +2980,25 @@ class AMM {
 
     switch (this.rateOracle.protocolId) {
       case 1: {
-        // todo: need to avoid using the rate oracle in here
-        const lastBlock = await this.provider.getBlockNumber();
-        const oneBlockAgo = BigNumber.from((await this.provider.getBlock(lastBlock - 1)).timestamp);
-        const twoBlocksAgo = BigNumber.from((await this.provider.getBlock(lastBlock - 2)).timestamp);
-        const rateOracleContract = BaseRateOracle__factory.connect(this.rateOracle.id, this.provider);
-        const oneWeekApy = await rateOracleContract.callStatic.getApyFromTo(twoBlocksAgo, oneBlockAgo);
-        return oneWeekApy.div(BigNumber.from(1000000000000)).toNumber() / 1000000;
+        // old implementation based on the rate oracle
+        // const lastBlock = await this.provider.getBlockNumber();
+        // const oneBlockAgo = BigNumber.from((await this.provider.getBlock(lastBlock - 1)).timestamp);
+        // const twoBlocksAgo = BigNumber.from((await this.provider.getBlock(lastBlock - 2)).timestamp);
+        // const rateOracleContract = BaseRateOracle__factory.connect(this.rateOracle.id, this.provider);
+        // const oneWeekApy = await rateOracleContract.callStatic.getApyFromTo(twoBlocksAgo, oneBlockAgo);
+        // return oneWeekApy.div(BigNumber.from(1000000000000)).toNumber() / 1000000;
+
+        if (!this.underlyingToken.id) {
+          throw new Error('No underlying error');
+        }
+
+        const rateOracleContract = AaveBorrowRateOracle__factory.connect(this.rateOracle.id, this.provider);
+        const lendingPoolAddress = await rateOracleContract.aaveLendingPool();
+        const lendingPool = IAaveV2LendingPool__factory.connect(lendingPoolAddress, this.provider);
+        const reservesData = await lendingPool.getReserveData(this.underlyingToken.id);
+        const rateInRay = reservesData.currentLiquidityRate;
+        const result = rateInRay.div(BigNumber.from(10).pow(21)).toNumber() / 1000000;
+        return result; 
       }
       case 2: {
         const daysPerYear = 365;
