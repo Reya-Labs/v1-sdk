@@ -1,5 +1,5 @@
 import JSBI from 'jsbi';
-import { ethers, providers } from 'ethers';
+import { BaseContract, ethers, providers } from 'ethers';
 import { DateTime } from 'luxon';
 import { BigNumber, ContractReceipt, Signer, utils } from 'ethers';
 
@@ -24,6 +24,13 @@ import {
   VAMM__factory,
   CompoundFCM,
   ICToken__factory,
+  CompoundRateOracle,
+  CompoundRateOracle__factory,
+  AaveBorrowRateOracle,
+  CompoundBorrowRateOracle,
+  AaveBorrowRateOracle__factory,
+  IAaveV2LendingPool__factory,
+  IAaveV2LendingPool,
 } from '../typechain';
 import RateOracle from './rateOracle';
 import { TickMath } from '../utils/tickMath';
@@ -124,6 +131,9 @@ export type InfoPostSwap = {
   slippage: number;
   averageFixedRate: number;
   expectedApy?: number[][];
+  fixedTokenDeltaBalance: number;
+  variableTokenDeltaBalance: number;
+  fixedTokenDeltaUnbalanced: number;
 };
 
 // rollover with swap
@@ -774,6 +784,9 @@ class AMM {
       fee: scaledFee < 0 ? -scaledFee : scaledFee,
       slippage: fixedRateDeltaRaw < 0 ? -fixedRateDeltaRaw : fixedRateDeltaRaw,
       averageFixedRate: averageFixedRate < 0 ? -averageFixedRate : averageFixedRate,
+      fixedTokenDeltaBalance: this.descale(fixedTokenDelta),
+      variableTokenDeltaBalance: this.descale(availableNotional),
+      fixedTokenDeltaUnbalanced: this.descale(fixedTokenDeltaUnbalanced)
     };
 
     if (isNumber(margin)) {
@@ -1604,12 +1617,14 @@ class AMM {
     let tickAfter = 0;
     let fee = BigNumber.from(0);
     let availableNotional = BigNumber.from(0);
+    let fixedTokenDelta = BigNumber.from(0);
     let fixedTokenDeltaUnbalanced = BigNumber.from(0);
 
     await fcmContract.callStatic.initiateFullyCollateralisedFixedTakerSwap(
       scaledNotional,
       sqrtPriceLimitX96
     ).then(async (result: any) => {
+      fixedTokenDelta = result[0];
       availableNotional = result[1];
       fee = result[2];
       fixedTokenDeltaUnbalanced = result[3];
@@ -1617,6 +1632,7 @@ class AMM {
     },
       (error: any) => {
         const result = decodeInfoPostSwap(error, this.environment);
+        fixedTokenDelta = result.fixedTokenDelta;
         tickAfter = result.tick;
         fee = result.fee;
         availableNotional = result.availableNotional;
@@ -1660,6 +1676,9 @@ class AMM {
       fee: scaledFee < 0 ? -scaledFee : scaledFee,
       slippage: fixedRateDeltaRaw < 0 ? -fixedRateDeltaRaw : fixedRateDeltaRaw,
       averageFixedRate: averageFixedRate < 0 ? -averageFixedRate : averageFixedRate,
+      fixedTokenDeltaBalance: this.descale(fixedTokenDelta),
+      variableTokenDeltaBalance: this.descale(availableNotional),
+      fixedTokenDeltaUnbalanced: this.descale(fixedTokenDeltaUnbalanced)
     };
   }
 
@@ -1773,12 +1792,14 @@ class AMM {
     let tickAfter = 0;
     let fee = BigNumber.from(0);
     let availableNotional = BigNumber.from(0);
+    let fixedTokenDelta = BigNumber.from(0);
     let fixedTokenDeltaUnbalanced = BigNumber.from(0);
 
     await fcmContract.callStatic.unwindFullyCollateralisedFixedTakerSwap(
       scaledNotional,
       sqrtPriceLimitX96
     ).then(async (result: any) => {
+      fixedTokenDelta = result[0];
       availableNotional = result[1];
       fee = result[2];
       fixedTokenDeltaUnbalanced = result[3];
@@ -1786,6 +1807,7 @@ class AMM {
     },
       (error: any) => {
         const result = decodeInfoPostSwap(error, this.environment);
+        fixedTokenDelta = result.fixedTokenDelta;
         tickAfter = result.tick;
         fee = result.fee;
         availableNotional = result.availableNotional;
@@ -1809,6 +1831,9 @@ class AMM {
       fee: scaledFee < 0 ? -scaledFee : scaledFee,
       slippage: fixedRateDeltaRaw < 0 ? -fixedRateDeltaRaw : fixedRateDeltaRaw,
       averageFixedRate: averageFixedRate < 0 ? -averageFixedRate : averageFixedRate,
+      fixedTokenDeltaBalance: this.descale(fixedTokenDelta),
+      variableTokenDeltaBalance: this.descale(availableNotional),
+      fixedTokenDeltaUnbalanced: this.descale(fixedTokenDeltaUnbalanced)
     };
   }
 
@@ -2953,8 +2978,7 @@ class AMM {
     const blockPerHour = 274;
 
     switch (this.rateOracle.protocolId) {
-      case 1: 
-      case 5: {
+      case 1: {
         const lastBlock = await this.provider.getBlockNumber();
         const oneBlockAgo = BigNumber.from((await this.provider.getBlock(lastBlock - 1)).timestamp);
         const twoBlocksAgo = BigNumber.from((await this.provider.getBlock(lastBlock - 2)).timestamp);
@@ -2965,14 +2989,12 @@ class AMM {
 
         return oneWeekApy.div(BigNumber.from(1000000000000)).toNumber() / 1000000;
       }
-
-      case 2: 
-      case 6: {
+      case 2: {
         const daysPerYear = 365;
 
-        const fcmContract = fcmCompoundFactory.connect(this.fcmAddress, this.provider);
+        const rateOracle = CompoundRateOracle__factory.connect(this.rateOracle.id, this.provider);
 
-        const cTokenAddress = await (fcmContract as CompoundFCM).cToken();
+        const cTokenAddress = await (rateOracle as CompoundRateOracle).ctoken();
         const cTokenContract = ICToken__factory.connect(cTokenAddress, this.provider);
 
         const supplyRatePerBlock = await cTokenContract.supplyRatePerBlock();
@@ -3003,6 +3025,36 @@ class AMM {
 
         return oneWeekApy.div(BigNumber.from(1000000000000)).toNumber() / 1000000;
       }
+
+      case 5: {
+        if (!this.underlyingToken.id) {
+          throw new Error('No underlying error');
+        }
+
+        const rateOracleContract = AaveBorrowRateOracle__factory.connect(this.rateOracle.id, this.provider);
+
+        const lendingPoolAddress = await rateOracleContract.aaveLendingPool();
+        const lendingPool = IAaveV2LendingPool__factory.connect(lendingPoolAddress, this.provider);
+
+        const reservesData = await lendingPool.getReserveData(this.underlyingToken.id);
+
+        const rateInRay = reservesData.currentVariableBorrowRate;
+
+        return rateInRay.div(BigNumber.from(10).pow(27)).toNumber();
+      }
+
+      case 6: {
+        const daysPerYear = 365;
+
+        const rateOracle = CompoundRateOracle__factory.connect(this.rateOracle.id, this.provider);
+
+        const cTokenAddress = await (rateOracle as CompoundBorrowRateOracle).ctoken();
+        const cTokenContract = ICToken__factory.connect(cTokenAddress, this.provider);
+
+        const supplyRatePerBlock = await cTokenContract.supplyRatePerBlock();
+        const supplyApy = (((Math.pow((supplyRatePerBlock.toNumber() / 1e18 * blocksPerDay) + 1, daysPerYear))) - 1);
+        return supplyApy;
+      } 
 
       default:
         throw new Error("Unrecognized protocol");
