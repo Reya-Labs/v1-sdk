@@ -23,6 +23,20 @@ import { TokenAmount } from './fractions/tokenAmount';
 import Position from './position';
 import AMM from './amm';
 
+//1. Import coingecko-api
+import CoinGecko from 'coingecko-api';
+
+//2. Initiate the CoinGecko API Client
+const CoinGeckoClient = new CoinGecko();
+
+var geckoEthToUsd = async () => {
+  let data = await CoinGeckoClient.simple.price({
+    ids: ['ethereum'],
+    vs_currencies: ['usd'],
+  });
+  return data.data.ethereum.usd;
+};
+
 
 // dynamic information about position
 
@@ -205,7 +219,13 @@ class BorrowAMM {
         const userAddress = await this.signer.getAddress();
         borrowBalance = await this.aaveVariableDebtToken.balanceOf(userAddress);
     }
+
+    if (this.amm && this.amm.isETH) {
+      const EthToUsdPrice = await geckoEthToUsd();
+      return this.descale(borrowBalance)*EthToUsdPrice;
+    }
     return this.descale(borrowBalance);
+    
   }
 
   public async getFixedBorrowBalance(position: Position): Promise<number> {
@@ -227,6 +247,12 @@ class BorrowAMM {
     // balance in Voltz
     const accruedCashFlow = await this.getAccruedCashflow(allSwaps, pastMaturity);
     const notional = this.descale(BigNumber.from(position.variableTokenBalance.toString()));
+    
+    if (this.amm && this.amm.isETH) {
+      const EthToUsdPrice = await geckoEthToUsd();
+      return (notional + accruedCashFlow)*EthToUsdPrice;
+    }
+
     return notional + accruedCashFlow;
   }
 
