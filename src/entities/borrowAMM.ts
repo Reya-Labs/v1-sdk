@@ -219,13 +219,9 @@ class BorrowAMM {
         const userAddress = await this.signer.getAddress();
         borrowBalance = await this.aaveVariableDebtToken.balanceOf(userAddress);
     }
-
-    if (this.amm && this.amm.isETH) {
-      const EthToUsdPrice = await geckoEthToUsd();
-      return this.descale(borrowBalance)*EthToUsdPrice;
-    }
-    return this.descale(borrowBalance);
     
+    return this.descale(borrowBalance);
+
   }
 
   public async getFixedBorrowBalance(position: Position): Promise<number> {
@@ -247,11 +243,6 @@ class BorrowAMM {
     // balance in Voltz
     const accruedCashFlow = await this.getAccruedCashflow(allSwaps, pastMaturity);
     const notional = this.descale(BigNumber.from(position.variableTokenBalance.toString()));
-    
-    if (this.amm && this.amm.isETH) {
-      const EthToUsdPrice = await geckoEthToUsd();
-      return (notional + accruedCashFlow)*EthToUsdPrice;
-    }
 
     return notional + accruedCashFlow;
   }
@@ -286,6 +277,34 @@ class BorrowAMM {
       fcMargin = Math.round((fcMargin + Number.EPSILON) * (10 ** 16)) / 10 ** 16;
       return fcMargin > 0 ? fcMargin : 0;
     }
+  
+  public async getFixedBorrowBalanceInUSD(position: Position): Promise<number> {
+    const balanceInTokens = await this.getFixedBorrowBalance(position);
+    if (this.amm && this.amm.isETH) {
+      const EthToUsdPrice = await geckoEthToUsd();
+      return balanceInTokens*EthToUsdPrice;
+    }
+    return balanceInTokens;
+  }
+
+  public async getUnderlyingBorrowBalanceInUSD(): Promise<number> {
+    const balanceInTokens = await this.getUnderlyingBorrowBalance();
+    if (this.amm && this.amm.isETH) {
+      const EthToUsdPrice = await geckoEthToUsd();
+      return balanceInTokens*EthToUsdPrice;
+    }
+    return balanceInTokens;
+  }
+
+  public async getAggregatedBorrowBalanceInUSD(position: Position): Promise<number> {
+    const balanceInTokens = await this.getAggregatedBorrowBalance(position);
+    if (this.amm && this.amm.isETH) {
+      const EthToUsdPrice = await geckoEthToUsd();
+      return balanceInTokens*EthToUsdPrice;
+    }
+    return balanceInTokens;
+  }
+
 }
 
 export default BorrowAMM;
