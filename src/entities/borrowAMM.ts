@@ -219,7 +219,6 @@ class BorrowAMM {
         const userAddress = await this.signer.getAddress();
         borrowBalance = await this.aaveVariableDebtToken.balanceOf(userAddress);
     }
-    
     return this.descale(borrowBalance);
 
   }
