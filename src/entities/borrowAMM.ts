@@ -13,45 +13,36 @@ import {
   IERC20Minimal__factory,
   ICToken,
   IERC20Minimal,
+  CompoundBorrowRateOracle__factory,
+  AaveBorrowRateOracle__factory,
 } from '../typechain';
 import RateOracle from './rateOracle';
 import Token from './token';
 import { Price } from './fractions/price';
 import { TokenAmount } from './fractions/tokenAmount';
 import Position from './position';
+import AMM from './amm';
+
+//1. Import coingecko-api
+import CoinGecko from 'coingecko-api';
+
+//2. Initiate the CoinGecko API Client
+const CoinGeckoClient = new CoinGecko();
+
+var geckoEthToUsd = async () => {
+  let data = await CoinGeckoClient.simple.price({
+    ids: ['ethereum'],
+    vs_currencies: ['usd'],
+  });
+  return data.data.ethereum.usd;
+};
 
 
 // dynamic information about position
 
-export type PositionInfo = {
-    notionalInUSD: number;
-    marginInUSD: number;
-    margin: number;
-    fees?: number;
-    liquidationThreshold?: number;
-    safetyThreshold?: number;
-    accruedCashflowInUSD: number;
-    accruedCashflow: number;
-    variableRateSinceLastSwap?: number;
-    fixedRateSinceLastSwap?: number;
-    beforeMaturity: boolean;
-    fixedApr?: number;
-    healthFactor?: number;
-  }
-
 export type BorrowAMMConstructorArgs = {
   id: string;
-  signer: Signer | null;
-  provider?: providers.Provider;
-  environment: string;
-  factoryAddress: string;
-  marginEngineAddress: string;
-  rateOracle: RateOracle;
-  termStartTimestamp: JSBI;
-  termEndTimestamp: JSBI;
-  underlyingToken: Token;
-  tick: number;
-  tickSpacing: number;
+  amm: AMM;
 };
 
 class BorrowAMM {
@@ -59,73 +50,39 @@ class BorrowAMM {
   public readonly signer: Signer | null;
   public readonly provider?: providers.Provider;
   public readonly environment: string;
-  public readonly factoryAddress: string;
-  public readonly marginEngineAddress: string;
   public readonly rateOracle: RateOracle;
   public readonly termStartTimestamp: JSBI;
   public readonly termEndTimestamp: JSBI;
   public readonly underlyingToken: Token;
-  public readonly tickSpacing: number;
-  public readonly tick: number;
+  public readonly amm: AMM;
 
-  public cToken?: ICToken;
-  public aaveVariableDebtToken?: IERC20Minimal;
+  public cToken: ICToken | undefined;
+  public aaveVariableDebtToken: IERC20Minimal | undefined;
+
+  public underlyingDebt: number = 0;
+  public variableDebt: number = 0;
+  public fixedDebt: number = 0;
+  public aggregatedDebt: number = 0;
 
   public constructor({
     id,
-    signer,
-    provider,
-    environment,
-    factoryAddress,
-    marginEngineAddress,
-    rateOracle,
-    termStartTimestamp,
-    termEndTimestamp,
-    underlyingToken,
-    tick,
-    tickSpacing
+    amm
   }: BorrowAMMConstructorArgs) {
     this.id = id;
-    this.signer = signer;
-    this.provider = provider || signer?.provider;
-    this.environment = environment;
-    this.factoryAddress = factoryAddress;
-    this.marginEngineAddress = marginEngineAddress;
-    this.rateOracle = rateOracle;
-    this.termStartTimestamp = termStartTimestamp;
-    this.termEndTimestamp = termEndTimestamp;
-    this.underlyingToken = underlyingToken;
-    this.tickSpacing = tickSpacing;
-    this.tick = tick;
+    this.signer = amm.signer;
+    this.provider = amm.provider || amm.signer?.provider;
+    this.environment = amm.environment;
+    this.rateOracle = amm.rateOracle;
+    this.termStartTimestamp = amm.termStartTimestamp;
+    this.termEndTimestamp = amm.termEndTimestamp;
+    this.underlyingToken = amm.underlyingToken;
+    this.amm = amm;
 
     const protocolId = this.rateOracle.protocolId;
     if ( protocolId !== 6 && protocolId !== 5 ) {
         throw new Error("Not a borrow market");
     }
 
-    if (signer) {
-      if ( protocolId === 6) {
-        const compoundRateOracle = ICompoundRateOracle__factory.connect(this.rateOracle.id, signer)
-        const cTokenAddress = compoundRateOracle.ctoken().then( (cTokenAddress) => {
-          this.cToken = cTokenFactory.connect(cTokenAddress, signer);
-        });
-      } else {
-        const aaveRateOracle = IAaveRateOracle__factory.connect(this.rateOracle.id, signer)
-
-        aaveRateOracle.aaveLendingPool().then( (lendingPoolAddress) => {
-            const lendingPool = IAaveV2LendingPool__factory.connect(lendingPoolAddress, signer);
-
-            if(!this.underlyingToken.id){
-                throw new Error('missing underlying token address');
-            }
-  
-            lendingPool.getReserveData(this.underlyingToken.id).then( (reserve) => {
-              const variableDebtTokenAddress = reserve.variableDebtTokenAddress;
-              this.aaveVariableDebtToken = IERC20Minimal__factory.connect(variableDebtTokenAddress, signer);
-            });
-          });
-      }
-    }
   }
 
   // scale/descale according to underlying token
@@ -157,6 +114,10 @@ class BorrowAMM {
       vDelta: BigNumber,
       timestamp: BigNumber
     }[] = [];
+
+    if(position === undefined){
+      return allSwaps;
+    }
 
     for (let s of position.swaps) {
       allSwaps.push({
@@ -225,50 +186,30 @@ class BorrowAMM {
     return this.descale(accruedCashflow);
   }
 
-  // get user's borrow balance in underlying protocol
-
-  // public async getActualBorrowBalance(position: Position): Promise<number> {
-
-  //   if (!this.signer) {
-  //       throw new Error('Wallet not connected');
-  //   }
-
-  //   if (!this.provider) {
-  //       throw new Error('Blockchain not connected');
-  //   }
-    
-  //   const protocolId = this.rateOracle.protocolId;
-
-  //   // last updated balance in underlying protocol
-  //   let borrowBalance = BigNumber.from(0);
-  //   if (this.cToken) { // compound
-  //       const userAddress = await this.signer.getAddress();
-  //       borrowBalance = await this.cToken.callStatic.borrowBalanceCurrent(userAddress);
-  //   } else if ( this.aaveVariableDebtToken ) { // aave
-  //       const userAddress = await this.signer.getAddress();
-  //       borrowBalance = await this.aaveVariableDebtToken.balanceOf(userAddress);
-  //   }
-
-  //   const allSwaps = this.getAllSwaps(position);
-    
-  //   // is past maturity?
-  //   const lastBlock = await this.provider.getBlockNumber();
-  //   const lastBlockTimestamp = BigNumber.from((await this.provider.getBlock(lastBlock - 1)).timestamp);
-  //   const pastMaturity = (BigNumber.from(this.termEndTimestamp.toString())).lt(lastBlockTimestamp.mul(BigNumber.from(10).pow(18)));
-
-  //   // balance in Voltz
-  //   const accruedCashFlow = await this.getAccruedCashflow(allSwaps, pastMaturity);
-  //   const notional = BigNumber.from(position.marginInScaledYieldBearingTokens.toString()).toNumber();
-  //   const actualBalance = this.descale(borrowBalance) - notional - accruedCashFlow;
-
-  //   return actualBalance;
-
-  // }
-  
   public async getUnderlyingBorrowBalance(): Promise<number> {
     if (!this.signer) {
       throw new Error('Wallet not connected');
     }
+
+    const protocolId = this.rateOracle.protocolId;
+    if ( protocolId === 6 && !this.cToken) {
+      const compoundRateOracle = CompoundBorrowRateOracle__factory.connect(this.rateOracle.id, this.signer)
+      const cTokenAddress = await compoundRateOracle.ctoken();
+      this.cToken = cTokenFactory.connect(cTokenAddress, this.signer);
+
+    } else if ( protocolId === 5 && !this.aaveVariableDebtToken) {
+      const aaveRateOracle = AaveBorrowRateOracle__factory.connect(this.rateOracle.id, this.signer)
+
+      const lendingPoolAddress = await aaveRateOracle.aaveLendingPool();
+      const lendingPool = IAaveV2LendingPool__factory.connect(lendingPoolAddress, this.signer);
+      if(!this.underlyingToken.id){
+        throw new Error('missing underlying token address');
+      }
+      const reserve =  await lendingPool.getReserveData(this.underlyingToken.id);
+      const variableDebtTokenAddress = reserve.variableDebtTokenAddress;
+      this.aaveVariableDebtToken = IERC20Minimal__factory.connect(variableDebtTokenAddress, this.signer);
+    }
+    
 
     let borrowBalance = BigNumber.from(0);
     if (this.cToken) { // compound
@@ -279,9 +220,14 @@ class BorrowAMM {
         borrowBalance = await this.aaveVariableDebtToken.balanceOf(userAddress);
     }
     return this.descale(borrowBalance);
+
   }
 
   public async getFixedBorrowBalance(position: Position): Promise<number> {
+    if(position === undefined){
+      return 0;
+    }
+
     if (!this.provider) {
       throw new Error('Blockchain not connected');
     }
@@ -295,7 +241,8 @@ class BorrowAMM {
 
     // balance in Voltz
     const accruedCashFlow = await this.getAccruedCashflow(allSwaps, pastMaturity);
-    const notional = BigNumber.from(position.marginInScaledYieldBearingTokens.toString()).toNumber();
+    const notional = this.descale(BigNumber.from(position.variableTokenBalance.toString()));
+
     return notional + accruedCashFlow;
   }
 
@@ -311,9 +258,52 @@ class BorrowAMM {
     }
   }
 
-  public getVariableBorrowBalance(aggregatedDebt: number, fixedDebt: number): number {
-    return aggregatedDebt - fixedDebt;
+  public async getFullyCollateralisedMarginRequirement(fixedTokenBalance: number, variableTokenBalance: number, fee: number): Promise<number> {
+    if (!this.provider) {
+      throw new Error('Blockchain not connected');
+    }
+
+    const variableAPYToMaturity = await this.amm.getVariableFactor(
+      BigNumber.from(this.termStartTimestamp.toString()), 
+      BigNumber.from(this.termEndTimestamp.toString())
+    );
+
+    const termStartTimestamp = (BigNumber.from(this.termStartTimestamp.toString()).div(BigNumber.from(10).pow(18))).toNumber();
+    const termEndTimestamp = (BigNumber.from(this.termEndTimestamp.toString()).div(BigNumber.from(10).pow(18))).toNumber();
+    const fixedFactor = (termEndTimestamp - termStartTimestamp) / ONE_YEAR_IN_SECONDS * 0.01;
+    
+    let fcMargin = -(fixedTokenBalance * fixedFactor + variableTokenBalance * variableAPYToMaturity);
+    fcMargin = (fcMargin + fee) * 1.01;
+    return fcMargin > 0 ? fcMargin : 0;
   }
+  
+  public async getFixedBorrowBalanceInUSD(position: Position): Promise<number> {
+    const balanceInTokens = await this.getFixedBorrowBalance(position);
+    if (this.amm && this.amm.isETH) {
+      const EthToUsdPrice = await geckoEthToUsd();
+      return balanceInTokens*EthToUsdPrice;
+    }
+    return balanceInTokens;
+  }
+
+  public async getUnderlyingBorrowBalanceInUSD(): Promise<number> {
+    const balanceInTokens = await this.getUnderlyingBorrowBalance();
+    if (this.amm && this.amm.isETH) {
+      const EthToUsdPrice = await geckoEthToUsd();
+      return balanceInTokens*EthToUsdPrice;
+    }
+    return balanceInTokens;
+  }
+
+  public async getAggregatedBorrowBalanceInUSD(position: Position): Promise<number> {
+    const balanceInTokens = await this.getAggregatedBorrowBalance(position);
+    if (this.amm && this.amm.isETH) {
+      const EthToUsdPrice = await geckoEthToUsd();
+      return balanceInTokens*EthToUsdPrice;
+    }
+    return balanceInTokens;
+  }
+
 }
 
 export default BorrowAMM;
