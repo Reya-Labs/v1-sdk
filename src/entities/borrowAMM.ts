@@ -258,24 +258,24 @@ class BorrowAMM {
     }
   }
 
-  public async getFullyCollateralisedMarginRequirement(fixedTokenBalance: number, variableTokenBalance: number): Promise<number> {
-      if (!this.provider) {
-        throw new Error('Blockchain not connected');
-      }
-
-      const variableAPYToMaturity = await this.amm.getVariableFactor(
-        BigNumber.from(this.termStartTimestamp.toString()), 
-        BigNumber.from(this.termEndTimestamp.toString())
-      );
-
-      const termStartTimestamp = (BigNumber.from(this.termStartTimestamp.toString()).div(BigNumber.from(10).pow(18))).toNumber();
-      const termEndTimestamp = (BigNumber.from(this.termEndTimestamp.toString()).div(BigNumber.from(10).pow(18))).toNumber();
-      const fixedFactor = (termEndTimestamp - termStartTimestamp) / ONE_YEAR_IN_SECONDS * 0.01;
-      
-      let fcMargin = -(fixedTokenBalance * fixedFactor + variableTokenBalance * variableAPYToMaturity);
-      fcMargin = Math.round((fcMargin + Number.EPSILON) * (10 ** 16)) / 10 ** 16;
-      return fcMargin > 0 ? fcMargin : 0;
+  public async getFullyCollateralisedMarginRequirement(fixedTokenBalance: number, variableTokenBalance: number, fee: number): Promise<number> {
+    if (!this.provider) {
+      throw new Error('Blockchain not connected');
     }
+
+    const variableAPYToMaturity = await this.amm.getVariableFactor(
+      BigNumber.from(this.termStartTimestamp.toString()), 
+      BigNumber.from(this.termEndTimestamp.toString())
+    );
+
+    const termStartTimestamp = (BigNumber.from(this.termStartTimestamp.toString()).div(BigNumber.from(10).pow(18))).toNumber();
+    const termEndTimestamp = (BigNumber.from(this.termEndTimestamp.toString()).div(BigNumber.from(10).pow(18))).toNumber();
+    const fixedFactor = (termEndTimestamp - termStartTimestamp) / ONE_YEAR_IN_SECONDS * 0.01;
+    
+    let fcMargin = -(fixedTokenBalance * fixedFactor + variableTokenBalance * variableAPYToMaturity);
+    fcMargin = (fcMargin + fee) * 1.01;
+    return fcMargin > 0 ? fcMargin : 0;
+  }
   
   public async getFixedBorrowBalanceInUSD(position: Position): Promise<number> {
     const balanceInTokens = await this.getFixedBorrowBalance(position);
