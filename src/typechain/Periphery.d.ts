@@ -22,6 +22,7 @@ import type { TypedEventFilter, TypedEvent, TypedListener } from "./common";
 
 interface PeripheryInterface extends ethers.utils.Interface {
   functions: {
+    "fullyCollateralisedVTSwap((address,bool,uint256,uint160,int24,int24,uint256),uint256)": FunctionFragment;
     "getCurrentTick(address)": FunctionFragment;
     "getLiquidityForNotional(uint160,uint160,uint256)": FunctionFragment;
     "initialize(address)": FunctionFragment;
@@ -44,6 +45,21 @@ interface PeripheryInterface extends ethers.utils.Interface {
     "weth()": FunctionFragment;
   };
 
+  encodeFunctionData(
+    functionFragment: "fullyCollateralisedVTSwap",
+    values: [
+      {
+        marginEngine: string;
+        isFT: boolean;
+        notional: BigNumberish;
+        sqrtPriceLimitX96: BigNumberish;
+        tickLower: BigNumberish;
+        tickUpper: BigNumberish;
+        marginDelta: BigNumberish;
+      },
+      BigNumberish
+    ]
+  ): string;
   encodeFunctionData(
     functionFragment: "getCurrentTick",
     values: [string]
@@ -159,6 +175,10 @@ interface PeripheryInterface extends ethers.utils.Interface {
   ): string;
   encodeFunctionData(functionFragment: "weth", values?: undefined): string;
 
+  decodeFunctionResult(
+    functionFragment: "fullyCollateralisedVTSwap",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "getCurrentTick",
     data: BytesLike
@@ -301,6 +321,20 @@ export class Periphery extends BaseContract {
   interface: PeripheryInterface;
 
   functions: {
+    fullyCollateralisedVTSwap(
+      params: {
+        marginEngine: string;
+        isFT: boolean;
+        notional: BigNumberish;
+        sqrtPriceLimitX96: BigNumberish;
+        tickLower: BigNumberish;
+        tickUpper: BigNumberish;
+        marginDelta: BigNumberish;
+      },
+      variableFactorFromStartToNowWad: BigNumberish,
+      overrides?: PayableOverrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
     getCurrentTick(
       marginEngine: string,
       overrides?: CallOverrides
@@ -438,6 +472,20 @@ export class Periphery extends BaseContract {
 
     weth(overrides?: CallOverrides): Promise<[string]>;
   };
+
+  fullyCollateralisedVTSwap(
+    params: {
+      marginEngine: string;
+      isFT: boolean;
+      notional: BigNumberish;
+      sqrtPriceLimitX96: BigNumberish;
+      tickLower: BigNumberish;
+      tickUpper: BigNumberish;
+      marginDelta: BigNumberish;
+    },
+    variableFactorFromStartToNowWad: BigNumberish,
+    overrides?: PayableOverrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
 
   getCurrentTick(
     marginEngine: string,
@@ -577,6 +625,29 @@ export class Periphery extends BaseContract {
   weth(overrides?: CallOverrides): Promise<string>;
 
   callStatic: {
+    fullyCollateralisedVTSwap(
+      params: {
+        marginEngine: string;
+        isFT: boolean;
+        notional: BigNumberish;
+        sqrtPriceLimitX96: BigNumberish;
+        tickLower: BigNumberish;
+        tickUpper: BigNumberish;
+        marginDelta: BigNumberish;
+      },
+      variableFactorFromStartToNowWad: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<
+      [BigNumber, BigNumber, BigNumber, BigNumber, BigNumber, number] & {
+        _fixedTokenDelta: BigNumber;
+        _variableTokenDelta: BigNumber;
+        _cumulativeFeeIncurred: BigNumber;
+        _fixedTokenDeltaUnbalanced: BigNumber;
+        _marginRequirement: BigNumber;
+        _tickAfter: number;
+      }
+    >;
+
     getCurrentTick(
       marginEngine: string,
       overrides?: CallOverrides
@@ -803,6 +874,20 @@ export class Periphery extends BaseContract {
   };
 
   estimateGas: {
+    fullyCollateralisedVTSwap(
+      params: {
+        marginEngine: string;
+        isFT: boolean;
+        notional: BigNumberish;
+        sqrtPriceLimitX96: BigNumberish;
+        tickLower: BigNumberish;
+        tickUpper: BigNumberish;
+        marginDelta: BigNumberish;
+      },
+      variableFactorFromStartToNowWad: BigNumberish,
+      overrides?: PayableOverrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
     getCurrentTick(
       marginEngine: string,
       overrides?: CallOverrides
@@ -942,6 +1027,20 @@ export class Periphery extends BaseContract {
   };
 
   populateTransaction: {
+    fullyCollateralisedVTSwap(
+      params: {
+        marginEngine: string;
+        isFT: boolean;
+        notional: BigNumberish;
+        sqrtPriceLimitX96: BigNumberish;
+        tickLower: BigNumberish;
+        tickUpper: BigNumberish;
+        marginDelta: BigNumberish;
+      },
+      variableFactorFromStartToNowWad: BigNumberish,
+      overrides?: PayableOverrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
     getCurrentTick(
       marginEngine: string,
       overrides?: CallOverrides
