@@ -348,6 +348,11 @@ const _abi = [
         name: "_tickAfter",
         type: "int24",
       },
+      {
+        internalType: "int256",
+        name: "marginDelta",
+        type: "int256",
+      },
     ],
     stateMutability: "payable",
     type: "function",
@@ -786,6 +791,11 @@ const _abi = [
         name: "_tickAfter",
         type: "int24",
       },
+      {
+        internalType: "int256",
+        name: "marginDelta",
+        type: "int256",
+      },
     ],
     stateMutability: "payable",
     type: "function",
@@ -819,7 +829,13 @@ const _abi = [
       },
     ],
     name: "updatePositionMargin",
-    outputs: [],
+    outputs: [
+      {
+        internalType: "int256",
+        name: "",
+        type: "int256",
+      },
+    ],
     stateMutability: "payable",
     type: "function",
   },

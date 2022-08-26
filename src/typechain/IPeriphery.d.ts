@@ -501,13 +501,22 @@ export class IPeriphery extends BaseContract {
       variableFactorFromStartToNowWad: BigNumberish,
       overrides?: CallOverrides
     ): Promise<
-      [BigNumber, BigNumber, BigNumber, BigNumber, BigNumber, number] & {
+      [
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        number,
+        BigNumber
+      ] & {
         _fixedTokenDelta: BigNumber;
         _variableTokenDelta: BigNumber;
         _cumulativeFeeIncurred: BigNumber;
         _fixedTokenDeltaUnbalanced: BigNumber;
         _marginRequirement: BigNumber;
         _tickAfter: number;
+        marginDelta: BigNumber;
       }
     >;
 
@@ -611,13 +620,22 @@ export class IPeriphery extends BaseContract {
       },
       overrides?: CallOverrides
     ): Promise<
-      [BigNumber, BigNumber, BigNumber, BigNumber, BigNumber, number] & {
+      [
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        number,
+        BigNumber
+      ] & {
         _fixedTokenDelta: BigNumber;
         _variableTokenDelta: BigNumber;
         _cumulativeFeeIncurred: BigNumber;
         _fixedTokenDeltaUnbalanced: BigNumber;
         _marginRequirement: BigNumber;
         _tickAfter: number;
+        marginDelta: BigNumber;
       }
     >;
 
@@ -628,7 +646,7 @@ export class IPeriphery extends BaseContract {
       marginDelta: BigNumberish,
       fullyWithdraw: boolean,
       overrides?: CallOverrides
-    ): Promise<void>;
+    ): Promise<BigNumber>;
 
     weth(overrides?: CallOverrides): Promise<string>;
   };
