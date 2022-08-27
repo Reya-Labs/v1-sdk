@@ -2105,11 +2105,6 @@ axe-core@^4.3.5:
   resolved "https://registry.npmjs.org/axe-core/-/axe-core-4.4.1.tgz"
   integrity sha512-gd1kmb21kwNuWr6BQz8fv6GNECPBnUasepcoLbekws23NVBLODdsClRZ+bQ8+9Uomf3Sm3+Vwn0oYG9NvwnJCw==
 
-axion@^0.1.0:
-  version "0.1.0"
-  resolved "https://registry.yarnpkg.com/axion/-/axion-0.1.0.tgz#5413b420f916dab89c8e7329d40eb78a0b8838a4"
-  integrity sha512-KvigipUy1Ntp1GiCHAl3GjqD5KMr/PndPVYF+qeFbl/t3dUx3//iYVHND7wUkr1O2Cmh94k/PM+yTc0sv6Lvqw==
-
 axios@^0.27.2:
   version "0.27.2"
   resolved "https://registry.yarnpkg.com/axios/-/axios-0.27.2.tgz#207658cc8621606e586c85db4b41a750e756d972"
