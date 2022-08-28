@@ -22,18 +22,18 @@ import type { TypedEventFilter, TypedEvent, TypedListener } from "./common";
 
 interface IPeripheryInterface extends ethers.utils.Interface {
   functions: {
-    "fullyCollateralisedVTSwap((address,bool,uint256,uint160,int24,int24,uint256),uint256)": FunctionFragment;
+    "fullyCollateralisedVTSwap((address,bool,uint256,uint160,int24,int24,int256),uint256)": FunctionFragment;
     "getCurrentTick(address)": FunctionFragment;
     "initialize(address)": FunctionFragment;
     "lpMarginCaps(address)": FunctionFragment;
     "lpMarginCumulatives(address)": FunctionFragment;
     "mintOrBurn((address,int24,int24,uint256,bool,int256))": FunctionFragment;
     "rolloverWithMint(address,address,int24,int24,(address,int24,int24,uint256,bool,int256))": FunctionFragment;
-    "rolloverWithSwap(address,address,int24,int24,(address,bool,uint256,uint160,int24,int24,uint256))": FunctionFragment;
+    "rolloverWithSwap(address,address,int24,int24,(address,bool,uint256,uint160,int24,int24,int256))": FunctionFragment;
     "setLPMarginCap(address,int256)": FunctionFragment;
     "setLPMarginCumulative(address,int256)": FunctionFragment;
     "settlePositionAndWithdrawMargin(address,address,int24,int24)": FunctionFragment;
-    "swap((address,bool,uint256,uint160,int24,int24,uint256))": FunctionFragment;
+    "swap((address,bool,uint256,uint160,int24,int24,int256))": FunctionFragment;
     "updatePositionMargin(address,int24,int24,int256,bool)": FunctionFragment;
     "weth()": FunctionFragment;
   };
@@ -501,13 +501,22 @@ export class IPeriphery extends BaseContract {
       variableFactorFromStartToNowWad: BigNumberish,
       overrides?: CallOverrides
     ): Promise<
-      [BigNumber, BigNumber, BigNumber, BigNumber, BigNumber, number] & {
+      [
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        number,
+        BigNumber
+      ] & {
         _fixedTokenDelta: BigNumber;
         _variableTokenDelta: BigNumber;
         _cumulativeFeeIncurred: BigNumber;
         _fixedTokenDeltaUnbalanced: BigNumber;
         _marginRequirement: BigNumber;
         _tickAfter: number;
+        marginDelta: BigNumber;
       }
     >;
 
@@ -611,13 +620,22 @@ export class IPeriphery extends BaseContract {
       },
       overrides?: CallOverrides
     ): Promise<
-      [BigNumber, BigNumber, BigNumber, BigNumber, BigNumber, number] & {
+      [
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        number,
+        BigNumber
+      ] & {
         _fixedTokenDelta: BigNumber;
         _variableTokenDelta: BigNumber;
         _cumulativeFeeIncurred: BigNumber;
         _fixedTokenDeltaUnbalanced: BigNumber;
         _marginRequirement: BigNumber;
         _tickAfter: number;
+        marginDelta: BigNumber;
       }
     >;
 
@@ -628,7 +646,7 @@ export class IPeriphery extends BaseContract {
       marginDelta: BigNumberish,
       fullyWithdraw: boolean,
       overrides?: CallOverrides
-    ): Promise<void>;
+    ): Promise<BigNumber>;
 
     weth(overrides?: CallOverrides): Promise<string>;
   };
