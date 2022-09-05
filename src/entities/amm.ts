@@ -274,6 +274,7 @@ export type PositionInfo = {
   beforeMaturity: boolean;
   fixedApr?: number;
   healthFactor?: number;
+  fixedRateHealthFactor?: number;
 }
 
 export type ClosestTickAndFixedRate = {
@@ -2668,6 +2669,22 @@ class AMM {
       results.notionalInUSD = notionalInUnderlyingToken * EthToUsdPrice;
     } else {
       results.notionalInUSD = notionalInUnderlyingToken
+    }
+
+    const fixedApr = await this.getFixedApr();
+    if (position.fixedRateLower.toNumber() < fixedApr
+     && fixedApr < position.fixedRateUpper.toNumber() ) {
+      
+      if (
+        (0.15 * position.fixedRateUpper.toNumber() + 0.85 * position.fixedRateLower.toNumber()) > fixedApr
+        || fixedApr > (0.85 * position.fixedRateUpper.toNumber() + 0.15 * position.fixedRateLower.toNumber())
+      ) {
+        results.fixedRateHealthFactor = 2 // yellow
+      } else {
+        results.fixedRateHealthFactor = 3 // green
+      }
+    } else {
+      results.fixedRateHealthFactor = 1 // red
     }
 
     return results;
