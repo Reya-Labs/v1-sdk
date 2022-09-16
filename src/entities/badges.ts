@@ -21,7 +21,7 @@ export const redeemBadge = async (
   const address = await signer.getAddress();
   let metadata;
 
-  if (season in Object.keys(resultsJson)) {
+  if (Object.keys(resultsJson).includes(season)) {
     const ls = resultsJson[season as keyof typeof resultsJson];
     let index = -1;
     for (let i = 0; i < ls.length; i += 1) {
