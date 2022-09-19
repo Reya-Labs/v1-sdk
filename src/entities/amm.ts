@@ -2451,9 +2451,9 @@ class AMM {
       throw new Error('Blockchain not connected');
     }
 
-    let EthToUsdPrice = 1;
+    let usdExchangeRate = 1;
     if (this.isETH) {
-      EthToUsdPrice = await geckoEthToUsd();
+      usdExchangeRate = await geckoEthToUsd();
     }
 
     let results: PositionInfo = {
@@ -2499,12 +2499,7 @@ class AMM {
 
             results.fixedRateSinceLastSwap = accruedCashflowInfo.avgFixedRate;
 
-            if (this.isETH) {
-              // need to change when introduce non-stable coins
-              results.accruedCashflowInUSD = results.accruedCashflow * EthToUsdPrice;
-            } else {
-              results.accruedCashflowInUSD = results.accruedCashflow;
-            }
+            results.accruedCashflowInUSD = results.accruedCashflow * usdExchangeRate;
 
           } catch (_) { }
       }
@@ -2522,12 +2517,7 @@ class AMM {
 
             results.accruedCashflow = accruedCashflowInfo.accruedCashflow;
 
-            if (this.isETH) {
-              // need to change when introduce non-stable coins
-              results.accruedCashflowInUSD = accruedCashflowInfo.accruedCashflow * EthToUsdPrice;
-            } else {
-              results.accruedCashflowInUSD = accruedCashflowInfo.accruedCashflow
-            }
+            results.accruedCashflowInUSD = accruedCashflowInfo.accruedCashflow * usdExchangeRate;
 
           } catch (_) { }
         }
@@ -2545,12 +2535,7 @@ class AMM {
 
           const marginInUnderlyingToken = results.margin;
 
-          if (this.isETH) {
-            // need to change when introduce non-stable coins
-            results.marginInUSD = marginInUnderlyingToken * EthToUsdPrice;
-          } else {
-            results.marginInUSD = marginInUnderlyingToken;
-          }
+          results.marginInUSD = marginInUnderlyingToken * usdExchangeRate;
 
           break;
         }
@@ -2567,12 +2552,7 @@ class AMM {
 
           const marginInUnderlyingToken = results.margin * scaledRate;
 
-          if (this.isETH) {
-            // need to change when introduce non-stable coins
-            results.marginInUSD = marginInUnderlyingToken * EthToUsdPrice;
-          } else {
-            results.marginInUSD = marginInUnderlyingToken
-          }
+          results.marginInUSD = marginInUnderlyingToken * usdExchangeRate;
 
           break;
         }
@@ -2603,13 +2583,7 @@ class AMM {
 
       const marginInUnderlyingToken = results.margin;
 
-      if (this.isETH) {
-        // need to change when introduce non-stable coins
-        results.marginInUSD = marginInUnderlyingToken * EthToUsdPrice;
-      } else {
-        results.marginInUSD = marginInUnderlyingToken
-      }
-
+      results.marginInUSD = marginInUnderlyingToken * usdExchangeRate;
       results.fees = this.descale(rawPositionInfo.accumulatedFees);
 
       if (beforeMaturity) {
@@ -2645,12 +2619,7 @@ class AMM {
         ? Math.abs(position.notional) // LP
         : Math.abs(position.effectiveVariableTokenBalance); // FT, VT
 
-    if (this.isETH) {
-      // need to change when introduce non-stable coins
-      results.notionalInUSD = notionalInUnderlyingToken * EthToUsdPrice;
-    } else {
-      results.notionalInUSD = notionalInUnderlyingToken
-    }
+    results.notionalInUSD = notionalInUnderlyingToken * usdExchangeRate;
 
     const fixedApr = await this.getFixedApr();
     if (position.fixedRateLower.toNumber() < fixedApr
