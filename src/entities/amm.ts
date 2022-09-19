@@ -2076,7 +2076,7 @@ class AMM {
   // descale compound tokens
 
   public descaleCompoundValue(value: BigNumber): number {
-    return Number(ethers.utils.formatUnits(value, this.underlyingToken.decimals + 10));
+    return Number(ethers.utils.formatUnits(value, parseInt(this.underlyingToken.decimals.toString()) + 10));
   }
 
   // fcm approval
@@ -2451,6 +2451,11 @@ class AMM {
       throw new Error('Blockchain not connected');
     }
 
+    let EthToUsdPrice = 1;
+    if (this.isETH) {
+      EthToUsdPrice = await geckoEthToUsd();
+    }
+
     let results: PositionInfo = {
       notionalInUSD: 0,
       marginInUSD: 0,
@@ -2494,9 +2499,6 @@ class AMM {
 
             results.fixedRateSinceLastSwap = accruedCashflowInfo.avgFixedRate;
 
-            // Get current exchange rate for eth/usd
-            const EthToUsdPrice = await geckoEthToUsd();
-
             if (this.isETH) {
               // need to change when introduce non-stable coins
               results.accruedCashflowInUSD = results.accruedCashflow * EthToUsdPrice;
@@ -2519,9 +2521,6 @@ class AMM {
             console.log("Result:", accruedCashflowInfo);
 
             results.accruedCashflow = accruedCashflowInfo.accruedCashflow;
-
-            // Get current exchange rate for eth/usd
-            const EthToUsdPrice = await geckoEthToUsd();
 
             if (this.isETH) {
               // need to change when introduce non-stable coins
@@ -2546,9 +2545,6 @@ class AMM {
 
           const marginInUnderlyingToken = results.margin;
 
-          // Get current exchange rate for eth/usd
-          const EthToUsdPrice = await geckoEthToUsd();
-
           if (this.isETH) {
             // need to change when introduce non-stable coins
             results.marginInUSD = marginInUnderlyingToken * EthToUsdPrice;
@@ -2570,9 +2566,6 @@ class AMM {
           const scaledRate = this.descaleCompoundValue(rate);
 
           const marginInUnderlyingToken = results.margin * scaledRate;
-
-          // Get current exchange rate for eth/usd
-          const EthToUsdPrice = await geckoEthToUsd();
 
           if (this.isETH) {
             // need to change when introduce non-stable coins
@@ -2609,9 +2602,6 @@ class AMM {
       results.margin = this.descale(rawPositionInfo.margin);
 
       const marginInUnderlyingToken = results.margin;
-
-      // Get current exchange rate for eth/usd
-      const EthToUsdPrice = await geckoEthToUsd();
 
       if (this.isETH) {
         // need to change when introduce non-stable coins
@@ -2654,9 +2644,6 @@ class AMM {
       (position.positionType === 3)
         ? Math.abs(position.notional) // LP
         : Math.abs(position.effectiveVariableTokenBalance); // FT, VT
-
-    // Get current exchange rate for eth/usd
-    const EthToUsdPrice = await geckoEthToUsd();
 
     if (this.isETH) {
       // need to change when introduce non-stable coins
