@@ -30,7 +30,8 @@ import {
   CompoundBorrowRateOracle,
   AaveBorrowRateOracle__factory,
   IAaveV2LendingPool__factory,
-  IAaveV2LendingPool,
+  CompoundBorrowRateOracle__factory,
+  IAaveV2LendingPool
 } from '../typechain';
 import RateOracle from './rateOracle';
 import { TickMath } from '../utils/tickMath';
@@ -43,23 +44,20 @@ import { TokenAmount } from './fractions/tokenAmount';
 import { decodeInfoPostMint, decodeInfoPostSwap, getReadableErrorMessage } from '../utils/errors/errorHandling';
 import Position from './position';
 import { isNumber, isUndefined } from 'lodash';
-
-//1. Import coingecko-api
-import CoinGecko from 'coingecko-api';
 import { getExpectedApy } from '../services/getExpectedApy';
+import { getAccruedCashflow, transformSwaps } from '../services/getAccruedCashflow';
 
-//2. Initiate the CoinGecko API Client
-const CoinGeckoClient = new CoinGecko();
+import axios from 'axios';
 
-//3. Make call to get the price of 1 eth in USD, so divide the value of USD by data
-// queries the json response body with price of 1eth in usd
-// returns the value of 1 eth in USD 
 var geckoEthToUsd = async () => {
-  let data = await CoinGeckoClient.simple.price({
-    ids: ['ethereum'],
-    vs_currencies: ['usd'],
-  });
-  return data.data.ethereum.usd;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    try{
+      let data = await axios.get('https://pro-api.coingecko.com/api/v3/simple/price?x_cg_pro_api_key='+process.env.REACT_APP_COINGECKO_API_KEY+'&ids=ethereum&vs_currencies=usd');
+      return data.data.ethereum.usd;
+    } catch (error) {
+    }
+  }
+  return 0;
 };
 
 
@@ -111,6 +109,7 @@ export type AMMSwapArgs = {
   fixedLow: number;
   fixedHigh: number;
   validationOnly?: boolean;
+  fullyCollateralisedVTSwap?: boolean;
 };
 
 export type AMMSwapWithWethArgs = {
@@ -130,11 +129,24 @@ export type InfoPostSwap = {
   fee: number;
   slippage: number;
   averageFixedRate: number;
-  expectedApy?: number[][];
   fixedTokenDeltaBalance: number;
   variableTokenDeltaBalance: number;
   fixedTokenDeltaUnbalanced: number;
+  maxAvailableNotional?: number;
 };
+
+export type ExpectedApyArgs = {
+  margin: number;
+  position?: Position;
+  fixedLow: number;
+  fixedHigh: number;
+  fixedTokenDeltaUnbalanced: number;
+  availableNotional: number;
+}
+
+export type ExpectedApyInfo = {
+  expectedApy: number[][];
+}
 
 // rollover with swap
 
@@ -262,6 +274,7 @@ export type PositionInfo = {
   beforeMaturity: boolean;
   fixedApr?: number;
   healthFactor?: number;
+  fixedRateHealthFactor?: number;
 }
 
 export type ClosestTickAndFixedRate = {
@@ -471,7 +484,7 @@ class AMM {
         marginDelta: '0',
       };
 
-      tempOverrides.value = ethers.utils.parseEther(margin.toString());
+      tempOverrides.value = ethers.utils.parseEther(margin.toFixed(18).toString());
     }
     else {
       const scaledMarginDelta = this.scale(margin);
@@ -601,7 +614,7 @@ class AMM {
     let tempOverrides: { value?: BigNumber, gasLimit?: BigNumber } = {};
 
     if (this.isETH && marginEth) {
-      tempOverrides.value = ethers.utils.parseEther(marginEth.toString());
+      tempOverrides.value = ethers.utils.parseEther(marginEth.toFixed(18).toString());
     }
 
     const scaledMarginDelta = this.scale(margin);
@@ -778,6 +791,27 @@ class AMM {
 
     const averageFixedRate = (availableNotional.eq(BigNumber.from(0))) ? 0 : fixedTokenDeltaUnbalanced.mul(BigNumber.from(1000)).div(availableNotional).toNumber() / 1000;
 
+    let maxAvailableNotional = BigNumber.from(0);
+    const swapPeripheryParamsLargeSwap = {
+      marginEngine: this.marginEngineAddress,
+      isFT,
+      notional: this.scale(1000000000000000),
+      sqrtPriceLimitX96,
+      tickLower,
+      tickUpper,
+      marginDelta: '0',
+    };
+    await peripheryContract.callStatic.swap(swapPeripheryParamsLargeSwap).then(
+      (result: any) => {
+        maxAvailableNotional = result[1];
+      },
+      (error: any) => {
+        const result = decodeInfoPostSwap(error, this.environment);
+        maxAvailableNotional = result.availableNotional;
+      },
+    );
+    const scaledMaxAvailableNotional = this.descale(maxAvailableNotional);
+ 
     const result: InfoPostSwap = {
       marginRequirement: additionalMargin,
       availableNotional: scaledAvailableNotional < 0 ? -scaledAvailableNotional : scaledAvailableNotional,
@@ -786,38 +820,92 @@ class AMM {
       averageFixedRate: averageFixedRate < 0 ? -averageFixedRate : averageFixedRate,
       fixedTokenDeltaBalance: this.descale(fixedTokenDelta),
       variableTokenDeltaBalance: this.descale(availableNotional),
-      fixedTokenDeltaUnbalanced: this.descale(fixedTokenDeltaUnbalanced)
+      fixedTokenDeltaUnbalanced: this.descale(fixedTokenDeltaUnbalanced),
+      maxAvailableNotional: scaledMaxAvailableNotional < 0 ? -scaledMaxAvailableNotional : scaledMaxAvailableNotional,
     };
 
-    if (isNumber(margin)) {
-      let positionMargin = 0;
-      let accruedCashflow = 0;
-      let positionUft = BigNumber.from(0);
-      let positionVt = BigNumber.from(0);
+    return result;
+  }
 
-      if (position) {
-        const allSwaps = this.getAllSwaps(position);
-        const lenSwaps = allSwaps.length;
+  public async getExpectedApyInfo({
+    margin,
+    position,
+    fixedLow,
+    fixedHigh,
+    fixedTokenDeltaUnbalanced,
+    availableNotional
+  }: ExpectedApyArgs): Promise<ExpectedApyInfo> {
+    if (!this.signer) {
+      throw new Error('Wallet not connected');
+    }
 
-        for (let swap of allSwaps) {
-          positionUft = positionUft.add(swap.fDelta);
-          positionVt = positionVt.add(swap.vDelta);
-        }
+    if (!this.provider) {
+      throw new Error('Blockchain not connected');
+    }
 
-        positionMargin = scaledCurrentMargin;
+    if (fixedLow >= fixedHigh) {
+      throw new Error('Lower Rate must be smaller than Upper Rate');
+    }
 
-        try {
-          if (lenSwaps > 0) {
-            accruedCashflow = await this.getAccruedCashflow(allSwaps, false);
-          }
-        } catch { }
+    if (fixedLow < MIN_FIXED_RATE) {
+      throw new Error('Lower Rate is too low');
+    }
+
+    if (fixedHigh > MAX_FIXED_RATE) {
+      throw new Error('Upper Rate is too high');
+    }
+
+    const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
+    const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
+
+    const signerAddress = await this.signer.getAddress();
+
+    const marginEngineContract = marginEngineFactory.connect(this.marginEngineAddress, this.signer);
+    const currentMargin = (
+      await marginEngineContract.callStatic.getPosition(signerAddress, tickLower, tickUpper)
+    ).margin;
+
+    const rateOracleContract = BaseRateOracle__factory.connect(this.rateOracle.id, this.provider);
+
+    const lastBlock = await this.provider.getBlockNumber();
+    const lastBlockTimestamp = BigNumber.from((await this.provider.getBlock(lastBlock - 1)).timestamp);
+
+    const scaledCurrentMargin = this.descale(currentMargin);
+
+    let positionMargin = 0;
+    let accruedCashflow = 0;
+    let positionUft = BigNumber.from(0);
+    let positionVt = BigNumber.from(0);
+
+    if (position) {
+      for (let swap of position.swaps) {
+        positionUft = positionUft.add(swap.fixedTokenDeltaUnbalanced.toString());
+        positionVt = positionVt.add(swap.variableTokenDelta.toString());
       }
 
-      result.expectedApy = await this.expectedApy(
-        positionUft.add(fixedTokenDeltaUnbalanced),
-        positionVt.add(availableNotional),
-        margin + positionMargin + accruedCashflow
-      );
+      positionMargin = scaledCurrentMargin;
+
+      try {
+        if (position.swaps.length > 0) {
+           const accruedCashflowInfo = await getAccruedCashflow({
+            swaps: transformSwaps(position.swaps, this.underlyingToken.decimals),
+            rateOracle: rateOracleContract,
+            currentTime: Number(lastBlockTimestamp.toString()),
+            endTime: Number(utils.formatUnits(this.termEndTimestamp.toString(), 18)),
+          });
+          accruedCashflow = accruedCashflowInfo.accruedCashflow;
+        }
+      } catch { }
+    }
+
+    const expectedApy = await this.expectedApy(
+      positionUft.add(this.scale(fixedTokenDeltaUnbalanced)),
+      positionVt.add(this.scale(availableNotional)),
+      margin + positionMargin + accruedCashflow
+    );
+
+    const result: ExpectedApyInfo = {
+      expectedApy: expectedApy
     }
 
     return result;
@@ -831,7 +919,12 @@ class AMM {
     fixedLow,
     fixedHigh,
     validationOnly,
+    fullyCollateralisedVTSwap
   }: AMMSwapArgs): Promise<ContractReceipt | void> {
+    if (!this.provider) {
+      throw new Error('Blockchain not connected');
+    }
+
     if (!this.signer) {
       throw new Error('Wallet not connected');
     }
@@ -850,10 +943,6 @@ class AMM {
 
     if (notional <= 0) {
       throw new Error('Amount of notional must be greater than 0');
-    }
-
-    if (margin < 0) {
-      throw new Error('Amount of margin cannot be negative');
     }
 
     if (!this.underlyingToken.id) {
@@ -899,7 +988,7 @@ class AMM {
         marginDelta: 0, //
       };
 
-      tempOverrides.value = ethers.utils.parseEther(margin.toString());
+      tempOverrides.value = ethers.utils.parseEther(margin.toFixed(18).toString());
     }
     else {
       const scaledMarginDelta = this.scale(margin);
@@ -915,22 +1004,50 @@ class AMM {
       };
     }
 
-    await peripheryContract.callStatic.swap(swapPeripheryParams, tempOverrides).catch(async (error: any) => {
-      const errorMessage = getReadableErrorMessage(error, this.environment);
-      throw new Error(errorMessage);
-    });
+    let swapTransaction;
+    if (fullyCollateralisedVTSwap === undefined || fullyCollateralisedVTSwap === false) {
+      await peripheryContract.callStatic.swap(swapPeripheryParams, tempOverrides).catch(async (error: any) => {
+        let result = decodeInfoPostSwap(error, this.environment);
+        const errorMessage = getReadableErrorMessage(error, this.environment);
+        throw new Error(errorMessage);
+      });
+  
+      const estimatedGas = await peripheryContract.estimateGas.swap(swapPeripheryParams, tempOverrides).catch((error) => {
+        const errorMessage = getReadableErrorMessage(error, this.environment);
+        throw new Error(errorMessage);
+      });
+  
+      tempOverrides.gasLimit = getGasBuffer(estimatedGas);
+  
+      swapTransaction = await peripheryContract.swap(swapPeripheryParams, tempOverrides).catch((error) => {
+        const errorMessage = getReadableErrorMessage(error, this.environment);
+        throw new Error(errorMessage);
+      });
+    } else {
+      const rateOracleContract = BaseRateOracle__factory.connect(this.rateOracle.id, this.provider);
+      const variableFactorFromStartToNowWad = await rateOracleContract.callStatic.variableFactor(
+        BigNumber.from(this.termStartTimestamp.toString()), 
+        BigNumber.from(this.termEndTimestamp.toString())
+      );
 
-    const estimatedGas = await peripheryContract.estimateGas.swap(swapPeripheryParams, tempOverrides).catch((error) => {
-      const errorMessage = getReadableErrorMessage(error, this.environment);
-      throw new Error(errorMessage);
-    });
-
-    tempOverrides.gasLimit = getGasBuffer(estimatedGas);
-
-    const swapTransaction = await peripheryContract.swap(swapPeripheryParams, tempOverrides).catch((error) => {
-      const errorMessage = getReadableErrorMessage(error, this.environment);
-      throw new Error(errorMessage);
-    });
+      await peripheryContract.callStatic.fullyCollateralisedVTSwap(swapPeripheryParams, variableFactorFromStartToNowWad, tempOverrides).catch(async (error: any) => {
+        let result = decodeInfoPostSwap(error, this.environment);
+        const errorMessage = getReadableErrorMessage(error, this.environment);
+        throw new Error(errorMessage);
+      });
+  
+      const estimatedGas = await peripheryContract.estimateGas.fullyCollateralisedVTSwap(swapPeripheryParams, variableFactorFromStartToNowWad, tempOverrides).catch((error) => {
+        const errorMessage = getReadableErrorMessage(error, this.environment);
+        throw new Error(errorMessage);
+      });
+  
+      tempOverrides.gasLimit = getGasBuffer(estimatedGas);
+  
+      swapTransaction = await peripheryContract.fullyCollateralisedVTSwap(swapPeripheryParams, variableFactorFromStartToNowWad, tempOverrides).catch((error) => {
+        const errorMessage = getReadableErrorMessage(error, this.environment);
+        throw new Error(errorMessage);
+      });
+    }
 
     try {
       const receipt = await swapTransaction.wait();
@@ -1011,7 +1128,7 @@ class AMM {
     let tempOverrides: { value?: BigNumber, gasLimit?: BigNumber } = {};
 
     if (this.isETH && marginEth) {
-      tempOverrides.value = ethers.utils.parseEther(marginEth.toString());
+      tempOverrides.value = ethers.utils.parseEther(marginEth.toFixed(18).toString());
     }
 
     const scaledMarginDelta = this.scale(margin);
@@ -1184,7 +1301,7 @@ class AMM {
         marginDelta: 0,
       };
 
-      tempOverrides.value = ethers.utils.parseEther(margin.toString());
+      tempOverrides.value = ethers.utils.parseEther(margin.toFixed(18).toString());
     }
     else {
       const scaledMarginDelta = this.scale(margin);
@@ -1281,7 +1398,7 @@ class AMM {
     let tempOverrides: { value?: BigNumber, gasLimit?: BigNumber } = {};
 
     if (this.isETH && marginEth) {
-      tempOverrides.value = ethers.utils.parseEther(marginEth.toString());
+      tempOverrides.value = ethers.utils.parseEther(marginEth.toFixed(18).toString());
     }
 
     const scaledMarginDelta = this.scale(margin);
@@ -1427,7 +1544,7 @@ class AMM {
     let scaledMarginDelta: string;
 
     if (this.isETH && marginDelta > 0) {
-      tempOverrides.value = ethers.utils.parseEther(marginDelta.toString());
+      tempOverrides.value = ethers.utils.parseEther(marginDelta.toFixed(18).toString());
       scaledMarginDelta = "0";
     }
     else {
@@ -1959,20 +2076,13 @@ class AMM {
   }
 
   public descale(value: BigNumber): number {
-    if (this.underlyingToken.decimals <= 3) {
-      return value.toNumber() / (10 ** this.underlyingToken.decimals);
-    }
-    else {
-      return value.div(BigNumber.from(10).pow(this.underlyingToken.decimals - 3)).toNumber() / 1000;
-    }
+    return Number(ethers.utils.formatUnits(value, this.underlyingToken.decimals));
   }
 
   // descale compound tokens
 
   public descaleCompoundValue(value: BigNumber): number {
-    const scaledValue = (value.div(BigNumber.from(10).pow(this.underlyingToken.decimals)).div(BigNumber.from(10).pow(4))).toNumber() / 1000000;
-
-    return scaledValue;
+    return Number(ethers.utils.formatUnits(value, parseInt(this.underlyingToken.decimals.toString()) + 10));
   }
 
   // fcm approval
@@ -2323,80 +2433,6 @@ class AMM {
     return parseFloat(utils.formatEther(historicalApy));
   }
 
-  public getAllSwaps(position: Position) {
-    const allSwaps: {
-      fDelta: BigNumber,
-      vDelta: BigNumber,
-      timestamp: BigNumber
-    }[] = [];
-
-    for (let s of position.swaps) {
-      allSwaps.push({
-        fDelta: BigNumber.from(s.fixedTokenDeltaUnbalanced.toString()),
-        vDelta: BigNumber.from(s.variableTokenDelta.toString()),
-        timestamp: BigNumber.from(s.transactionTimestamp.toString())
-      })
-    }
-
-    for (let s of position.fcmSwaps) {
-      allSwaps.push({
-        fDelta: BigNumber.from(s.fixedTokenDeltaUnbalanced.toString()),
-        vDelta: BigNumber.from(s.variableTokenDelta.toString()),
-        timestamp: BigNumber.from(s.transactionTimestamp.toString())
-      })
-    }
-
-    for (let s of position.fcmUnwinds) {
-      allSwaps.push({
-        fDelta: BigNumber.from(s.fixedTokenDeltaUnbalanced.toString()),
-        vDelta: BigNumber.from(s.variableTokenDelta.toString()),
-        timestamp: BigNumber.from(s.transactionTimestamp.toString())
-      })
-    }
-
-    allSwaps.sort((a, b) => a.timestamp.sub(b.timestamp).toNumber());
-
-    return allSwaps;
-  }
-
-  public async getAccruedCashflow(allSwaps: {
-    fDelta: BigNumber,
-    vDelta: BigNumber,
-    timestamp: BigNumber
-  }[], atMaturity: boolean): Promise<number> {
-    if (!this.provider) {
-      throw new Error('Wallet not connected');
-    }
-
-    let accruedCashflow = BigNumber.from(0);
-    let lenSwaps = allSwaps.length;
-
-    const lastBlock = await this.provider.getBlockNumber();
-    const lastBlockTimestamp = BigNumber.from((await this.provider.getBlock(lastBlock - 2)).timestamp);
-
-    let untilTimestamp = (atMaturity)
-      ? BigNumber.from(this.termEndTimestamp.toString())
-      : lastBlockTimestamp.mul(BigNumber.from(10).pow(18));
-
-    const rateOracleContract = BaseRateOracle__factory.connect(this.rateOracle.id, this.provider);
-
-    for (let i = 0; i < lenSwaps; i++) {
-      const currentSwapTimestamp = allSwaps[i].timestamp.mul(BigNumber.from(10).pow(18));
-
-      const normalizedTime = (untilTimestamp.sub(currentSwapTimestamp)).div(BigNumber.from(ONE_YEAR_IN_SECONDS))
-
-      const variableFactorBetweenSwaps = await rateOracleContract.callStatic.variableFactor(currentSwapTimestamp, untilTimestamp);
-
-      const fixedCashflow = allSwaps[i].fDelta.mul(normalizedTime).div(BigNumber.from(100)).div(BigNumber.from(10).pow(18));
-      const variableCashflow = allSwaps[i].vDelta.mul(variableFactorBetweenSwaps).div(BigNumber.from(10).pow(18));
-
-      const cashflow = fixedCashflow.add(variableCashflow);
-      accruedCashflow = accruedCashflow.add(cashflow);
-    }
-
-    return this.descale(accruedCashflow);
-  }
-
   public async getVariableFactor(termStartTimestamp: BigNumber, termEndTimestamp: BigNumber): Promise<number> {
     if (!this.provider) {
       throw new Error('Blockchain not connected');
@@ -2421,6 +2457,11 @@ class AMM {
       throw new Error('Blockchain not connected');
     }
 
+    let usdExchangeRate = 1;
+    if (this.isETH) {
+      usdExchangeRate = await geckoEthToUsd();
+    }
+
     let results: PositionInfo = {
       notionalInUSD: 0,
       marginInUSD: 0,
@@ -2429,6 +2470,8 @@ class AMM {
       accruedCashflow: 0,
       beforeMaturity: false
     };
+
+    const rateOracleContract = BaseRateOracle__factory.connect(this.rateOracle.id, this.provider);
 
     const signerAddress = await this.signer.getAddress();
     const lastBlock = await this.provider.getBlockNumber();
@@ -2442,49 +2485,45 @@ class AMM {
       results.fixedApr = await this.getFixedApr();
     }
 
-    const allSwaps = this.getAllSwaps(position);
-    const lenSwaps = allSwaps.length;
-
     // variable apy and accrued cashflow
 
-    if (lenSwaps > 0) {
+    if (position.swaps.length > 0) {
       if (beforeMaturity) {
-        if (lenSwaps > 0) {
           try {
             results.variableRateSinceLastSwap = await this.getInstantApy() * 100;
-            results.fixedRateSinceLastSwap = position.averageFixedRate;
 
-            const accruedCashflowInUnderlyingToken = await this.getAccruedCashflow(allSwaps, false);
-            results.accruedCashflow = accruedCashflowInUnderlyingToken;
+            console.log("Getting accrued cashflow info...");
+            const accruedCashflowInfo = await getAccruedCashflow({
+              swaps: transformSwaps(position.swaps, this.underlyingToken.decimals),
+              rateOracle: rateOracleContract,
+              currentTime: Number(lastBlockTimestamp.toString()),
+              endTime: Number(utils.formatUnits(this.termEndTimestamp.toString(), 18)),
+            });
+            console.log("Result:", accruedCashflowInfo);
 
-            // Get current exchange rate for eth/usd
-            const EthToUsdPrice = await geckoEthToUsd();
+            results.accruedCashflow = accruedCashflowInfo.accruedCashflow;
 
-            if (this.isETH) {
-              // need to change when introduce non-stable coins
-              results.accruedCashflowInUSD = accruedCashflowInUnderlyingToken * EthToUsdPrice;
-            } else {
-              results.accruedCashflowInUSD = accruedCashflowInUnderlyingToken
-            }
+            results.fixedRateSinceLastSwap = accruedCashflowInfo.avgFixedRate;
+
+            results.accruedCashflowInUSD = results.accruedCashflow * usdExchangeRate;
 
           } catch (_) { }
-        }
       }
       else {
         if (!position.isSettled) {
           try {
-            const accruedCashflowInUnderlyingToken = await this.getAccruedCashflow(allSwaps, true);
-            results.accruedCashflow = accruedCashflowInUnderlyingToken;
+            console.log("Getting accrued cashflow info...");
+            const accruedCashflowInfo = await getAccruedCashflow({
+              swaps: transformSwaps(position.swaps, this.underlyingToken.decimals),
+              rateOracle: rateOracleContract,
+              currentTime: Number(utils.formatUnits(this.termEndTimestamp.toString(), 18)),
+              endTime: Number(utils.formatUnits(this.termEndTimestamp.toString(), 18)),
+            });
+            console.log("Result:", accruedCashflowInfo);
 
-            // Get current exchange rate for eth/usd
-            const EthToUsdPrice = await geckoEthToUsd();
+            results.accruedCashflow = accruedCashflowInfo.accruedCashflow;
 
-            if (this.isETH) {
-              // need to change when introduce non-stable coins
-              results.accruedCashflowInUSD = accruedCashflowInUnderlyingToken * EthToUsdPrice;
-            } else {
-              results.accruedCashflowInUSD = accruedCashflowInUnderlyingToken
-            }
+            results.accruedCashflowInUSD = accruedCashflowInfo.accruedCashflow * usdExchangeRate;
 
           } catch (_) { }
         }
@@ -2502,15 +2541,7 @@ class AMM {
 
           const marginInUnderlyingToken = results.margin;
 
-          // Get current exchange rate for eth/usd
-          const EthToUsdPrice = await geckoEthToUsd();
-
-          if (this.isETH) {
-            // need to change when introduce non-stable coins
-            results.marginInUSD = marginInUnderlyingToken * EthToUsdPrice;
-          } else {
-            results.marginInUSD = marginInUnderlyingToken;
-          }
+          results.marginInUSD = marginInUnderlyingToken * usdExchangeRate;
 
           break;
         }
@@ -2527,15 +2558,7 @@ class AMM {
 
           const marginInUnderlyingToken = results.margin * scaledRate;
 
-          // Get current exchange rate for eth/usd
-          const EthToUsdPrice = await geckoEthToUsd();
-
-          if (this.isETH) {
-            // need to change when introduce non-stable coins
-            results.marginInUSD = marginInUnderlyingToken * EthToUsdPrice;
-          } else {
-            results.marginInUSD = marginInUnderlyingToken
-          }
+          results.marginInUSD = marginInUnderlyingToken * usdExchangeRate;
 
           break;
         }
@@ -2566,16 +2589,7 @@ class AMM {
 
       const marginInUnderlyingToken = results.margin;
 
-      // Get current exchange rate for eth/usd
-      const EthToUsdPrice = await geckoEthToUsd();
-
-      if (this.isETH) {
-        // need to change when introduce non-stable coins
-        results.marginInUSD = marginInUnderlyingToken * EthToUsdPrice;
-      } else {
-        results.marginInUSD = marginInUnderlyingToken
-      }
-
+      results.marginInUSD = marginInUnderlyingToken * usdExchangeRate;
       results.fees = this.descale(rawPositionInfo.accumulatedFees);
 
       if (beforeMaturity) {
@@ -2611,14 +2625,22 @@ class AMM {
         ? Math.abs(position.notional) // LP
         : Math.abs(position.effectiveVariableTokenBalance); // FT, VT
 
-    // Get current exchange rate for eth/usd
-    const EthToUsdPrice = await geckoEthToUsd();
+    results.notionalInUSD = notionalInUnderlyingToken * usdExchangeRate;
 
-    if (this.isETH) {
-      // need to change when introduce non-stable coins
-      results.notionalInUSD = notionalInUnderlyingToken * EthToUsdPrice;
+    const fixedApr = await this.getFixedApr();
+    if (position.fixedRateLower.toNumber() < fixedApr
+     && fixedApr < position.fixedRateUpper.toNumber() ) {
+      
+      if (
+        (0.15 * position.fixedRateUpper.toNumber() + 0.85 * position.fixedRateLower.toNumber()) > fixedApr
+        || fixedApr > (0.85 * position.fixedRateUpper.toNumber() + 0.15 * position.fixedRateLower.toNumber())
+      ) {
+        results.fixedRateHealthFactor = 2 // yellow
+      } else {
+        results.fixedRateHealthFactor = 3 // green
+      }
     } else {
-      results.notionalInUSD = notionalInUnderlyingToken
+      results.fixedRateHealthFactor = 1 // red
     }
 
     return results;
@@ -2979,24 +3001,31 @@ class AMM {
 
     switch (this.rateOracle.protocolId) {
       case 1: {
-        const lastBlock = await this.provider.getBlockNumber();
-        const oneBlockAgo = BigNumber.from((await this.provider.getBlock(lastBlock - 1)).timestamp);
-        const twoBlocksAgo = BigNumber.from((await this.provider.getBlock(lastBlock - 2)).timestamp);
+        // old implementation based on the rate oracle
+        // const lastBlock = await this.provider.getBlockNumber();
+        // const oneBlockAgo = BigNumber.from((await this.provider.getBlock(lastBlock - 1)).timestamp);
+        // const twoBlocksAgo = BigNumber.from((await this.provider.getBlock(lastBlock - 2)).timestamp);
+        // const rateOracleContract = BaseRateOracle__factory.connect(this.rateOracle.id, this.provider);
+        // const oneWeekApy = await rateOracleContract.callStatic.getApyFromTo(twoBlocksAgo, oneBlockAgo);
+        // return oneWeekApy.div(BigNumber.from(1000000000000)).toNumber() / 1000000;
 
-        const rateOracleContract = BaseRateOracle__factory.connect(this.rateOracle.id, this.provider);
+        if (!this.underlyingToken.id) {
+          throw new Error('No underlying error');
+        }
 
-        const oneWeekApy = await rateOracleContract.callStatic.getApyFromTo(twoBlocksAgo, oneBlockAgo);
-
-        return oneWeekApy.div(BigNumber.from(1000000000000)).toNumber() / 1000000;
+        const rateOracleContract = AaveBorrowRateOracle__factory.connect(this.rateOracle.id, this.provider);
+        const lendingPoolAddress = await rateOracleContract.aaveLendingPool();
+        const lendingPool = IAaveV2LendingPool__factory.connect(lendingPoolAddress, this.provider);
+        const reservesData = await lendingPool.getReserveData(this.underlyingToken.id);
+        const rateInRay = reservesData.currentLiquidityRate;
+        const result = rateInRay.div(BigNumber.from(10).pow(21)).toNumber() / 1000000;
+        return result; 
       }
       case 2: {
         const daysPerYear = 365;
-
         const rateOracle = CompoundRateOracle__factory.connect(this.rateOracle.id, this.provider);
-
         const cTokenAddress = await (rateOracle as CompoundRateOracle).ctoken();
         const cTokenContract = ICToken__factory.connect(cTokenAddress, this.provider);
-
         const supplyRatePerBlock = await cTokenContract.supplyRatePerBlock();
         const supplyApy = (((Math.pow((supplyRatePerBlock.toNumber() / 1e18 * blocksPerDay) + 1, daysPerYear))) - 1);
         return supplyApy;
@@ -3032,28 +3061,25 @@ class AMM {
         }
 
         const rateOracleContract = AaveBorrowRateOracle__factory.connect(this.rateOracle.id, this.provider);
-
         const lendingPoolAddress = await rateOracleContract.aaveLendingPool();
         const lendingPool = IAaveV2LendingPool__factory.connect(lendingPoolAddress, this.provider);
-
         const reservesData = await lendingPool.getReserveData(this.underlyingToken.id);
-
         const rateInRay = reservesData.currentVariableBorrowRate;
-
-        return rateInRay.div(BigNumber.from(10).pow(27)).toNumber();
+        const result = rateInRay.div(BigNumber.from(10).pow(21)).toNumber() / 1000000;
+        return result;
       }
 
       case 6: {
         const daysPerYear = 365;
 
-        const rateOracle = CompoundRateOracle__factory.connect(this.rateOracle.id, this.provider);
+        const rateOracle = CompoundBorrowRateOracle__factory.connect(this.rateOracle.id, this.provider);
 
         const cTokenAddress = await (rateOracle as CompoundBorrowRateOracle).ctoken();
         const cTokenContract = ICToken__factory.connect(cTokenAddress, this.provider);
 
-        const supplyRatePerBlock = await cTokenContract.supplyRatePerBlock();
-        const supplyApy = (((Math.pow((supplyRatePerBlock.toNumber() / 1e18 * blocksPerDay) + 1, daysPerYear))) - 1);
-        return supplyApy;
+        const borrowRatePerBlock = await cTokenContract.borrowRatePerBlock();
+        const borrowApy = (((Math.pow((borrowRatePerBlock.toNumber() / 1e18 * blocksPerDay) + 1, daysPerYear))) - 1);
+        return borrowApy;
       } 
 
       default:
