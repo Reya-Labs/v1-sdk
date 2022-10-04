@@ -1,18 +1,4 @@
-import JSBI from 'jsbi';
 import { BigNumberish } from 'ethers';
-
-export type BigIntish = JSBI | string | number;
-
-export enum TradeType {
-  FIXED_TAKER,
-  VARIABLE_TAKER,
-}
-
-export enum Rounding {
-  ROUND_DOWN,
-  ROUND_HALF_UP,
-  ROUND_UP,
-}
 
 export type SwapPeripheryParams = {
   marginEngine: string;
@@ -22,6 +8,18 @@ export type SwapPeripheryParams = {
   tickLower: BigNumberish;
   tickUpper: BigNumberish;
   marginDelta: BigNumberish;
+};
+
+export type InfoPostSwap = {
+  marginRequirement: number;
+  availableNotional: number;
+  fee: number;
+  slippage: number;
+  averageFixedRate: number;
+  fixedTokenDeltaBalance: number;
+  variableTokenDeltaBalance: number;
+  fixedTokenDeltaUnbalanced: number;
+  maxAvailableNotional?: number;
 };
 
 export type MintOrBurnParams = {

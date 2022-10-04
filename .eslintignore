@@ -1,5 +1,0 @@
-src/entities/amm.ts
-src/entities/borrowAMM.ts
-*.spec.ts
-src/utils/errors/*
-src/utils/time.ts

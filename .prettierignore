@@ -3,4 +3,3 @@ build
 *.json
 *.md
 *.yaml
-entities/amm.ts
