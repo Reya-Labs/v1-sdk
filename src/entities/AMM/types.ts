@@ -18,3 +18,19 @@ export type AMMConstructorArgs = {
   tick: number;
   tickSpacing: number;
 };
+
+export type InfoPostSwap = {
+  marginRequirement: number;
+  availableNotional: number;
+  fee: number;
+  slippage: number;
+  averageFixedRate: number;
+  fixedTokenDelta: number;
+  variableTokenDelta: number;
+  fixedTokenDeltaUnbalanced: number;
+  maxAvailableNotional?: number;
+};
+
+export type InfoPostMintOrBurn = {
+  marginRequirement: number;
+};

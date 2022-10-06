@@ -29,3 +29,5 @@ export const MIN_FIXED_RATE = 0.001;
 export const MAX_FIXED_RATE = 1001;
 
 export const ONE_YEAR_IN_SECONDS = 31536000;
+
+export const ZERO_BN = BigNumber.from(0);

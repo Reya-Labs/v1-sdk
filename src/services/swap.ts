@@ -2,7 +2,7 @@
 
 import { BigNumber, Contract, ContractReceipt } from 'ethers';
 import { isUndefined } from 'lodash';
-import { MAX_FIXED_RATE, MIN_FIXED_RATE } from '../constants';
+import { MAX_FIXED_RATE, MIN_FIXED_RATE, ZERO_BN } from '../constants';
 import { SwapPeripheryParams } from '../types';
 import {
   getErrorReason,
@@ -11,8 +11,9 @@ import {
   iface,
 } from '../utils/errors/errorHandling';
 import { getGasBuffer } from '../utils/gasBuffer';
-import { scale } from '../utils/scaling';
+import { descale, scale } from '../utils/scaling';
 import { fixedRateToClosestTick } from '../utils/tickHandling';
+import { getAvgFixedRate } from './getAvgFixedRate';
 
 type RawSwapArgs = {
   isFT: boolean;
@@ -134,13 +135,15 @@ export const execSwap = async ({
   }
 };
 
-export type RawInfoPostSwap = {
-  marginRequirement: BigNumber;
+export type IntermmediateInfoPostSwap = {
+  marginRequirement: number;
   tick: number;
-  fee: BigNumber;
-  availableNotional: BigNumber;
-  fixedTokenDeltaUnbalanced: BigNumber;
-  fixedTokenDelta: BigNumber;
+  fee: number;
+  availableNotional: number;
+  variableTokenDelta: number;
+  fixedTokenDeltaUnbalanced: number;
+  fixedTokenDelta: number;
+  averageFixedRate: number;
 };
 
 // get the results of Swap operation when the call is successful
@@ -148,48 +151,61 @@ export type RawInfoPostSwap = {
 export const getSwapResult = async ({
   periphery,
   args,
-  ethDeposit,
+  tokenDecimals,
 }: {
   periphery: Contract;
   args: SwapPeripheryParams;
-  ethDeposit?: BigNumber;
-}): Promise<RawInfoPostSwap> => {
-  const tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
+  tokenDecimals: number;
+}): Promise<IntermmediateInfoPostSwap> => {
+  let result = {
+    marginRequirement: ZERO_BN,
+    tick: 0,
+    fee: ZERO_BN,
+    variableTokenDelta: ZERO_BN,
+    fixedTokenDeltaUnbalanced: ZERO_BN,
+    fixedTokenDelta: ZERO_BN,
+  };
 
-  if (!isUndefined(ethDeposit)) {
-    tempOverrides.value = ethDeposit;
-  }
-
-  const result = await periphery.callStatic.swap(args, tempOverrides).catch((error: any) => {
+  try {
+    const rawResults = await periphery.callStatic.swap(args);
+    result = {
+      marginRequirement: rawResults[4],
+      tick: parseInt(rawResults[5], 10),
+      fee: rawResults[2],
+      variableTokenDelta: rawResults[1],
+      fixedTokenDeltaUnbalanced: rawResults[3],
+      fixedTokenDelta: rawResults[0],
+    };
+  } catch (error: any) {
     const errSig = getErrorSignature(error);
 
     if (errSig === 'MarginRequirementNotMet') {
       try {
         const reason = getErrorReason(error);
         const decodingResult = iface.decodeErrorResult(errSig, reason);
-        return {
+
+        result = {
           marginRequirement: decodingResult.marginRequirement,
           tick: decodingResult.tick,
           fee: decodingResult.cumulativeFeeIncurred,
-          availableNotional: decodingResult.variableTokenDelta,
+          variableTokenDelta: decodingResult.variableTokenDelta,
           fixedTokenDelta: decodingResult.fixedTokenDelta,
           fixedTokenDeltaUnbalanced: decodingResult.fixedTokenDeltaUnbalanced,
         };
       } catch (err) {
-        console.error(`Failing to get swap results. Raw error: ${err}`);
+        console.error(`Failing to get swap results. ${err}`);
       }
     }
-
-    const errorMessage = getReadableErrorMessage(error);
-    throw new Error(errorMessage);
-  });
+  }
 
   return {
-    marginRequirement: result[4],
-    tick: parseInt(result[5], 10),
-    fee: result[2],
-    availableNotional: result[1],
-    fixedTokenDeltaUnbalanced: result[3],
-    fixedTokenDelta: result[0],
+    marginRequirement: descale(result.marginRequirement, tokenDecimals),
+    tick: result.tick,
+    fee: descale(result.marginRequirement, tokenDecimals),
+    availableNotional: Math.abs(descale(result.variableTokenDelta, tokenDecimals)),
+    variableTokenDelta: descale(result.variableTokenDelta, tokenDecimals),
+    fixedTokenDelta: descale(result.fixedTokenDelta, tokenDecimals),
+    fixedTokenDeltaUnbalanced: descale(result.fixedTokenDelta, tokenDecimals),
+    averageFixedRate: getAvgFixedRate(result.fixedTokenDeltaUnbalanced, result.variableTokenDelta),
   };
 };

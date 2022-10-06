@@ -1,4 +1,5 @@
 import { BigNumber, Contract, ethers, providers } from 'ethers';
+import { AaveLendingPoolABI, CTokenABI } from '../ABIs';
 import { descale } from '../utils/scaling';
 
 export const fetchVariableApy = async (args: {

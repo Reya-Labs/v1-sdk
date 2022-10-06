@@ -10,18 +10,6 @@ export type SwapPeripheryParams = {
   marginDelta: BigNumberish;
 };
 
-export type InfoPostSwap = {
-  marginRequirement: number;
-  availableNotional: number;
-  fee: number;
-  slippage: number;
-  averageFixedRate: number;
-  fixedTokenDeltaBalance: number;
-  variableTokenDeltaBalance: number;
-  fixedTokenDeltaUnbalanced: number;
-  maxAvailableNotional?: number;
-};
-
 export type MintOrBurnParams = {
   marginEngine: string;
   tickLower: BigNumberish;
