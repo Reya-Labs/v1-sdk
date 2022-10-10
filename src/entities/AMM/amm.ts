@@ -11,8 +11,13 @@ import { isUndefined } from 'lodash';
 import axios from 'axios';
 import { fetchVariableApy } from '../../services/fetchVariableApy';
 import { MaxUint256Bn, TresholdApprovalBn } from '../../constants';
-import { execSwap, getSwapResult, processSwapArguments } from '../../services/swap';
-import { MintOrBurnParams, SwapPeripheryParams } from '../../types';
+import {
+  execSwap,
+  getSwapResult,
+  processSwapArguments,
+  UserSwapArgs,
+  UserSwapInfoArgs,
+} from '../../flows/swap';
 import { descale } from '../../utils/scaling';
 import { getProtocolPrefix, getTokenInfo } from '../../services/getTokenInfo';
 import { getSlippage } from '../../services/getSlippage';
@@ -26,14 +31,33 @@ import {
   PeripheryABI,
   VammABI,
 } from '../../ABIs';
-import { execApprove } from '../../services/approve';
+import { execApprove } from '../../flows/approve';
 import { getAdditionalMargin } from '../../services/getAdditionalMargin';
 import {
   execMintOrBurn,
   getMintOrBurnResult,
   processMintOrBurnArguments,
-} from '../../services/mintOrBurn';
+  UserMintOrBurnArgs,
+  UserMintOrBurnInfoArgs,
+} from '../../flows/mintOrBurn';
 import { getMaxAvailableNotional } from '../../services/getMaxAvailableNotional';
+import {
+  execUpdateMargin,
+  processUpdateMarginArgumests,
+  UserUpdateMarginArgs,
+} from '../../flows/updateMargin';
+import { execSettle, processSettleArguments, UserSettleArgs } from '../../flows/settle';
+import { getTicks } from '../../services/getTicks';
+import {
+  execRolloverWithSwap,
+  processRolloverWithSwapArguments,
+  UserRolloverWithSwapArgs,
+} from '../../flows/rolloverWithSwap';
+import {
+  execRolloverWithMint,
+  processRolloverWithMintArguments,
+  UserRolloverWithMintArgs,
+} from '../../flows/rolloverWithMint';
 
 const geckoEthToUsd = async (): Promise<number> => {
   for (let attempt = 0; attempt < 5; attempt += 1) {
@@ -68,6 +92,7 @@ class AMM {
 
   public tick: number;
   public readonly tickSpacing: number;
+  public readonly tickFormat: ([fixedLow, fixedHigh]: [number, number]) => [number, number];
 
   // general information
   public readOnlyContracts?: {
@@ -124,6 +149,7 @@ class AMM {
 
     this.tick = args.tick;
     this.tickSpacing = args.tickSpacing;
+    this.tickFormat = getTicks(this.tickSpacing);
   }
 
   // general information loader
@@ -336,7 +362,7 @@ class AMM {
 
     const receipt = await execApprove({
       token: this.writeContracts.token,
-      args: {
+      params: {
         amount: MaxUint256Bn,
         spender: this.readOnlyContracts.periphery.address,
       },
@@ -353,42 +379,26 @@ class AMM {
   };
 
   // swap information
-  getSwapInfo = async (args: {
-    isFT: boolean;
-    notional: number;
-    fixedLow: number;
-    fixedHigh: number;
-  }): Promise<InfoPostSwap | undefined> => {
+  getSwapInfo = async (args: UserSwapInfoArgs): Promise<InfoPostSwap | undefined> => {
     if (isUndefined(this.readOnlyContracts)) {
       return;
     }
 
-    // process arguments
-    const processedArgs = processSwapArguments({
+    const { swapParams } = processSwapArguments({
       ...args,
-      margin: 0,
-      tickSpacing: this.tickSpacing,
+      marginErc20: 0,
+      marginEth: undefined,
+
+      marginEngine: this.readOnlyContracts.marginEngine.address,
+      tickFormat: this.tickFormat,
       tokenDecimals: this.tokenDecimals,
     });
 
-    console.log('processed args:', processedArgs);
-
-    // get swap results
-    const swapPeripheryParams: SwapPeripheryParams = {
-      marginEngine: this.marginEngineAddress,
-      isFT: args.isFT,
-      notional: processedArgs.notional,
-      marginDelta: 0,
-      tickLower: processedArgs.tickLower,
-      tickUpper: processedArgs.tickUpper,
-      sqrtPriceLimitX96: 0,
-    };
-
-    console.log('swap periphery params:', swapPeripheryParams);
+    console.log('swap periphery params:', swapParams);
 
     const results = await getSwapResult({
       periphery: this.readOnlyContracts.periphery,
-      args: swapPeripheryParams,
+      params: swapParams,
       tokenDecimals: this.tokenDecimals,
     });
 
@@ -402,7 +412,7 @@ class AMM {
     // additional margin
     const additionalMargin = getAdditionalMargin({
       requiredMargin: results.marginRequirement,
-      currentMargin: await this.getPositionMargin(processedArgs),
+      currentMargin: await this.getPositionMargin(swapParams),
       fee: results.fee,
     });
 
@@ -429,41 +439,28 @@ class AMM {
   };
 
   // swap operation
-  swap = async (args: {
-    isFT: boolean;
-    notional: number;
-    margin: number;
-    fixedLow: number;
-    fixedHigh: number;
-    force?: {
-      fullCollateralisation?: boolean;
-    };
-  }): Promise<ContractReceipt | undefined> => {
+  swap = async (args: UserSwapArgs): Promise<ContractReceipt | undefined> => {
     if (isUndefined(this.writeContracts) || isUndefined(this.readOnlyContracts)) {
       return;
     }
 
+    // for ETH pools: deposit in ETH, withdrawals in WETH
+    // for non-ETH pools: both in underlying token
+    const [marginEth, marginErc20]: [number | undefined, number] =
+      args.margin > 0 && this.isETH ? [args.margin, 0] : [undefined, args.margin];
+
     // process arguments
-    const processedArgs = processSwapArguments({
+    const { swapParams, ethDeposit } = processSwapArguments({
       ...args,
-      tickSpacing: this.tickSpacing,
+      marginErc20,
+      marginEth,
+
+      marginEngine: this.readOnlyContracts.marginEngine.address,
+      tickFormat: this.tickFormat,
       tokenDecimals: this.tokenDecimals,
     });
 
-    console.log('Processed Swap Args:', processedArgs);
-
-    // build parameters of the transaction
-    const swapPeripheryParams: SwapPeripheryParams = {
-      marginEngine: this.marginEngineAddress,
-      isFT: args.isFT,
-      notional: processedArgs.notional,
-      marginDelta: this.isETH ? 0 : processedArgs.margin,
-      tickLower: processedArgs.tickLower,
-      tickUpper: processedArgs.tickUpper,
-      sqrtPriceLimitX96: 0,
-    };
-
-    console.log('Swap Periphery Parameters:', swapPeripheryParams);
+    console.log('Swap Periphery Parameters:', swapParams);
 
     // get variable factor in the case where the swap is fully collateralised
     let fullCollateralisation: { variableFactor: BigNumber } | undefined;
@@ -484,8 +481,8 @@ class AMM {
     // execute the swap and return the receipt
     const receipt = await execSwap({
       periphery: this.writeContracts.periphery,
-      args: swapPeripheryParams,
-      ethDeposit: this.isETH ? processedArgs.margin : undefined,
+      params: swapParams,
+      ethDeposit,
       fullCollateralisation,
     });
 
@@ -501,40 +498,29 @@ class AMM {
   };
 
   // mint (or burn) information
-  getMintOrBurnInfo = async (args: {
-    isMint: boolean;
-    notional: number;
-    fixedLow: number;
-    fixedHigh: number;
-  }): Promise<InfoPostMintOrBurn | undefined> => {
+  getMintOrBurnInfo = async (
+    args: UserMintOrBurnInfoArgs,
+  ): Promise<InfoPostMintOrBurn | undefined> => {
     if (isUndefined(this.readOnlyContracts)) {
       return;
     }
 
     // process arguments
-    const processedArgs = processMintOrBurnArguments({
+    const { mintOrBurnParams } = processMintOrBurnArguments({
       ...args,
-      margin: 0,
-      tickSpacing: this.tickSpacing,
+      marginErc20: 0,
+      marginEth: undefined,
+
+      marginEngine: this.readOnlyContracts.marginEngine.address,
+      tickFormat: this.tickFormat,
       tokenDecimals: this.tokenDecimals,
     });
-
-    console.log('processed arguments:', processedArgs);
-
-    const mintOrBurnParams: MintOrBurnParams = {
-      marginEngine: this.readOnlyContracts.marginEngine.address,
-      isMint: args.isMint,
-      tickLower: processedArgs.tickLower,
-      tickUpper: processedArgs.tickUpper,
-      notional: processedArgs.notional,
-      marginDelta: 0,
-    };
 
     console.log('mint or burn params:', mintOrBurnParams);
 
     const results = await getMintOrBurnResult({
       periphery: this.readOnlyContracts.periphery,
-      args: mintOrBurnParams,
+      params: mintOrBurnParams,
       tokenDecimals: this.tokenDecimals,
     });
 
@@ -543,7 +529,7 @@ class AMM {
     // additional margin
     const additionalMargin = getAdditionalMargin({
       requiredMargin: results.marginRequirement,
-      currentMargin: await this.getPositionMargin(processedArgs),
+      currentMargin: await this.getPositionMargin(mintOrBurnParams),
       fee: 0,
     });
 
@@ -553,48 +539,33 @@ class AMM {
   };
 
   // mint or burn operations
-  mintOrBurn = async (args: {
-    isMint: boolean;
-    notional: number;
-    margin: number;
-    fixedLow: number;
-    fixedHigh: number;
-  }): Promise<ContractReceipt | undefined> => {
+  mintOrBurn = async (args: UserMintOrBurnArgs): Promise<ContractReceipt | undefined> => {
     if (isUndefined(this.readOnlyContracts) || isUndefined(this.writeContracts)) {
       return;
     }
 
-    // process arguments
-    const processedArgs = processMintOrBurnArguments({
-      ...args,
-      tickSpacing: this.tickSpacing,
-      tokenDecimals: this.tokenDecimals,
-    });
-
-    console.log('processed args:', processedArgs);
-
     // for ETH pools: deposit in ETH, withdrawals in WETH
     // for non-ETH pools: both in underlying token
-    const [ethDeposit, erc20Deposit] =
-      processedArgs.margin.gt(0) && this.isETH
-        ? [processedArgs.margin, 0]
-        : [undefined, processedArgs.margin];
+    const [marginEth, marginErc20]: [number | undefined, number] =
+      args.margin > 0 && this.isETH ? [args.margin, 0] : [undefined, args.margin];
 
-    const mintOrBurnParams: MintOrBurnParams = {
+    // process arguments
+    const { mintOrBurnParams, ethDeposit } = processMintOrBurnArguments({
+      ...args,
+      marginErc20,
+      marginEth,
+
       marginEngine: this.readOnlyContracts.marginEngine.address,
-      isMint: args.isMint,
-      tickLower: processedArgs.tickLower,
-      tickUpper: processedArgs.tickUpper,
-      notional: processedArgs.notional,
-      marginDelta: erc20Deposit,
-    };
+      tickFormat: this.tickFormat,
+      tokenDecimals: this.tokenDecimals,
+    });
 
     console.log('mint or burn params:', mintOrBurnParams);
 
     // execute the swap and return the receipt
     const receipt = await execMintOrBurn({
       periphery: this.writeContracts.periphery,
-      args: mintOrBurnParams,
+      params: mintOrBurnParams,
       ethDeposit,
     });
 
@@ -607,6 +578,165 @@ class AMM {
 
     return receipt;
   };
+
+  // update margin operation
+  public updateMargin = async (
+    args: UserUpdateMarginArgs,
+  ): Promise<ContractReceipt | undefined> => {
+    if (isUndefined(this.readOnlyContracts) || isUndefined(this.writeContracts)) {
+      return;
+    }
+
+    // for ETH pools: deposit in ETH, withdrawals in WETH
+    // for non-ETH pools: both in underlying token
+    const [marginEth, marginErc20]: [number | undefined, number] =
+      args.margin > 0 && this.isETH ? [args.margin, 0] : [undefined, args.margin];
+
+    // process arguments
+    const { updateMarginParams, ethDeposit } = processUpdateMarginArgumests({
+      ...args,
+      marginErc20,
+      marginEth,
+
+      marginEngine: this.readOnlyContracts.marginEngine.address,
+      tickFormat: this.tickFormat,
+      tokenDecimals: this.tokenDecimals,
+    });
+
+    // execute the operation and get the receipt
+    const receipt = await execUpdateMargin({
+      periphery: this.writeContracts.periphery,
+      params: updateMarginParams,
+      ethDeposit,
+    });
+
+    // refresh state
+    try {
+      await this.refreshWalletBalances();
+    } catch (error) {
+      console.error(`Failed to refresh information post swap. ${error}`);
+    }
+
+    return receipt;
+  };
+
+  // settle position
+  public settle = async (args: UserSettleArgs): Promise<ContractReceipt | undefined> => {
+    if (
+      isUndefined(this.readOnlyContracts) ||
+      isUndefined(this.writeContracts) ||
+      isUndefined(this.userAddress)
+    ) {
+      return;
+    }
+
+    // process arguments
+    const settleParams = processSettleArguments({
+      ...args,
+      owner: this.userAddress,
+      marginEngine: this.readOnlyContracts.marginEngine.address,
+      tickFormat: this.tickFormat,
+    });
+
+    const receipt = await execSettle({
+      periphery: this.writeContracts.periphery,
+      params: settleParams,
+    });
+
+    // refresh state
+    try {
+      await this.refreshWalletBalances();
+    } catch (error) {
+      console.error(`Failed to refresh information post swap. ${error}`);
+    }
+
+    return receipt;
+  };
+
+  // Rollover with swap
+  // 1. It settles and withdraw the position associated with this AMM
+  //    (of [userAddress, previousFixedLow, previousFixedHigh])
+  // 2. It creates a swap in the next margin engine [NOT this AMM]
+  //    (of [userAddress, fixedLow, fixedHigh])
+  public async rolloverWithSwap(
+    userArgs: UserRolloverWithSwapArgs,
+  ): Promise<ContractReceipt | undefined> {
+    if (
+      isUndefined(this.readOnlyContracts) ||
+      isUndefined(this.writeContracts) ||
+      isUndefined(this.userAddress)
+    ) {
+      return;
+    }
+
+    // process arguments for Rollover with Swap
+    const { rolloverWithSwapParams, ethDeposit } = processRolloverWithSwapArguments({
+      ...userArgs,
+      previousMarginEngine: this.readOnlyContracts.marginEngine.address,
+      owner: this.userAddress,
+      tickFormat: this.tickFormat,
+      tokenDecimals: this.tokenDecimals,
+    });
+
+    // execute operation
+    const receipt = await execRolloverWithSwap({
+      periphery: this.writeContracts.periphery,
+      params: rolloverWithSwapParams,
+      ethDeposit,
+    });
+
+    // refresh state
+    try {
+      await this.refreshWalletBalances();
+    } catch (error) {
+      console.error(`Failed to refresh information post swap. ${error}`);
+    }
+
+    return receipt;
+  }
+
+  // Rollover with mint
+  // 1. It settles and withdraw the position associated with this AMM
+  //    (of [userAddress, previousFixedLow, previousFixedHigh])
+  // 2. It creates a mint in the next margin engine [NOT this AMM]
+  //    (of [userAddress, fixedLow, fixedHigh])
+
+  public async rolloverWithMint(
+    userArgs: UserRolloverWithMintArgs,
+  ): Promise<ContractReceipt | undefined> {
+    if (
+      isUndefined(this.readOnlyContracts) ||
+      isUndefined(this.writeContracts) ||
+      isUndefined(this.userAddress)
+    ) {
+      return;
+    }
+
+    // process arguments for Rollover with Mint
+    const { rolloverWithMintParams, ethDeposit } = processRolloverWithMintArguments({
+      ...userArgs,
+      previousMarginEngine: this.readOnlyContracts.marginEngine.address,
+      owner: this.userAddress,
+      tickFormat: this.tickFormat,
+      tokenDecimals: this.tokenDecimals,
+    });
+
+    // execute operation
+    const receipt = await execRolloverWithMint({
+      periphery: this.writeContracts.periphery,
+      params: rolloverWithMintParams,
+      ethDeposit,
+    });
+
+    // refresh state
+    try {
+      await this.refreshWalletBalances();
+    } catch (error) {
+      console.error(`Failed to refresh information post swap. ${error}`);
+    }
+
+    return receipt;
+  }
 }
 
 export default AMM;

@@ -1,7 +1,6 @@
 import { Contract } from 'ethers';
-import { SwapPeripheryParams } from '../types';
 import { scale } from '../utils/scaling';
-import { getSwapResult } from './swap';
+import { getSwapResult, SwapParams } from '../flows/swap';
 
 // simulate large swap to get the maximum available notional
 export const getMaxAvailableNotional = async ({
@@ -15,7 +14,7 @@ export const getMaxAvailableNotional = async ({
   isFT: boolean;
   tokenDecimals: number;
 }): Promise<number> => {
-  const fullSwapPeripheryParams: SwapPeripheryParams = {
+  const fullSwapPeripheryParams: SwapParams = {
     marginEngine: marginEngineAddress,
     isFT,
     notional: scale(1000000000000000, tokenDecimals),
@@ -27,7 +26,7 @@ export const getMaxAvailableNotional = async ({
 
   const fullSwapResults = await getSwapResult({
     periphery,
-    args: fullSwapPeripheryParams,
+    params: fullSwapPeripheryParams,
     tokenDecimals,
   });
 

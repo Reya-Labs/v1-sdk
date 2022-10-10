@@ -2,14 +2,19 @@
 
 import { providers, Wallet } from 'ethers';
 import * as dotenv from 'dotenv';
+import { isUndefined } from 'lodash';
 import { getAMM } from '../scripts/getAMM';
 
 import * as mainnetPools from '../pool-addresses/mainnet.json';
 import { getMaxAvailableNotional } from '../src/services/getMaxAvailableNotional';
-import { isUndefined } from 'lodash';
 
 dotenv.config();
 jest.setTimeout(50000);
+
+// LEFT TO TEST:
+//    - settlement
+//    - rollover with swap
+//    - rollover with mint
 
 // tests specific to mainnet @ block ...
 
@@ -23,7 +28,7 @@ describe('amm', () => {
   for (const poolName of ['aUSDC_v3', 'cDAI_v3', 'stETH_v1', 'rETH_v1']) {
     const item = mainnetPools[poolName as keyof typeof mainnetPools];
 
-    it.skip(`initialisation ${poolName}`, async () => {
+    it(`initialisation ${poolName}`, async () => {
       const amm = await getAMM(item.vamm, provider, signer);
 
       expect(amm.readOnlyContracts?.marginEngine.address).toBe(item.marginEngine);
@@ -33,7 +38,7 @@ describe('amm', () => {
     });
   }
 
-  it.skip('approve operation', async () => {
+  it('approve operation', async () => {
     const poolName = 'aUSDC_v3';
     const item = mainnetPools[poolName as keyof typeof mainnetPools];
 
@@ -45,7 +50,7 @@ describe('amm', () => {
     expect(approval?.underlyingToken).toBe(true);
   });
 
-  it.skip('swap', async () => {
+  it('swap', async () => {
     const poolName = 'stETH_v1';
     const item = mainnetPools[poolName as keyof typeof mainnetPools];
 
@@ -75,7 +80,7 @@ describe('amm', () => {
     expect(balance1).toBeLessThanOrEqual((balance0 ?? 0) - swapArgs.margin);
   });
 
-  it.skip('swap -- full collateralisation', async () => {
+  it('swap - full collateralisation', async () => {
     const poolName = 'stETH_v1';
     const item = mainnetPools[poolName as keyof typeof mainnetPools];
 
@@ -110,7 +115,7 @@ describe('amm', () => {
     expect(balance1).toBeLessThanOrEqual((balance0 ?? 0) - swapArgs.margin);
   });
 
-  it.skip('mint', async () => {
+  it('mint', async () => {
     const poolName = 'stETH_v1';
     const item = mainnetPools[poolName as keyof typeof mainnetPools];
 
@@ -176,7 +181,7 @@ describe('amm', () => {
       return;
     }
 
-    // get information before Mint
+    // get information before Burn
     await amm.getMintOrBurnInfo(burnArgs);
     const availableFT0 = await getMaxAvailableNotional({
       periphery: amm.readOnlyContracts.periphery,
@@ -186,10 +191,10 @@ describe('amm', () => {
     });
     const balance0 = amm.walletBalances?.underlyingToken;
 
-    // execute Mint
+    // execute Burn
     await amm.mintOrBurn(burnArgs);
 
-    // get information after Mint
+    // get information after Burn
     await amm.getMintOrBurnInfo(burnArgs);
     const availableFT1 = await getMaxAvailableNotional({
       periphery: amm.readOnlyContracts.periphery,
@@ -202,5 +207,35 @@ describe('amm', () => {
     // checks
     expect(availableFT1).toBe(availableFT0 - 10);
     expect(balance1).toBeLessThanOrEqual((balance0 ?? 0) - burnArgs.margin);
+  });
+
+  it('update margin', async () => {
+    const poolName = 'stETH_v1';
+    const item = mainnetPools[poolName as keyof typeof mainnetPools];
+
+    const amm = await getAMM(item.vamm, provider, signer);
+
+    const updateMarginArgs = {
+      fixedLow: 1,
+      fixedHigh: 4,
+      margin: 0.5,
+    };
+
+    if (isUndefined(amm.readOnlyContracts)) {
+      expect(true).toBe(false);
+      return;
+    }
+
+    // get information before Update Margin
+    const balance0 = amm.walletBalances?.underlyingToken;
+
+    // execute Update Margin
+    await amm.updateMargin(updateMarginArgs);
+
+    // get information after Update Margin
+    const balance1 = amm.walletBalances?.underlyingToken;
+
+    // checks
+    expect(balance1).toBeLessThanOrEqual((balance0 ?? 0) - updateMarginArgs.margin);
   });
 });

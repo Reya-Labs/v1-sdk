@@ -4,21 +4,21 @@ import { getGasBuffer } from '../utils/gasBuffer';
 
 export const execApprove = async ({
   token,
-  args,
+  params,
 }: {
   token: Contract;
-  args: {
+  params: {
     amount: BigNumber;
     spender: string;
   };
 }): Promise<ContractReceipt> => {
   let transaction;
   try {
-    await token.callStatic.approve(args.spender, args.amount);
+    await token.callStatic.approve(params.spender, params.amount);
 
-    const estimatedGas = await token.estimateGas.approve(args.spender, args.amount);
+    const estimatedGas = await token.estimateGas.approve(params.spender, params.amount);
 
-    transaction = await token.approve(args.spender, args.amount, {
+    transaction = await token.approve(params.spender, params.amount, {
       gasLimit: getGasBuffer(estimatedGas),
     });
   } catch (error) {

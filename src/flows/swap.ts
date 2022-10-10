@@ -1,9 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { BigNumber, Contract, ContractReceipt } from 'ethers';
+import { BigNumber, BigNumberish, Contract, ContractReceipt } from 'ethers';
 import { isUndefined } from 'lodash';
-import { MAX_FIXED_RATE, MIN_FIXED_RATE, ZERO_BN } from '../constants';
-import { SwapPeripheryParams } from '../types';
+import { ZERO_BN } from '../constants';
 import {
   getErrorReason,
   getErrorSignature,
@@ -12,70 +11,93 @@ import {
 } from '../utils/errors/errorHandling';
 import { getGasBuffer } from '../utils/gasBuffer';
 import { descale, scale } from '../utils/scaling';
-import { fixedRateToClosestTick } from '../utils/tickHandling';
-import { getAvgFixedRate } from './getAvgFixedRate';
+import { getAvgFixedRate } from '../services/getAvgFixedRate';
 
-type RawSwapArgs = {
+export type UserSwapInfoArgs = {
   isFT: boolean;
   notional: number;
-  margin: number;
   fixedLow: number;
   fixedHigh: number;
-  tickSpacing: number;
+};
+
+export type UserSwapArgs = UserSwapInfoArgs & {
+  margin: number;
+  force?: {
+    fullCollateralisation?: boolean;
+  };
+};
+
+export type RawSwapArgs = UserSwapInfoArgs & {
+  marginErc20: number;
+  marginEth: number | undefined;
+
+  marginEngine: string;
+  tickFormat: ([fixedLow, fixedHigh]: [number, number]) => [number, number];
   tokenDecimals: number;
 };
 
-type ProcessedSwapArgs = {
+export type SwapParams = {
+  marginEngine: string;
+  isFT: boolean;
+  notional: BigNumberish;
+  sqrtPriceLimitX96: BigNumberish;
   tickLower: number;
   tickUpper: number;
-  notional: BigNumber;
-  margin: BigNumber;
+  marginDelta: BigNumberish;
 };
 
-export const processSwapArguments = (args: RawSwapArgs): ProcessedSwapArgs => {
+export const processSwapArguments = ({
+  isFT,
+  notional,
+  fixedLow,
+  fixedHigh,
+  marginErc20,
+  marginEth,
+
+  marginEngine,
+  tickFormat,
+  tokenDecimals,
+}: RawSwapArgs): {
+  swapParams: SwapParams;
+  ethDeposit: BigNumber | undefined;
+} => {
   // sanity checks
-  if (args.fixedLow >= args.fixedHigh) {
-    throw new Error('Lower Rate must be smaller than Upper Rate');
-  }
-
-  if (args.fixedLow < MIN_FIXED_RATE) {
-    throw new Error('Lower Rate is too low');
-  }
-
-  if (args.fixedHigh > MAX_FIXED_RATE) {
-    throw new Error('Upper Rate is too high');
-  }
-
-  if (args.notional <= 0) {
+  if (notional <= 0) {
     throw new Error('Amount of notional must be greater than 0');
   }
 
   // tick conversions
-  const tickUpper = fixedRateToClosestTick(args.fixedLow, args.tickSpacing);
-  const tickLower = fixedRateToClosestTick(args.fixedHigh, args.tickSpacing);
+  const [tickLower, tickUpper] = tickFormat([fixedLow, fixedHigh]);
 
   // scale numbers
-  const scaledNotional = scale(args.notional, args.tokenDecimals);
-  const scaledMargin = scale(args.margin, args.tokenDecimals);
+  const scaledNotional = scale(notional, tokenDecimals);
+  const scaledMarginErc20 = scale(marginErc20, tokenDecimals);
+  const scaledMarginEth = isUndefined(marginEth) ? undefined : scale(marginEth, tokenDecimals);
 
   // return processed arguments
   return {
-    tickLower,
-    tickUpper,
-    notional: scaledNotional,
-    margin: scaledMargin,
+    swapParams: {
+      marginEngine,
+      isFT,
+      notional: scaledNotional,
+      marginDelta: scaledMarginErc20,
+      tickLower,
+      tickUpper,
+      sqrtPriceLimitX96: 0,
+    },
+    ethDeposit: scaledMarginEth,
   };
 };
 
 // execute Swap operation
 export const execSwap = async ({
   periphery,
-  args,
+  params,
   ethDeposit,
   fullCollateralisation,
 }: {
   periphery: Contract;
-  args: SwapPeripheryParams;
+  params: SwapParams;
   ethDeposit?: BigNumber;
   fullCollateralisation?: {
     variableFactor: BigNumber;
@@ -91,25 +113,25 @@ export const execSwap = async ({
   try {
     if (isUndefined(fullCollateralisation)) {
       // simulate
-      await periphery.callStatic.swap(args, tempOverrides);
+      await periphery.callStatic.swap(params, tempOverrides);
 
       // estimate gas and add buffer
-      const estimatedGas = await periphery.estimateGas.swap(args, tempOverrides);
+      const estimatedGas = await periphery.estimateGas.swap(params, tempOverrides);
       tempOverrides.gasLimit = getGasBuffer(estimatedGas);
 
       // create transaction
-      transaction = await periphery.swap(args, tempOverrides);
+      transaction = await periphery.swap(params, tempOverrides);
     } else {
       // simulate
       await periphery.callStatic.fullyCollateralisedVTSwap(
-        args,
+        params,
         fullCollateralisation.variableFactor,
         tempOverrides,
       );
 
       // estimate gas and add buffer
       const estimatedGas = await periphery.estimateGas.fullyCollateralisedVTSwap(
-        args,
+        params,
         fullCollateralisation.variableFactor,
         tempOverrides,
       );
@@ -117,7 +139,7 @@ export const execSwap = async ({
 
       // create transaction
       transaction = await periphery.fullyCollateralisedVTSwap(
-        args,
+        params,
         fullCollateralisation.variableFactor,
         tempOverrides,
       );
@@ -150,11 +172,11 @@ export type IntermmediateInfoPostSwap = {
 // or use the error to get the information
 export const getSwapResult = async ({
   periphery,
-  args,
+  params,
   tokenDecimals,
 }: {
   periphery: Contract;
-  args: SwapPeripheryParams;
+  params: SwapParams;
   tokenDecimals: number;
 }): Promise<IntermmediateInfoPostSwap> => {
   let result = {
@@ -167,7 +189,7 @@ export const getSwapResult = async ({
   };
 
   try {
-    const rawResults = await periphery.callStatic.swap(args);
+    const rawResults = await periphery.callStatic.swap(params);
     result = {
       marginRequirement: rawResults[4],
       tick: parseInt(rawResults[5], 10),
