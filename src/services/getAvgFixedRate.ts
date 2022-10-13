@@ -6,5 +6,5 @@ export const getAvgFixedRate = (
   variableTokens: BigNumber,
 ): number => {
   const avgFixedRateWad = unbalancedFixedTokens.mul(BigNumber.from(10).pow(18)).div(variableTokens);
-  return Math.abs(descale(avgFixedRateWad, 18));
+  return Math.abs(descale(18)(avgFixedRateWad));
 };

@@ -10,7 +10,6 @@ import {
   iface,
 } from '../utils/errors/errorHandling';
 import { getGasBuffer } from '../utils/gasBuffer';
-import { descale, scale } from '../utils/scaling';
 import { getAvgFixedRate } from '../services/getAvgFixedRate';
 
 export type UserSwapInfoArgs = {
@@ -33,7 +32,7 @@ export type RawSwapArgs = UserSwapInfoArgs & {
 
   marginEngine: string;
   tickFormat: ([fixedLow, fixedHigh]: [number, number]) => [number, number];
-  tokenDecimals: number;
+  tokenScaler: (amount: number) => BigNumber;
 };
 
 export type SwapParams = {
@@ -56,7 +55,7 @@ export const processSwapArguments = ({
 
   marginEngine,
   tickFormat,
-  tokenDecimals,
+  tokenScaler,
 }: RawSwapArgs): {
   swapParams: SwapParams;
   ethDeposit: BigNumber | undefined;
@@ -70,9 +69,9 @@ export const processSwapArguments = ({
   const [tickLower, tickUpper] = tickFormat([fixedLow, fixedHigh]);
 
   // scale numbers
-  const scaledNotional = scale(notional, tokenDecimals);
-  const scaledMarginErc20 = scale(marginErc20, tokenDecimals);
-  const scaledMarginEth = isUndefined(marginEth) ? undefined : scale(marginEth, tokenDecimals);
+  const scaledNotional = tokenScaler(notional);
+  const scaledMarginErc20 = tokenScaler(marginErc20);
+  const scaledMarginEth = isUndefined(marginEth) ? undefined : tokenScaler(marginEth);
 
   // return processed arguments
   return {
@@ -173,11 +172,11 @@ export type IntermmediateInfoPostSwap = {
 export const getSwapResult = async ({
   periphery,
   params,
-  tokenDecimals,
+  tokenDescaler,
 }: {
   periphery: Contract;
   params: SwapParams;
-  tokenDecimals: number;
+  tokenDescaler: (amount: BigNumberish) => number;
 }): Promise<IntermmediateInfoPostSwap> => {
   let result = {
     marginRequirement: ZERO_BN,
@@ -221,13 +220,13 @@ export const getSwapResult = async ({
   }
 
   return {
-    marginRequirement: descale(result.marginRequirement, tokenDecimals),
+    marginRequirement: tokenDescaler(result.marginRequirement),
     tick: result.tick,
-    fee: descale(result.marginRequirement, tokenDecimals),
-    availableNotional: Math.abs(descale(result.variableTokenDelta, tokenDecimals)),
-    variableTokenDelta: descale(result.variableTokenDelta, tokenDecimals),
-    fixedTokenDelta: descale(result.fixedTokenDelta, tokenDecimals),
-    fixedTokenDeltaUnbalanced: descale(result.fixedTokenDelta, tokenDecimals),
+    fee: tokenDescaler(result.marginRequirement),
+    availableNotional: Math.abs(tokenDescaler(result.variableTokenDelta)),
+    variableTokenDelta: tokenDescaler(result.variableTokenDelta),
+    fixedTokenDelta: tokenDescaler(result.fixedTokenDelta),
+    fixedTokenDeltaUnbalanced: tokenDescaler(result.fixedTokenDelta),
     averageFixedRate: getAvgFixedRate(result.fixedTokenDeltaUnbalanced, result.variableTokenDelta),
   };
 };

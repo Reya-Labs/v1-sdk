@@ -140,7 +140,8 @@ describe('amm', () => {
       periphery: amm.readOnlyContracts.periphery,
       marginEngineAddress: amm.readOnlyContracts.marginEngine.address,
       isFT: true,
-      tokenDecimals: amm.tokenDecimals,
+      tokenScaler: amm.tokenScaler,
+      tokenDescaler: amm.tokenDescaler,
     });
     const balance0 = amm.walletBalances?.underlyingToken;
 
@@ -153,7 +154,8 @@ describe('amm', () => {
       periphery: amm.readOnlyContracts.periphery,
       marginEngineAddress: amm.readOnlyContracts.marginEngine.address,
       isFT: true,
-      tokenDecimals: amm.tokenDecimals,
+      tokenScaler: amm.tokenScaler,
+      tokenDescaler: amm.tokenDescaler,
     });
     const balance1 = amm.walletBalances?.underlyingToken;
 
@@ -187,7 +189,8 @@ describe('amm', () => {
       periphery: amm.readOnlyContracts.periphery,
       marginEngineAddress: amm.readOnlyContracts.marginEngine.address,
       isFT: true,
-      tokenDecimals: amm.tokenDecimals,
+      tokenScaler: amm.tokenScaler,
+      tokenDescaler: amm.tokenDescaler,
     });
     const balance0 = amm.walletBalances?.underlyingToken;
 
@@ -200,7 +203,8 @@ describe('amm', () => {
       periphery: amm.readOnlyContracts.periphery,
       marginEngineAddress: amm.readOnlyContracts.marginEngine.address,
       isFT: true,
-      tokenDecimals: amm.tokenDecimals,
+      tokenScaler: amm.tokenScaler,
+      tokenDescaler: amm.tokenDescaler,
     });
     const balance1 = amm.walletBalances?.underlyingToken;
 

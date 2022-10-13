@@ -410,7 +410,7 @@ class AMM {
 
       marginEngine: this.readOnlyContracts.marginEngine.address,
       tickFormat: this.tickFormat,
-      tokenDecimals: this.tokenDecimals,
+      tokenScaler: this.tokenScaler,
     });
 
     console.log('swap periphery params:', swapParams);
@@ -418,7 +418,7 @@ class AMM {
     const results = await getSwapResult({
       periphery: this.readOnlyContracts.periphery,
       params: swapParams,
-      tokenDecimals: this.tokenDecimals,
+      tokenDescaler: this.tokenDescaler,
     });
 
     console.log('Swap Results:', results);
@@ -442,7 +442,8 @@ class AMM {
         periphery: this.readOnlyContracts.periphery,
         marginEngineAddress: this.readOnlyContracts.marginEngine.address,
         isFT: args.isFT,
-        tokenDecimals: this.tokenDecimals,
+        tokenScaler: this.tokenScaler,
+        tokenDescaler: this.tokenDescaler,
       });
     } catch (error) {
       console.error(`Unable to get maximum available notional. ${error}`);
@@ -476,7 +477,7 @@ class AMM {
 
       marginEngine: this.readOnlyContracts.marginEngine.address,
       tickFormat: this.tickFormat,
-      tokenDecimals: this.tokenDecimals,
+      tokenScaler: this.tokenScaler,
     });
 
     console.log('Swap Periphery Parameters:', swapParams);
@@ -532,7 +533,7 @@ class AMM {
 
       marginEngine: this.readOnlyContracts.marginEngine.address,
       tickFormat: this.tickFormat,
-      tokenDecimals: this.tokenDecimals,
+      tokenScaler: this.tokenScaler,
     });
 
     console.log('mint or burn params:', mintOrBurnParams);
@@ -540,7 +541,7 @@ class AMM {
     const results = await getMintOrBurnResult({
       periphery: this.readOnlyContracts.periphery,
       params: mintOrBurnParams,
-      tokenDecimals: this.tokenDecimals,
+      tokenDescaler: this.tokenDescaler,
     });
 
     console.log('results', results);
@@ -576,7 +577,7 @@ class AMM {
 
       marginEngine: this.readOnlyContracts.marginEngine.address,
       tickFormat: this.tickFormat,
-      tokenDecimals: this.tokenDecimals,
+      tokenScaler: this.tokenScaler,
     });
 
     console.log('mint or burn params:', mintOrBurnParams);
@@ -619,7 +620,7 @@ class AMM {
 
       marginEngine: this.readOnlyContracts.marginEngine.address,
       tickFormat: this.tickFormat,
-      tokenDecimals: this.tokenDecimals,
+      tokenScaler: this.tokenScaler,
     });
 
     // execute the operation and get the receipt
@@ -694,7 +695,7 @@ class AMM {
       previousMarginEngine: this.readOnlyContracts.marginEngine.address,
       owner: this.userAddress,
       tickFormat: this.tickFormat,
-      tokenDecimals: this.tokenDecimals,
+      tokenScaler: this.tokenScaler,
     });
 
     // execute operation
@@ -736,7 +737,7 @@ class AMM {
       previousMarginEngine: this.readOnlyContracts.marginEngine.address,
       owner: this.userAddress,
       tickFormat: this.tickFormat,
-      tokenDecimals: this.tokenDecimals,
+      tokenScaler: this.tokenScaler,
     });
 
     // execute operation

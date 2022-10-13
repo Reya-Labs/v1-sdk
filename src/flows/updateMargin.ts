@@ -2,7 +2,6 @@ import { BigNumber, BigNumberish, Contract, ContractReceipt } from 'ethers';
 import { isUndefined } from 'lodash';
 import { getReadableErrorMessage } from '../utils/errors/errorHandling';
 import { getGasBuffer } from '../utils/gasBuffer';
-import { scale } from '../utils/scaling';
 
 export type UserUpdateMarginArgs = {
   margin: number;
@@ -16,7 +15,7 @@ export type RawUpdateMarginArgs = UserUpdateMarginArgs & {
 
   marginEngine: string;
   tickFormat: ([fixedLow, fixedHigh]: [number, number]) => [number, number];
-  tokenDecimals: number;
+  tokenScaler: (amount: number) => BigNumber;
 };
 
 export type UpdateMarginParams = {
@@ -34,7 +33,7 @@ export const processUpdateMarginArgumests = ({
 
   marginEngine,
   tickFormat,
-  tokenDecimals,
+  tokenScaler,
 }: RawUpdateMarginArgs): {
   updateMarginParams: UpdateMarginParams;
   ethDeposit: BigNumber | undefined;
@@ -43,8 +42,8 @@ export const processUpdateMarginArgumests = ({
   const [tickLower, tickUpper] = tickFormat([fixedLow, fixedHigh]);
 
   // scale numbers
-  const scaledMarginErc20 = scale(marginErc20, tokenDecimals);
-  const scaledMarginEth = isUndefined(marginEth) ? undefined : scale(marginEth, tokenDecimals);
+  const scaledMarginErc20 = tokenScaler(marginErc20);
+  const scaledMarginEth = isUndefined(marginEth) ? undefined : tokenScaler(marginEth);
 
   // return processed arguments
   return {

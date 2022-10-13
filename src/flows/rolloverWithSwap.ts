@@ -3,7 +3,6 @@ import { BigNumber, BigNumberish, Contract, ContractReceipt } from 'ethers';
 import { isUndefined } from 'lodash';
 import { getReadableErrorMessage } from '../utils/errors/errorHandling';
 import { getGasBuffer } from '../utils/gasBuffer';
-import { scale } from '../utils/scaling';
 import { SwapParams } from './swap';
 
 export type UserRolloverWithSwapArgs = {
@@ -33,7 +32,7 @@ type RawRolloverWithSwapArgs = UserRolloverWithSwapArgs & {
 
   owner: string;
   tickFormat: ([fixedLow, fixedHigh]: [number, number]) => [number, number];
-  tokenDecimals: number;
+  tokenScaler: (amount: number) => BigNumber;
 };
 
 export const processRolloverWithSwapArguments = ({
@@ -51,7 +50,7 @@ export const processRolloverWithSwapArguments = ({
 
   owner,
   tickFormat,
-  tokenDecimals,
+  tokenScaler,
 }: RawRolloverWithSwapArgs): {
   rolloverWithSwapParams: RolloverWithSwapParams;
   ethDeposit: BigNumber | undefined;
@@ -60,9 +59,9 @@ export const processRolloverWithSwapArguments = ({
   const [previousTickLower, previousTickUpper] = tickFormat([previousFixedLow, previousFixedHigh]);
 
   // scale numbers
-  const scaledNotional = scale(notional, tokenDecimals);
-  const scaledMarginErc20 = scale(marginErc20, tokenDecimals);
-  const scaledMarginEth = scale(marginEth, tokenDecimals);
+  const scaledNotional = tokenScaler(notional);
+  const scaledMarginErc20 = tokenScaler(marginErc20);
+  const scaledMarginEth = tokenScaler(marginEth);
 
   // return processed arguments
   return {

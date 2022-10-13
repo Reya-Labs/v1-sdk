@@ -1,6 +1,8 @@
-import { BigNumber, providers } from 'ethers';
+/// TO DO: remove this
+/* eslint-disable no-console */
+
+import { providers } from 'ethers';
 import { isUndefined } from 'lodash';
-import { descale } from '../../utils/scaling';
 import { tickToFixedRate, tickToSqrtPrice } from '../../utils/tickHandling';
 import { Burn, Liquidation, MarginUpdate, Mint, Settlement, Swap } from '../actions';
 import AMM from '../AMM/amm';
@@ -34,7 +36,7 @@ export class Position {
   public readonly liquidations: Array<Liquidation>;
   public readonly settlements: Array<Settlement>;
 
-  public initialized: boolean;
+  public initialized = false;
 
   public constructor(args: PositionConstructorArgs) {
     this.id = args.id;
@@ -47,12 +49,12 @@ export class Position {
     this.tickUpper = args.tickUpper;
     this.positionType = args.positionType;
 
-    this._liquidity = descale(args.liquidity, args.amm.tokenDecimals);
+    this._liquidity = args.amm.tokenDescaler(args.liquidity);
     this.accumulatedFees = 0;
 
-    this.fixedTokenBalance = descale(args.fixedTokenBalance, args.amm.tokenDecimals);
-    this.variableTokenBalance = descale(args.variableTokenBalance, args.amm.tokenDecimals);
-    this.margin = descale(args.margin, args.amm.tokenDecimals);
+    this.fixedTokenBalance = args.amm.tokenDescaler(args.fixedTokenBalance);
+    this.variableTokenBalance = args.amm.tokenDescaler(args.variableTokenBalance);
+    this.margin = args.amm.tokenDescaler(args.margin);
 
     this.isSettled = args.isSettled;
 
@@ -115,10 +117,10 @@ export class Position {
     );
 
     this.isSettled = posInfo.isSettled;
-    this._liquidity = descale(posInfo._liquidity, this.amm.tokenDecimals);
-    this.margin = descale(posInfo.margin, this.amm.tokenDecimals);
-    this.fixedTokenBalance = descale(posInfo.fixedTokenBalance, this.amm.tokenDecimals);
-    this.variableTokenBalance = descale(posInfo.variableTokenBalance, this.amm.tokenDecimals);
-    this.accumulatedFees = descale(posInfo.accumulatedFees, this.amm.tokenDecimals);
+    this._liquidity = this.amm.tokenDescaler(posInfo._liquidity);
+    this.margin = this.amm.tokenDescaler(posInfo.margin);
+    this.fixedTokenBalance = this.amm.tokenDescaler(posInfo.fixedTokenBalance);
+    this.variableTokenBalance = this.amm.tokenDescaler(posInfo.variableTokenBalance);
+    this.accumulatedFees = this.amm.tokenDescaler(posInfo.accumulatedFees);
   };
 }

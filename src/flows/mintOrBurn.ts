@@ -10,7 +10,6 @@ import {
   iface,
 } from '../utils/errors/errorHandling';
 import { getGasBuffer } from '../utils/gasBuffer';
-import { descale, scale } from '../utils/scaling';
 
 export type UserMintOrBurnInfoArgs = {
   isMint: boolean;
@@ -29,7 +28,7 @@ export type RawMintOrBurnArgs = UserMintOrBurnInfoArgs & {
 
   marginEngine: string;
   tickFormat: ([fixedLow, fixedHigh]: [number, number]) => [number, number];
-  tokenDecimals: number;
+  tokenScaler: (amount: number) => BigNumber;
 };
 
 export type MintOrBurnParams = {
@@ -51,7 +50,7 @@ export const processMintOrBurnArguments = ({
 
   marginEngine,
   tickFormat,
-  tokenDecimals,
+  tokenScaler,
 }: RawMintOrBurnArgs): {
   mintOrBurnParams: MintOrBurnParams;
   ethDeposit: BigNumber | undefined;
@@ -65,9 +64,9 @@ export const processMintOrBurnArguments = ({
   const [tickLower, tickUpper] = tickFormat([fixedLow, fixedHigh]);
 
   // scale numbers
-  const scaledNotional = scale(notional, tokenDecimals);
-  const scaledMarginErc20 = scale(marginErc20, tokenDecimals);
-  const scaledMarginEth = isUndefined(marginEth) ? undefined : scale(marginEth, tokenDecimals);
+  const scaledNotional = tokenScaler(notional);
+  const scaledMarginErc20 = tokenScaler(marginErc20);
+  const scaledMarginEth = isUndefined(marginEth) ? undefined : tokenScaler(marginEth);
 
   // return processed arguments
   return {
@@ -132,11 +131,11 @@ export type IntermmediateInfoPostMintOrBurn = {
 export const getMintOrBurnResult = async ({
   periphery,
   params,
-  tokenDecimals,
+  tokenDescaler,
 }: {
   periphery: Contract;
   params: MintOrBurnParams;
-  tokenDecimals: number;
+  tokenDescaler: (amount: BigNumberish) => number;
 }): Promise<IntermmediateInfoPostMintOrBurn> => {
   let result = {
     marginRequirement: ZERO_BN,
@@ -162,6 +161,6 @@ export const getMintOrBurnResult = async ({
   }
 
   return {
-    marginRequirement: descale(result.marginRequirement, tokenDecimals),
+    marginRequirement: tokenDescaler(result.marginRequirement),
   };
 };

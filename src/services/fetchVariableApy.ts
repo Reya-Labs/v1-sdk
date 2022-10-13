@@ -20,7 +20,7 @@ export const fetchVariableApy = async (args: {
       );
 
       const reservesData = await lendingPool.getReserveData(args.tokenAddress);
-      return descale(reservesData.currentLiquidityRate, 25);
+      return descale(25)(reservesData.currentLiquidityRate);
     }
 
     case 2: {
@@ -33,7 +33,7 @@ export const fetchVariableApy = async (args: {
       const cTokenContract = new ethers.Contract(cTokenAddress, CTokenABI, args.provider);
 
       const ratePerBlock = await cTokenContract.supplyRatePerBlock();
-      return ((descale(ratePerBlock, 18) * blocksPerDay + 1) ** daysPerYear - 1) * 100;
+      return ((descale(18)(ratePerBlock) * blocksPerDay + 1) ** daysPerYear - 1) * 100;
     }
 
     case 3:
@@ -48,7 +48,7 @@ export const fetchVariableApy = async (args: {
       const from = to.sub(apyWindow);
 
       const apy = await args.rateOracle.getApyFromTo(from, to);
-      return descale(apy, 16);
+      return descale(16)(apy);
     }
 
     case 5: {
@@ -62,7 +62,7 @@ export const fetchVariableApy = async (args: {
       );
 
       const reservesData = await lendingPool.getReserveData(args.tokenAddress);
-      return descale(reservesData.currentVariableBorrowRate, 25);
+      return descale(25)(reservesData.currentVariableBorrowRate);
     }
 
     case 6: {
@@ -75,7 +75,7 @@ export const fetchVariableApy = async (args: {
       const cTokenContract = new ethers.Contract(cTokenAddress, CTokenABI, args.provider);
 
       const ratePerBlock = await cTokenContract.borrowRatePerBlock();
-      return ((descale(ratePerBlock, 18) * blocksPerDay + 1) ** daysPerYear - 1) * 100;
+      return ((descale(18)(ratePerBlock) * blocksPerDay + 1) ** daysPerYear - 1) * 100;
     }
 
     default: {
