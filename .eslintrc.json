@@ -16,6 +16,7 @@
     "import/no-unresolved": "off",
     "import/extensions": "off",
     "no-unused-vars": "off",
+    "no-underscore-dangle": "off",
     "prettier/prettier": "error",
     "@typescript-eslint/indent": "off",
     "@typescript-eslint/no-unused-vars": "error",

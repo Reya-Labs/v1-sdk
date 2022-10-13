@@ -1,9 +1,13 @@
 import { BigNumber, BigNumberish, ethers } from 'ethers';
 
-export const descale = (amount: BigNumberish, decimals: number): number => {
-  return Number(ethers.utils.formatUnits(amount, decimals));
+export const descale = (decimals: number) => {
+  return (amount: BigNumberish): number => {
+    return Number(ethers.utils.formatUnits(amount, decimals));
+  };
 };
 
-export const scale = (amount: number, decimals: number): BigNumber => {
-  return ethers.utils.parseUnits(amount.toString(), decimals);
+export const scale = (decimals: number) => {
+  return (amount: number): BigNumber => {
+    return ethers.utils.parseUnits(amount.toString(), decimals);
+  };
 };

@@ -6,7 +6,15 @@
 /* eslint-disable import/no-extraneous-dependencies */
 /* eslint-disable lines-between-class-members */
 
-import { BigNumber, Contract, ContractReceipt, ethers, providers, Signer } from 'ethers';
+import {
+  BigNumber,
+  BigNumberish,
+  Contract,
+  ContractReceipt,
+  ethers,
+  providers,
+  Signer,
+} from 'ethers';
 import { isUndefined } from 'lodash';
 import axios from 'axios';
 import { fetchVariableApy } from '../../services/fetchVariableApy';
@@ -18,7 +26,7 @@ import {
   UserSwapArgs,
   UserSwapInfoArgs,
 } from '../../flows/swap';
-import { descale } from '../../utils/scaling';
+import { descale, scale } from '../../utils/scaling';
 import { getProtocolPrefix, getTokenInfo } from '../../services/getTokenInfo';
 import { getSlippage } from '../../services/getSlippage';
 import { AMMConstructorArgs, InfoPostMintOrBurn, InfoPostSwap } from './types';
@@ -59,6 +67,12 @@ import {
   UserRolloverWithMintArgs,
 } from '../../flows/rolloverWithMint';
 
+// OPTIMISATION: when we call functions that might affect position (e.g. swap),
+// it'd be great to pass the Position object in order to get information (e.g. position margin)
+// or to refresh position information (e.g. margin refresher)
+
+// TODO: trim the ABIs
+
 const geckoEthToUsd = async (): Promise<number> => {
   for (let attempt = 0; attempt < 5; attempt += 1) {
     try {
@@ -93,6 +107,8 @@ class AMM {
   public tick: number;
   public readonly tickSpacing: number;
   public readonly tickFormat: ([fixedLow, fixedHigh]: [number, number]) => [number, number];
+  public readonly tokenScaler: (amount: number) => BigNumber;
+  public readonly tokenDescaler: (amount: BigNumberish) => number;
 
   // general information
   public readOnlyContracts?: {
@@ -150,6 +166,9 @@ class AMM {
     this.tick = args.tick;
     this.tickSpacing = args.tickSpacing;
     this.tickFormat = getTicks(this.tickSpacing);
+
+    this.tokenScaler = scale(this.tokenDecimals);
+    this.tokenDescaler = descale(this.tokenDecimals);
   }
 
   // general information loader
@@ -330,7 +349,7 @@ class AMM {
       : await this.readOnlyContracts.token.balanceOf(this.userAddress);
 
     this.walletBalances = {
-      underlyingToken: descale(balance, this.tokenDecimals),
+      underlyingToken: this.tokenDescaler(balance),
     };
   };
 
@@ -351,7 +370,7 @@ class AMM {
       tickLower,
       tickUpper,
     );
-    return descale(positionInformation.margin, this.tokenDecimals);
+    return this.tokenDescaler(positionInformation.margin);
   };
 
   // approve operation
@@ -700,7 +719,6 @@ class AMM {
   //    (of [userAddress, previousFixedLow, previousFixedHigh])
   // 2. It creates a mint in the next margin engine [NOT this AMM]
   //    (of [userAddress, fixedLow, fixedHigh])
-
   public async rolloverWithMint(
     userArgs: UserRolloverWithMintArgs,
   ): Promise<ContractReceipt | undefined> {
