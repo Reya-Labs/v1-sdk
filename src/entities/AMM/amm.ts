@@ -107,6 +107,13 @@ class AMM {
   public readonly tokenScaler: (amount: number) => BigNumber;
   public readonly tokenDescaler: (amount: BigNumberish) => number;
 
+  // loading state
+  // 0: uninitized
+  // 1: amm general information loaded
+  // 2: user general information loaded
+  // 3: write functionalities loaded
+  private ammInitialized: 0 | 1 | 2 | 3 = 0;
+
   // general information
   public readOnlyContracts?: {
     factory: Contract;
@@ -125,10 +132,8 @@ class AMM {
 
   public latestBlockTimestamp: number;
 
-  public ammInitialized = false;
-
   // user specific information
-  public writeContracts?: {
+  private writeContracts?: {
     periphery: Contract;
     token: Contract;
   };
@@ -142,8 +147,6 @@ class AMM {
   public approvals: {
     underlyingToken: boolean;
   };
-
-  public userInitialized = false;
 
   public constructor(args: AMMConstructorArgs) {
     this.id = args.id;
@@ -182,8 +185,8 @@ class AMM {
   }
 
   // general information loader
-  ammInit = async (): Promise<void> => {
-    if (this.ammInitialized || isUndefined(this.provider)) {
+  private ammInit = async (): Promise<void> => {
+    if (this.ammInitialized >= 1 || isUndefined(this.provider)) {
       return;
     }
 
@@ -207,16 +210,28 @@ class AMM {
     await this.refreshPrices();
     await this.refreshTimestamp();
 
-    this.ammInitialized = true;
+    this.ammInitialized = 1;
   };
 
-  // user information loader
-  userInit = async (signer: Signer): Promise<void> => {
-    if (this.userInitialized || !this.ammInitialized || isUndefined(this.readOnlyContracts)) {
+  // user general information loader
+  private userGeneralInformationInit = async (userAddress: string): Promise<void> => {
+    if (this.ammInitialized >= 2 || isUndefined(this.readOnlyContracts)) {
       return;
     }
 
-    this.userAddress = await signer.getAddress();
+    this.userAddress = userAddress;
+
+    await this.refreshWalletBalances();
+    await this.refreshApprovals();
+
+    this.ammInitialized = 2;
+  };
+
+  // user write functionalities loader
+  private userWriteFunctionalitiesInit = async (signer: Signer): Promise<void> => {
+    if (this.ammInitialized >= 3 || isUndefined(this.readOnlyContracts)) {
+      return;
+    }
 
     this.writeContracts = {
       periphery: new ethers.Contract(
@@ -227,10 +242,23 @@ class AMM {
       token: new ethers.Contract(this.readOnlyContracts.token.address, IERC20MinimalABI, signer),
     };
 
-    await this.refreshWalletBalances();
-    await this.refreshApprovals();
+    this.ammInitialized = 3;
+  };
 
-    this.userInitialized = true;
+  init = async (signer?: Signer | string): Promise<void> => {
+    if (isUndefined(signer)) {
+      await this.ammInit();
+    } else {
+      if (typeof signer === 'string') {
+        await this.ammInit();
+        await this.userGeneralInformationInit(signer);
+      } else {
+        await this.ammInit();
+        const userAddress = await signer.getAddress();
+        await this.userGeneralInformationInit(userAddress);
+        await this.userWriteFunctionalitiesInit(signer);
+      }
+    }
   };
 
   // timestamps

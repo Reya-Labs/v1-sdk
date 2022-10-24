@@ -17,14 +17,15 @@ describe('position', () => {
     const poolName = 'aUSDC_v3';
     const item = mainnetPools[poolName as keyof typeof mainnetPools];
 
-    const amm = await getAMM({
-      vammAddress: item.vamm,
-      provider,
-    });
-
     const userAddress = '0xf8f6b70a36f4398f0853a311dc6699aba8333cc1';
     const tickLower = -4680;
     const tickUpper = -3360;
+
+    const amm = await getAMM({
+      vammAddress: item.vamm,
+      provider,
+      signer: userAddress,
+    });
 
     const position = await getPosition({
       amm,

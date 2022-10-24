@@ -11,7 +11,7 @@ export const getAMM = async ({
 }: {
   vammAddress: string;
   provider: providers.Provider;
-  signer?: Signer;
+  signer?: Signer | string;
 }): Promise<AMM> => {
   const vammContract = new ethers.Contract(vammAddress, VammABI, provider);
 
@@ -54,10 +54,7 @@ export const getAMM = async ({
     tickSpacing,
   });
 
-  await amm.ammInit();
-  if (signer) {
-    await amm.userInit(signer);
-  }
+  await amm.init(signer);
 
   return amm;
 };
