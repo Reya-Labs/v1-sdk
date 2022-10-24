@@ -10,8 +10,8 @@ export type AMMConstructorArgs = {
   rateOracleAddress: string;
   underlyingTokenAddress: string;
 
-  termStartTimestamp: BigNumber;
-  termEndTimestamp: BigNumber;
+  termStartTimestampWad: BigNumber;
+  termEndTimestampWad: BigNumber;
 
   rateOracleID: number;
 

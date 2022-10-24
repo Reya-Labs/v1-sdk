@@ -1,6 +1,3 @@
-/// TO DO: remove this
-/* eslint-disable no-console */
-
 /* eslint-disable consistent-return */
 /* eslint-disable no-await-in-loop */
 /* eslint-disable import/no-extraneous-dependencies */
@@ -18,7 +15,7 @@ import {
 import { isUndefined } from 'lodash';
 import axios from 'axios';
 import { fetchVariableApy } from '../../services/fetchVariableApy';
-import { MaxUint256Bn, TresholdApprovalBn } from '../../constants';
+import { MaxUint256Bn, TresholdApprovalBn, WAD } from '../../constants';
 import {
   execSwap,
   getSwapResult,
@@ -98,8 +95,8 @@ class AMM {
   public readonly rateOracleAddress: string;
   public readonly underlyingTokenAddress: string;
 
-  public readonly termStartTimestamp: BigNumber;
-  public readonly termEndTimestamp: BigNumber;
+  public readonly termStartTimestampWad: BigNumber;
+  public readonly termEndTimestampWad: BigNumber;
 
   public readonly rateOracleID: number;
   public readonly isETH: boolean;
@@ -120,11 +117,13 @@ class AMM {
     token: Contract;
   };
 
-  public prices?: {
+  public prices: {
     ethToUsd: number;
   };
 
-  public variableApy?: number;
+  public variableApy: number;
+
+  public latestBlockTimestamp: number;
 
   public ammInitialized = false;
 
@@ -134,14 +133,13 @@ class AMM {
     token: Contract;
   };
 
-  public signer?: Signer;
   public userAddress?: string;
 
-  public walletBalances?: {
+  public walletBalances: {
     underlyingToken: number;
   };
 
-  public approvals?: {
+  public approvals: {
     underlyingToken: boolean;
   };
 
@@ -160,8 +158,8 @@ class AMM {
     this.rateOracleID = args.rateOracleID;
     this.isETH = this.tokenName === 'ETH';
 
-    this.termStartTimestamp = args.termStartTimestamp;
-    this.termEndTimestamp = args.termEndTimestamp;
+    this.termStartTimestampWad = args.termStartTimestampWad;
+    this.termEndTimestampWad = args.termEndTimestampWad;
 
     this.tick = args.tick;
     this.tickSpacing = args.tickSpacing;
@@ -169,17 +167,23 @@ class AMM {
 
     this.tokenScaler = scale(this.tokenDecimals);
     this.tokenDescaler = descale(this.tokenDecimals);
+
+    this.variableApy = 0;
+    this.prices = {
+      ethToUsd: 0,
+    };
+    this.latestBlockTimestamp = 0;
+    this.walletBalances = {
+      underlyingToken: 0,
+    };
+    this.approvals = {
+      underlyingToken: false,
+    };
   }
 
   // general information loader
   ammInit = async (): Promise<void> => {
-    if (this.ammInitialized) {
-      console.log('The AMM is already initialized.');
-      return;
-    }
-
-    if (isUndefined(this.provider)) {
-      console.log('Stop here... No provider provided');
+    if (this.ammInitialized || isUndefined(this.provider)) {
       return;
     }
 
@@ -201,53 +205,58 @@ class AMM {
     // refresh information
     await this.refreshVariableApy();
     await this.refreshPrices();
+    await this.refreshTimestamp();
 
     this.ammInitialized = true;
   };
 
   // user information loader
   userInit = async (signer: Signer): Promise<void> => {
-    this.signer = signer;
-
-    if (this.userInitialized) {
-      console.log('The user is already initialized');
+    if (this.userInitialized || !this.ammInitialized || isUndefined(this.readOnlyContracts)) {
       return;
     }
 
-    if (!this.ammInitialized) {
-      console.log('The amm should be initialized first');
-      return;
-    }
-
-    if (isUndefined(this.readOnlyContracts)) {
-      throw new Error('Uninitialized contracts.');
-    }
-
-    this.userAddress = await this.signer.getAddress();
-    console.log('user address', this.userAddress);
+    this.userAddress = await signer.getAddress();
 
     this.writeContracts = {
       periphery: new ethers.Contract(
         this.readOnlyContracts.periphery.address,
         PeripheryABI,
-        this.signer,
+        signer,
       ),
-      token: new ethers.Contract(
-        this.readOnlyContracts.token.address,
-        IERC20MinimalABI,
-        this.signer,
-      ),
+      token: new ethers.Contract(this.readOnlyContracts.token.address, IERC20MinimalABI, signer),
     };
 
-    console.log('write contracts ready');
-
     await this.refreshWalletBalances();
-    console.log('user balances refreshed', this.walletBalances);
     await this.refreshApprovals();
-    console.log('user approvals refreshed', this.approvals);
 
     this.userInitialized = true;
   };
+
+  // timestamps
+  public get termStartTimestamp(): number {
+    return Number(ethers.utils.formatUnits(this.termStartTimestampWad.toString(), 18));
+  }
+
+  public get termEndTimestamp(): number {
+    return Number(ethers.utils.formatUnits(this.termEndTimestampWad.toString(), 18));
+  }
+
+  // latest block timestamp
+  public async refreshTimestamp(): Promise<void> {
+    if (isUndefined(this.provider)) {
+      return;
+    }
+
+    const latestBlock = await this.provider.getBlock('latest');
+    this.latestBlockTimestamp = latestBlock.timestamp;
+  }
+
+  // is this pool matured?
+  public get matured(): boolean {
+    const latestTimestampWad = BigNumber.from(this.latestBlockTimestamp).mul(WAD);
+    return latestTimestampWad.gt(this.termEndTimestampWad);
+  }
 
   // underlying token name (e.g. USDC)
   public get tokenName(): string {
@@ -413,20 +422,14 @@ class AMM {
       tokenScaler: this.tokenScaler,
     });
 
-    console.log('swap periphery params:', swapParams);
-
     const results = await getSwapResult({
       periphery: this.readOnlyContracts.periphery,
       params: swapParams,
       tokenDescaler: this.tokenDescaler,
     });
 
-    console.log('Swap Results:', results);
-
     // slippage
     const slippage = getSlippage(this.tick, results.tick);
-
-    console.log('Slippage:', slippage);
 
     // additional margin
     const additionalMargin = getAdditionalMargin({
@@ -480,8 +483,6 @@ class AMM {
       tokenScaler: this.tokenScaler,
     });
 
-    console.log('Swap Periphery Parameters:', swapParams);
-
     // get variable factor in the case where the swap is fully collateralised
     let fullCollateralisation: { variableFactor: BigNumber } | undefined;
 
@@ -489,14 +490,12 @@ class AMM {
       if (args.force.fullCollateralisation) {
         fullCollateralisation = {
           variableFactor: await this.readOnlyContracts.rateOracle.variableFactorNoCache(
-            this.termStartTimestamp,
-            this.termEndTimestamp,
+            this.termStartTimestampWad,
+            this.termEndTimestampWad,
           ),
         };
       }
     }
-
-    console.log('Full Collateralisation:', fullCollateralisation);
 
     // execute the swap and return the receipt
     const receipt = await execSwap({
@@ -536,15 +535,11 @@ class AMM {
       tokenScaler: this.tokenScaler,
     });
 
-    console.log('mint or burn params:', mintOrBurnParams);
-
     const results = await getMintOrBurnResult({
       periphery: this.readOnlyContracts.periphery,
       params: mintOrBurnParams,
       tokenDescaler: this.tokenDescaler,
     });
-
-    console.log('results', results);
 
     // additional margin
     const additionalMargin = getAdditionalMargin({
@@ -579,8 +574,6 @@ class AMM {
       tickFormat: this.tickFormat,
       tokenScaler: this.tokenScaler,
     });
-
-    console.log('mint or burn params:', mintOrBurnParams);
 
     // execute the swap and return the receipt
     const receipt = await execMintOrBurn({

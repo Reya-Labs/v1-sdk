@@ -13,6 +13,7 @@ export type PositionConstructorArgs = {
   positionType: number;
 
   liquidity: BigNumber;
+  accumulatedFees: BigNumber;
 
   fixedTokenBalance: BigNumber;
   variableTokenBalance: BigNumber;

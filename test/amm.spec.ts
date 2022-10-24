@@ -1,5 +1,3 @@
-/* eslint-disable no-restricted-syntax */
-
 import { providers, Wallet } from 'ethers';
 import * as dotenv from 'dotenv';
 import { isUndefined } from 'lodash';
@@ -25,24 +23,32 @@ describe('amm', () => {
     provider,
   ); // at address - 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
 
-  for (const poolName of ['aUSDC_v3', 'cDAI_v3', 'stETH_v1', 'rETH_v1']) {
+  ['aUSDC_v3', 'cDAI_v3', 'stETH_v1', 'rETH_v1'].forEach((poolName) => {
     const item = mainnetPools[poolName as keyof typeof mainnetPools];
 
     it(`initialisation ${poolName}`, async () => {
-      const amm = await getAMM(item.vamm, provider, signer);
+      const amm = await getAMM({
+        vammAddress: item.vamm,
+        provider,
+        signer,
+      });
 
       expect(amm.readOnlyContracts?.marginEngine.address).toBe(item.marginEngine);
       expect(amm.tokenDecimals).toBe(item.decimals);
       expect(amm.rateOracleID).toBe(item.rateOracleID);
       expect(amm.userAddress).toBe('0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266');
     });
-  }
+  });
 
   it('approve operation', async () => {
     const poolName = 'aUSDC_v3';
     const item = mainnetPools[poolName as keyof typeof mainnetPools];
 
-    const amm = await getAMM(item.vamm, provider, signer);
+    const amm = await getAMM({
+      vammAddress: item.vamm,
+      provider,
+      signer,
+    });
 
     await amm.approve();
     const approval = amm.approvals;
@@ -54,7 +60,11 @@ describe('amm', () => {
     const poolName = 'stETH_v1';
     const item = mainnetPools[poolName as keyof typeof mainnetPools];
 
-    const amm = await getAMM(item.vamm, provider, signer);
+    const amm = await getAMM({
+      vammAddress: item.vamm,
+      provider,
+      signer,
+    });
 
     const swapArgs = {
       isFT: true,
@@ -84,7 +94,11 @@ describe('amm', () => {
     const poolName = 'stETH_v1';
     const item = mainnetPools[poolName as keyof typeof mainnetPools];
 
-    const amm = await getAMM(item.vamm, provider, signer);
+    const amm = await getAMM({
+      vammAddress: item.vamm,
+      provider,
+      signer,
+    });
 
     const swapArgs = {
       isFT: false,
@@ -119,7 +133,11 @@ describe('amm', () => {
     const poolName = 'stETH_v1';
     const item = mainnetPools[poolName as keyof typeof mainnetPools];
 
-    const amm = await getAMM(item.vamm, provider, signer);
+    const amm = await getAMM({
+      vammAddress: item.vamm,
+      provider,
+      signer,
+    });
 
     const mintArgs = {
       isMint: true,
@@ -168,7 +186,11 @@ describe('amm', () => {
     const poolName = 'stETH_v1';
     const item = mainnetPools[poolName as keyof typeof mainnetPools];
 
-    const amm = await getAMM(item.vamm, provider, signer);
+    const amm = await getAMM({
+      vammAddress: item.vamm,
+      provider,
+      signer,
+    });
 
     const burnArgs = {
       isMint: false,
@@ -217,7 +239,11 @@ describe('amm', () => {
     const poolName = 'stETH_v1';
     const item = mainnetPools[poolName as keyof typeof mainnetPools];
 
-    const amm = await getAMM(item.vamm, provider, signer);
+    const amm = await getAMM({
+      vammAddress: item.vamm,
+      provider,
+      signer,
+    });
 
     const updateMarginArgs = {
       fixedLow: 1,

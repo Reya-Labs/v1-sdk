@@ -4,11 +4,15 @@ import AMM from '../src/entities/AMM/amm';
 
 // utility for testing and integrations
 // spawns up fully initialized AMM by vamm address
-export const getAMM = async (
-  vammAddress: string,
-  provider: providers.Provider,
-  signer: Signer,
-): Promise<AMM> => {
+export const getAMM = async ({
+  vammAddress,
+  provider,
+  signer,
+}: {
+  vammAddress: string;
+  provider: providers.Provider;
+  signer?: Signer;
+}): Promise<AMM> => {
   const vammContract = new ethers.Contract(vammAddress, VammABI, provider);
 
   const marginEngineAddress = await vammContract.marginEngine();
@@ -23,9 +27,9 @@ export const getAMM = async (
 
   const underlyingTokenAddress = await marginEngineContract.underlyingToken();
 
-  const termStartTimestamp = await marginEngineContract.termStartTimestampWad();
+  const termStartTimestampWad = await marginEngineContract.termStartTimestampWad();
 
-  const termEndTimestamp = await marginEngineContract.termEndTimestampWad();
+  const termEndTimestampWad = await marginEngineContract.termEndTimestampWad();
 
   const rateOracleContract = new ethers.Contract(rateOracleAddress, BaseRateOracleABI, provider);
 
@@ -41,8 +45,8 @@ export const getAMM = async (
     rateOracleAddress,
     underlyingTokenAddress,
 
-    termStartTimestamp,
-    termEndTimestamp,
+    termStartTimestampWad,
+    termEndTimestampWad,
 
     rateOracleID,
 
@@ -51,7 +55,9 @@ export const getAMM = async (
   });
 
   await amm.ammInit();
-  await amm.userInit(signer);
+  if (signer) {
+    await amm.userInit(signer);
+  }
 
   return amm;
 };

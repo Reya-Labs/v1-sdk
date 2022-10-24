@@ -1,5 +1,3 @@
-import { BigNumber } from 'ethers';
-
 export type Mint = {
   id: string;
   transactionId: string;
@@ -7,7 +5,7 @@ export type Mint = {
   ammId: string;
   timestamp: number;
   sender: string;
-  amount: BigNumber;
+  amount: number;
 };
 
 export type Burn = {
@@ -17,7 +15,7 @@ export type Burn = {
   ammId: string;
   timestamp: number;
   sender: string;
-  amount: BigNumber;
+  amount: number;
 };
 
 export type Swap = {
@@ -27,10 +25,10 @@ export type Swap = {
   ammId: string;
   timestamp: number;
   sender: string;
-  cumulativeFeeIncurred: BigNumber;
-  fixedTokenDelta: BigNumber;
-  variableTokenDelta: BigNumber;
-  fixedTokenDeltaUnbalanced: BigNumber;
+  cumulativeFeeIncurred: number;
+  fixedTokenDelta: number;
+  variableTokenDelta: number;
+  fixedTokenDeltaUnbalanced: number;
 };
 
 export type MarginUpdate = {
@@ -40,7 +38,7 @@ export type MarginUpdate = {
   ammId: string;
   positionId: string;
   depositer: string;
-  marginDelta: BigNumber;
+  marginDelta: number;
 };
 
 export type Liquidation = {
@@ -50,15 +48,15 @@ export type Liquidation = {
   ammId: string;
   positionId: string;
   liquidator: string;
-  reward: BigNumber;
-  notionalUnwound: BigNumber;
+  reward: number;
+  notionalUnwound: number;
 };
 
 export type Settlement = {
   id: string;
   transactionId: string;
-  transactionTimestamp: BigNumber;
+  timestamp: number;
   ammId: string;
   positionId: string;
-  settlementCashflow: BigNumber;
+  settlementCashflow: number;
 };

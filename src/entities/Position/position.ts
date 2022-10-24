@@ -3,7 +3,9 @@
 
 import { providers } from 'ethers';
 import { isUndefined } from 'lodash';
-import { tickToFixedRate, tickToSqrtPrice } from '../../utils/tickHandling';
+import { getAccruedCashflow } from '../../services/getAccruedCashflow';
+import { getLiquidityNotional } from '../../utils/liquidity';
+import { tickToFixedRate } from '../../utils/tickHandling';
 import { Burn, Liquidation, MarginUpdate, Mint, Settlement, Swap } from '../actions';
 import AMM from '../AMM/amm';
 import { PositionConstructorArgs } from './types';
@@ -36,6 +38,13 @@ export class Position {
   public readonly liquidations: Array<Liquidation>;
   public readonly settlements: Array<Settlement>;
 
+  public accruedCashflow: number;
+  public avgFixedRate: number;
+  public requirements: {
+    liquidation: number;
+    safety: number;
+  };
+
   public initialized = false;
 
   public constructor(args: PositionConstructorArgs) {
@@ -50,7 +59,7 @@ export class Position {
     this.positionType = args.positionType;
 
     this._liquidity = args.amm.tokenDescaler(args.liquidity);
-    this.accumulatedFees = 0;
+    this.accumulatedFees = args.amm.tokenDescaler(args.accumulatedFees);
 
     this.fixedTokenBalance = args.amm.tokenDescaler(args.fixedTokenBalance);
     this.variableTokenBalance = args.amm.tokenDescaler(args.variableTokenBalance);
@@ -64,14 +73,22 @@ export class Position {
     this.marginUpdates = args.marginUpdates;
     this.liquidations = args.liquidations;
     this.settlements = args.settlements;
+
+    this.avgFixedRate = 0;
+    this.accruedCashflow = 0;
+    this.requirements = {
+      liquidation: 0,
+      safety: 0,
+    };
   }
 
   // getters
   public get liquidity(): number {
-    const sqrtPriceLow = tickToSqrtPrice(this.tickLower);
-    const sqrtPriceHigh = tickToSqrtPrice(this.tickUpper);
-
-    return this._liquidity * (sqrtPriceHigh - sqrtPriceLow);
+    return getLiquidityNotional({
+      liquidity: this._liquidity,
+      tickLower: this.tickLower,
+      tickUpper: this.tickUpper,
+    });
   }
 
   public get fixedLow(): number {
@@ -84,13 +101,7 @@ export class Position {
 
   // loader
   init = async (): Promise<void> => {
-    if (this.initialized) {
-      console.log('The position is already initialized');
-      return;
-    }
-
-    if (isUndefined(this.provider)) {
-      console.log('Stop here... No provider');
+    if (this.initialized || isUndefined(this.provider)) {
       return;
     }
 
@@ -99,6 +110,9 @@ export class Position {
       // only LP's information is updated real-time
       await this.refreshPosition();
     }
+
+    await this.refreshCashflowInfo();
+    await this.refreshHealthFactors();
 
     this.initialized = true;
   };
@@ -123,4 +137,106 @@ export class Position {
     this.variableTokenBalance = this.amm.tokenDescaler(posInfo.variableTokenBalance);
     this.accumulatedFees = this.amm.tokenDescaler(posInfo.accumulatedFees);
   };
+
+  refreshCashflowInfo = async (): Promise<void> => {
+    if (isUndefined(this.amm.readOnlyContracts)) {
+      return;
+    }
+
+    if (this.isSettled) {
+      this.accruedCashflow = 0;
+      this.avgFixedRate = 0;
+      return;
+    }
+
+    const accruedCashflowInfo = await getAccruedCashflow({
+      swaps: this.swaps,
+      rateOracle: this.amm.readOnlyContracts.rateOracle,
+      currentTime: this.amm.matured ? this.amm.termEndTimestamp : this.amm.latestBlockTimestamp,
+      endTime: this.amm.termEndTimestamp,
+    });
+
+    this.accruedCashflow = accruedCashflowInfo.accruedCashflow;
+    this.avgFixedRate = accruedCashflowInfo.avgFixedRate;
+  };
+
+  refreshHealthFactors = async (): Promise<void> => {
+    if (isUndefined(this.amm.readOnlyContracts) || isUndefined(this.amm.latestBlockTimestamp)) {
+      return;
+    }
+
+    if (this.amm.matured) {
+      this.requirements = {
+        liquidation: 0,
+        safety: 0,
+      };
+      return;
+    }
+
+    const liquidationThreshold =
+      await this.amm.readOnlyContracts.marginEngine.callStatic.getPositionMarginRequirement(
+        this.owner,
+        this.tickLower,
+        this.tickUpper,
+        true,
+      );
+
+    const safetyThreshold =
+      await this.amm.readOnlyContracts.marginEngine.callStatic.getPositionMarginRequirement(
+        this.owner,
+        this.tickLower,
+        this.tickUpper,
+        false,
+      );
+
+    this.requirements = {
+      liquidation: this.amm.tokenDescaler(liquidationThreshold),
+      safety: this.amm.tokenDescaler(safetyThreshold),
+    };
+  };
+
+  // paying rate -- only for Traders
+  public get receivingRate(): number {
+    if (this.positionType === 1) {
+      return this.avgFixedRate;
+    }
+    return this.amm.variableApy;
+  }
+
+  // receiving rate -- only for Traders
+  public get payingRate(): number {
+    if (this.positionType === 1) {
+      return this.amm.variableApy;
+    }
+    return this.avgFixedRate;
+  }
+
+  // health factor
+  public get healthFactor(): 'GREEN' | 'YELLOW' | 'RED' {
+    if (this.margin >= this.requirements.safety) {
+      return 'GREEN';
+    }
+    if (this.margin >= this.requirements.liquidation) {
+      return 'YELLOW';
+    }
+    return 'RED';
+  }
+
+  // is the liquidity in range? -- only for LPs
+  public get inRange(): 'GREEN' | 'YELLOW' | 'RED' {
+    const proximity = 0.85;
+
+    if (
+      proximity * this.fixedLow + (1 - proximity) * this.fixedHigh <= this.amm.fixedApr &&
+      this.amm.fixedApr <= proximity * this.fixedHigh + (1 - proximity) * this.fixedLow
+    ) {
+      return 'GREEN';
+    }
+
+    if (this.fixedLow <= this.amm.fixedApr && this.amm.fixedApr <= this.fixedHigh) {
+      return 'YELLOW';
+    }
+
+    return 'RED';
+  }
 }

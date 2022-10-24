@@ -66,6 +66,8 @@
     "ethers": "^5.5.2",
     "evm-bn": "^1.1.1",
     "fraction.js": "^4.2.0",
+    "graphql": "^16.6.0",
+    "graphql-request": "^5.0.0",
     "jsbi": "^4.2.0",
     "lodash": "^4.17.21",
     "luxon": "^2.3.0",

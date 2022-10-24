@@ -41,8 +41,8 @@ The address should be included in `--beneficiaries`:
 
 ## Run test functions
 
-Run `yarn test src/entities`
-
+Run `yarn test`
+All tests should be run on top of a mainnet fork from block 15,817,900.
 
 # To publish via `yalc`
 
