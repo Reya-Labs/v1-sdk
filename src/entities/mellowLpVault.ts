@@ -1,6 +1,5 @@
 /* eslint-disable no-console */
-/* eslint-disable camelcase */
-/* eslint-disable lines-between-class-members */
+
 import {
   Signer,
   providers,
