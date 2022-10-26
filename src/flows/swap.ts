@@ -11,12 +11,14 @@ import {
 } from '../utils/errors/errorHandling';
 import { getGasBuffer } from '../utils/gasBuffer';
 import { getAvgFixedRate } from '../services/getAvgFixedRate';
+import { Position } from '../entities/Position/position';
 
 export type UserSwapInfoArgs = {
   isFT: boolean;
   notional: number;
   fixedLow: number;
   fixedHigh: number;
+  position?: Position;
 };
 
 export type UserSwapArgs = UserSwapInfoArgs & {
@@ -156,7 +158,7 @@ export const execSwap = async ({
   }
 };
 
-export type IntermmediateInfoPostSwap = {
+export type IntermmediateSwapInfo = {
   marginRequirement: number;
   tick: number;
   fee: number;
@@ -177,7 +179,7 @@ export const getSwapResult = async ({
   periphery: Contract;
   params: SwapParams;
   tokenDescaler: (amount: BigNumberish) => number;
-}): Promise<IntermmediateInfoPostSwap> => {
+}): Promise<IntermmediateSwapInfo> => {
   let result = {
     marginRequirement: ZERO_BN,
     tick: 0,

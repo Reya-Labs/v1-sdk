@@ -26,7 +26,7 @@ import {
 import { descale, scale } from '../../utils/scaling';
 import { getProtocolPrefix, getTokenInfo } from '../../services/getTokenInfo';
 import { getSlippage } from '../../services/getSlippage';
-import { AMMConstructorArgs, InfoPostMintOrBurn, InfoPostSwap } from './types';
+import { AMMConstructorArgs, MintOrBurnInfo, SwapInfo } from './types';
 
 import {
   BaseRateOracleABI,
@@ -63,12 +63,14 @@ import {
   processRolloverWithMintArguments,
   UserRolloverWithMintArgs,
 } from '../../flows/rolloverWithMint';
+import { addSwapsToCashflowInfo } from '../../services/getAccruedCashflow';
 
 // OPTIMISATION: when we call functions that might affect position (e.g. swap),
 // it'd be great to pass the Position object in order to get information (e.g. position margin)
 // or to refresh position information (e.g. margin refresher)
 
-// TODO: trim the ABIs
+// TODO: trim the ABIs if the size is too large
+// TODO: enforce types of the subgraph responses
 
 const geckoEthToUsd = async (): Promise<number> => {
   for (let attempt = 0; attempt < 5; attempt += 1) {
@@ -112,7 +114,7 @@ class AMM {
   // 1: amm general information loaded
   // 2: user general information loaded
   // 3: write functionalities loaded
-  private ammInitialized: 0 | 1 | 2 | 3 = 0;
+  public ammInitialized: 0 | 1 | 2 | 3 = 0;
 
   // general information
   public readOnlyContracts?: {
@@ -124,9 +126,7 @@ class AMM {
     token: Contract;
   };
 
-  public prices: {
-    ethToUsd: number;
-  };
+  public priceInUsd = 0;
 
   public variableApy: number;
 
@@ -140,13 +140,9 @@ class AMM {
 
   public userAddress?: string;
 
-  public walletBalances: {
-    underlyingToken: number;
-  };
+  public walletBalance = 0;
 
-  public approvals: {
-    underlyingToken: boolean;
-  };
+  public approval = false;
 
   public constructor(args: AMMConstructorArgs) {
     this.id = args.id;
@@ -172,16 +168,10 @@ class AMM {
     this.tokenDescaler = descale(this.tokenDecimals);
 
     this.variableApy = 0;
-    this.prices = {
-      ethToUsd: 0,
-    };
+    this.priceInUsd = 0;
     this.latestBlockTimestamp = 0;
-    this.walletBalances = {
-      underlyingToken: 0,
-    };
-    this.approvals = {
-      underlyingToken: false,
-    };
+    this.walletBalance = 0;
+    this.approval = false;
   }
 
   // general information loader
@@ -276,7 +266,7 @@ class AMM {
       return;
     }
 
-    const latestBlock = await this.provider.getBlock('latest');
+    const latestBlock = await this.provider.getBlock((await this.provider.getBlockNumber()) - 2);
     this.latestBlockTimestamp = latestBlock.timestamp;
   }
 
@@ -305,6 +295,11 @@ class AMM {
     const prefix = getProtocolPrefix(this.rateOracleID);
 
     return `${prefix}${this.tokenName}`;
+  }
+
+  // get value of the underlying token in USD
+  public amountInUSD(amount: number): number {
+    return this.priceInUsd * amount;
   }
 
   // Fixed APR of the VAMM
@@ -336,25 +331,23 @@ class AMM {
 
   // token prices
   refreshPrices = async (): Promise<void> => {
+    if (!this.isETH) {
+      this.priceInUsd = 1;
+      return;
+    }
     try {
       const ethToUsd = await geckoEthToUsd();
-      this.prices = {
-        ethToUsd,
-      };
+      this.priceInUsd = ethToUsd;
     } catch (error) {
       console.error(`Failing to fetch coinGecko prices. ${error}`);
-      this.prices = {
-        ethToUsd: 0,
-      };
+      this.priceInUsd = 0;
     }
   };
 
   // approvals
   refreshApprovals = async (): Promise<void> => {
     if (isUndefined(this.readOnlyContracts) || isUndefined(this.userAddress)) {
-      this.approvals = {
-        underlyingToken: false,
-      };
+      this.approval = false;
       return;
     }
 
@@ -363,9 +356,7 @@ class AMM {
       this.readOnlyContracts.periphery.address,
     );
 
-    this.approvals = {
-      underlyingToken: allowance.gte(TresholdApprovalBn),
-    };
+    this.approval = allowance.gte(TresholdApprovalBn);
   };
 
   // balances
@@ -375,9 +366,7 @@ class AMM {
       isUndefined(this.userAddress) ||
       isUndefined(this.provider)
     ) {
-      this.walletBalances = {
-        underlyingToken: 0,
-      };
+      this.walletBalance = 0;
       return;
     }
 
@@ -385,9 +374,7 @@ class AMM {
       ? await this.provider.getBalance(this.userAddress)
       : await this.readOnlyContracts.token.balanceOf(this.userAddress);
 
-    this.walletBalances = {
-      underlyingToken: this.tokenDescaler(balance),
-    };
+    this.walletBalance = this.tokenDescaler(balance);
   };
 
   // position information
@@ -435,7 +422,7 @@ class AMM {
   };
 
   // swap information
-  getSwapInfo = async (args: UserSwapInfoArgs): Promise<InfoPostSwap | undefined> => {
+  getSwapInfo = async (args: UserSwapInfoArgs): Promise<SwapInfo | undefined> => {
     if (isUndefined(this.readOnlyContracts)) {
       return;
     }
@@ -480,12 +467,33 @@ class AMM {
       console.error(`Unable to get maximum available notional. ${error}`);
     }
 
+    await this.refreshTimestamp();
+    const cashflowInfo = await addSwapsToCashflowInfo({
+      info: args.position?._cashflowInfo,
+      swaps: [
+        {
+          notional: results.variableTokenDelta,
+          time: this.latestBlockTimestamp,
+          avgFixedRate: Math.abs(
+            results.fixedTokenDeltaUnbalanced / results.variableTokenDelta / 100,
+          ),
+        },
+      ],
+      rateOracle: this.readOnlyContracts.rateOracle,
+      currentTime: this.latestBlockTimestamp,
+      endTime: this.termEndTimestamp,
+    });
+
     // return information
     return {
       ...results,
       marginRequirement: additionalMargin,
       slippage,
       maxAvailableNotional,
+      estimatedPnL: (predictedAPY: number) => {
+        const result = cashflowInfo.estimatedFutureCashflow(predictedAPY);
+        return result.fixed + result.variable;
+      },
     };
   };
 
@@ -545,9 +553,7 @@ class AMM {
   };
 
   // mint (or burn) information
-  getMintOrBurnInfo = async (
-    args: UserMintOrBurnInfoArgs,
-  ): Promise<InfoPostMintOrBurn | undefined> => {
+  getMintOrBurnInfo = async (args: UserMintOrBurnInfoArgs): Promise<MintOrBurnInfo | undefined> => {
     if (isUndefined(this.readOnlyContracts)) {
       return;
     }

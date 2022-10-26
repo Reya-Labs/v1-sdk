@@ -1,38 +1,90 @@
 import { Contract, utils } from 'ethers';
+import { isUndefined } from 'lodash';
 import { ONE_YEAR_IN_SECONDS } from '../constants';
-import { Swap } from '../entities/actions';
 
-const getAnnualizedTime = (start: number, end: number): number => {
-  return (end - start) / ONE_YEAR_IN_SECONDS;
-};
-
-export type AccruedCashflowInfo = {
+type Swap = {
+  time: number;
+  notional: number;
   avgFixedRate: number;
-  accruedCashflow: number;
 };
 
-export type AccruedCashflowArgs = {
+type CashflowInfo = {
+  time: number;
+  notional: number;
+  avgFixedRate: number;
+  lockedCashflow: {
+    fixed: number;
+    variable: number;
+  };
+};
+
+const DEFAULT_CASHFLOW_INFO: CashflowInfo = {
+  time: 0,
+  notional: 0,
+  avgFixedRate: 0,
+  lockedCashflow: {
+    fixed: 0,
+    variable: 0,
+  },
+};
+
+export type AdvancedCashflowInfo = CashflowInfo & {
+  accruingCashflow: {
+    fixed: number;
+    variable: number;
+  };
+  estimatedFutureCashflow: (predictedAPY: number) => {
+    fixed: number;
+    variable: number;
+  };
+};
+
+export const DEFAULT_ADVANCED_CASHFLOW_INFO: AdvancedCashflowInfo = {
+  ...DEFAULT_CASHFLOW_INFO,
+  accruingCashflow: {
+    fixed: 0,
+    variable: 0,
+  },
+  estimatedFutureCashflow: () => {
+    return {
+      fixed: 0,
+      variable: 0,
+    };
+  },
+};
+
+export type CashflowInfoArgs = {
+  info?: AdvancedCashflowInfo;
   swaps: Swap[];
   rateOracle: Contract;
   currentTime: number;
   endTime: number;
 };
 
-// get accrued cashflow of some position between two timestamps
-async function getAccruedCashflowBetween(
+const getAnnualizedTime = (start: number, end: number): number => {
+  return (end - start) / ONE_YEAR_IN_SECONDS;
+};
+
+// get locked cashflow of some position between two timestamps
+function getLockedCashflowBetween(
   notional: number,
   fixedRate: number,
-  rateOracle: Contract,
+  variableRate: number,
   from: number,
   to: number,
-) {
+): {
+  fixed: number;
+  variable: number;
+} {
   // if notional > 0 -- VT, receives variable, pays fixed
   // if notional < 0 -- FT, received fixed, pays variable
 
   const nTime = getAnnualizedTime(from, to);
-  const variableRate = Number(utils.formatUnits(await rateOracle.getApyFromTo(from, to), 18));
 
-  return notional * nTime * (variableRate - fixedRate);
+  return {
+    fixed: -notional * nTime * fixedRate,
+    variable: notional * nTime * variableRate,
+  };
 }
 
 // in the case of an unwind, get the locked "profit" in the fixed token balance
@@ -51,211 +103,257 @@ function getLockedInProfit(
   return notional * timeInYears * (fixedRate0 - fixedRate1);
 }
 
-// get the accrued cashflow and average fixed rate of particular position
-export const getAccruedCashflow = async ({
-  swaps: _swaps,
-  rateOracle,
-  currentTime,
-  endTime,
-}: AccruedCashflowArgs): Promise<AccruedCashflowInfo> => {
-  if (_swaps.length === 0) {
+const addSwap = (
+  info: CashflowInfo,
+  swap: Swap,
+  variableRateInBetween: number,
+  endTime: number,
+): CashflowInfo => {
+  if (info.time === 0) {
+    // info consists of no swaps
     return {
-      avgFixedRate: 0,
-      accruedCashflow: 0,
+      time: swap.time,
+      avgFixedRate: swap.avgFixedRate,
+      notional: swap.notional,
+      lockedCashflow: {
+        fixed: 0,
+        variable: 0,
+      },
     };
   }
 
-  const swaps = _swaps
-    .map((s: Swap) => {
-      return {
-        notional: s.variableTokenDelta,
-        time: s.timestamp,
-        avgFixedRate: Math.abs(s.fixedTokenDeltaUnbalanced / s.variableTokenDelta / 100),
-      };
-    })
-    .sort((a, b) => a.time - b.time);
+  if (info.time > swap.time) {
+    throw new Error('Invalid input in cashflow');
+  }
 
-  let info = {
-    accruedCashflow: 0,
-    ...swaps[0],
-  };
+  const timeUntilMaturity = getAnnualizedTime(swap.time, endTime);
 
-  for (let i = 1; i < swaps.length; i += 1) {
-    const timeUntilMaturity = getAnnualizedTime(swaps[i].time, endTime);
+  if (info.notional >= 0) {
+    // overall position: VT
 
-    if (info.notional >= 0) {
-      // overall position: VT
+    if (swap.notional < 0) {
+      // swap: FT
 
-      if (swaps[i].notional < 0) {
-        // swap: FT
+      if (info.notional + swap.notional > 0) {
+        // partial unwind
 
-        if (info.notional + swaps[i].notional > 0) {
-          // partial unwind
-
-          const lockedInProfit = getLockedInProfit(
-            swaps[i].notional,
-            timeUntilMaturity,
-            info.avgFixedRate,
-            swaps[i].avgFixedRate,
-          );
-
-          const accruedCashflowBetween = await getAccruedCashflowBetween(
-            -swaps[i].notional, // notional > 0
-            info.avgFixedRate,
-            rateOracle,
-            info.time,
-            swaps[i].time,
-          );
-
-          info = {
-            accruedCashflow: info.accruedCashflow + lockedInProfit + accruedCashflowBetween,
-            notional: info.notional + swaps[i].notional,
-            time: info.time,
-            avgFixedRate: info.avgFixedRate,
-          };
-        } else {
-          // full unwind + FT
-
-          const lockedInProfit = getLockedInProfit(
-            -info.notional,
-            timeUntilMaturity,
-            info.avgFixedRate,
-            swaps[i].avgFixedRate,
-          );
-
-          const accruedCashflowBetween = await getAccruedCashflowBetween(
-            info.notional, // notional > 0
-            info.avgFixedRate,
-            rateOracle,
-            info.time,
-            swaps[i].time,
-          );
-
-          info = {
-            accruedCashflow: info.accruedCashflow + lockedInProfit + accruedCashflowBetween,
-            notional: info.notional + swaps[i].notional,
-            time: swaps[i].time,
-            avgFixedRate: swaps[i].avgFixedRate,
-          };
-        }
-      } else {
-        // swap: VT -- extend position
-
-        const accruedCashflowBetween = await getAccruedCashflowBetween(
-          info.notional,
+        const lockedInProfit = getLockedInProfit(
+          swap.notional,
+          timeUntilMaturity,
           info.avgFixedRate,
-          rateOracle,
-          info.time,
-          swaps[i].time,
+          swap.avgFixedRate,
         );
 
-        info = {
-          accruedCashflow: info.accruedCashflow + accruedCashflowBetween,
-          notional: info.notional + swaps[i].notional,
-          time: swaps[i].time,
-          avgFixedRate:
-            (info.avgFixedRate * info.notional + swaps[i].avgFixedRate * swaps[i].notional) /
-            (info.notional + swaps[i].notional),
+        const accruedCashflowBetween = getLockedCashflowBetween(
+          -swap.notional, // notional > 0
+          info.avgFixedRate,
+          variableRateInBetween,
+          info.time,
+          swap.time,
+        );
+
+        return {
+          time: info.time,
+          notional: info.notional + swap.notional,
+          avgFixedRate: info.avgFixedRate,
+          lockedCashflow: {
+            fixed: info.lockedCashflow.fixed + lockedInProfit + accruedCashflowBetween.fixed,
+            variable: info.lockedCashflow.variable + accruedCashflowBetween.variable,
+          },
+        };
+      } else {
+        // full unwind + FT
+
+        const lockedInProfit = getLockedInProfit(
+          -info.notional,
+          timeUntilMaturity,
+          info.avgFixedRate,
+          swap.avgFixedRate,
+        );
+
+        const accruedCashflowBetween = getLockedCashflowBetween(
+          info.notional, // notional > 0
+          info.avgFixedRate,
+          variableRateInBetween,
+          info.time,
+          swap.time,
+        );
+
+        return {
+          time: swap.time,
+          notional: info.notional + swap.notional,
+          avgFixedRate: swap.avgFixedRate,
+          lockedCashflow: {
+            fixed: info.lockedCashflow.fixed + lockedInProfit + accruedCashflowBetween.fixed,
+            variable: info.lockedCashflow.variable + accruedCashflowBetween.variable,
+          },
         };
       }
     } else {
-      // position: FT
+      // swap: VT -- extend position
 
-      if (swaps[i].notional < 0) {
-        // swap: FT -- extend position
+      const accruedCashflowBetween = getLockedCashflowBetween(
+        info.notional,
+        info.avgFixedRate,
+        variableRateInBetween,
+        info.time,
+        swap.time,
+      );
 
-        const accruedCashflowBetween = await getAccruedCashflowBetween(
-          info.notional,
+      return {
+        time: swap.time,
+        notional: info.notional + swap.notional,
+        avgFixedRate:
+          (info.avgFixedRate * info.notional + swap.avgFixedRate * swap.notional) /
+          (info.notional + swap.notional),
+        lockedCashflow: {
+          fixed: info.lockedCashflow.fixed + accruedCashflowBetween.fixed,
+          variable: info.lockedCashflow.variable + accruedCashflowBetween.variable,
+        },
+      };
+    }
+  } else {
+    // position: FT
+
+    if (swap.notional < 0) {
+      // swap: FT -- extend position
+
+      const accruedCashflowBetween = getLockedCashflowBetween(
+        info.notional,
+        info.avgFixedRate,
+        variableRateInBetween,
+        info.time,
+        swap.time,
+      );
+
+      return {
+        time: swap.time,
+        notional: info.notional + swap.notional,
+        avgFixedRate:
+          (info.avgFixedRate * info.notional + swap.avgFixedRate * swap.notional) /
+          (info.notional + swap.notional),
+        lockedCashflow: {
+          fixed: info.lockedCashflow.fixed + accruedCashflowBetween.fixed,
+          variable: info.lockedCashflow.variable + accruedCashflowBetween.variable,
+        },
+      };
+    } else {
+      // swap: VT
+
+      if (info.notional + swap.notional < 0) {
+        // partial unwind
+
+        const lockedInProfit = getLockedInProfit(
+          swap.notional,
+          timeUntilMaturity,
           info.avgFixedRate,
-          rateOracle,
-          info.time,
-          swaps[i].time,
+          swap.avgFixedRate,
         );
 
-        info = {
-          accruedCashflow: info.accruedCashflow + accruedCashflowBetween,
-          notional: info.notional + swaps[i].notional,
-          time: swaps[i].time,
-          avgFixedRate:
-            (info.avgFixedRate * info.notional + swaps[i].avgFixedRate * swaps[i].notional) /
-            (info.notional + swaps[i].notional),
+        const accruedCashflowBetween = getLockedCashflowBetween(
+          -swap.notional, // notional < 0
+          info.avgFixedRate,
+          variableRateInBetween,
+          info.time,
+          swap.time,
+        );
+
+        return {
+          time: info.time,
+          notional: info.notional + swap.notional,
+          avgFixedRate: info.avgFixedRate,
+          lockedCashflow: {
+            fixed: info.lockedCashflow.fixed + lockedInProfit + accruedCashflowBetween.fixed,
+            variable: info.lockedCashflow.variable + accruedCashflowBetween.variable,
+          },
         };
       } else {
-        // swap: VT
+        // full unwind + VT
 
-        if (info.notional + swaps[i].notional < 0) {
-          // partial unwind
+        const lockedInProfit = getLockedInProfit(
+          -info.notional,
+          timeUntilMaturity,
+          info.avgFixedRate,
+          swap.avgFixedRate,
+        );
 
-          const lockedInProfit = getLockedInProfit(
-            swaps[i].notional,
-            timeUntilMaturity,
-            info.avgFixedRate,
-            swaps[i].avgFixedRate,
-          );
+        const accruedCashflowBetween = getLockedCashflowBetween(
+          info.notional, // notional < 0
+          info.avgFixedRate,
+          variableRateInBetween,
+          info.time,
+          swap.time,
+        );
 
-          const accruedCashflowBetween = await getAccruedCashflowBetween(
-            -swaps[i].notional, // notional < 0
-            info.avgFixedRate,
-            rateOracle,
-            info.time,
-            swaps[i].time,
-          );
-
-          info = {
-            accruedCashflow: info.accruedCashflow + lockedInProfit + accruedCashflowBetween,
-            notional: info.notional + swaps[i].notional,
-            time: info.time,
-            avgFixedRate: info.avgFixedRate,
-          };
-        } else {
-          // full unwind + VT
-
-          const lockedInProfit = getLockedInProfit(
-            -info.notional,
-            timeUntilMaturity,
-            info.avgFixedRate,
-            swaps[i].avgFixedRate,
-          );
-
-          const accruedCashflowBetween = await getAccruedCashflowBetween(
-            info.notional, // notional < 0
-            info.avgFixedRate,
-            rateOracle,
-            info.time,
-            swaps[i].time,
-          );
-
-          info = {
-            accruedCashflow: info.accruedCashflow + lockedInProfit + accruedCashflowBetween,
-            notional: info.notional + swaps[i].notional,
-            time: swaps[i].time,
-            avgFixedRate: swaps[i].avgFixedRate,
-          };
-        }
+        return {
+          time: swap.time,
+          notional: info.notional + swap.notional,
+          avgFixedRate: swap.avgFixedRate,
+          lockedCashflow: {
+            fixed: info.lockedCashflow.fixed + lockedInProfit + accruedCashflowBetween.fixed,
+            variable: info.lockedCashflow.variable + accruedCashflowBetween.variable,
+          },
+        };
       }
     }
   }
+};
 
-  // all swaps are processed, get the accrued of the overall position between the last update and now
-  {
-    const accruedCashflowBetween = await getAccruedCashflowBetween(
+const extendCashflowInfo = (
+  info: CashflowInfo,
+  variableRateUntilNow: number,
+  currentTime: number,
+  endTime: number,
+): AdvancedCashflowInfo => {
+  const accruingCashflow = getLockedCashflowBetween(
+    info.notional,
+    info.avgFixedRate,
+    variableRateUntilNow,
+    info.time,
+    endTime,
+  );
+
+  // calculation of estimating the future cashflow
+  const estimatedFutureCashflow = (predictedAPY: number) => {
+    return getLockedCashflowBetween(
       info.notional,
       info.avgFixedRate,
-      rateOracle,
-      info.time,
+      predictedAPY,
       currentTime,
+      endTime,
     );
-
-    info = {
-      accruedCashflow: info.accruedCashflow + accruedCashflowBetween,
-      notional: info.notional,
-      time: currentTime,
-      avgFixedRate: info.avgFixedRate,
-    };
-  }
+  };
 
   return {
-    avgFixedRate: info.avgFixedRate * 100,
-    accruedCashflow: info.accruedCashflow,
+    ...info,
+    accruingCashflow,
+    estimatedFutureCashflow,
   };
+};
+
+export const addSwapsToCashflowInfo = async ({
+  info: info_,
+  swaps,
+  rateOracle,
+  currentTime: currentTime_,
+  endTime,
+}: CashflowInfoArgs): Promise<AdvancedCashflowInfo> => {
+  const currentTime = currentTime_ <= endTime ? currentTime_ : endTime;
+  let info = isUndefined(info_) ? DEFAULT_CASHFLOW_INFO : info_;
+
+  for (let i = 0; i < swaps.length; i += 1) {
+    const variableRateInBetween =
+      info.time === 0
+        ? 0
+        : Number(utils.formatUnits(await rateOracle.getApyFromTo(info.time, swaps[i].time), 18));
+
+    info = addSwap(info, swaps[i], variableRateInBetween, endTime);
+  }
+
+  const variableRateUntilNow =
+    info.time === 0
+      ? 0
+      : Number(utils.formatUnits(await rateOracle.getApyFromTo(info.time, currentTime), 18));
+
+  return extendCashflowInfo(info, variableRateUntilNow, currentTime, endTime);
 };

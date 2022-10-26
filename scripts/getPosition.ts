@@ -1,96 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { BigNumber } from 'ethers';
-import { gql, GraphQLClient } from 'graphql-request';
-import { isUndefined } from 'lodash';
 import AMM from './entities/AMM/amm';
 import { Position } from '../src/entities/Position/position';
 import { burnMap, liquidationMap, marginUpdateMap, mintMap, settlementMap, swapMap } from './utils';
-
-const getPositionQuery = (positionId: string) => {
-  return `{
-        positions(where: {id: "${positionId}"}) {
-          id
-          createdTimestamp
-    
-          owner {
-            id
-          }
-          tickLower
-          tickUpper
-    
-          liquidity
-          margin
-          fixedTokenBalance
-          variableTokenBalance
-          accumulatedFees
-    
-          positionType
-          isSettled
-          
-          mints {
-            id
-            sender
-            transaction {
-              id
-              createdTimestamp
-            }
-            amount
-          }
-          burns {
-            id 
-            sender
-            transaction {
-              id
-              createdTimestamp
-            }
-            amount
-          }
-          swaps {
-            id 
-            sender
-            transaction {
-              id
-              createdTimestamp
-            }
-            desiredNotional
-            sqrtPriceLimitX96
-            cumulativeFeeIncurred
-            fixedTokenDelta
-            variableTokenDelta
-            fixedTokenDeltaUnbalanced
-          }
-          marginUpdates {
-            id 
-            transaction {
-              id
-              createdTimestamp
-            }
-            depositer
-            marginDelta
-          }
-          liquidations {
-            id
-            transaction {
-              id
-              createdTimestamp
-            }
-            liquidator
-            reward
-            notionalUnwound
-          }
-          settlements {
-            id 
-            transaction {
-              id
-              createdTimestamp
-            }
-            settlementCashflow
-          }
-        }
-      }
-    `;
-};
+import { getGraphPositions } from '../graph-queries/queries';
 
 export const getPosition = async ({
   amm,
@@ -102,24 +16,13 @@ export const getPosition = async ({
   userAddress: string;
   tickLower: number;
   tickUpper: number;
-}): Promise<Position> => {
+}): Promise<Position | undefined> => {
   const positionId = `${amm.marginEngineAddress.toLowerCase()}#${userAddress.toLowerCase()}#${tickLower.toString()}#${tickUpper.toString()}`;
-  const queryString = getPositionQuery(positionId);
 
-  const endpoint = process.env.REACT_APP_SUBGRAPH_URL;
-  if (isUndefined(endpoint)) {
-    throw new Error('You must set the Graph URL in the env file');
-  }
-
-  const graphQLClient = new GraphQLClient(endpoint);
-  const data = await graphQLClient.request(
-    gql`
-      ${queryString}
-    `,
-  );
+  const data = await getGraphPositions(`where: {id: "${positionId}"}`);
 
   if (data.positions.length === 0) {
-    throw new Error(`No position found with ID ${positionId}.`);
+    return;
   }
 
   const info = data.positions[0];

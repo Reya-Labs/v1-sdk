@@ -122,7 +122,7 @@ export const execMintOrBurn = async ({
   }
 };
 
-export type IntermmediateInfoPostMintOrBurn = {
+export type IntermmediateMintOrBurnInfo = {
   marginRequirement: number;
 };
 
@@ -136,7 +136,7 @@ export const getMintOrBurnResult = async ({
   periphery: Contract;
   params: MintOrBurnParams;
   tokenDescaler: (amount: BigNumberish) => number;
-}): Promise<IntermmediateInfoPostMintOrBurn> => {
+}): Promise<IntermmediateMintOrBurnInfo> => {
   let result = {
     marginRequirement: ZERO_BN,
   };

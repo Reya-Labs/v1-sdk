@@ -1,9 +1,10 @@
-/// TO DO: remove this
-/* eslint-disable no-console */
-
 import { providers } from 'ethers';
 import { isUndefined } from 'lodash';
-import { getAccruedCashflow } from '../../services/getAccruedCashflow';
+import {
+  addSwapsToCashflowInfo,
+  AdvancedCashflowInfo,
+  DEFAULT_ADVANCED_CASHFLOW_INFO,
+} from '../../services/getAccruedCashflow';
 import { getLiquidityNotional } from '../../utils/liquidity';
 import { tickToFixedRate } from '../../utils/tickHandling';
 import { Burn, Liquidation, MarginUpdate, Mint, Settlement, Swap } from '../actions';
@@ -38,8 +39,7 @@ export class Position {
   public readonly liquidations: Array<Liquidation>;
   public readonly settlements: Array<Settlement>;
 
-  public accruedCashflow: number;
-  public avgFixedRate: number;
+  public _cashflowInfo: AdvancedCashflowInfo = DEFAULT_ADVANCED_CASHFLOW_INFO;
   public requirements: {
     liquidation: number;
     safety: number;
@@ -74,8 +74,6 @@ export class Position {
     this.liquidations = args.liquidations;
     this.settlements = args.settlements;
 
-    this.avgFixedRate = 0;
-    this.accruedCashflow = 0;
     this.requirements = {
       liquidation: 0,
       safety: 0,
@@ -97,6 +95,15 @@ export class Position {
 
   public get fixedHigh(): number {
     return tickToFixedRate(this.tickLower);
+  }
+
+  public get accruedCashflow(): number {
+    return (
+      this._cashflowInfo.lockedCashflow.fixed +
+      this._cashflowInfo.lockedCashflow.variable +
+      this._cashflowInfo.accruingCashflow.fixed +
+      this._cashflowInfo.accruingCashflow.variable
+    );
   }
 
   // loader
@@ -144,20 +151,22 @@ export class Position {
     }
 
     if (this.isSettled) {
-      this.accruedCashflow = 0;
-      this.avgFixedRate = 0;
+      this._cashflowInfo = DEFAULT_ADVANCED_CASHFLOW_INFO;
       return;
     }
 
-    const accruedCashflowInfo = await getAccruedCashflow({
-      swaps: this.swaps,
+    this._cashflowInfo = await addSwapsToCashflowInfo({
+      swaps: this.swaps.map((s: Swap) => {
+        return {
+          notional: s.variableTokenDelta,
+          time: s.timestamp,
+          avgFixedRate: Math.abs(s.fixedTokenDeltaUnbalanced / s.variableTokenDelta / 100),
+        };
+      }),
       rateOracle: this.amm.readOnlyContracts.rateOracle,
       currentTime: this.amm.matured ? this.amm.termEndTimestamp : this.amm.latestBlockTimestamp,
       endTime: this.amm.termEndTimestamp,
     });
-
-    this.accruedCashflow = accruedCashflowInfo.accruedCashflow;
-    this.avgFixedRate = accruedCashflowInfo.avgFixedRate;
   };
 
   refreshHealthFactors = async (): Promise<void> => {
@@ -198,7 +207,7 @@ export class Position {
   // paying rate -- only for Traders
   public get receivingRate(): number {
     if (this.positionType === 1) {
-      return this.avgFixedRate;
+      return this._cashflowInfo.avgFixedRate;
     }
     return this.amm.variableApy;
   }
@@ -208,7 +217,7 @@ export class Position {
     if (this.positionType === 1) {
       return this.amm.variableApy;
     }
-    return this.avgFixedRate;
+    return this._cashflowInfo.avgFixedRate;
   }
 
   // health factor

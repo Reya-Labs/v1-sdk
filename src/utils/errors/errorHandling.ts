@@ -78,6 +78,6 @@ export const getReadableErrorMessage = (error: any): string => {
   return 'Unknown error';
 };
 
-export type RawInfoPostMint = {
+export type RawMintInfo = {
   marginRequirement: BigNumber;
 };

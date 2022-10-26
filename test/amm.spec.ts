@@ -51,9 +51,8 @@ describe('amm', () => {
     });
 
     await amm.approve();
-    const approval = amm.approvals;
 
-    expect(approval?.underlyingToken).toBe(true);
+    expect(amm.approval).toBe(true);
   });
 
   it('swap', async () => {
@@ -75,14 +74,14 @@ describe('amm', () => {
     };
 
     const swapInfo0 = await amm.getSwapInfo(swapArgs);
-    const balance0 = amm.walletBalances?.underlyingToken;
+    const balance0 = amm.walletBalance;
 
     expect(swapInfo0?.availableNotional).toBe(10);
 
     await amm.swap(swapArgs);
 
     const swapInfo1 = await amm.getSwapInfo(swapArgs);
-    const balance1 = amm.walletBalances?.underlyingToken;
+    const balance1 = amm.walletBalance;
 
     expect(swapInfo1?.maxAvailableNotional).toBe(
       (swapInfo0?.maxAvailableNotional ?? 0) - swapArgs.notional,
@@ -109,7 +108,7 @@ describe('amm', () => {
     };
 
     const swapInfo0 = await amm.getSwapInfo(swapArgs);
-    const balance0 = amm.walletBalances?.underlyingToken;
+    const balance0 = amm.walletBalance;
 
     expect(swapInfo0?.availableNotional).toBe(10);
 
@@ -121,7 +120,7 @@ describe('amm', () => {
     });
 
     const swapInfo1 = await amm.getSwapInfo(swapArgs);
-    const balance1 = amm.walletBalances?.underlyingToken;
+    const balance1 = amm.walletBalance;
 
     expect(swapInfo1?.maxAvailableNotional).toBe(
       (swapInfo0?.maxAvailableNotional ?? 0) - swapArgs.notional,
@@ -161,7 +160,7 @@ describe('amm', () => {
       tokenScaler: amm.tokenScaler,
       tokenDescaler: amm.tokenDescaler,
     });
-    const balance0 = amm.walletBalances?.underlyingToken;
+    const balance0 = amm.walletBalance;
 
     // execute Mint
     await amm.mintOrBurn(mintArgs);
@@ -175,7 +174,7 @@ describe('amm', () => {
       tokenScaler: amm.tokenScaler,
       tokenDescaler: amm.tokenDescaler,
     });
-    const balance1 = amm.walletBalances?.underlyingToken;
+    const balance1 = amm.walletBalance;
 
     // checks
     expect(availableFT1).toBe(availableFT0 + 10);
@@ -214,7 +213,7 @@ describe('amm', () => {
       tokenScaler: amm.tokenScaler,
       tokenDescaler: amm.tokenDescaler,
     });
-    const balance0 = amm.walletBalances?.underlyingToken;
+    const balance0 = amm.walletBalance;
 
     // execute Burn
     await amm.mintOrBurn(burnArgs);
@@ -228,7 +227,7 @@ describe('amm', () => {
       tokenScaler: amm.tokenScaler,
       tokenDescaler: amm.tokenDescaler,
     });
-    const balance1 = amm.walletBalances?.underlyingToken;
+    const balance1 = amm.walletBalance;
 
     // checks
     expect(availableFT1).toBe(availableFT0 - 10);
@@ -257,13 +256,13 @@ describe('amm', () => {
     }
 
     // get information before Update Margin
-    const balance0 = amm.walletBalances?.underlyingToken;
+    const balance0 = amm.walletBalance;
 
     // execute Update Margin
     await amm.updateMargin(updateMarginArgs);
 
     // get information after Update Margin
-    const balance1 = amm.walletBalances?.underlyingToken;
+    const balance1 = amm.walletBalance;
 
     // checks
     expect(balance1).toBeLessThanOrEqual((balance0 ?? 0) - updateMarginArgs.margin);

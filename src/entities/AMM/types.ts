@@ -19,7 +19,7 @@ export type AMMConstructorArgs = {
   tickSpacing: number;
 };
 
-export type InfoPostSwap = {
+export type SwapInfo = {
   marginRequirement: number;
   availableNotional: number;
   fee: number;
@@ -29,8 +29,9 @@ export type InfoPostSwap = {
   variableTokenDelta: number;
   fixedTokenDeltaUnbalanced: number;
   maxAvailableNotional?: number;
+  estimatedPnL: (predictedAPY: number) => number;
 };
 
-export type InfoPostMintOrBurn = {
+export type MintOrBurnInfo = {
   marginRequirement: number;
 };
