@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { BigNumber } from 'ethers';
-import AMM from './entities/AMM/amm';
+import { AMM } from './entities/AMM/amm';
 import { Position } from '../src/entities/Position/position';
 import { burnMap, liquidationMap, marginUpdateMap, mintMap, settlementMap, swapMap } from './utils';
-import { getGraphPositions } from '../graph-queries/queries';
+import { getGraphPositions } from '../graph-queries/positions';
 
 export const getPosition = async ({
   amm,

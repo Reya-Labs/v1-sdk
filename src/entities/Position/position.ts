@@ -8,7 +8,7 @@ import {
 import { getLiquidityNotional } from '../../utils/liquidity';
 import { tickToFixedRate } from '../../utils/tickHandling';
 import { Burn, Liquidation, MarginUpdate, Mint, Settlement, Swap } from '../actions';
-import AMM from '../AMM/amm';
+import { AMM } from '../AMM/amm';
 import { PositionConstructorArgs } from './types';
 
 export class Position {

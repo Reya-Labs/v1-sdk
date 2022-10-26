@@ -86,13 +86,12 @@ const geckoEthToUsd = async (): Promise<number> => {
   return 0;
 };
 
-class AMM {
+export class AMM {
   // address of the underlying VAMM
   public readonly id: string;
   public readonly provider?: providers.Provider;
 
   public readonly factoryAddress: string;
-  public readonly vammAddress: string;
   public readonly marginEngineAddress: string;
   public readonly rateOracleAddress: string;
   public readonly underlyingTokenAddress: string;
@@ -149,7 +148,6 @@ class AMM {
     this.provider = args.provider;
 
     this.factoryAddress = args.factoryAddress;
-    this.vammAddress = args.vammAddress;
     this.marginEngineAddress = args.marginEngineAddress;
     this.rateOracleAddress = args.rateOracleAddress;
     this.underlyingTokenAddress = args.underlyingTokenAddress;
@@ -189,7 +187,7 @@ class AMM {
     this.readOnlyContracts = {
       factory: factoryContract,
       periphery: new ethers.Contract(peripheryAddress, PeripheryABI, this.provider),
-      vamm: new ethers.Contract(this.vammAddress, VammABI, this.provider),
+      vamm: new ethers.Contract(this.id, VammABI, this.provider),
       marginEngine: new ethers.Contract(this.marginEngineAddress, MarginEngineABI, this.provider),
       rateOracle: new ethers.Contract(this.rateOracleAddress, BaseRateOracleABI, this.provider),
       token: new ethers.Contract(this.underlyingTokenAddress, IERC20MinimalABI, this.provider),
@@ -784,5 +782,3 @@ class AMM {
     return receipt;
   }
 }
-
-export default AMM;

@@ -5,7 +5,7 @@ import { ONE_YEAR_IN_SECONDS } from '../../constants';
 import { UserSwapInfoArgs } from '../../flows/swap';
 import { getAdditionalMargin } from '../../services/getAdditionalMargin';
 import { descale } from '../../utils/scaling';
-import AMM from '../AMM/amm';
+import { AMM } from '../AMM/amm';
 import { Position } from '../Position/position';
 import { BorrowAMMConstructorArgs, BorrowSwapInfo } from './types';
 

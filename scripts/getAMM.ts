@@ -1,6 +1,6 @@
 import { ethers, providers, Signer } from 'ethers';
 import { BaseRateOracleABI, MarginEngineABI, VammABI } from '../src/ABIs';
-import AMM from '../src/entities/AMM/amm';
+import { AMM } from '../src/entities/AMM/amm';
 
 // utility for testing and integrations
 // spawns up fully initialized AMM by vamm address
@@ -40,7 +40,6 @@ export const getAMM = async ({
     provider,
 
     factoryAddress,
-    vammAddress,
     marginEngineAddress,
     rateOracleAddress,
     underlyingTokenAddress,

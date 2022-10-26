@@ -2,10 +2,9 @@ import { BigNumber, providers } from 'ethers';
 
 export type AMMConstructorArgs = {
   id: string;
-  provider: providers.Provider;
+  provider?: providers.Provider;
 
   factoryAddress: string;
-  vammAddress: string;
   marginEngineAddress: string;
   rateOracleAddress: string;
   underlyingTokenAddress: string;

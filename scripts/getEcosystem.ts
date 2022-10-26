@@ -2,12 +2,12 @@
 
 import { BigNumber, providers, Signer } from 'ethers';
 import { isUndefined } from 'lodash';
-import AMM from './entities/AMM/amm';
+import { AMM } from './entities/AMM/amm';
 import { BorrowAMM } from '../src/entities/BorrowAMM/borrowAMM';
 import { Position } from '../src/entities/Position/position';
 import { getAMM } from './getAMM';
 import { mintMap, burnMap, swapMap, marginUpdateMap, liquidationMap, settlementMap } from './utils';
-import { getGraphPositions } from '../graph-queries/queries';
+import { getGraphPositions } from '../graph-queries/positions';
 
 type EcosystemInput = {
   whitelistedAMMs: string[];
