@@ -23,6 +23,7 @@
     "no-continue": "off",
     "no-else-return": "off",
     "no-loop-func": "off",
+    "no-nested-ternary": "off",
     "prettier/prettier": "error",
     "@typescript-eslint/indent": "off",
     "@typescript-eslint/no-unused-vars": "error",

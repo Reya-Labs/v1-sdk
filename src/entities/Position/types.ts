@@ -1,6 +1,6 @@
 import { BigNumber } from 'ethers';
 import { Mint, Burn, Swap, MarginUpdate, Liquidation, Settlement } from '../actions';
-import AMM from '../AMM/amm';
+import { AMM } from '../AMM/amm';
 
 export type PositionConstructorArgs = {
   id: string;

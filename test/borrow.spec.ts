@@ -1,10 +1,8 @@
 import { providers } from 'ethers';
 import * as dotenv from 'dotenv';
-import { getAMM } from '../scripts/getAMM';
 
 import * as mainnetPools from '../pool-addresses/mainnet.json';
-import { BorrowAMM } from '../src/entities/BorrowAMM/borrowAMM';
-import { getPosition } from '../scripts/getPosition';
+import { getBorrowAMM } from './utils/getBorrowAMM';
 
 dotenv.config();
 jest.setTimeout(50000);
@@ -17,25 +15,12 @@ describe('borrow amm', () => {
     const item = mainnetPools[poolName as keyof typeof mainnetPools];
 
     it(`initialisation ${poolName}`, async () => {
-      const amm = await getAMM({
+      await getBorrowAMM({
         vammAddress: item.vamm,
+        marginEngineAddress: item.marginEngine,
         provider,
         signer: userAddress,
       });
-
-      const borrowAmm = new BorrowAMM({
-        id: amm.id,
-        amm,
-      });
-
-      const position = await getPosition({
-        amm,
-        userAddress,
-        tickLower: -69000,
-        tickUpper: 69060,
-      });
-
-      await borrowAmm.init(position);
     });
   });
 });

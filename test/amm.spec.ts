@@ -1,10 +1,14 @@
+/* eslint-disable no-restricted-syntax */
+
 import { providers, Wallet } from 'ethers';
 import * as dotenv from 'dotenv';
 import { isUndefined } from 'lodash';
-import { getAMM } from '../scripts/getAMM';
 
 import * as mainnetPools from '../pool-addresses/mainnet.json';
 import { getMaxAvailableNotional } from '../src/services/getMaxAvailableNotional';
+import { getAMM } from './utils/getAMM';
+import { fail } from './utils/utils';
+import { AMM } from '../src/entities/AMM/amm';
 
 dotenv.config();
 jest.setTimeout(50000);
@@ -17,21 +21,36 @@ jest.setTimeout(50000);
 // tests specific to mainnet @ block ...
 
 describe('amm', () => {
+  const POOLS = ['aUSDC_v3', 'cDAI_v3', 'stETH_v1', 'rETH_v1'];
   const provider = new providers.JsonRpcProvider('http://localhost:8545');
   const signer = new Wallet(
     '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
     provider,
   ); // at address - 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+  const amms = new Map<string, AMM>();
 
-  ['aUSDC_v3', 'cDAI_v3', 'stETH_v1', 'rETH_v1'].forEach((poolName) => {
-    const item = mainnetPools[poolName as keyof typeof mainnetPools];
-
-    it(`initialisation ${poolName}`, async () => {
+  beforeAll(async () => {
+    for (const poolName of POOLS) {
+      const item = mainnetPools[poolName as keyof typeof mainnetPools];
       const amm = await getAMM({
         vammAddress: item.vamm,
         provider,
         signer,
       });
+
+      amms.set(poolName, amm);
+    }
+  });
+
+  POOLS.forEach((poolName) => {
+    it(`initialisation ${poolName}`, () => {
+      const amm = amms.get(poolName);
+      if (isUndefined(amm)) {
+        fail();
+        return;
+      }
+
+      const item = mainnetPools[poolName as keyof typeof mainnetPools];
 
       expect(amm.readOnlyContracts?.marginEngine.address).toBe(item.marginEngine);
       expect(amm.tokenDecimals).toBe(item.decimals);
@@ -40,30 +59,25 @@ describe('amm', () => {
     });
   });
 
-  it('approve operation', async () => {
-    const poolName = 'aUSDC_v3';
-    const item = mainnetPools[poolName as keyof typeof mainnetPools];
+  POOLS.forEach(async (poolName) => {
+    it(`approve operation on ${poolName}`, async () => {
+      const amm = amms.get(poolName);
+      if (isUndefined(amm)) {
+        fail();
+        return;
+      }
 
-    const amm = await getAMM({
-      vammAddress: item.vamm,
-      provider,
-      signer,
+      await amm.approve();
+      expect(amm.approval).toBe(true);
     });
-
-    await amm.approve();
-
-    expect(amm.approval).toBe(true);
   });
 
   it('swap', async () => {
-    const poolName = 'stETH_v1';
-    const item = mainnetPools[poolName as keyof typeof mainnetPools];
-
-    const amm = await getAMM({
-      vammAddress: item.vamm,
-      provider,
-      signer,
-    });
+    const amm = amms.get('stETH_v1');
+    if (isUndefined(amm)) {
+      fail();
+      return;
+    }
 
     const swapArgs = {
       isFT: true,
@@ -90,14 +104,11 @@ describe('amm', () => {
   });
 
   it('swap - full collateralisation', async () => {
-    const poolName = 'stETH_v1';
-    const item = mainnetPools[poolName as keyof typeof mainnetPools];
-
-    const amm = await getAMM({
-      vammAddress: item.vamm,
-      provider,
-      signer,
-    });
+    const amm = amms.get('stETH_v1');
+    if (isUndefined(amm)) {
+      fail();
+      return;
+    }
 
     const swapArgs = {
       isFT: false,
@@ -129,14 +140,11 @@ describe('amm', () => {
   });
 
   it('mint', async () => {
-    const poolName = 'stETH_v1';
-    const item = mainnetPools[poolName as keyof typeof mainnetPools];
-
-    const amm = await getAMM({
-      vammAddress: item.vamm,
-      provider,
-      signer,
-    });
+    const amm = amms.get('stETH_v1');
+    if (isUndefined(amm)) {
+      fail();
+      return;
+    }
 
     const mintArgs = {
       isMint: true,
@@ -182,14 +190,11 @@ describe('amm', () => {
   });
 
   it('burn', async () => {
-    const poolName = 'stETH_v1';
-    const item = mainnetPools[poolName as keyof typeof mainnetPools];
-
-    const amm = await getAMM({
-      vammAddress: item.vamm,
-      provider,
-      signer,
-    });
+    const amm = amms.get('stETH_v1');
+    if (isUndefined(amm)) {
+      fail();
+      return;
+    }
 
     const burnArgs = {
       isMint: false,
@@ -235,14 +240,11 @@ describe('amm', () => {
   });
 
   it('update margin', async () => {
-    const poolName = 'stETH_v1';
-    const item = mainnetPools[poolName as keyof typeof mainnetPools];
-
-    const amm = await getAMM({
-      vammAddress: item.vamm,
-      provider,
-      signer,
-    });
+    const amm = amms.get('stETH_v1');
+    if (isUndefined(amm)) {
+      fail();
+      return;
+    }
 
     const updateMarginArgs = {
       fixedLow: 1,

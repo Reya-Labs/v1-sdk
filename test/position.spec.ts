@@ -1,11 +1,8 @@
-/* eslint-disable no-restricted-syntax */
-
 import { providers } from 'ethers';
 import * as dotenv from 'dotenv';
-import { getPosition } from '../scripts/getPosition';
-import { getAMM } from '../scripts/getAMM';
 
 import * as mainnetPools from '../pool-addresses/mainnet.json';
+import { getPosition } from './utils/getPosition';
 
 dotenv.config();
 jest.setTimeout(50000);
@@ -21,15 +18,11 @@ describe('position', () => {
     const tickLower = -4680;
     const tickUpper = -3360;
 
-    const amm = await getAMM({
+    const position = await getPosition({
       vammAddress: item.vamm,
+      marginEngineAddress: item.marginEngine,
       provider,
       signer: userAddress,
-    });
-
-    const position = await getPosition({
-      amm,
-      userAddress,
       tickLower,
       tickUpper,
     });
@@ -50,7 +43,7 @@ describe('position', () => {
     expect(position?.fixedTokenBalance).toBeCloseTo(-737.63);
     expect(position?.variableTokenBalance).toBeCloseTo(513.33);
 
-    expect(position?.timestamp).toBe(1664540159);
+    expect(position?.timestamp).toBe(0);
     expect(position?.isSettled).toBe(false);
 
     expect(position?.requirements.liquidation).toBeGreaterThan(0);
@@ -64,18 +57,15 @@ describe('position', () => {
     const poolName = 'borrow_aUSDC_v1';
     const item = mainnetPools[poolName as keyof typeof mainnetPools];
 
-    const amm = await getAMM({
-      vammAddress: item.vamm,
-      provider,
-    });
-
     const userAddress = '0xf8f6b70a36f4398f0853a311dc6699aba8333cc1';
     const tickLower = -69060;
     const tickUpper = 0;
 
     const position = await getPosition({
-      amm,
-      userAddress,
+      vammAddress: item.vamm,
+      marginEngineAddress: item.marginEngine,
+      provider,
+      signer: userAddress,
       tickLower,
       tickUpper,
     });
@@ -94,12 +84,9 @@ describe('position', () => {
     expect(position?.fixedTokenBalance).toBeCloseTo(-1441.36);
     expect(position?.variableTokenBalance).toBeCloseTo(1000);
 
-    expect(position?.timestamp).toBe(1661156184);
+    expect(position?.timestamp).toBe(0);
     expect(position?.isSettled).toBe(false);
 
-    expect(position?.accruedCashflow).toBeGreaterThan(0);
-    expect(position?.receivingRate).toBeGreaterThan(0);
-    expect(position?.payingRate).toBeGreaterThan(0);
     expect(position?.requirements.liquidation).toBeGreaterThan(0);
     expect(position?.requirements.safety).toBeGreaterThan(0);
 
