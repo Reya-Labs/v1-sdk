@@ -5,7 +5,6 @@ import { AMM } from '../AMM/amm';
 import { getGraphAMMs } from '../../../graph-queries/amms';
 import { getGraphPositions } from '../../../graph-queries/positions';
 
-import * as mainnetPools from '../../../pool-addresses/mainnet.json';
 import { graphAMMsResponseToAMMs, graphPositionsResponseToPositions } from './mappings';
 
 export class Protocol {
@@ -102,32 +101,22 @@ export class Protocol {
   findBorrowAMM = (borrowAMMId: string): BorrowAMM | undefined => {
     return this.borrowAmms.find((item) => item.id.toLowerCase() === borrowAMMId.toLowerCase());
   };
+
+  public get lpPools(): AMM[] {
+    return this.amms.filter((amm) => this.lpWhitelistedAmms.has(amm.id));
+  }
+
+  public get traderPools(): AMM[] {
+    return this.amms.filter((amm) => this.traderWhitelistedAmms.has(amm.id));
+  }
+
+  public get lpPositions(): Position[] {
+    return this.positions.filter((position) => position.positionType === 3);
+  }
+
+  public get traderPositions(): Position[] {
+    return this.positions.filter(
+      (position) => position.positionType === 1 || position.positionType === 2,
+    );
+  }
 }
-
-const whitelistedAMMs = [
-  'stETH_v1',
-  'rETH_v1',
-  'borrow_aUSDC_v1',
-  'borrow_aETH_v1',
-  'borrow_cUSDT_v1',
-  'aDAI_v3',
-  'borrow_aETH_v2',
-  'aETH_v1',
-  'aUSDC_v3',
-  'cDAI_v3',
-].map((item) => mainnetPools[item as keyof typeof mainnetPools].vamm.toLowerCase());
-
-const protocol = new Protocol({
-  factoryAddress: '0x6a7a5c3824508D03F0d2d24E0482Bea39E08CcAF',
-  provider: new providers.JsonRpcProvider('http://localhost:8545'),
-  lpWhitelistedAmms: whitelistedAMMs,
-  traderWhitelistedAmms: whitelistedAMMs,
-});
-
-protocol.onLand().then(() => {
-  console.log('AMMs Done.', protocol.amms.length);
-  protocol.onConnect('0xF8F6B70a36f4398f0853a311dC6699Aba8333Cc1').then(() => {
-    console.log('Positions Done.', protocol.positions.length);
-    console.log('Borrow AMMs Done.', protocol.borrowAmms.length);
-  });
-});
