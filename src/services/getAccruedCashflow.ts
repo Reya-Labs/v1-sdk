@@ -1,4 +1,3 @@
-import { Contract, utils } from 'ethers';
 import { isUndefined } from 'lodash';
 import { ONE_YEAR_IN_SECONDS } from '../constants';
 
@@ -56,7 +55,7 @@ export const DEFAULT_ADVANCED_CASHFLOW_INFO: AdvancedCashflowInfo = {
 export type CashflowInfoArgs = {
   info?: AdvancedCashflowInfo;
   swaps: Swap[];
-  rateOracle: Contract;
+  apyGenerator: (from: number, to: number) => Promise<number>;
   currentTime: number;
   endTime: number;
 };
@@ -310,7 +309,7 @@ const extendCashflowInfo = (
     info.avgFixedRate,
     variableRateUntilNow,
     info.time,
-    endTime,
+    currentTime,
   );
 
   // calculation of estimating the future cashflow
@@ -334,7 +333,7 @@ const extendCashflowInfo = (
 export const addSwapsToCashflowInfo = async ({
   info: info_,
   swaps,
-  rateOracle,
+  apyGenerator,
   currentTime: currentTime_,
   endTime,
 }: CashflowInfoArgs): Promise<AdvancedCashflowInfo> => {
@@ -343,17 +342,12 @@ export const addSwapsToCashflowInfo = async ({
 
   for (let i = 0; i < swaps.length; i += 1) {
     const variableRateInBetween =
-      info.time === 0
-        ? 0
-        : Number(utils.formatUnits(await rateOracle.getApyFromTo(info.time, swaps[i].time), 18));
+      info.time === 0 ? 0 : await apyGenerator(info.time, swaps[i].time);
 
     info = addSwap(info, swaps[i], variableRateInBetween, endTime);
   }
 
-  const variableRateUntilNow =
-    info.time === 0
-      ? 0
-      : Number(utils.formatUnits(await rateOracle.getApyFromTo(info.time, currentTime), 18));
+  const variableRateUntilNow = info.time === 0 ? 0 : await apyGenerator(info.time, currentTime);
 
   return extendCashflowInfo(info, variableRateUntilNow, currentTime, endTime);
 };

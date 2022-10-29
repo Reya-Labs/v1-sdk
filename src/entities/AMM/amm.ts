@@ -99,6 +99,8 @@ export class AMM {
   public readonly tokenScaler: (amount: number) => BigNumber;
   public readonly tokenDescaler: (amount: BigNumberish) => number;
 
+  public apyGenerator: (from: number, to: number) => Promise<number> = async () => 0;
+
   // loading state
   // 0: uninitized
   // 1: amm general information loaded
@@ -183,6 +185,13 @@ export class AMM {
       marginEngine: new ethers.Contract(this.marginEngineAddress, MarginEngineABI, this.provider),
       rateOracle: new ethers.Contract(this.rateOracleAddress, BaseRateOracleABI, this.provider),
       token: new ethers.Contract(this.underlyingTokenAddress, IERC20MinimalABI, this.provider),
+    };
+
+    this.apyGenerator = async (from: number, to: number): Promise<number> => {
+      if (isUndefined(this.readOnlyContracts)) {
+        return 0;
+      }
+      return Number(descale(18)(await this.readOnlyContracts.rateOracle.getApyFromTo(from, to)));
     };
 
     // refresh information
@@ -458,6 +467,7 @@ export class AMM {
     }
 
     await this.refreshTimestamp();
+
     const cashflowInfo = await addSwapsToCashflowInfo({
       info: args.position?._cashflowInfo,
       swaps: [
@@ -469,7 +479,7 @@ export class AMM {
           ),
         },
       ],
-      rateOracle: this.readOnlyContracts.rateOracle,
+      apyGenerator: this.apyGenerator,
       currentTime: this.latestBlockTimestamp,
       endTime: this.termEndTimestamp,
     });

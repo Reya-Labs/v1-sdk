@@ -163,7 +163,7 @@ export class Position {
           avgFixedRate: Math.abs(s.fixedTokenDeltaUnbalanced / s.variableTokenDelta / 100),
         };
       }),
-      rateOracle: this.amm.readOnlyContracts.rateOracle,
+      apyGenerator: this.amm.apyGenerator,
       currentTime: this.amm.matured ? this.amm.termEndTimestamp : this.amm.latestBlockTimestamp,
       endTime: this.amm.termEndTimestamp,
     });
