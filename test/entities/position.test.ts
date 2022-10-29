@@ -1,8 +1,8 @@
 import { providers } from 'ethers';
 import * as dotenv from 'dotenv';
 
-import * as mainnetPools from '../pool-addresses/mainnet.json';
-import { getPosition } from './utils/getPosition';
+import * as mainnetPools from '../../pool-addresses/mainnet.json';
+import { getPosition } from '../utils/getPosition';
 
 dotenv.config();
 jest.setTimeout(50000);

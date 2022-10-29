@@ -19,16 +19,16 @@ export const extractErrorSignature = (message: string): string => {
 };
 
 export const getErrorReason = (error: any): string => {
-  if (typeof error.error.data === 'string') {
-    return error.error.data;
-  }
-
   if (typeof error.error.error.data.data === 'string') {
     return error.error.error.data.data;
   }
 
   if (typeof error.error.data.originalError.data === 'string') {
     return error.error.data.originalError.data;
+  }
+
+  if (typeof error.error.data === 'string') {
+    return error.error.data;
   }
 
   console.error(`Unknown error type. ${error}`);
@@ -71,11 +71,11 @@ export const getReadableErrorMessage = (error: any): string => {
     }
   }
 
-  if (errSig in Object.keys(errorJson)) {
+  try {
     return errorJson[errSig as keyof typeof errorJson];
+  } catch (_) {
+    return 'Unknown error';
   }
-
-  return 'Unknown error';
 };
 
 export type RawMintInfo = {

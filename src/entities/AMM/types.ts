@@ -3,6 +3,7 @@ import { BigNumber, providers } from 'ethers';
 export type AMMConstructorArgs = {
   id: string;
   provider?: providers.Provider;
+  coingeckoApiKey: string;
 
   factoryAddress: string;
   marginEngineAddress: string;

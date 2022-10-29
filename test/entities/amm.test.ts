@@ -4,11 +4,11 @@ import { providers, Wallet } from 'ethers';
 import * as dotenv from 'dotenv';
 import { isUndefined } from 'lodash';
 
-import * as mainnetPools from '../pool-addresses/mainnet.json';
-import { getMaxAvailableNotional } from '../src/services/getMaxAvailableNotional';
-import { getAMM } from './utils/getAMM';
-import { fail } from './utils/utils';
-import { AMM } from '../src/entities/AMM/amm';
+import * as mainnetPools from '../../pool-addresses/mainnet.json';
+import { getMaxAvailableNotional } from '../../src/services/getMaxAvailableNotional';
+import { getAMM } from '../utils/getAMM';
+import { fail } from '../utils/utils';
+import { AMM } from '../../src/entities/AMM/amm';
 
 dotenv.config();
 jest.setTimeout(50000);
@@ -268,5 +268,70 @@ describe('amm', () => {
 
     // checks
     expect(balance1).toBeLessThanOrEqual((balance0 ?? 0) - updateMarginArgs.margin);
+  });
+
+  it('attemp to settle', async () => {
+    const amm = amms.get('stETH_v1');
+    if (isUndefined(amm)) {
+      fail();
+      return;
+    }
+
+    const settleArgs = {
+      fixedLow: 1,
+      fixedHigh: 4,
+    };
+
+    await expect(amm.settle(settleArgs)).rejects.toEqual(Error('Cannot settle before maturity'));
+  });
+
+  it('attemp to rollover with mint', async () => {
+    const amm = amms.get('stETH_v1');
+    if (isUndefined(amm)) {
+      fail();
+      return;
+    }
+
+    const rolloverWithMintArgs = {
+      isMint: true,
+      notional: 10,
+      marginErc20: 0,
+      marginEth: 1,
+      fixedLow: 1,
+      fixedHigh: 2,
+      marginEngine: amm.marginEngineAddress,
+
+      previousFixedLow: 1,
+      previousFixedHigh: 4,
+    };
+
+    await expect(amm.rolloverWithMint(rolloverWithMintArgs)).rejects.toEqual(
+      Error('Cannot settle before maturity'),
+    );
+  });
+
+  it('attemp to rollover with swap', async () => {
+    const amm = amms.get('stETH_v1');
+    if (isUndefined(amm)) {
+      fail();
+      return;
+    }
+
+    const rolloverWithSwapArgs = {
+      isFT: true,
+      notional: 10,
+      marginErc20: 0,
+      marginEth: 1,
+      fixedLow: 1,
+      fixedHigh: 2,
+      marginEngine: amm.marginEngineAddress,
+
+      previousFixedLow: 1,
+      previousFixedHigh: 4,
+    };
+
+    await expect(amm.rolloverWithSwap(rolloverWithSwapArgs)).rejects.toEqual(
+      Error('Cannot settle before maturity'),
+    );
   });
 });

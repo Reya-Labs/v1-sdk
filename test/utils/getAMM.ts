@@ -1,6 +1,9 @@
 import { ethers, providers, Signer } from 'ethers';
+import * as dotenv from 'dotenv';
 import { BaseRateOracleABI, MarginEngineABI, VammABI } from '../../src/ABIs';
 import { AMM } from '../../src/entities/AMM/amm';
+
+dotenv.config();
 
 export const getAMM = async ({
   vammAddress,
@@ -36,6 +39,7 @@ export const getAMM = async ({
   const amm = new AMM({
     id: vammAddress,
     provider,
+    coingeckoApiKey: process.env.REACT_APP_COINGECKO_API_KEY || '',
 
     factoryAddress,
     marginEngineAddress,

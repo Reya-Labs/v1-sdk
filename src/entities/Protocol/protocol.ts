@@ -13,6 +13,8 @@ export class Protocol {
   public readonly allAmms: Set<string>;
   public readonly factoryAddress: string;
   public readonly provider?: providers.Provider;
+  public readonly coingeckoApiKey: string;
+  public readonly graphEndpoint: string;
 
   public amms: AMM[] = [];
   public positions: Position[] = [];
@@ -21,13 +23,17 @@ export class Protocol {
   public constructor({
     factoryAddress,
     provider,
+    coingeckoApiKey,
     lpWhitelistedAmms,
     traderWhitelistedAmms,
+    graphEndpoint,
   }: {
     factoryAddress: string;
     provider?: providers.Provider;
+    coingeckoApiKey: string;
     lpWhitelistedAmms: string[];
     traderWhitelistedAmms: string[];
+    graphEndpoint: string;
   }) {
     this.lpWhitelistedAmms = new Set<string>(lpWhitelistedAmms.map((item) => item.toLowerCase()));
     this.traderWhitelistedAmms = new Set<string>(
@@ -38,6 +44,8 @@ export class Protocol {
     );
     this.factoryAddress = factoryAddress;
     this.provider = provider;
+    this.coingeckoApiKey = coingeckoApiKey;
+    this.graphEndpoint = graphEndpoint;
   }
 
   onLand = async (): Promise<void> => {
@@ -47,8 +55,16 @@ export class Protocol {
     );
 
     const cond = `where: {id_in:[${ammAddresses}]}`;
-    const graphAMMs = await getGraphAMMs(cond);
-    this.amms = graphAMMsResponseToAMMs(graphAMMs, this.factoryAddress, this.provider);
+    const graphAMMs = await getGraphAMMs({
+      graphEndpoint: this.graphEndpoint,
+      cond,
+    });
+    this.amms = graphAMMsResponseToAMMs(
+      graphAMMs,
+      this.factoryAddress,
+      this.coingeckoApiKey,
+      this.provider,
+    );
 
     await Promise.allSettled(this.amms.map((amm) => amm.init()));
   };
@@ -64,7 +80,10 @@ export class Protocol {
     );
     const cond = `where: {owner: "${userAddress.toLowerCase()}", amm_in: [${ammAddresses}]}`;
 
-    const graphPositions = await getGraphPositions(cond);
+    const graphPositions = await getGraphPositions({
+      graphEndpoint: this.graphEndpoint,
+      cond,
+    });
     this.positions = graphPositionsResponseToPositions(graphPositions, this);
 
     await Promise.allSettled(this.positions.map((position) => position.init()));

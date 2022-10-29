@@ -18,7 +18,7 @@
     "prettier:fix": "prettier --write 'src/**/*.ts'",
     "eslint": "eslint 'src/**/*.ts'",
     "eslint:fix": "eslint --fix 'src/**/*.ts'",
-    "test": "jest",
+    "test": "jest --config=jest.config.js",
     "test:watch": "jest --watch",
     "release": "semantic-release",
     "irs-setup": "ts-node scripts/setup.ts",

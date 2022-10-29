@@ -1,8 +1,8 @@
 import { providers } from 'ethers';
 import * as dotenv from 'dotenv';
 
-import * as mainnetPools from '../pool-addresses/mainnet.json';
-import { getBorrowAMM } from './utils/getBorrowAMM';
+import * as mainnetPools from '../../pool-addresses/mainnet.json';
+import { getBorrowAMM } from '../utils/getBorrowAMM';
 
 dotenv.config();
 jest.setTimeout(50000);

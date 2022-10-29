@@ -19,12 +19,14 @@ import { Protocol } from './protocol';
 export const graphAMMsResponseToAMMs = (
   response: GetGraphAMMsResponse,
   factoryAddress: string,
+  coingeckoApiKey: string,
   provider?: providers.Provider,
 ): AMM[] => {
   return response.amms.map((item) => {
     return new AMM({
       id: item.id,
       provider,
+      coingeckoApiKey,
       factoryAddress,
       marginEngineAddress: item.marginEngine.id,
       rateOracleAddress: item.rateOracle.id,

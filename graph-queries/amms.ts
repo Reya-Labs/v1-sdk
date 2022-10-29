@@ -1,8 +1,5 @@
 import { GraphQLClient, gql } from 'graphql-request';
 import { isUndefined } from 'lodash';
-import * as dotenv from 'dotenv';
-
-dotenv.config();
 
 const getAMMsQuery = (cond?: string): string => {
   return `{
@@ -49,14 +46,19 @@ export type GetGraphAMMsResponse = {
   }[];
 };
 
-export const getGraphAMMs = async (cond?: string): Promise<GetGraphAMMsResponse> => {
-  const endpoint = process.env.REACT_APP_SUBGRAPH_URL;
-  if (isUndefined(endpoint)) {
+export const getGraphAMMs = async ({
+  graphEndpoint,
+  cond,
+}: {
+  graphEndpoint: string;
+  cond?: string;
+}): Promise<GetGraphAMMsResponse> => {
+  if (isUndefined(graphEndpoint)) {
     throw new Error('You must set the Graph URL in the env file');
   }
 
   const query = getAMMsQuery(cond);
-  const graphQLClient = new GraphQLClient(endpoint);
+  const graphQLClient = new GraphQLClient(graphEndpoint);
   const data = await graphQLClient.request(
     gql`
       ${query}

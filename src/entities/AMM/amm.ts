@@ -1,7 +1,4 @@
-/* eslint-disable consistent-return */
-/* eslint-disable no-await-in-loop */
 /* eslint-disable import/no-extraneous-dependencies */
-/* eslint-disable lines-between-class-members */
 
 import {
   BigNumber,
@@ -65,18 +62,11 @@ import {
 } from '../../flows/rolloverWithMint';
 import { addSwapsToCashflowInfo } from '../../services/getAccruedCashflow';
 
-// OPTIMISATION: when we call functions that might affect position (e.g. swap),
-// it'd be great to pass the Position object in order to get information (e.g. position margin)
-// or to refresh position information (e.g. margin refresher)
-
-// TODO: trim the ABIs if the size is too large
-// TODO: enforce types of the subgraph responses
-
-const geckoEthToUsd = async (): Promise<number> => {
+const geckoEthToUsd = async (coingeckoApiKey: string): Promise<number> => {
   for (let attempt = 0; attempt < 5; attempt += 1) {
     try {
       const data = await axios.get(
-        `https://pro-api.coingecko.com/api/v3/simple/price?x_cg_pro_api_key=${process.env.REACT_APP_COINGECKO_API_KEY}&ids=ethereum&vs_currencies=usd`,
+        `https://pro-api.coingecko.com/api/v3/simple/price?x_cg_pro_api_key=${coingeckoApiKey}&ids=ethereum&vs_currencies=usd`,
       );
       return data.data.ethereum.usd;
     } catch (error) {
@@ -90,6 +80,7 @@ export class AMM {
   // address of the underlying VAMM
   public readonly id: string;
   public readonly provider?: providers.Provider;
+  private readonly coingeckoApiKey: string;
 
   public readonly factoryAddress: string;
   public readonly marginEngineAddress: string;
@@ -146,6 +137,7 @@ export class AMM {
   public constructor(args: AMMConstructorArgs) {
     this.id = args.id;
     this.provider = args.provider;
+    this.coingeckoApiKey = args.coingeckoApiKey;
 
     this.factoryAddress = args.factoryAddress;
     this.marginEngineAddress = args.marginEngineAddress;
@@ -296,7 +288,7 @@ export class AMM {
   }
 
   // get value of the underlying token in USD
-  public amountInUSD(amount: number): number {
+  public getAmountInUSD(amount: number): number {
     return this.priceInUsd * amount;
   }
 
@@ -334,7 +326,7 @@ export class AMM {
       return;
     }
     try {
-      const ethToUsd = await geckoEthToUsd();
+      const ethToUsd = await geckoEthToUsd(this.coingeckoApiKey);
       this.priceInUsd = ethToUsd;
     } catch (error) {
       console.error(`Failing to fetch coinGecko prices. ${error}`);

@@ -1,8 +1,5 @@
 import { GraphQLClient, gql } from 'graphql-request';
 import { isUndefined } from 'lodash';
-import * as dotenv from 'dotenv';
-
-dotenv.config();
 
 const getPositionsQuery = (cond?: string): string => {
   return `{
@@ -185,14 +182,19 @@ export type GetGraphPositionsResponse = {
   }[];
 };
 
-export const getGraphPositions = async (cond?: string): Promise<GetGraphPositionsResponse> => {
-  const endpoint = process.env.REACT_APP_SUBGRAPH_URL;
-  if (isUndefined(endpoint)) {
+export const getGraphPositions = async ({
+  graphEndpoint,
+  cond,
+}: {
+  graphEndpoint: string;
+  cond?: string;
+}): Promise<GetGraphPositionsResponse> => {
+  if (isUndefined(graphEndpoint)) {
     throw new Error('You must set the Graph URL in the env file');
   }
 
   const query = getPositionsQuery(cond);
-  const graphQLClient = new GraphQLClient(endpoint);
+  const graphQLClient = new GraphQLClient(graphEndpoint);
   const data = await graphQLClient.request(
     gql`
       ${query}
