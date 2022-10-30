@@ -62,15 +62,19 @@ import {
 } from '../../flows/rolloverWithMint';
 import { addSwapsToCashflowInfo } from '../../services/getAccruedCashflow';
 
+// functionality that tries to fetch the eth/usd price from CoinGecko
 const geckoEthToUsd = async (coingeckoApiKey: string): Promise<number> => {
-  for (let attempt = 0; attempt < 5; attempt += 1) {
+  const noOfAttempts = 5;
+  for (let attempt = 0; attempt < noOfAttempts; attempt += 1) {
     try {
       const data = await axios.get(
         `https://pro-api.coingecko.com/api/v3/simple/price?x_cg_pro_api_key=${coingeckoApiKey}&ids=ethereum&vs_currencies=usd`,
       );
       return data.data.ethereum.usd;
     } catch (error) {
-      console.error(`Failed to fetch ETH-USD price. ${error}`);
+      console.error(
+        `Failed to fetch ETH-USD price [attempt: ${attempt}/${noOfAttempts}]. ${error}`,
+      );
     }
   }
   return 0;
@@ -79,26 +83,48 @@ const geckoEthToUsd = async (coingeckoApiKey: string): Promise<number> => {
 export class AMM {
   // address of the underlying VAMM
   public readonly id: string;
+  // JSON RPC provider
   public readonly provider?: providers.Provider;
+  // coingecko premium API key
   private readonly coingeckoApiKey: string;
 
+  // factory address of the protocol
   public readonly factoryAddress: string;
+  // margin engine address of the underlying pool
   public readonly marginEngineAddress: string;
+  // rate oracle address of the underlying pool
   public readonly rateOracleAddress: string;
+  // underlying token address of the underlying pool
   public readonly underlyingTokenAddress: string;
 
+  // start timestamp of the pool in wad (scaled by 1e18)
   public readonly termStartTimestampWad: BigNumber;
+  // end timestamp of the pool in wad (scaled by 1e18)
   public readonly termEndTimestampWad: BigNumber;
 
+  // rate oracle ID
+  // 1 - Aave Lending
+  // 2 - Compound Lending
+  // 3 - Lido
+  // 4 - Rocket
+  // 5 - Aave Borrowing
+  // 6 - Compound Borrowing
   public readonly rateOracleID: number;
+  // flag set when the pool has WETH as underlying token
   public readonly isETH: boolean;
 
+  // current tick of the pool
   public tick: number;
+  // tick spacing of the pool
   public readonly tickSpacing: number;
+  // functionality that format the fixed rates into appropriate ticks
   public readonly tickFormat: ([fixedLow, fixedHigh]: [number, number]) => [number, number];
+  // functionality that multiplies the numbers by 10 ** tokenDecimals
   public readonly tokenScaler: (amount: number) => BigNumber;
+  // functionality that divides the numbers by 10 ** tokenDecimals
   public readonly tokenDescaler: (amount: BigNumberish) => number;
 
+  // functionality that wraps up the rate oracle apy getter
   public apyGenerator: (from: number, to: number) => Promise<number> = async () => 0;
 
   // loading state
@@ -108,7 +134,7 @@ export class AMM {
   // 3: write functionalities loaded
   public ammInitialized: 0 | 1 | 2 | 3 = 0;
 
-  // general information
+  // read-only contracts (connected with provider)
   public readOnlyContracts?: {
     factory: Contract;
     periphery: Contract;
@@ -118,24 +144,31 @@ export class AMM {
     token: Contract;
   };
 
+  // this value is loaded from CoinGecko (or set to 1 if the underlying token is stable-coin)
   public priceInUsd = 0;
 
+  // current variable apy of the underlying protocol
   public variableApy: number;
 
+  // latest refereshed block timestamp
   public latestBlockTimestamp: number;
 
-  // user specific information
+  // write contracts (connected with signer)
   private writeContracts?: {
     periphery: Contract;
     token: Contract;
   };
 
+  // the address of the signer
   public userAddress?: string;
 
+  // the wallet balance of the signer in the underlying token
   public walletBalance = 0;
 
+  // flag set when the signer hass approved the underlying token to periphery
   public approval = false;
 
+  // constructor of the AMM object
   public constructor(args: AMMConstructorArgs) {
     this.id = args.id;
     this.provider = args.provider;
@@ -166,16 +199,16 @@ export class AMM {
     this.approval = false;
   }
 
-  // general information loader
+  // GENERAL INFORMATION loader
   private ammInit = async (): Promise<void> => {
+    // 0. check if the amm has not been initialized before and if the provider exists
     if (this.ammInitialized >= 1 || isUndefined(this.provider)) {
       return;
     }
 
-    // fetch read-only contracts
+    // 1. Fetch read-only contracts
     const factoryContract = new ethers.Contract(this.factoryAddress, FactoryABI, this.provider);
 
-    // GRAPH: possibility to load it from the graph
     const peripheryAddress = await factoryContract.periphery();
 
     this.readOnlyContracts = {
@@ -187,6 +220,7 @@ export class AMM {
       token: new ethers.Contract(this.underlyingTokenAddress, IERC20MinimalABI, this.provider),
     };
 
+    // 2. Build the APY generator around the rate oracle
     this.apyGenerator = async (from: number, to: number): Promise<number> => {
       if (isUndefined(this.readOnlyContracts)) {
         return 0;
@@ -194,34 +228,41 @@ export class AMM {
       return Number(descale(18)(await this.readOnlyContracts.rateOracle.getApyFromTo(from, to)));
     };
 
-    // refresh information
+    // 3. Load the general information of the AMM
     await this.refreshVariableApy();
     await this.refreshPrices();
     await this.refreshTimestamp();
 
+    // 4. Flag that the amm general information has been initialized
     this.ammInitialized = 1;
   };
 
-  // user general information loader
+  // USER INFORMATION loader
   private userGeneralInformationInit = async (userAddress: string): Promise<void> => {
+    // 0. check that the general information loader has been successfully executed before
     if (this.ammInitialized >= 2 || isUndefined(this.readOnlyContracts)) {
       return;
     }
 
+    // 1. Cache the connected user's address
     this.userAddress = userAddress;
 
+    // 2. Load the user information
     await this.refreshWalletBalances();
     await this.refreshApprovals();
 
+    // 3. Flag that the user general information has been initialized
     this.ammInitialized = 2;
   };
 
   // user write functionalities loader
   private userWriteFunctionalitiesInit = async (signer: Signer): Promise<void> => {
+    // 0. check that the general information user loader has been successfully executed before
     if (this.ammInitialized >= 3 || isUndefined(this.readOnlyContracts)) {
       return;
     }
 
+    // 1. Fetch write contracts
     this.writeContracts = {
       periphery: new ethers.Contract(
         this.readOnlyContracts.periphery.address,
@@ -231,17 +272,22 @@ export class AMM {
       token: new ethers.Contract(this.readOnlyContracts.token.address, IERC20MinimalABI, signer),
     };
 
+    // 2. Flag that the write functionalities have been initialized
     this.ammInitialized = 3;
   };
 
+  // external initializer
   init = async (signer?: Signer | string): Promise<void> => {
     if (isUndefined(signer)) {
+      // case 1: signer is undefined -> load only the amm general information
       await this.ammInit();
     } else {
+      // case 2: user address is passed -> load the amm and user general information
       if (typeof signer === 'string') {
         await this.ammInit();
         await this.userGeneralInformationInit(signer);
       } else {
+        // case 3: signer is passed -> load the amm, user general information and user's write functionalities
         await this.ammInit();
         const userAddress = await signer.getAddress();
         await this.userGeneralInformationInit(userAddress);
@@ -250,7 +296,7 @@ export class AMM {
     }
   };
 
-  // timestamps
+  // timestamps (in seconds)
   public get termStartTimestamp(): number {
     return Number(ethers.utils.formatUnits(this.termStartTimestampWad.toString(), 18));
   }
@@ -259,7 +305,7 @@ export class AMM {
     return Number(ethers.utils.formatUnits(this.termEndTimestampWad.toString(), 18));
   }
 
-  // latest block timestamp
+  // refresh latest block timestamp
   public async refreshTimestamp(): Promise<void> {
     if (isUndefined(this.provider)) {
       return;
@@ -301,7 +347,7 @@ export class AMM {
     return this.priceInUsd * amount;
   }
 
-  // Fixed APR of the VAMM
+  // refresh fixed APR
   refreshFixedApr = async (): Promise<void> => {
     if (isUndefined(this.readOnlyContracts)) {
       return;
@@ -310,11 +356,12 @@ export class AMM {
     this.tick = (await this.readOnlyContracts.vamm.vammVars())[1];
   };
 
+  // fixed APR getter
   public get fixedApr(): number {
     return 1.0001 ** -this.tick;
   }
 
-  // Variable APY of the VAMM
+  // refresh variable APY
   refreshVariableApy = async (): Promise<void> => {
     if (isUndefined(this.readOnlyContracts) || isUndefined(this.provider)) {
       return;
@@ -328,7 +375,7 @@ export class AMM {
     });
   };
 
-  // token prices
+  // refresh token prices
   refreshPrices = async (): Promise<void> => {
     if (!this.isETH) {
       this.priceInUsd = 1;
@@ -343,7 +390,7 @@ export class AMM {
     }
   };
 
-  // approvals
+  // refresh user's approvals
   refreshApprovals = async (): Promise<void> => {
     if (isUndefined(this.readOnlyContracts) || isUndefined(this.userAddress)) {
       this.approval = false;
@@ -358,7 +405,7 @@ export class AMM {
     this.approval = allowance.gte(TresholdApprovalBn);
   };
 
-  // balances
+  // refresh user's wallet balances
   refreshWalletBalances = async (): Promise<void> => {
     if (
       isUndefined(this.readOnlyContracts) ||
@@ -376,7 +423,7 @@ export class AMM {
     this.walletBalance = this.tokenDescaler(balance);
   };
 
-  // position information
+  // get position real-time margin
   getPositionMargin = async ({
     tickLower,
     tickUpper,
@@ -396,12 +443,14 @@ export class AMM {
     return this.tokenDescaler(positionInformation.margin);
   };
 
-  // approve operation
+  // approve [SMART CONTRACT CALL]
   approve = async (): Promise<ContractReceipt | undefined> => {
+    // 0. Check if write functionalities are enabled
     if (isUndefined(this.writeContracts) || isUndefined(this.readOnlyContracts)) {
       return;
     }
 
+    // 1. Execute the approve flow and get the receipt
     const receipt = await execApprove({
       token: this.writeContracts.token,
       params: {
@@ -410,22 +459,25 @@ export class AMM {
       },
     });
 
-    // refresh state
+    // 2. Refresh the state that changes after operation
     try {
       await this.refreshApprovals();
     } catch (error) {
-      console.error(`Failed to refresh wallet balances. ${error}`);
+      console.error(`Failed to refresh approvals. ${error}`);
     }
 
+    // 3. Return the receipt
     return receipt;
   };
 
-  // swap information
+  // get information about some potential swap
   getSwapInfo = async (args: UserSwapInfoArgs): Promise<SwapInfo | undefined> => {
+    // 0. Check if the read-only contracts are loaded
     if (isUndefined(this.readOnlyContracts)) {
       return;
     }
 
+    // 1. Build the parameters of the smart contract call
     const { swapParams } = processSwapArguments({
       ...args,
       marginErc20: 0,
@@ -436,23 +488,24 @@ export class AMM {
       tokenScaler: this.tokenScaler,
     });
 
+    // 2. Get the results of the swap simulation
     const results = await getSwapResult({
       periphery: this.readOnlyContracts.periphery,
       params: swapParams,
       tokenDescaler: this.tokenDescaler,
     });
 
-    // slippage
+    // 3. Compute the slippage
     const slippage = getSlippage(this.tick, results.tick);
 
-    // additional margin
+    // 4. Compute the additional margin
     const additionalMargin = getAdditionalMargin({
       requiredMargin: results.marginRequirement,
       currentMargin: await this.getPositionMargin(swapParams),
       fee: results.fee,
     });
 
-    // get max available notional
+    // 5. Simulate extremely large swap to get the maximum available notional of the pool
     let maxAvailableNotional: number | undefined;
     try {
       maxAvailableNotional = await getMaxAvailableNotional({
@@ -466,8 +519,10 @@ export class AMM {
       console.error(`Unable to get maximum available notional. ${error}`);
     }
 
-    await this.refreshTimestamp();
+    // 6. Refresh provider timestamp and get the accrued cashflow information
+    // of the position in the case this swap is executed
 
+    await this.refreshTimestamp();
     const cashflowInfo = await addSwapsToCashflowInfo({
       info: args.position?._cashflowInfo,
       swaps: [
@@ -484,7 +539,7 @@ export class AMM {
       endTime: this.termEndTimestamp,
     });
 
-    // return information
+    // 7. Return the result
     return {
       ...results,
       marginRequirement: additionalMargin,
@@ -497,18 +552,20 @@ export class AMM {
     };
   };
 
-  // swap operation
+  // swap [SMART CONTRACT CALL]
   swap = async (args: UserSwapArgs): Promise<ContractReceipt | undefined> => {
+    // 0. Check if write functionalities are enabled
     if (isUndefined(this.writeContracts) || isUndefined(this.readOnlyContracts)) {
       return;
     }
+
+    // 1. Build the parameters of the smart contract call
 
     // for ETH pools: deposit in ETH, withdrawals in WETH
     // for non-ETH pools: both in underlying token
     const [marginEth, marginErc20]: [number | undefined, number] =
       args.margin > 0 && this.isETH ? [args.margin, 0] : [undefined, args.margin];
 
-    // process arguments
     const { swapParams, ethDeposit } = processSwapArguments({
       ...args,
       marginErc20,
@@ -519,7 +576,9 @@ export class AMM {
       tokenScaler: this.tokenScaler,
     });
 
-    // get variable factor in the case where the swap is fully collateralised
+    // 2. In the case when this swap is forced to be fully-collaterilased,
+    // compute the variable factor and pass it to the execution
+
     let fullCollateralisation: { variableFactor: BigNumber } | undefined;
 
     if (!isUndefined(args.force) && !isUndefined(args.force.fullCollateralisation)) {
@@ -533,7 +592,7 @@ export class AMM {
       }
     }
 
-    // execute the swap and return the receipt
+    // 3. Execute the swap flow and get the receipt
     const receipt = await execSwap({
       periphery: this.writeContracts.periphery,
       params: swapParams,
@@ -541,24 +600,31 @@ export class AMM {
       fullCollateralisation,
     });
 
-    // refresh state
+    // 4. Refresh the state that changes after operation
     try {
       await this.refreshFixedApr();
-      await this.refreshWalletBalances();
     } catch (error) {
-      console.error(`Failed to refresh information post swap. ${error}`);
+      console.error(`Failed to refresh fixed apr. ${error}`);
     }
 
+    try {
+      await this.refreshWalletBalances();
+    } catch (error) {
+      console.error(`Failed to refresh wallet balance. ${error}`);
+    }
+
+    // 5. Return the receipt
     return receipt;
   };
 
-  // mint (or burn) information
+  // get information about some potential mint (or burn)
   getMintOrBurnInfo = async (args: UserMintOrBurnInfoArgs): Promise<MintOrBurnInfo | undefined> => {
+    // 0. Check if the read-only contracts are loaded
     if (isUndefined(this.readOnlyContracts)) {
       return;
     }
 
-    // process arguments
+    // 1. Build the parameters of the smart contract call
     const { mintOrBurnParams } = processMintOrBurnArguments({
       ...args,
       marginErc20: 0,
@@ -569,36 +635,40 @@ export class AMM {
       tokenScaler: this.tokenScaler,
     });
 
+    // 2. Get the results of the swap simulation
     const results = await getMintOrBurnResult({
       periphery: this.readOnlyContracts.periphery,
       params: mintOrBurnParams,
       tokenDescaler: this.tokenDescaler,
     });
 
-    // additional margin
+    // 3. Compute the additional margin
     const additionalMargin = getAdditionalMargin({
       requiredMargin: results.marginRequirement,
       currentMargin: await this.getPositionMargin(mintOrBurnParams),
       fee: 0,
     });
 
+    // 4. Return the result
     return {
       marginRequirement: additionalMargin,
     };
   };
 
-  // mint or burn operations
+  // mint or burn [SMART CONTRACT CALL]
   mintOrBurn = async (args: UserMintOrBurnArgs): Promise<ContractReceipt | undefined> => {
+    // 0. Check if write functionalities are enabled
     if (isUndefined(this.readOnlyContracts) || isUndefined(this.writeContracts)) {
       return;
     }
+
+    // 1. Build the parameters of the smart contract call
 
     // for ETH pools: deposit in ETH, withdrawals in WETH
     // for non-ETH pools: both in underlying token
     const [marginEth, marginErc20]: [number | undefined, number] =
       args.margin > 0 && this.isETH ? [args.margin, 0] : [undefined, args.margin];
 
-    // process arguments
     const { mintOrBurnParams, ethDeposit } = processMintOrBurnArguments({
       ...args,
       marginErc20,
@@ -609,37 +679,40 @@ export class AMM {
       tokenScaler: this.tokenScaler,
     });
 
-    // execute the swap and return the receipt
+    // 2. Execute the mint or burn flow and get the receipt
     const receipt = await execMintOrBurn({
       periphery: this.writeContracts.periphery,
       params: mintOrBurnParams,
       ethDeposit,
     });
 
-    // refresh state
+    // 3. Refresh the state that changes after operation
     try {
       await this.refreshWalletBalances();
     } catch (error) {
-      console.error(`Failed to refresh information post swap. ${error}`);
+      console.error(`Failed to refresh wallet balance. ${error}`);
     }
 
+    // 4. Return the receipt
     return receipt;
   };
 
-  // update margin operation
+  // update margin [SMART CONTRACT CALL]
   public updateMargin = async (
     args: UserUpdateMarginArgs,
   ): Promise<ContractReceipt | undefined> => {
+    // 0. Check if write functionalities are enabled
     if (isUndefined(this.readOnlyContracts) || isUndefined(this.writeContracts)) {
       return;
     }
+
+    // 1. Build the parameters of the smart contract call
 
     // for ETH pools: deposit in ETH, withdrawals in WETH
     // for non-ETH pools: both in underlying token
     const [marginEth, marginErc20]: [number | undefined, number] =
       args.margin > 0 && this.isETH ? [args.margin, 0] : [undefined, args.margin];
 
-    // process arguments
     const { updateMarginParams, ethDeposit } = processUpdateMarginArgumests({
       ...args,
       marginErc20,
@@ -650,25 +723,27 @@ export class AMM {
       tokenScaler: this.tokenScaler,
     });
 
-    // execute the operation and get the receipt
+    // 2. Execute the update margin flow and get the receipt
     const receipt = await execUpdateMargin({
       periphery: this.writeContracts.periphery,
       params: updateMarginParams,
       ethDeposit,
     });
 
-    // refresh state
+    // 3. Refresh the state that changes after operation
     try {
       await this.refreshWalletBalances();
     } catch (error) {
-      console.error(`Failed to refresh information post swap. ${error}`);
+      console.error(`Failed to refresh wallet balance. ${error}`);
     }
 
+    // 4. Return the receipt
     return receipt;
   };
 
-  // settle position
+  // settle position [SMART CONTRACT CALL]
   public settle = async (args: UserSettleArgs): Promise<ContractReceipt | undefined> => {
+    // 0. Check if write functionalities are enabled
     if (
       isUndefined(this.readOnlyContracts) ||
       isUndefined(this.writeContracts) ||
@@ -677,7 +752,7 @@ export class AMM {
       return;
     }
 
-    // process arguments
+    // 1. Build the parameters of the smart contract call
     const settleParams = processSettleArguments({
       ...args,
       owner: this.userAddress,
@@ -685,22 +760,24 @@ export class AMM {
       tickFormat: this.tickFormat,
     });
 
+    // 2. Execute the settle position flow and get the receipt
     const receipt = await execSettle({
       periphery: this.writeContracts.periphery,
       params: settleParams,
     });
 
-    // refresh state
+    // 3. Refresh the state that changes after operation
     try {
       await this.refreshWalletBalances();
     } catch (error) {
-      console.error(`Failed to refresh information post swap. ${error}`);
+      console.error(`Failed to refresh wallet balance. ${error}`);
     }
 
+    // 4. Return the receipt
     return receipt;
   };
 
-  // Rollover with swap
+  // Rollover with swap [SMART CONTRACT CALL]
   // 1. It settles and withdraw the position associated with this AMM
   //    (of [userAddress, previousFixedLow, previousFixedHigh])
   // 2. It creates a swap in the next margin engine [NOT this AMM]
@@ -708,6 +785,7 @@ export class AMM {
   public async rolloverWithSwap(
     userArgs: UserRolloverWithSwapArgs,
   ): Promise<ContractReceipt | undefined> {
+    // 0. Check if write functionalities are enabled
     if (
       isUndefined(this.readOnlyContracts) ||
       isUndefined(this.writeContracts) ||
@@ -716,7 +794,7 @@ export class AMM {
       return;
     }
 
-    // process arguments for Rollover with Swap
+    // 1. Build the parameters of the smart contract call
     const { rolloverWithSwapParams, ethDeposit } = processRolloverWithSwapArguments({
       ...userArgs,
       previousMarginEngine: this.readOnlyContracts.marginEngine.address,
@@ -725,24 +803,24 @@ export class AMM {
       tokenScaler: this.tokenScaler,
     });
 
-    // execute operation
+    // 2. Execute the rollover with swap flow and get the receipt
     const receipt = await execRolloverWithSwap({
       periphery: this.writeContracts.periphery,
       params: rolloverWithSwapParams,
       ethDeposit,
     });
 
-    // refresh state
+    // 3. Refresh the state that changes after operation
     try {
       await this.refreshWalletBalances();
     } catch (error) {
-      console.error(`Failed to refresh information post swap. ${error}`);
+      console.error(`Failed to refresh wallet balance. ${error}`);
     }
 
     return receipt;
   }
 
-  // Rollover with mint
+  // Rollover with mint [SMART CONTRACT CALL]
   // 1. It settles and withdraw the position associated with this AMM
   //    (of [userAddress, previousFixedLow, previousFixedHigh])
   // 2. It creates a mint in the next margin engine [NOT this AMM]
@@ -750,6 +828,7 @@ export class AMM {
   public async rolloverWithMint(
     userArgs: UserRolloverWithMintArgs,
   ): Promise<ContractReceipt | undefined> {
+    // 0. Check if write functionalities are enabled
     if (
       isUndefined(this.readOnlyContracts) ||
       isUndefined(this.writeContracts) ||
@@ -758,7 +837,7 @@ export class AMM {
       return;
     }
 
-    // process arguments for Rollover with Mint
+    // 1. Build the parameters of the smart contract call
     const { rolloverWithMintParams, ethDeposit } = processRolloverWithMintArguments({
       ...userArgs,
       previousMarginEngine: this.readOnlyContracts.marginEngine.address,
@@ -767,20 +846,21 @@ export class AMM {
       tokenScaler: this.tokenScaler,
     });
 
-    // execute operation
+    // 2. Execute the rollover with mint flow and get the receipt
     const receipt = await execRolloverWithMint({
       periphery: this.writeContracts.periphery,
       params: rolloverWithMintParams,
       ethDeposit,
     });
 
-    // refresh state
+    // 3. Refresh the state that changes after operation
     try {
       await this.refreshWalletBalances();
     } catch (error) {
-      console.error(`Failed to refresh information post swap. ${error}`);
+      console.error(`Failed to refresh wallet balance. ${error}`);
     }
 
+    // 4. Return the receipt
     return receipt;
   }
 }
