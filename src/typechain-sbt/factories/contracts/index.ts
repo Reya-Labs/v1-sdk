@@ -2,3 +2,4 @@
 /* tslint:disable */
 /* eslint-disable */
 export { CommunitySBT__factory } from "./CommunitySBT__factory";
+export { IERC5192__factory } from "./IERC5192__factory";

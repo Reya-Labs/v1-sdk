@@ -62,6 +62,8 @@ export interface CommunitySBTInterface extends utils.Interface {
     "getTokenIdHash(address,string)": FunctionFragment;
     "invalidateRoot(bytes32)": FunctionFragment;
     "isApprovedForAll(address,address)": FunctionFragment;
+    "locked(uint256)": FunctionFragment;
+    "multiRedeem((address,string)[],bytes32[][],bytes32[])": FunctionFragment;
     "name()": FunctionFragment;
     "owner()": FunctionFragment;
     "ownerOf(uint256)": FunctionFragment;
@@ -88,6 +90,8 @@ export interface CommunitySBTInterface extends utils.Interface {
       | "getTokenIdHash"
       | "invalidateRoot"
       | "isApprovedForAll"
+      | "locked"
+      | "multiRedeem"
       | "name"
       | "owner"
       | "ownerOf"
@@ -132,6 +136,18 @@ export interface CommunitySBTInterface extends utils.Interface {
   encodeFunctionData(
     functionFragment: "isApprovedForAll",
     values: [PromiseOrValue<string>, PromiseOrValue<string>]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "locked",
+    values: [PromiseOrValue<BigNumberish>]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "multiRedeem",
+    values: [
+      CommunitySBT.LeafInfoStruct[],
+      PromiseOrValue<BytesLike>[][],
+      PromiseOrValue<BytesLike>[]
+    ]
   ): string;
   encodeFunctionData(functionFragment: "name", values?: undefined): string;
   encodeFunctionData(functionFragment: "owner", values?: undefined): string;
@@ -221,6 +237,11 @@ export interface CommunitySBTInterface extends utils.Interface {
     functionFragment: "isApprovedForAll",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "locked", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "multiRedeem",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "name", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "ownerOf", data: BytesLike): Result;
@@ -265,19 +286,23 @@ export interface CommunitySBTInterface extends utils.Interface {
     "Approval(address,address,uint256)": EventFragment;
     "ApprovalForAll(address,address,bool)": EventFragment;
     "InvalidatedRoot(bytes32)": EventFragment;
+    "Locked(uint256)": EventFragment;
     "NewValidRoot(tuple)": EventFragment;
     "OwnershipTransferred(address,address)": EventFragment;
     "RedeemCommunitySBT(tuple,uint256)": EventFragment;
     "Transfer(address,address,uint256)": EventFragment;
+    "Unlocked(uint256)": EventFragment;
   };
 
   getEvent(nameOrSignatureOrTopic: "Approval"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "ApprovalForAll"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "InvalidatedRoot"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "Locked"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "NewValidRoot"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "OwnershipTransferred"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "RedeemCommunitySBT"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Transfer"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "Unlocked"): EventFragment;
 }
 
 export interface ApprovalEventObject {
@@ -313,6 +338,13 @@ export type InvalidatedRootEvent = TypedEvent<
 >;
 
 export type InvalidatedRootEventFilter = TypedEventFilter<InvalidatedRootEvent>;
+
+export interface LockedEventObject {
+  tokenId: BigNumber;
+}
+export type LockedEvent = TypedEvent<[BigNumber], LockedEventObject>;
+
+export type LockedEventFilter = TypedEventFilter<LockedEvent>;
 
 export interface NewValidRootEventObject {
   rootInfo: CommunitySBT.RootInfoStructOutput;
@@ -359,6 +391,13 @@ export type TransferEvent = TypedEvent<
 >;
 
 export type TransferEventFilter = TypedEventFilter<TransferEvent>;
+
+export interface UnlockedEventObject {
+  tokenId: BigNumber;
+}
+export type UnlockedEvent = TypedEvent<[BigNumber], UnlockedEventObject>;
+
+export type UnlockedEventFilter = TypedEventFilter<UnlockedEvent>;
 
 export interface CommunitySBT extends BaseContract {
   connect(signerOrProvider: Signer | Provider | string): this;
@@ -424,6 +463,18 @@ export interface CommunitySBT extends BaseContract {
       operator: PromiseOrValue<string>,
       overrides?: CallOverrides
     ): Promise<[boolean]>;
+
+    locked(
+      tokenId: PromiseOrValue<BigNumberish>,
+      overrides?: CallOverrides
+    ): Promise<[boolean]>;
+
+    multiRedeem(
+      leafInfos: CommunitySBT.LeafInfoStruct[],
+      proofs: PromiseOrValue<BytesLike>[][],
+      merkleRoots: PromiseOrValue<BytesLike>[],
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<ContractTransaction>;
 
     name(overrides?: CallOverrides): Promise<[string]>;
 
@@ -536,6 +587,18 @@ export interface CommunitySBT extends BaseContract {
     overrides?: CallOverrides
   ): Promise<boolean>;
 
+  locked(
+    tokenId: PromiseOrValue<BigNumberish>,
+    overrides?: CallOverrides
+  ): Promise<boolean>;
+
+  multiRedeem(
+    leafInfos: CommunitySBT.LeafInfoStruct[],
+    proofs: PromiseOrValue<BytesLike>[][],
+    merkleRoots: PromiseOrValue<BytesLike>[],
+    overrides?: Overrides & { from?: PromiseOrValue<string> }
+  ): Promise<ContractTransaction>;
+
   name(overrides?: CallOverrides): Promise<string>;
 
   owner(overrides?: CallOverrides): Promise<string>;
@@ -647,6 +710,18 @@ export interface CommunitySBT extends BaseContract {
       overrides?: CallOverrides
     ): Promise<boolean>;
 
+    locked(
+      tokenId: PromiseOrValue<BigNumberish>,
+      overrides?: CallOverrides
+    ): Promise<boolean>;
+
+    multiRedeem(
+      leafInfos: CommunitySBT.LeafInfoStruct[],
+      proofs: PromiseOrValue<BytesLike>[][],
+      merkleRoots: PromiseOrValue<BytesLike>[],
+      overrides?: CallOverrides
+    ): Promise<BigNumber[]>;
+
     name(overrides?: CallOverrides): Promise<string>;
 
     owner(overrides?: CallOverrides): Promise<string>;
@@ -744,6 +819,9 @@ export interface CommunitySBT extends BaseContract {
     "InvalidatedRoot(bytes32)"(merkleRoot?: null): InvalidatedRootEventFilter;
     InvalidatedRoot(merkleRoot?: null): InvalidatedRootEventFilter;
 
+    "Locked(uint256)"(tokenId?: null): LockedEventFilter;
+    Locked(tokenId?: null): LockedEventFilter;
+
     "NewValidRoot(tuple)"(rootInfo?: null): NewValidRootEventFilter;
     NewValidRoot(rootInfo?: null): NewValidRootEventFilter;
 
@@ -775,6 +853,9 @@ export interface CommunitySBT extends BaseContract {
       to?: PromiseOrValue<string> | null,
       tokenId?: PromiseOrValue<BigNumberish> | null
     ): TransferEventFilter;
+
+    "Unlocked(uint256)"(tokenId?: null): UnlockedEventFilter;
+    Unlocked(tokenId?: null): UnlockedEventFilter;
   };
 
   estimateGas: {
@@ -814,6 +895,18 @@ export interface CommunitySBT extends BaseContract {
       owner: PromiseOrValue<string>,
       operator: PromiseOrValue<string>,
       overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    locked(
+      tokenId: PromiseOrValue<BigNumberish>,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    multiRedeem(
+      leafInfos: CommunitySBT.LeafInfoStruct[],
+      proofs: PromiseOrValue<BytesLike>[][],
+      merkleRoots: PromiseOrValue<BytesLike>[],
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
 
     name(overrides?: CallOverrides): Promise<BigNumber>;
@@ -926,6 +1019,18 @@ export interface CommunitySBT extends BaseContract {
       owner: PromiseOrValue<string>,
       operator: PromiseOrValue<string>,
       overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    locked(
+      tokenId: PromiseOrValue<BigNumberish>,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    multiRedeem(
+      leafInfos: CommunitySBT.LeafInfoStruct[],
+      proofs: PromiseOrValue<BytesLike>[][],
+      merkleRoots: PromiseOrValue<BytesLike>[],
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
 
     name(overrides?: CallOverrides): Promise<PopulatedTransaction>;

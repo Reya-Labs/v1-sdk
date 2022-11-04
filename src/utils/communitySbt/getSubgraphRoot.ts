@@ -2,7 +2,7 @@ import { ApolloClient, InMemoryCache, gql, HttpLink } from '@apollo/client';
 import fetch from 'cross-fetch';
 import { Bytes } from 'ethers';
 
-const tokensQuery = `
+const rootsQuery = `
   query($timestamp: BigInt) {
     roots(where: {startTimestamp_lte: $timestamp, endTimestamp_gt: $timestamp}) {
         id
@@ -28,7 +28,7 @@ export async function getRoot(timestamp: number, subgraphUrl: string): Promise<R
   });
 
   const data = await client.query({
-    query: gql(tokensQuery),
+    query: gql(rootsQuery),
     variables: {
       timestamp: timestamp.toString(),
     },

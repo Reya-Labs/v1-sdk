@@ -3,8 +3,8 @@ import fetch from 'cross-fetch';
 import * as fs from 'fs';
 
 const tokensQuery = `
-  query($seasonStart: BigInt, $seasonEnd: BigInt) {
-    badges(where: {awardedTimestamp_gte: $seasonStart, awardedTimestamp_lt: $seasonEnd}) {
+  query( $seasonStart: BigInt, $seasonEnd: BigInt, $firstCount: Int, $skipCount: Int) {
+    badges(first: $firstCount, skip: $skipCount, where: {awardedTimestamp_gte: $seasonStart, awardedTimestamp_lt: $seasonEnd}) {
         id
         badgeType
         badgeName
@@ -12,7 +12,7 @@ const tokensQuery = `
         mintedTimestamp
     }
   }
-`
+`;
 
 export type LeafEntry = {
     owner: string,
@@ -30,30 +30,42 @@ export type LeafEntry = {
         link: new HttpLink({ uri: subgraphUrl, fetch })
     })
 
-    const data = await client
-      .query({
-        query: gql(tokensQuery),
-        variables: {
-            seasonStart: seasonStart.toString(), // season/period start timmestamp
-            seasonEnd: seasonEnd.toString()
-        },
-      });
+    const firstCount = 1000;
+    let skipCount = 0;
 
     let snapshot: Array<LeafEntry> = [];
 
-    for(const entry of data.data.badges) {
-        const badgeType = parseInt(entry.badgeType);
+    while (true) {
+        const data = await client
+        .query({
+            query: gql(tokensQuery),
+            variables: {
+                seasonStart: seasonStart.toString(), // season/period start timmestamp
+                seasonEnd: seasonEnd.toString(),
+                firstCount: firstCount,
+                skipCount: skipCount,
+            },
+        });
 
-        const props = entry.id.split("#");
-        const address = props[0];
+        for(const entry of data.data.badges) {
+            const badgeType = parseInt(entry.badgeType);
 
-        const metadataURI = baseMetadataUri + badgeType.toString() + ".json" 
+            const props = entry.id.split("#");
+            const address = props[0];
 
-        const snpashotEntry: LeafEntry = {
-          owner: address,
-          metadataURI: metadataURI
+            const metadataURI = baseMetadataUri + badgeType.toString() + ".json" 
+
+            const snpashotEntry: LeafEntry = {
+            owner: address,
+            metadataURI: metadataURI
+            }
+            snapshot.push(snpashotEntry);
         }
-        snapshot.push(snpashotEntry);
+
+        skipCount += firstCount;
+        if (data.data.badges.length !== firstCount) {
+            break;
+        }
     }
 
     return snapshot;
