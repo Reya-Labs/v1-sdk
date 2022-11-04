@@ -62,24 +62,26 @@ class SBT {
   ): Promise<BigNumber | void> {
 
     // wallet was not connected when the object was initialised
-    // therefpre, it couldn't obtain the contract connection
+    // therefore, it couldn't obtain the contract connection
     if (!this.contract) {
-        throw new Error('Wallet not connected');
+        throw new Error('Cannot connect to community SBT contract');
     }
-
-    // create mergle tree from subgraph derived leaves and get the root
-    const rootEntity = await getRoot(awardedTimestamp, subgraphAPI);
-
-    const metadataUri = rootEntity.baseMetadataUri + badgeType + '.json';
-    const leafInfo = {
-        account: owner,
-        metadataURI: metadataUri
-    }
-
-    const startTimestamp = rootEntity.startTimestamp;
-    const endTimestamp = rootEntity.endTimestamp;
 
     try {
+        // create merkle tree from subgraph derived leaves and get the root
+        const rootEntity = await getRoot(awardedTimestamp, subgraphAPI);
+        if(!rootEntity) {
+            throw new Error('No root found')
+        }
+        const metadataUri = rootEntity.baseMetadataUri + badgeType + '.json';
+        const leafInfo = {
+            account: owner,
+            metadataURI: metadataUri
+        }
+
+        const startTimestamp = rootEntity.startTimestamp;
+        const endTimestamp = rootEntity.endTimestamp;
+
         const leaves = await createLeaves(startTimestamp, endTimestamp, rootEntity.baseMetadataUri, subgraphAPI);
         const proof = getProof(owner, badgeType, metadataUri, leaves);
 
@@ -89,6 +91,7 @@ class SBT {
         await tx.wait();
         return tokenId;
     } catch (err) {
+        console.error(err);
         throw new Error("Unable to claim");
     }
   }
@@ -104,10 +107,11 @@ class SBT {
         badges: BadgeRecord[],
         owner: string,
         subgraphAPI: string
-    ): Promise<BigNumber | void> {
-
+    ): Promise<{
+        claimedBadgeTypes: number[]
+    }> {
         // wallet was not connected when the object was initialised
-        // therefpre, it couldn't obtain the contract connection
+        // therefore, it couldn't obtain the contract connection
         if (!this.contract) {
             throw new Error('Wallet not connected');
         }
@@ -115,13 +119,17 @@ class SBT {
         // parse through badges and create 
         // multiRedeem(LeafInfo[] memory leafInfos, bytes32[][] calldata proofs, bytes32[] memory merkleRoots) 
         let data: MultiRedeemData = {
-            leaves: new Array(),
-            proofs: new Array(),
-            roots: new Array()
+            leaves: [],
+            proofs: [],
+            roots: []
         }
+        const claimedBadgeTypes: number[] = [];
         for (const badge of badges) {
-            // create mergle tree from subgraph derived leaves and get the root
+            // create merkle tree from subgraph derived leaves and get the root
             const rootEntity = await getRoot(badge.awardedTimestamp, subgraphAPI);
+            if(!rootEntity) {
+                continue;
+            }
             const metadataUri = rootEntity.baseMetadataUri + badge.badgeType + '.json';
             const leafInfo: LeafInfo = {
                 account: owner,
@@ -136,12 +144,16 @@ class SBT {
             data.leaves.push(leafInfo);
             data.proofs.push(proof);
             data.roots.push(rootEntity.merkleRoot)
+            claimedBadgeTypes.push(badge.badgeType);
         }
 
         try {
             await this.contract.callStatic.multiRedeem(data.leaves, data.proofs, data.roots);
             const tx = await this.contract.multiRedeem(data.leaves, data.proofs, data.roots);
             await tx.wait()
+            return {
+                claimedBadgeTypes
+            }
         } catch (err) {
             throw new Error("Unable to claim multiple badges");
         }
