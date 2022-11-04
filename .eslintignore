@@ -1,6 +1,9 @@
 src/entities/amm.ts
 src/entities/position.ts
 src/entities/borrowAMM.ts
+src/entities/communitySBT.ts
+src/utils/communitySbt/getSubgraphLeaves.ts
+src/utils/communitySbt/merkle-tree.ts
 *.spec.ts
 # src/utils/errors/errorHandling.ts
 src/utils/errors/*
