@@ -1,6 +1,5 @@
 import { ApolloClient, InMemoryCache, gql, HttpLink } from '@apollo/client'
 import fetch from 'cross-fetch';
-import * as fs from 'fs';
 
 const tokensQuery = `
   query( $seasonStart: BigInt, $seasonEnd: BigInt, $firstCount: Int, $skipCount: Int) {
