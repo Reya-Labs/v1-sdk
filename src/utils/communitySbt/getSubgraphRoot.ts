@@ -1,4 +1,4 @@
-import { ApolloClient, InMemoryCache, gql, HttpLink } from '@apollo/client';
+import { ApolloClient, gql, HttpLink, InMemoryCache } from '@apollo/client';
 import fetch from 'cross-fetch';
 import { Bytes } from 'ethers';
 
@@ -21,7 +21,10 @@ export type RootEntity = {
   endTimestamp: number;
 };
 
-export async function getRoot(timestamp: number, subgraphUrl: string): Promise<RootEntity> {
+export async function getRoot(
+  timestamp: number,
+  subgraphUrl: string,
+): Promise<RootEntity | undefined> {
   const client = new ApolloClient({
     cache: new InMemoryCache(),
     link: new HttpLink({ uri: subgraphUrl, fetch }),
@@ -34,14 +37,16 @@ export async function getRoot(timestamp: number, subgraphUrl: string): Promise<R
     },
   });
 
-  const rootEntity = data.data.roots[0];
+  // TODO: add support for multiple roots, [0] is not enough
+  const rootEntity = (data.data.roots || [])[0];
+  if (!rootEntity) {
+    return undefined;
+  }
 
-  const response: RootEntity = {
+  return {
     merkleRoot: rootEntity.root,
     baseMetadataUri: rootEntity.metadataURIBase,
     startTimestamp: rootEntity.startTimestamp,
     endTimestamp: rootEntity.endTimestamp,
   };
-
-  return response;
 }
