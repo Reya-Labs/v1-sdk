@@ -62,24 +62,24 @@ class SBT {
   ): Promise<BigNumber | void> {
 
     // wallet was not connected when the object was initialised
-    // therefpre, it couldn't obtain the contract connection
+    // therefore, it couldn't obtain the contract connection
     if (!this.contract) {
-        throw new Error('Wallet not connected');
+        throw new Error('Cannot connect to community SBT contract');
     }
-
-    // create mergle tree from subgraph derived leaves and get the root
-    const rootEntity = await getRoot(awardedTimestamp, subgraphAPI);
-
-    const metadataUri = rootEntity.baseMetadataUri + badgeType + '.json';
-    const leafInfo = {
-        account: owner,
-        metadataURI: metadataUri
-    }
-
-    const startTimestamp = rootEntity.startTimestamp;
-    const endTimestamp = rootEntity.endTimestamp;
 
     try {
+        // create merkle tree from subgraph derived leaves and get the root
+        const rootEntity = await getRoot(awardedTimestamp, subgraphAPI);
+
+        const metadataUri = rootEntity.baseMetadataUri + badgeType + '.json';
+        const leafInfo = {
+            account: owner,
+            metadataURI: metadataUri
+        }
+
+        const startTimestamp = rootEntity.startTimestamp;
+        const endTimestamp = rootEntity.endTimestamp;
+
         const leaves = await createLeaves(startTimestamp, endTimestamp, rootEntity.baseMetadataUri, subgraphAPI);
         const proof = getProof(owner, badgeType, metadataUri, leaves);
 
