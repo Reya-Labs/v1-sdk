@@ -1,4 +1,4 @@
-/* eslint-disable no-console */
+// This represents an example of how to setup the protocol.
 
 import { providers } from 'ethers';
 import * as dotenv from 'dotenv';
@@ -29,10 +29,20 @@ const protocol = new Protocol({
   coingeckoApiKey: process.env.REACT_APP_COINGECKO_API_KEY || '',
 });
 
-protocol.onLand().then(() => {
-  console.log('AMMs Done.', protocol.allPools.length);
-  protocol.onConnect('0xF8F6B70a36f4398f0853a311dC6699Aba8333Cc1').then(() => {
-    console.log('Positions Done.', protocol.allPositions.length);
-    console.log('Borrow AMMs Done.', protocol.allBorrowPools.length);
-  });
-});
+const setup = async () => {
+  await protocol.onLand();
+  if (!(protocol.allPools.length === 10)) {
+    throw new Error('Pools have not been initialized.');
+  }
+
+  await protocol.onConnect('0xF8F6B70a36f4398f0853a311dC6699Aba8333Cc1');
+  if (!(protocol.allPositions.length >= 20)) {
+    throw new Error('Positions have not been initialized.');
+  }
+
+  if (!(protocol.allBorrowPools.length === 4)) {
+    throw new Error('Borrow pools have not been initialized.');
+  }
+};
+
+setup();
