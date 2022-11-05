@@ -8,8 +8,9 @@
     "declarationDir": "./dist/types"
   },
   "exclude": [
-    "./**/__tests__/**/*.spec.ts",
     "./dist/**/*",
-    "./scripts/**/*"
+    "./scripts/**/*",
+    "./playground/**/*",
+    "./test/**/*",
   ]
 }

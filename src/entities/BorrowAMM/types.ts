@@ -1,4 +1,4 @@
-import AMM from '../AMM/amm';
+import { AMM } from '../AMM/amm';
 import { SwapInfo } from '../AMM/types';
 
 export type BorrowAMMConstructorArgs = {
