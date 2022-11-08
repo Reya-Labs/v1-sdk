@@ -1,0 +1,27 @@
+name: Open pull request to main
+on:
+  pull_request:
+    branches:
+      - main
+jobs:
+  pr-check:
+    name: Main pull request
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: 'lts/*'
+      - name: Install dependencies
+        run: make install-ci
+      - name: Run eslint check
+        run: make eslint-check
+      - name: Run prettier check
+        run: make prettier-check
+      - name: Run tests
+        run: make test 

@@ -4,6 +4,12 @@ install:
 install-ci:
 	yarn --frozen-lockfile
 
+eslint-check:
+	yarn lint:check
+
+prettier-check:
+	yarn prettier:check
+
 test:
 	yarn test
 
