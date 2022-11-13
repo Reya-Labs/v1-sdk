@@ -1,8 +1,11 @@
-import { BigNumber, Bytes, Signer } from 'ethers';
+import { BigNumber, Bytes, ethers, providers, Signer } from 'ethers';
 import { CommunitySBT, CommunitySBT__factory } from '../typechain-sbt';
 import { createLeaves } from '../utils/communitySbt/getSubgraphLeaves';
 import { getRoot } from '../utils/communitySbt/getSubgraphRoot';
 import { getProof } from '../utils/communitySbt/merkle-tree';
+import  axios from 'axios';
+import { ApolloClient, InMemoryCache, gql, HttpLink } from '@apollo/client'
+import fetch from 'cross-fetch';
 
 export type SBTConstructorArgs = {
     id: string;
@@ -29,6 +32,7 @@ class SBT {
 
   public readonly id: string;
   public readonly signer: Signer | null;
+  public readonly provider: providers.Provider | undefined;
   public contract: CommunitySBT | null;
 
   /**
@@ -41,6 +45,7 @@ class SBT {
     this.signer = signer;
     if (signer) {
         this.contract = CommunitySBT__factory.connect(id, signer);
+        this.provider = signer.provider;
     } else {
         this.contract = null;
     }
@@ -172,6 +177,131 @@ class SBT {
     public async getTotalSupply() : Promise<BigNumber | void> {
         const totalSupply = await this.contract?.totalSupply();
         return totalSupply;
+    }
+
+    public async getBadgeStatus(apiKey: string, subgraphUrl: string, contractAddress: string, season: number) : Promise<Array<number>| void> {
+        if (this.signer) {
+            const userAddress = await this.signer.getAddress();
+            const network = await this.provider?.getNetwork();
+            const networkName = network ? network.name : "";
+
+            const getURL = this.getEtherscanURL(networkName, apiKey, userAddress);
+            const resp = await axios.get(getURL);
+
+            const multiRedeemId = this.getMethodId(true, networkName);
+            const redeemId = this.getMethodId(false, networkName);
+
+            if (!resp.data) {
+                throw new Error("Etherscan api failed")
+            }
+            const transactions = resp.data.result;
+            let claimingBadges = new Array<number>();
+
+            for (const transaction of transactions) {
+                // it is a redeem transaction
+                if (transaction.methodId === redeemId && transaction.to.toLowerCase() === contractAddress.toLowerCase()) {
+                    const badgeType = this.decodeBadgeType(transaction.input);
+                    if (transaction.txreceipt_status === 1) { // transaction successful
+                        console.log(3, transaction.methodId)
+                        const isClaimed = await this.isClamedInSubgraph(subgraphUrl, `${userAddress.toLowerCase()}#${badgeType}#${season}`);
+                        if(!isClaimed) {
+                            claimingBadges.push(badgeType);
+                        }
+                    }
+                } // it is a multiRedeem transaction TODO: findMethod id for multiredeem
+                else if (transaction.methodId === multiRedeemId && transaction.to.toLowerCase() === contractAddress.toLowerCase()) {
+                    const badgeTypes = this.decodeMultipleBadgeTypes(transaction.input);
+                    if (transaction.txreceipt_status === 1) { // transaction successful
+                        for (const badgeType of badgeTypes) {
+                            const isClaimed = await this.isClamedInSubgraph(subgraphUrl, `${userAddress.toLowerCase()}#${badgeType}#${season}`);
+                            if(!isClaimed) {
+                                claimingBadges.push(badgeType);
+                            }
+                        }
+                    }
+                }
+            }
+            return claimingBadges;
+        } else {
+            throw new Error("No provider found")
+        }
+        
+    }
+
+    public decodeBadgeType(input: Bytes): number {
+        const inter = new ethers.utils.Interface(CommunitySBT__factory.abi);
+        const decoded = inter.decodeFunctionData("redeem", input);
+        console.log(decoded[0])
+        const metadataURI = decoded[0].metadataURI;
+        const filenamme = metadataURI.split('/')[3];
+        const badgeType = parseInt(filenamme.split('.')[0]);
+
+        return badgeType;
+    }
+
+    public decodeMultipleBadgeTypes(input: Bytes): number[] {
+        let badgeTypes = new Array<number>;
+        const inter = new ethers.utils.Interface(CommunitySBT__factory.abi);
+        const decoded = inter.decodeFunctionData("multiRedeem", input);
+        for (const leafInfo of decoded[0]) {
+            console.log(leafInfo);
+            const metadataURI = leafInfo.metadataURI;
+            const filenamme = metadataURI.split('/')[3];
+            badgeTypes.push(parseInt(filenamme.split('.')[0]));
+        }
+        return badgeTypes;
+    }
+
+    async isClamedInSubgraph(subgraphUrl: string, id: string): Promise<boolean> {
+        const badgeQuery = `
+            query( $id: BigInt,) {
+                badge(id: $id) {
+                    id
+                    badgeType
+                    badgeName
+                    awardedTimestamp
+                    mintedTimestamp
+                }
+            }
+            `;
+        const client = new ApolloClient({
+            cache: new InMemoryCache(),
+            link: new HttpLink({ uri: subgraphUrl, fetch })
+        })
+        const data = await client.query({
+            query: gql(badgeQuery),
+            variables: {
+                id: id,
+            },
+        });
+
+        if(data.data.badge.mintedTimestamp != 0) {
+            return true;
+        }
+        return false;
+        
+    }
+
+    public getMethodId(isMultiRedeem: boolean, network: string): string {
+        switch (network) {
+            case "goerli":
+                return isMultiRedeem ? "0xbdb05092" : "0xbdb05092";
+            case "mainnet":
+                return isMultiRedeem ? "0x79a4aaa3" : "0x79a4aaa3";
+            default:
+                return "";
+        }
+    }
+
+    public getEtherscanURL(network: string, apiKey: string, userAddress: string): string {
+        switch (network) {
+            case "goerli":
+                return `https://api-goerli.etherscan.io/api?module=account&action=txlist&address=${userAddress}&page=1&offset=50&sort=desc&apikey=${apiKey}`
+            case "mainnet":
+                return `https://api-goerli.etherscan.io/api?module=account&action=txlist&address=${userAddress}&page=1&offset=50&sort=desc&apikey=${apiKey}`
+            default:
+                return "";
+        }
     }
 
 }
