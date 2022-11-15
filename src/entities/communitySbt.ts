@@ -28,6 +28,32 @@ type MultiRedeemData = {
     roots: Array<Bytes>;
 }
 
+enum TxBadgeStatus {
+    SUCCESSFUL,
+    FAILED,
+    PENDING
+}
+
+enum BadgeClaimingStatus {
+    CLAIMED,
+    CLAIMING,
+    NOT_CLAIMED
+}
+
+export type BadgeWithStatus = {
+    badgeType: number;
+    claimingStatus: BadgeClaimingStatus;
+}
+
+export type GetBadgesStatusArgs = {
+    apiKey: string;
+    subgraphUrl: string;
+    season: number;
+    potenetialClaimingBadges: Array<number>;
+}
+
+
+
 class SBT {
 
   public readonly id: string;
@@ -179,13 +205,13 @@ class SBT {
         return totalSupply;
     }
 
-    public async getBadgeStatus(apiKey: string, subgraphUrl: string, contractAddress: string, season: number) : Promise<Array<number>| void> {
+    public async getBadgeStatus(args: GetBadgesStatusArgs) : Promise<Array<BadgeWithStatus>| void> {
         if (this.signer) {
             const userAddress = await this.signer.getAddress();
             const network = await this.provider?.getNetwork();
             const networkName = network ? network.name : "";
 
-            const getURL = this.getEtherscanURL(networkName, apiKey, userAddress);
+            const getURL = this.getEtherscanURL(networkName, args.apiKey, userAddress);
             const resp = await axios.get(getURL);
 
             const multiRedeemId = this.getMethodId(true, networkName);
@@ -195,33 +221,61 @@ class SBT {
                 throw new Error("Etherscan api failed")
             }
             const transactions = resp.data.result;
-            let claimingBadges = new Array<number>();
 
+            // get last 50 transactions, match is redeem and set SUCC/FAILED status
+            let txBadges = new Map<number, TxBadgeStatus>();
             for (const transaction of transactions) {
-                // it is a redeem transaction
-                if (transaction.methodId === redeemId && transaction.to.toLowerCase() === contractAddress.toLowerCase()) {
-                    const badgeType = this.decodeBadgeType(transaction.input);
-                    if (transaction.txreceipt_status === 1) { // transaction successful
-                        console.log(3, transaction.methodId)
-                        const isClaimed = await this.isClamedInSubgraph(subgraphUrl, `${userAddress.toLowerCase()}#${badgeType}#${season}`);
-                        if(!isClaimed) {
-                            claimingBadges.push(badgeType);
+                if (transaction.to.toLowerCase() === this.contract?.address.toLowerCase()) {
+                    const status = transaction.txreceipt_status === 1 ? 
+                        TxBadgeStatus.SUCCESSFUL
+                        : TxBadgeStatus.FAILED;
+                    if (transaction.methodId === redeemId) {
+                        const badgeType = this.decodeBadgeType(transaction.input);
+                        txBadges.set(badgeType, status);
+                    } else if (transaction.methodId === multiRedeemId) {
+                        const badgeTypes = this.decodeMultipleBadgeTypes(transaction.input);
+                        for (const badgeType of badgeTypes) {
+                            txBadges.set(badgeType, status);
                         }
                     }
-                } // it is a multiRedeem transaction TODO: findMethod id for multiredeem
-                else if (transaction.methodId === multiRedeemId && transaction.to.toLowerCase() === contractAddress.toLowerCase()) {
-                    const badgeTypes = this.decodeMultipleBadgeTypes(transaction.input);
-                    if (transaction.txreceipt_status === 1) { // transaction successful
-                        for (const badgeType of badgeTypes) {
-                            const isClaimed = await this.isClamedInSubgraph(subgraphUrl, `${userAddress.toLowerCase()}#${badgeType}#${season}`);
-                            if(!isClaimed) {
-                                claimingBadges.push(badgeType);
-                            }
+                    
+                }
+            }
+
+            // if badges of interest are not part of those 50 transactions, set them as pending
+            for (const badgeType of args.potenetialClaimingBadges) {
+                if (!txBadges.get(badgeType)) {
+                    txBadges.set(badgeType, TxBadgeStatus.PENDING);
+                }
+            }
+
+            // badges claiming status in subgraph - includes all bades earned by user in given season
+            const subgraphClaimedBadges = await this.claimedBadgesInSubgraph(args.subgraphUrl, userAddress, args.season);
+
+            // final claiming status verdict
+            const badgeStatus = subgraphClaimedBadges.map((badge) => {
+                if(badge.claimingStatus === BadgeClaimingStatus.CLAIMED){
+                    return badge;
+                } else {
+                    const txStatus = txBadges.get(badge.badgeType);
+
+                    // badge not found in recent successful txs or in potential pending txs
+                    // meaning their status is desided by the subgraph
+                    if (!txStatus || txStatus === TxBadgeStatus.FAILED) { 
+                        return {
+                            badgeType: badge.badgeType, 
+                            claimingStatus: badge.claimingStatus
+                        }
+                    } else { // subgraph is not updated yet
+                        return {
+                            badgeType: badge.badgeType, 
+                            claimingStatus: BadgeClaimingStatus.CLAIMING
                         }
                     }
                 }
-            }
-            return claimingBadges;
+            })
+
+            return badgeStatus;
         } else {
             throw new Error("No provider found")
         }
@@ -252,10 +306,10 @@ class SBT {
         return badgeTypes;
     }
 
-    async isClamedInSubgraph(subgraphUrl: string, id: string): Promise<boolean> {
+    async claimedBadgesInSubgraph(subgraphUrl: string, userAddress: string, season: number): Promise<Array<BadgeWithStatus>> {
         const badgeQuery = `
-            query( $id: BigInt,) {
-                badge(id: $id) {
+            query( $id: BigInt) {
+                badges(first: 50, where: {seasonUser_contains: $id}) {
                     id
                     badgeType
                     badgeName
@@ -263,11 +317,12 @@ class SBT {
                     mintedTimestamp
                 }
             }
-            `;
+        `;
         const client = new ApolloClient({
             cache: new InMemoryCache(),
             link: new HttpLink({ uri: subgraphUrl, fetch })
         })
+        const id = `${userAddress}#${season}`
         const data = await client.query({
             query: gql(badgeQuery),
             variables: {
@@ -275,11 +330,17 @@ class SBT {
             },
         });
 
-        if(data.data.badge.mintedTimestamp != 0) {
-            return true;
+        let badgesClaimed = new Array<BadgeWithStatus>();
+        for (const badge of data.data.badges) {
+            badgesClaimed.push({
+                badgeType: badge.badgeType, 
+                claimingStatus: data.data.badge.mintedTimestamp == 0 ? 
+                    BadgeClaimingStatus.NOT_CLAIMED 
+                    : BadgeClaimingStatus.CLAIMED // only from subgraph's perspective
+            });
         }
-        return false;
-        
+
+        return badgesClaimed;
     }
 
     public getMethodId(isMultiRedeem: boolean, network: string): string {
