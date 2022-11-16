@@ -254,7 +254,7 @@ class SBT {
         const subgraphClaimedBadges = await this.claimedBadgesInSubgraph(args.subgraphUrl, userAddress, args.season);
 
         // final claiming status verdict
-        const badgeStatus = subgraphClaimedBadges.map((badge) => {
+        const badgeStatuses = subgraphClaimedBadges.map((badge) => {
             if(badge.claimingStatus === BadgeClaimingStatus.CLAIMED){
                 return badge;
             }
@@ -275,7 +275,7 @@ class SBT {
             }
         })
 
-        return badgeStatus;
+        return badgeStatuses;
         
     }
 
