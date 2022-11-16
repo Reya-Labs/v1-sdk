@@ -6,6 +6,7 @@ import { getProof } from '../utils/communitySbt/merkle-tree';
 import  axios from 'axios';
 import { ApolloClient, InMemoryCache, gql, HttpLink } from '@apollo/client'
 import fetch from 'cross-fetch';
+import { MULTI_REDEEM_METHOD_ID, REDEEM_METHOD_ID } from '../constants';
 
 export type SBTConstructorArgs = {
     id: string;
@@ -214,9 +215,6 @@ class SBT {
             const getURL = this.getEtherscanURL(networkName, args.apiKey, userAddress);
             const resp = await axios.get(getURL);
 
-            const multiRedeemId = this.getMethodId(true, networkName);
-            const redeemId = this.getMethodId(false, networkName);
-
             if (!resp.data) {
                 throw new Error("Etherscan api failed")
             }
@@ -229,10 +227,10 @@ class SBT {
                     const status = transaction.txreceipt_status === 1 ? 
                         TxBadgeStatus.SUCCESSFUL
                         : TxBadgeStatus.FAILED;
-                    if (transaction.methodId === redeemId) {
+                    if (transaction.methodId === REDEEM_METHOD_ID) {
                         const badgeType = this.decodeBadgeType(transaction.input);
                         txBadges.set(badgeType, status);
-                    } else if (transaction.methodId === multiRedeemId) {
+                    } else if (transaction.methodId === MULTI_REDEEM_METHOD_ID) {
                         const badgeTypes = this.decodeMultipleBadgeTypes(transaction.input);
                         for (const badgeType of badgeTypes) {
                             txBadges.set(badgeType, status);
@@ -285,7 +283,6 @@ class SBT {
     public decodeBadgeType(input: Bytes): number {
         const inter = new ethers.utils.Interface(CommunitySBT__factory.abi);
         const decoded = inter.decodeFunctionData("redeem", input);
-        console.log(decoded[0])
         const metadataURI = decoded[0].metadataURI;
         const filenamme = metadataURI.split('/')[3];
         const badgeType = parseInt(filenamme.split('.')[0]);
@@ -298,7 +295,6 @@ class SBT {
         const inter = new ethers.utils.Interface(CommunitySBT__factory.abi);
         const decoded = inter.decodeFunctionData("multiRedeem", input);
         for (const leafInfo of decoded[0]) {
-            console.log(leafInfo);
             const metadataURI = leafInfo.metadataURI;
             const filenamme = metadataURI.split('/')[3];
             badgeTypes.push(parseInt(filenamme.split('.')[0]));
@@ -343,23 +339,12 @@ class SBT {
         return badgesClaimed;
     }
 
-    public getMethodId(isMultiRedeem: boolean, network: string): string {
-        switch (network) {
-            case "goerli":
-                return isMultiRedeem ? "0xbdb05092" : "0xbdb05092";
-            case "mainnet":
-                return isMultiRedeem ? "0x79a4aaa3" : "0x79a4aaa3";
-            default:
-                return "";
-        }
-    }
-
     public getEtherscanURL(network: string, apiKey: string, userAddress: string): string {
         switch (network) {
             case "goerli":
                 return `https://api-goerli.etherscan.io/api?module=account&action=txlist&address=${userAddress}&page=1&offset=50&sort=desc&apikey=${apiKey}`
             case "mainnet":
-                return `https://api-goerli.etherscan.io/api?module=account&action=txlist&address=${userAddress}&page=1&offset=50&sort=desc&apikey=${apiKey}`
+                return `https://api.etherscan.io/api?module=account&action=txlist&address=${userAddress}&page=1&offset=50&sort=desc&apikey=${apiKey}`
             default:
                 return "";
         }
