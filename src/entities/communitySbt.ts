@@ -36,7 +36,7 @@ enum TxBadgeStatus {
     PENDING
 }
 
-enum BadgeClaimingStatus {
+export enum BadgeClaimingStatus {
     CLAIMED,
     CLAIMING,
     NOT_CLAIMED
