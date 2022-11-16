@@ -7,6 +7,7 @@ import  axios from 'axios';
 import { ApolloClient, InMemoryCache, gql, HttpLink } from '@apollo/client'
 import fetch from 'cross-fetch';
 import { MULTI_REDEEM_METHOD_ID, REDEEM_METHOD_ID } from '../constants';
+import { decodeBadgeType, decodeMultipleBadgeTypes, getBadgeTypeFromMetadataUri, getEtherscanURL } from '../utils/communitySbt/helpers';
 
 export type SBTConstructorArgs = {
     id: string;
@@ -50,7 +51,7 @@ export type GetBadgesStatusArgs = {
     apiKey: string;
     subgraphUrl: string;
     season: number;
-    potenetialClaimingBadges: Array<number>;
+    potentialClaimingBadgeTypes: Array<number>;
 }
 
 
@@ -207,99 +208,75 @@ class SBT {
     }
 
     public async getBadgeStatus(args: GetBadgesStatusArgs) : Promise<Array<BadgeWithStatus>| void> {
-        if (this.signer) {
-            const userAddress = await this.signer.getAddress();
-            const network = await this.provider?.getNetwork();
-            const networkName = network ? network.name : "";
-
-            const getURL = this.getEtherscanURL(networkName, args.apiKey, userAddress);
-            const resp = await axios.get(getURL);
-
-            if (!resp.data) {
-                throw new Error("Etherscan api failed")
-            }
-            const transactions = resp.data.result;
-
-            // get last 50 transactions, match is redeem and set SUCC/FAILED status
-            let txBadges = new Map<number, TxBadgeStatus>();
-            for (const transaction of transactions) {
-                if (transaction.to.toLowerCase() === this.contract?.address.toLowerCase()) {
-                    const status = transaction.txreceipt_status === 1 ? 
-                        TxBadgeStatus.SUCCESSFUL
-                        : TxBadgeStatus.FAILED;
-                    if (transaction.methodId === REDEEM_METHOD_ID) {
-                        const badgeType = this.decodeBadgeType(transaction.input);
-                        txBadges.set(badgeType, status);
-                    } else if (transaction.methodId === MULTI_REDEEM_METHOD_ID) {
-                        const badgeTypes = this.decodeMultipleBadgeTypes(transaction.input);
-                        for (const badgeType of badgeTypes) {
-                            txBadges.set(badgeType, status);
-                        }
-                    }
-                    
-                }
-            }
-
-            // if badges of interest are not part of those 50 transactions, set them as pending
-            for (const badgeType of args.potenetialClaimingBadges) {
-                if (!txBadges.get(badgeType)) {
-                    txBadges.set(badgeType, TxBadgeStatus.PENDING);
-                }
-            }
-
-            // badges claiming status in subgraph - includes all bades earned by user in given season
-            const subgraphClaimedBadges = await this.claimedBadgesInSubgraph(args.subgraphUrl, userAddress, args.season);
-
-            // final claiming status verdict
-            const badgeStatus = subgraphClaimedBadges.map((badge) => {
-                if(badge.claimingStatus === BadgeClaimingStatus.CLAIMED){
-                    return badge;
-                } else {
-                    const txStatus = txBadges.get(badge.badgeType);
-
-                    // badge not found in recent successful txs or in potential pending txs
-                    // meaning their status is desided by the subgraph
-                    if (!txStatus || txStatus === TxBadgeStatus.FAILED) { 
-                        return {
-                            badgeType: badge.badgeType, 
-                            claimingStatus: badge.claimingStatus
-                        }
-                    } else { // subgraph is not updated yet
-                        return {
-                            badgeType: badge.badgeType, 
-                            claimingStatus: BadgeClaimingStatus.CLAIMING
-                        }
-                    }
-                }
-            })
-
-            return badgeStatus;
-        } else {
+        if (!this.signer) { 
             throw new Error("No provider found")
         }
-        
-    }
+        const userAddress = await this.signer.getAddress();
+        const network = await this.provider?.getNetwork();
+        const networkName = network ? network.name : "";
 
-    public decodeBadgeType(input: Bytes): number {
-        const inter = new ethers.utils.Interface(CommunitySBT__factory.abi);
-        const decoded = inter.decodeFunctionData("redeem", input);
-        const metadataURI = decoded[0].metadataURI;
-        const filenamme = metadataURI.split('/')[3];
-        const badgeType = parseInt(filenamme.split('.')[0]);
+        const getURL = getEtherscanURL(networkName, args.apiKey, userAddress);
+        const resp = await axios.get(getURL);
 
-        return badgeType;
-    }
-
-    public decodeMultipleBadgeTypes(input: Bytes): number[] {
-        let badgeTypes = new Array<number>;
-        const inter = new ethers.utils.Interface(CommunitySBT__factory.abi);
-        const decoded = inter.decodeFunctionData("multiRedeem", input);
-        for (const leafInfo of decoded[0]) {
-            const metadataURI = leafInfo.metadataURI;
-            const filenamme = metadataURI.split('/')[3];
-            badgeTypes.push(parseInt(filenamme.split('.')[0]));
+        if (!resp.data) {
+            throw new Error("Etherscan api failed")
         }
-        return badgeTypes;
+        const transactions = resp.data.result;
+
+        // get last 50 transactions, match is redeem and set SUCC/FAILED status
+        let txBadges = new Map<number, TxBadgeStatus>();
+        for (const transaction of transactions) {
+            if (transaction.to.toLowerCase() !== this.contract?.address.toLowerCase()) { 
+                continue;
+            }
+            const status = transaction.txreceipt_status === 1 ? 
+                TxBadgeStatus.SUCCESSFUL
+                : TxBadgeStatus.FAILED;
+            if (transaction.methodId === REDEEM_METHOD_ID) {
+                const badgeType = decodeBadgeType(transaction.input);
+                txBadges.set(badgeType, status);
+            } else if (transaction.methodId === MULTI_REDEEM_METHOD_ID) {
+                const badgeTypes = decodeMultipleBadgeTypes(transaction.input);
+                for (const badgeType of badgeTypes) {
+                    txBadges.set(badgeType, status);
+                }
+            }
+        }
+
+        // if badges of interest are not part of those 50 transactions, set them as pending
+        for (const badgeType of args.potentialClaimingBadgeTypes) {
+            if (!txBadges.get(badgeType)) {
+                txBadges.set(badgeType, TxBadgeStatus.PENDING);
+            }
+        }
+
+        // badges claiming status in subgraph - includes all bades earned by user in given season
+        const subgraphClaimedBadges = await this.claimedBadgesInSubgraph(args.subgraphUrl, userAddress, args.season);
+
+        // final claiming status verdict
+        const badgeStatus = subgraphClaimedBadges.map((badge) => {
+            if(badge.claimingStatus === BadgeClaimingStatus.CLAIMED){
+                return badge;
+            }
+            const txStatus = txBadges.get(badge.badgeType);
+
+            // badge not found in recent successful txs or in potential pending txs
+            // meaning their status is desided by the subgraph
+            if (!txStatus || txStatus === TxBadgeStatus.FAILED) { 
+                return {
+                    badgeType: badge.badgeType, 
+                    claimingStatus: badge.claimingStatus
+                }
+            } else { // subgraph is not updated yet
+                return {
+                    badgeType: badge.badgeType, 
+                    claimingStatus: BadgeClaimingStatus.CLAIMING
+                }
+            }
+        })
+
+        return badgeStatus;
+        
     }
 
     async claimedBadgesInSubgraph(subgraphUrl: string, userAddress: string, season: number): Promise<Array<BadgeWithStatus>> {
@@ -337,17 +314,6 @@ class SBT {
         }
 
         return badgesClaimed;
-    }
-
-    public getEtherscanURL(network: string, apiKey: string, userAddress: string): string {
-        switch (network) {
-            case "goerli":
-                return `https://api-goerli.etherscan.io/api?module=account&action=txlist&address=${userAddress}&page=1&offset=50&sort=desc&apikey=${apiKey}`
-            case "mainnet":
-                return `https://api.etherscan.io/api?module=account&action=txlist&address=${userAddress}&page=1&offset=50&sort=desc&apikey=${apiKey}`
-            default:
-                return "";
-        }
     }
 
 }
