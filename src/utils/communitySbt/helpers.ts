@@ -15,7 +15,7 @@ export function decodeBadgeType(input: Bytes): number {
 }
 
 export function decodeMultipleBadgeTypes(input: Bytes): number[] {
-    let badgeTypes = new Array<number>;
+    let badgeTypes = new Array<number>();
     const inter = new ethers.utils.Interface(CommunitySBT__factory.abi);
     const decoded = inter.decodeFunctionData("multiRedeem", input);
     for (const leafInfo of decoded[0]) {
