@@ -44,7 +44,7 @@ enum TxBadgeStatus {
     PENDING
 }
 
-export enum BadgeClaimingStatus {
+enum BadgeClaimingStatus {
     CLAIMED,
     CLAIMING,
     NOT_CLAIMED
@@ -59,9 +59,173 @@ export type GetBadgesStatusArgs = {
     apiKey: string;
     subgraphUrl: string;
     season: number;
-    potentialClaimingBadgeTypes: Array<number>;
+    potenetialClaimingBadges: Array<number>;
 }
 
+export type BadgeResponse = {
+    id: string;
+    badgeType: string;
+    badgeName: string;
+    awardedTimestamp: string;
+    mintedTimestamp: string;
+  };
+
+export type NonProgramaticBadgeResponse = {
+    address: string;
+    badge: string;
+    timestamp: string;
+}
+
+export type ProfileBadgesResponse = {
+    badgeResponseRaw?: BadgeResponse;
+    variant: BadgeVariant;
+    achievedAt?: number;
+    claimedAt?: number;
+  }
+
+export type GetProfileBadgesResponse = ProfileBadgesResponse[];
+
+export const TOP_BADGES_VARIANT: Record<string, string> = {
+    'topTrader' : '31',
+    'beWaterMyFriend' : '28',
+    'ogTopTrader' : '15',
+    'ogBeWaterMyFriend' : '12'
+}
+
+export const NON_PROGRAMATIC_BADGES_VARIANT: Record<string, string> = {
+    'diplomatz' : '33',
+    'governorz' : '34',
+    'senatorz' : '35',
+    'theOgActivity' : '36'
+}
+
+export const BADGE_TYPE_BADGE_VARIANT_MAP: Record<string, BadgeVariant> = {
+    // non programatic
+    '33' :'diplomatz',
+    '34' : 'governorz',
+    '35' : 'senatorz',
+    '36' :'theOgActivity',
+    // season 1
+    '16': 'fixedTrader',
+    '17': 'deltaDegen',
+    '18': 'leverageCrowbar',
+    '19': 'irsConnoisseur',
+    '20': 'sushiRoll',
+    '21': 'degenStuff',
+    '22': 'okBoomer',
+    '23': 'lpoor',
+    '24': 'moneyMoneyMoney',
+    '25': 'waterHose',
+    '26': 'rainMaker',
+    '27': 'dryIce',
+    '28': 'beWaterMyFriend',
+    '29': 'yikes',
+    '30': 'maxBidding',
+    '31': 'topTrader',
+    '32': 'mellowLpVault',
+    // season OG
+    '0': 'ogFixedTrader',
+    '1': 'ogDeltaDegen',
+    '2': 'ogLeverageCrowbar',
+    '3': 'ogIrsConnoisseur',
+    '4': 'ogSushiRoll',
+    '5': 'ogDegenStuff',
+    '6': 'ogOkBoomer',
+    '7': 'ogLpoor',
+    '8': 'ogMoneyMoneyMoney',
+    '9': 'ogWaterHose',
+    '10': 'ogRainMaker',
+    '11': 'ogDryIce',
+    '12': 'ogBeWaterMyFriend',
+    '13': 'ogYikes',
+    '14': 'ogMaxBidding',
+    '15': 'ogTopTrader',
+};
+
+export type BadgeVariant = 'degenStuff' // season 1 
+    | 'deltaDegen'
+    | 'irsConnoisseur'
+    | 'leverageCrowbar'
+    | 'fixedTrader'
+    | 'sushiRoll'
+    | 'topTrader'
+    | 'beWaterMyFriend'
+    | 'rainMaker'
+    | 'waterHose'
+    | 'moneyMoneyMoney'
+    | 'lpoor'
+    | 'yikes'
+    | 'maxBidding'
+    | 'okBoomer'
+    | 'dryIce'
+    | 'mellowLpVault'
+    // season OG
+    | 'ogDegenStuff'
+    | 'ogDeltaDegen'
+    | 'ogIrsConnoisseur'
+    | 'ogLeverageCrowbar'
+    | 'ogFixedTrader'
+    | 'ogSushiRoll'
+    | 'ogTopTrader'
+    | 'ogBeWaterMyFriend'
+    | 'ogRainMaker'
+    | 'ogWaterHose'
+    | 'ogMoneyMoneyMoney'
+    | 'ogLpoor'
+    | 'ogYikes'
+    | 'ogMaxBidding'
+    | 'ogOkBoomer'
+    | 'ogDryIce'
+    // non programatic
+    | 'diplomatz'
+    | 'governorz'
+    | 'senatorz'
+    | 'theOgActivity';
+
+export const SEASON_BADGE_VARIANTS: Record<number, string[]> = {
+    0: [
+        'ogFixedTrader',
+        'ogDeltaDegen',
+        'ogLeverageCrowbar',
+        'ogIrsConnoisseur',
+        'ogSushiRoll',
+        'ogDegenStuff',
+        'ogTopTrader',
+        'ogOkBoomer',
+        'ogDryIce',
+        'ogMaxBidding',
+        'ogYikes',
+        'ogLpoor',
+        'ogMoneyMoneyMoney',
+        'ogWaterHose',
+        'ogRainMaker',
+        'ogBeWaterMyFriend',
+    ],
+    1: [
+        'fixedTrader',
+        'deltaDegen',
+        'leverageCrowbar',
+        'irsConnoisseur',
+        'sushiRoll',
+        'degenStuff',
+        'topTrader',
+        'okBoomer',
+        'dryIce',
+        'maxBidding',
+        'yikes',
+        'lpoor',
+        'mellowLpVault',
+        'moneyMoneyMoney',
+        'waterHose',
+        'rainMaker',
+        'beWaterMyFriend',
+    ],
+    2: [],
+    3: [],
+    4: [],
+    5: [],
+    };
+    
 
 
 class SBT {
@@ -195,6 +359,194 @@ class SBT {
             }
         } catch (err) {
             throw new Error("Unable to claim multiple badges");
+        }
+    }
+
+    public async getSeasonBadges({
+        subgraphUrl,
+        dbUrl,
+        userId,
+        seasonId,
+      }: {
+        subgraphUrl: string;
+        dbUrl: string;
+        userId: string;
+        seasonId: number;
+      }): Promise<GetProfileBadgesResponse> {
+        if (!process.env.REACT_APP_SUBGRAPH_BADGES_URL) {
+          return this.getDefaultResponse(seasonId);
+        }
+        try {
+            const badgeQuery = `
+                query( $id: BigInt) {
+                    seasonUser(id: $id) {
+                        id
+                        badges {
+                          id
+                          awardedTimestamp
+                          mintedTimestamp
+                          badgeType
+                          badgeName
+                        }
+                    }
+                }
+            `;
+            const client = new ApolloClient({
+                cache: new InMemoryCache(),
+                link: new HttpLink({ uri: subgraphUrl, fetch })
+            })
+            const id = `${userId.toLowerCase()}#${seasonId}`
+            const data = await client.query({
+                query: gql(badgeQuery),
+                variables: {
+                    id: id,
+                },
+            });
+      
+            if (!data.data.seasonUser) {
+                return this.getDefaultResponse(seasonId);// empty array
+            }
+
+            const nonProgBadges = await this.getNonProgramaticBadges(userId, dbUrl);
+      
+            const badges = data.data.seasonUser.badges as BadgeResponse[];
+            let badgesResponse : GetProfileBadgesResponse = [];
+            for (const badgeVariant of SEASON_BADGE_VARIANTS[seasonId]) {
+                const badge = badges.find((b) => BADGE_TYPE_BADGE_VARIANT_MAP[b.badgeType] === badgeVariant);
+                if (!badge) {
+                    if (TOP_BADGES_VARIANT[badgeVariant]) {
+                        const topBadge = await this.getTopTraderBadge(subgraphUrl, userId, seasonId, TOP_BADGES_VARIANT[badgeVariant]);
+                        if (topBadge) {
+                            badgesResponse.push(this.constructProfileBadgeResponse(topBadge));
+                        } else {
+                            badgesResponse.push({
+                                variant: badgeVariant as BadgeVariant,
+                            });
+                        }
+                    } else if (NON_PROGRAMATIC_BADGES_VARIANT[badgeVariant] && nonProgBadges[badgeVariant]) {
+                        const nonProgBadge = nonProgBadges[badgeVariant];
+                        badgesResponse.push(this.constructProfileBadgeResponse(nonProgBadge));
+                    } else {
+                        badgesResponse.push({
+                            variant: badgeVariant as BadgeVariant,
+                        });
+                    }
+                    
+                } else {
+                    badgesResponse.push(this.constructProfileBadgeResponse(badge));
+                }
+                
+            }
+            return badgesResponse;
+        } catch (error) {
+          return this.getDefaultResponse(seasonId);
+        }
+    }
+
+    public async getTopTraderBadge(
+        subgraphUrl: string,
+        userId: string,
+        seasonId: number,
+        badgeType: string
+      ): Promise<BadgeResponse | undefined> {
+        if (!process.env.REACT_APP_SUBGRAPH_BADGES_URL) {
+            return undefined;
+          }
+        try {
+            const badgeQuery = `
+                query( $id: BigInt, $unit: String) {
+                    seasonUsers(first: 5, orderBy: $unit, orderDirection: desc) {
+                        id
+                        badges {
+                        id
+                        awardedTimestamp
+                        mintedTimestamp
+                        badgeType
+                        badgeName
+                        }
+                        totalNotionalTraded
+                        totalLiquidityProvided
+                    }
+                }
+            `;
+            const client = new ApolloClient({
+                cache: new InMemoryCache(),
+                link: new HttpLink({ uri: subgraphUrl, fetch })
+            })
+            const id = `${userId.toLowerCase()}#${seasonId}`;
+            const isNotional = badgeType.indexOf("trade") > -1;
+            const unit = isNotional ? "totalNotionalTraded" : "totalLiquidityProvided";
+            const data = await client.query({
+                query: gql(badgeQuery),
+                variables: {
+                    id: id,
+                    unit: unit
+                },
+            });
+    
+            if (!data.data.seasonUsers) {
+                return undefined;
+            }
+
+            for (const seasonUser of data.data.seasonUsers) {
+                if (seasonUser.id === userId.toLowerCase()) {
+                    const badge : BadgeResponse = {
+                        id: `${userId}#${seasonId}#${badgeType}`,
+                        badgeType: badgeType,
+                        badgeName: BADGE_TYPE_BADGE_VARIANT_MAP[badgeType],
+                        awardedTimestamp: isNotional ? seasonUser.notionalAwardedTimestamp : seasonUser.liquidityAwardedTimestamp,
+                        mintedTimestamp: isNotional ? seasonUser.notionalMintedTimestamp : seasonUser.liquidityMintedTimestamp,
+                    }
+                    return badge;
+                }
+            }
+        } catch (error) {
+            return undefined;
+        }
+    }
+
+    public async getNonProgramaticBadges(userId: string, nonProgramaticBadgesUrl: string) : Promise<Record<string, BadgeResponse>> {
+        let badgeResponssRecord : Record<string, BadgeResponse> = {};
+
+        const resp = await axios.get(nonProgramaticBadgesUrl + userId);
+        if (!resp.data){
+            return badgeResponssRecord ;
+        }
+
+        const badges: NonProgramaticBadgeResponse[] = resp.data.badges;
+        badges.map((entry) => {
+            const badgeType = NON_PROGRAMATIC_BADGES_VARIANT[entry.badge]
+            badgeResponssRecord[entry.badge] = {
+                id: `${userId}#${10000}#${badgeType}`,
+                badgeType: badgeType,
+                badgeName: BADGE_TYPE_BADGE_VARIANT_MAP[badgeType],
+                awardedTimestamp: entry.timestamp,
+                mintedTimestamp: entry.timestamp,
+            };
+        });
+        return badgeResponssRecord;
+    }
+    
+    getDefaultResponse(seasonId: number): GetProfileBadgesResponse {
+        return SEASON_BADGE_VARIANTS[seasonId].map((b) => ({
+          variant: b as BadgeVariant,
+        }));
+    }
+
+    toMillis (seconds: number): number | undefined {
+        if (isNaN(seconds) || seconds === 0) {
+          return undefined;
+        }
+      
+        return seconds * 1000;
+    };
+
+    constructProfileBadgeResponse (rawResponse: BadgeResponse) : ProfileBadgesResponse {
+        return {
+            badgeResponseRaw: rawResponse,
+            variant: BADGE_TYPE_BADGE_VARIANT_MAP[rawResponse.badgeType],
+            achievedAt: this.toMillis(parseInt(rawResponse.awardedTimestamp, 10)),
+            claimedAt: this.toMillis(parseInt(rawResponse.mintedTimestamp, 10)),
         }
     }
 
