@@ -207,7 +207,7 @@ class SBT {
         return totalSupply;
     }
 
-    public async getBadgeStatus(args: GetBadgesStatusArgs) : Promise<Array<BadgeWithStatus>| void> {
+    public async getBadgeStatus(args: GetBadgesStatusArgs) : Promise<Array<BadgeWithStatus>> {
         if (!this.signer) { 
             throw new Error("No provider found")
         }
