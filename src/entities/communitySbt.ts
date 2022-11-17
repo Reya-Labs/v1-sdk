@@ -1,10 +1,10 @@
-import { BigNumber, Bytes, ethers, providers, Signer } from 'ethers';
+import { BigNumber, Bytes, Signer, providers } from 'ethers';
+import { ApolloClient, gql, HttpLink, InMemoryCache } from '@apollo/client';
 import { CommunitySBT, CommunitySBT__factory } from '../typechain-sbt';
 import { createLeaves } from '../utils/communitySbt/getSubgraphLeaves';
 import { getRootFromSubgraph } from '../utils/communitySbt/getSubgraphRoot';
 import { getProof } from '../utils/communitySbt/merkle-tree';
 import  axios from 'axios';
-import { ApolloClient, InMemoryCache, gql, HttpLink } from '@apollo/client'
 import fetch from 'cross-fetch';
 import { MULTI_REDEEM_METHOD_ID, REDEEM_METHOD_ID } from '../constants';
 import { decodeBadgeType, decodeMultipleBadgeTypes, getBadgeTypeFromMetadataUri, getEtherscanURL } from '../utils/communitySbt/helpers';
@@ -44,7 +44,7 @@ enum TxBadgeStatus {
     PENDING
 }
 
-enum BadgeClaimingStatus {
+export enum BadgeClaimingStatus {
     CLAIMED,
     CLAIMING,
     NOT_CLAIMED
@@ -59,7 +59,7 @@ export type GetBadgesStatusArgs = {
     apiKey: string;
     subgraphUrl: string;
     season: number;
-    potenetialClaimingBadges: Array<number>;
+    potentialClaimingBadgeTypes: Array<number>;
 }
 
 export type BadgeResponse = {
@@ -76,15 +76,20 @@ export type NonProgramaticBadgeResponse = {
     timestamp: string;
 }
 
-export type ProfileBadgesResponse = {
-    badgeResponseRaw?: BadgeResponse;
-    variant: BadgeVariant;
-    achievedAt?: number;
-    claimedAt?: number;
-  }
-
-export type GetProfileBadgesResponse = ProfileBadgesResponse[];
-
+export const NON_SUBGRAPH_BADGES_SEASONS: Record<number, string[]>  = {
+    0: [
+        'ogTopTrader',
+        'ogBeWaterMyFriend'
+    ],
+    1: [
+        'topTrader',
+        'beWaterMyFriend',
+        'diplomatz',
+        'governorz',
+        'senatorz',
+        'theOgActivity'
+    ]
+}
 export const TOP_BADGES_VARIANT: Record<string, string> = {
     'topTrader' : '31',
     'beWaterMyFriend' : '28',
@@ -99,133 +104,6 @@ export const NON_PROGRAMATIC_BADGES_VARIANT: Record<string, string> = {
     'theOgActivity' : '36'
 }
 
-export const BADGE_TYPE_BADGE_VARIANT_MAP: Record<string, BadgeVariant> = {
-    // non programatic
-    '33' :'diplomatz',
-    '34' : 'governorz',
-    '35' : 'senatorz',
-    '36' :'theOgActivity',
-    // season 1
-    '16': 'fixedTrader',
-    '17': 'deltaDegen',
-    '18': 'leverageCrowbar',
-    '19': 'irsConnoisseur',
-    '20': 'sushiRoll',
-    '21': 'degenStuff',
-    '22': 'okBoomer',
-    '23': 'lpoor',
-    '24': 'moneyMoneyMoney',
-    '25': 'waterHose',
-    '26': 'rainMaker',
-    '27': 'dryIce',
-    '28': 'beWaterMyFriend',
-    '29': 'yikes',
-    '30': 'maxBidding',
-    '31': 'topTrader',
-    '32': 'mellowLpVault',
-    // season OG
-    '0': 'ogFixedTrader',
-    '1': 'ogDeltaDegen',
-    '2': 'ogLeverageCrowbar',
-    '3': 'ogIrsConnoisseur',
-    '4': 'ogSushiRoll',
-    '5': 'ogDegenStuff',
-    '6': 'ogOkBoomer',
-    '7': 'ogLpoor',
-    '8': 'ogMoneyMoneyMoney',
-    '9': 'ogWaterHose',
-    '10': 'ogRainMaker',
-    '11': 'ogDryIce',
-    '12': 'ogBeWaterMyFriend',
-    '13': 'ogYikes',
-    '14': 'ogMaxBidding',
-    '15': 'ogTopTrader',
-};
-
-export type BadgeVariant = 'degenStuff' // season 1 
-    | 'deltaDegen'
-    | 'irsConnoisseur'
-    | 'leverageCrowbar'
-    | 'fixedTrader'
-    | 'sushiRoll'
-    | 'topTrader'
-    | 'beWaterMyFriend'
-    | 'rainMaker'
-    | 'waterHose'
-    | 'moneyMoneyMoney'
-    | 'lpoor'
-    | 'yikes'
-    | 'maxBidding'
-    | 'okBoomer'
-    | 'dryIce'
-    | 'mellowLpVault'
-    // season OG
-    | 'ogDegenStuff'
-    | 'ogDeltaDegen'
-    | 'ogIrsConnoisseur'
-    | 'ogLeverageCrowbar'
-    | 'ogFixedTrader'
-    | 'ogSushiRoll'
-    | 'ogTopTrader'
-    | 'ogBeWaterMyFriend'
-    | 'ogRainMaker'
-    | 'ogWaterHose'
-    | 'ogMoneyMoneyMoney'
-    | 'ogLpoor'
-    | 'ogYikes'
-    | 'ogMaxBidding'
-    | 'ogOkBoomer'
-    | 'ogDryIce'
-    // non programatic
-    | 'diplomatz'
-    | 'governorz'
-    | 'senatorz'
-    | 'theOgActivity';
-
-export const SEASON_BADGE_VARIANTS: Record<number, string[]> = {
-    0: [
-        'ogFixedTrader',
-        'ogDeltaDegen',
-        'ogLeverageCrowbar',
-        'ogIrsConnoisseur',
-        'ogSushiRoll',
-        'ogDegenStuff',
-        'ogTopTrader',
-        'ogOkBoomer',
-        'ogDryIce',
-        'ogMaxBidding',
-        'ogYikes',
-        'ogLpoor',
-        'ogMoneyMoneyMoney',
-        'ogWaterHose',
-        'ogRainMaker',
-        'ogBeWaterMyFriend',
-    ],
-    1: [
-        'fixedTrader',
-        'deltaDegen',
-        'leverageCrowbar',
-        'irsConnoisseur',
-        'sushiRoll',
-        'degenStuff',
-        'topTrader',
-        'okBoomer',
-        'dryIce',
-        'maxBidding',
-        'yikes',
-        'lpoor',
-        'mellowLpVault',
-        'moneyMoneyMoney',
-        'waterHose',
-        'rainMaker',
-        'beWaterMyFriend',
-    ],
-    2: [],
-    3: [],
-    4: [],
-    5: [],
-    };
-    
 
 
 class SBT {
@@ -372,9 +250,9 @@ class SBT {
         dbUrl: string;
         userId: string;
         seasonId: number;
-      }): Promise<GetProfileBadgesResponse> {
+      }): Promise<BadgeResponse[]> {
         if (!process.env.REACT_APP_SUBGRAPH_BADGES_URL) {
-          return this.getDefaultResponse(seasonId);
+          return [];
         }
         try {
             const badgeQuery = `
@@ -404,42 +282,30 @@ class SBT {
             });
       
             if (!data.data.seasonUser) {
-                return this.getDefaultResponse(seasonId);// empty array
+                return [];// empty array
             }
 
             const nonProgBadges = await this.getNonProgramaticBadges(userId, dbUrl);
       
-            const badges = data.data.seasonUser.badges as BadgeResponse[];
-            let badgesResponse : GetProfileBadgesResponse = [];
-            for (const badgeVariant of SEASON_BADGE_VARIANTS[seasonId]) {
-                const badge = badges.find((b) => BADGE_TYPE_BADGE_VARIANT_MAP[b.badgeType] === badgeVariant);
-                if (!badge) {
-                    if (TOP_BADGES_VARIANT[badgeVariant]) {
-                        const topBadge = await this.getTopTraderBadge(subgraphUrl, userId, seasonId, TOP_BADGES_VARIANT[badgeVariant]);
-                        if (topBadge) {
-                            badgesResponse.push(this.constructProfileBadgeResponse(topBadge));
-                        } else {
-                            badgesResponse.push({
-                                variant: badgeVariant as BadgeVariant,
-                            });
-                        }
-                    } else if (NON_PROGRAMATIC_BADGES_VARIANT[badgeVariant] && nonProgBadges[badgeVariant]) {
-                        const nonProgBadge = nonProgBadges[badgeVariant];
-                        badgesResponse.push(this.constructProfileBadgeResponse(nonProgBadge));
-                    } else {
-                        badgesResponse.push({
-                            variant: badgeVariant as BadgeVariant,
-                        });
+            const subgraphBadges = data.data.seasonUser.badges as BadgeResponse[];
+            let badgesResponse : BadgeResponse[] = [];
+            for (const badge of subgraphBadges) {
+                badgesResponse.push(badge);
+            }
+            for (const badgeVariant of NON_SUBGRAPH_BADGES_SEASONS[seasonId]) {
+                if (TOP_BADGES_VARIANT[badgeVariant]) {
+                    const topBadge = await this.getTopTraderBadge(subgraphUrl, userId, seasonId, TOP_BADGES_VARIANT[badgeVariant]);
+                    if (topBadge) {
+                        badgesResponse.push(topBadge);
                     }
-                    
-                } else {
-                    badgesResponse.push(this.constructProfileBadgeResponse(badge));
+                } else if (NON_PROGRAMATIC_BADGES_VARIANT[badgeVariant] && nonProgBadges[badgeVariant]) {
+                    const nonProgBadge = nonProgBadges[badgeVariant];
+                    badgesResponse.push(nonProgBadge);
                 }
-                
             }
             return badgesResponse;
         } catch (error) {
-          return this.getDefaultResponse(seasonId);
+          return [];
         }
     }
 
@@ -493,7 +359,7 @@ class SBT {
                     const badge : BadgeResponse = {
                         id: `${userId}#${seasonId}#${badgeType}`,
                         badgeType: badgeType,
-                        badgeName: BADGE_TYPE_BADGE_VARIANT_MAP[badgeType],
+                        badgeName: TOP_BADGES_VARIANT[badgeType],
                         awardedTimestamp: isNotional ? seasonUser.notionalAwardedTimestamp : seasonUser.liquidityAwardedTimestamp,
                         mintedTimestamp: isNotional ? seasonUser.notionalMintedTimestamp : seasonUser.liquidityMintedTimestamp,
                     }
@@ -519,35 +385,12 @@ class SBT {
             badgeResponssRecord[entry.badge] = {
                 id: `${userId}#${10000}#${badgeType}`,
                 badgeType: badgeType,
-                badgeName: BADGE_TYPE_BADGE_VARIANT_MAP[badgeType],
+                badgeName: NON_PROGRAMATIC_BADGES_VARIANT[badgeType],
                 awardedTimestamp: entry.timestamp,
                 mintedTimestamp: entry.timestamp,
             };
         });
         return badgeResponssRecord;
-    }
-    
-    getDefaultResponse(seasonId: number): GetProfileBadgesResponse {
-        return SEASON_BADGE_VARIANTS[seasonId].map((b) => ({
-          variant: b as BadgeVariant,
-        }));
-    }
-
-    toMillis (seconds: number): number | undefined {
-        if (isNaN(seconds) || seconds === 0) {
-          return undefined;
-        }
-      
-        return seconds * 1000;
-    };
-
-    constructProfileBadgeResponse (rawResponse: BadgeResponse) : ProfileBadgesResponse {
-        return {
-            badgeResponseRaw: rawResponse,
-            variant: BADGE_TYPE_BADGE_VARIANT_MAP[rawResponse.badgeType],
-            achievedAt: this.toMillis(parseInt(rawResponse.awardedTimestamp, 10)),
-            claimedAt: this.toMillis(parseInt(rawResponse.mintedTimestamp, 10)),
-        }
     }
 
     public async getUserBalance(user: string) : Promise<BigNumber | void> {
