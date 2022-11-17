@@ -204,17 +204,12 @@ class MellowLpRouter {
     }
 
     for (const erc20RootVaultContract of this.readOnlyContracts.erc20RootVault) {
-      // Add totalSupply of tokens of ith vault into this array
       const totalLpTokens = await erc20RootVaultContract.totalSupply();
-
-      // Add the tvl of the ith vault into this array
       const tvl = await erc20RootVaultContract.tvl();
       console.log('accumulated (tvl):', tvl.minTokenAmounts[0].toString());
 
-      // Add the nft of the ith vault into this array
       const nft = await erc20RootVaultContract.nft();
 
-      // Add the strategy params of the ith vault into this array
       const strategyParams = await erc20RootVaultContract.strategyParams(nft);
       console.log('strategy params:', strategyParams);
       console.log('token limit', strategyParams.tokenLimit.toString());
