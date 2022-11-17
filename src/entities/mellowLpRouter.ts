@@ -35,8 +35,7 @@ class MellowLpRouter {
   public readonly erc20RootVaultAddress: string;
   public readonly erc20RootVaultGovernanceAddress: string;
   public readonly provider?: providers.Provider;
-
-  public defaultWeights: number[] = [];
+  public readonly defaultWeights: number[] = [];
 
   public readOnlyContracts?: {
     token: Contract;
@@ -306,9 +305,9 @@ class MellowLpRouter {
     this.userWalletBalance = this.descale(walletBalance, this.tokenDecimals);
   };
 
-  isTokenApproved = async (): Promise<boolean[]> => {
+  isTokenApproved = async (): Promise<boolean> => {
     if (this.isETH) {
-      return [true];
+      return true;
     }
 
     if (
@@ -316,77 +315,47 @@ class MellowLpRouter {
       isUndefined(this.readOnlyContracts) ||
       isUndefined(this.tokenDecimals)
     ) {
-      return [false];
+      return false;
     }
 
-    const tokenApprovalAllowance = [];
-    let vaultCounter = 0;
-    for (const tokenApprovalPerVault of this.readOnlyContracts.erc20RootVault) {
-      tokenApprovalAllowance.push(
-        await this.readOnlyContracts.token.allowance(
-          this.userAddress,
-          tokenApprovalPerVault[vaultCounter].address,
-        ),
-      );
-      vaultCounter += 1;
-    }
-
-    return tokenApprovalAllowance.map((approvalAmount: BigNumber) =>
-      approvalAmount.gte(TresholdApprovalBn),
+    const tokenApproval = await this.readOnlyContracts.token.allowance(
+      this.userAddress,
+      this.writeContracts?.mellowRouter.address,
     );
+
+    return tokenApproval.gte(TresholdApprovalBn);
   };
 
-  approveToken = async (): Promise<ContractReceipt[]> => {
+  approveToken = async (): Promise<ContractReceipt> => {
     if (isUndefined(this.readOnlyContracts) || isUndefined(this.writeContracts)) {
       throw new Error('Uninitialized contracts.');
     }
 
     try {
-      const tokenApprovalsPerVault = [];
-      let vaultCounter = 0;
-
-      for (const ercVault of this.readOnlyContracts.erc20RootVault) {
-        tokenApprovalsPerVault.push(
-          await this.writeContracts.token.callStatic.approve(
-            ercVault[vaultCounter].address,
-            MaxUint256Bn,
-          ),
-        );
-
-        vaultCounter += 1;
-      }
+      await this.writeContracts.token.callStatic.approve(
+        this.writeContracts.mellowRouter.address,
+        MaxUint256Bn,
+      );
     } catch (_) {
       throw new Error('Unsuccessful approval simulation.');
     }
 
-    const gasLimit = [];
-    const txs = [];
-    let vaultCounter = 0;
+    const gasLimit = await this.writeContracts.token.estimateGas.approve(
+      this.writeContracts.mellowRouter.address,
+      MaxUint256Bn,
+    );
 
-    for (const erc20Vault of this.readOnlyContracts.erc20RootVault) {
-      gasLimit.push(
-        await this.writeContracts.token.estimateGas.approve(
-          erc20Vault[vaultCounter].address,
-          MaxUint256Bn,
-        ),
-      );
-
-      txs.push(
-        await this.writeContracts.token.approve(erc20Vault[vaultCounter].address, MaxUint256Bn, {
-          gasLimit: getGasBuffer(gasLimit[vaultCounter]),
-        }),
-      );
-
-      vaultCounter += 1;
-    }
+    const tx = await this.writeContracts.token.approve(
+      this.writeContracts.mellowRouter.address,
+      MaxUint256Bn,
+      {
+        gasLimit: getGasBuffer(gasLimit),
+      },
+    );
 
     try {
-      const receipts = [];
-      for (let i = 0; i < this.readOnlyContracts.erc20RootVault.length; i += 1) {
-        receipts.push(await txs[vaultCounter].wait());
-      }
-
-      return receipts;
+      const receipt = await tx.wait();
+      return receipt;
     } catch (_) {
       throw new Error('Unsucessful approval confirmation.');
     }
