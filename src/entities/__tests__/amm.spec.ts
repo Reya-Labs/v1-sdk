@@ -11,7 +11,7 @@
 * run tests (unskip them 1st) - v1-sdk: $ yarn test src/entities
 */
 
-import { BigNumber, providers, Wallet} from 'ethers';
+import { BigNumber, providers, Wallet } from 'ethers';
 
 import Token from '../token';
 import RateOracle from '../rateOracle';
@@ -27,10 +27,10 @@ describe('amm', () => {
     let provider: providers.JsonRpcProvider;
 
     // old pool - to be complted
-    const marginEngineAddress = '0x09Df20712491189de6607Fb27bB1DeE53ACB8555'; 
-    const vammAddress = '0x84D6E95B602df56E3637210F5Dbcc6d23a20C467'; 
+    const marginEngineAddress = '0x09Df20712491189de6607Fb27bB1DeE53ACB8555';
+    const vammAddress = '0x84D6E95B602df56E3637210F5Dbcc6d23a20C467';
     const fcmAddress = '0x57E1Fa3f9Bf8f4822A8590df964adFf6fd823c37';
-    const termStartTimestamp =JSBI.BigInt('1668442775000000000000000000');
+    const termStartTimestamp = JSBI.BigInt('1668442775000000000000000000');
     const termEndTimestamp = JSBI.BigInt('1671034775000000000000000000');
 
     // new pool - to be completed
@@ -58,13 +58,13 @@ describe('amm', () => {
         factoryAddress: '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0',
         peripheryAddress: '0xf5059a5D33d5853360D16C683c16e67980206f36',
         marginEngineAddress: marginEngineAddress,
-        fcmAddress: fcmAddress, 
+        fcmAddress: fcmAddress,
         rateOracle: new RateOracle({
           id: '0x9A676e781A523b5d0C0e43731313A708CB607508',
           protocolId: 2,
         }),
         updatedTimestamp: JSBI.BigInt('1658089957000000000000000000'), // not used
-        termEndTimestamp: termEndTimestamp, 
+        termEndTimestamp: termEndTimestamp,
         termStartTimestamp: termStartTimestamp,
         underlyingToken: new Token({
           id: '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9',
@@ -313,7 +313,7 @@ describe('amm', () => {
       });
     }); */
 
-    describe('position rollover', () =>{
+    describe('position rollover', () => {
       jest.setTimeout(30000);
 
       it('LP mint old pool', async () => {
@@ -322,13 +322,13 @@ describe('amm', () => {
 
         const timestamp = (await provider.getBlock(block)).timestamp;
         console.log(timestamp);
-      
+
         const marginRequirement = await amm_wallet_0.getInfoPostMint({
           fixedLow: 1,
           fixedHigh: 2,
           notional: 10000
         }) as number;
-  
+
         await amm_wallet_0.mint({
           fixedLow: 1,
           fixedHigh: 2,
@@ -348,7 +348,7 @@ describe('amm', () => {
           fixedLow: 2,
           fixedHigh: 3,
         })) as InfoPostSwap;
-  
+
         console.log('FT pre-swap req', ft_swap_req);
 
         await amm_wallet_1.swap({
@@ -371,7 +371,7 @@ describe('amm', () => {
           fixedLow: 2,
           fixedHigh: 3,
         })) as InfoPostSwap;
-  
+
         console.log('VT pre-swap req', vt_swap_req);
 
         await amm_wallet_2.swap({
@@ -385,7 +385,7 @@ describe('amm', () => {
 
       it('did not reach maturity - faild rollover', async () => {
 
-        await expect( amm_wallet_0.rolloverWithMint({
+        await expect(amm_wallet_0.rolloverWithMint({
           fixedLow: 1,
           fixedHigh: 2,
           notional: 100,
@@ -419,7 +419,7 @@ describe('amm', () => {
           oldFixedLow: 2,
           oldFixedHigh: 3
         })).rejects.toThrowError('Cannot settle before maturity');
-        
+
       });
 
       it('advance time', async () => {
@@ -428,7 +428,7 @@ describe('amm', () => {
         const timestamp = (await provider.getBlock(block)).timestamp;
         console.log(timestamp);
 
-       await advanceTimeAndBlock(BigNumber.from(2592000*2), 1); // two months - 1st pool reached maturity
+        await advanceTimeAndBlock(BigNumber.from(2592000 * 2), 1); // two months - 1st pool reached maturity
 
         const block2 = await provider.getBlockNumber();
 
@@ -461,9 +461,9 @@ describe('amm', () => {
           oldFixedLow: 2,
           oldFixedHigh: 3
         })).rejects.toThrowError('The pool has not been initialized yet');
-        
+
       });
-  
+
       it('rollover with mint for new pool', async () => {
 
         const marginRequirement = await amm_wallet_0.getInfoPostRolloverWithMint({
@@ -492,33 +492,33 @@ describe('amm', () => {
       });
 
       it('not enough margin - failed rollover', async () => {
- 
-         await expect(amm_wallet_1.rolloverWithSwap({
-           isFT: true,
-           margin: 0,
-           notional: 6000,
-           fixedLow: 1,
-           fixedHigh: 2,
-           owner: wallet_1.address,
-           newMarginEngine: newMarginEngineAddress,
-           oldFixedLow: 2,
-           oldFixedHigh: 3
-         })).rejects.toThrowError('No enough margin for this operation');
- 
-         await expect(amm_wallet_2.rolloverWithSwap({
-           isFT: false,
-           margin: 0,
-           notional: 6000,
-           fixedLow: 1,
-           fixedHigh: 2,
-           owner: wallet_2.address,
-           newMarginEngine: newMarginEngineAddress,
-           oldFixedLow: 2,
-           oldFixedHigh: 3
-         })).rejects.toThrowError('No enough margin for this operation');
- 
+
+        await expect(amm_wallet_1.rolloverWithSwap({
+          isFT: true,
+          margin: 0,
+          notional: 6000,
+          fixedLow: 1,
+          fixedHigh: 2,
+          owner: wallet_1.address,
+          newMarginEngine: newMarginEngineAddress,
+          oldFixedLow: 2,
+          oldFixedHigh: 3
+        })).rejects.toThrowError('No enough margin for this operation');
+
+        await expect(amm_wallet_2.rolloverWithSwap({
+          isFT: false,
+          margin: 0,
+          notional: 6000,
+          fixedLow: 1,
+          fixedHigh: 2,
+          owner: wallet_2.address,
+          newMarginEngine: newMarginEngineAddress,
+          oldFixedLow: 2,
+          oldFixedHigh: 3
+        })).rejects.toThrowError('No enough margin for this operation');
+
       });
-  
+
       it.skip('rollover with swap ft for new pool', async () => {
         const {
           marginRequirement: ft_swap_req,
@@ -548,7 +548,7 @@ describe('amm', () => {
         });
 
       });
-  
+
       it.skip('rollover with swap vt for new pool', async () => {
 
         const {
@@ -616,7 +616,7 @@ describe('amm', () => {
           oldFixedLow: 2,
           oldFixedHigh: 3
         })).toThrow('Position already settled');
-        
+
       });
     })
 
@@ -630,10 +630,10 @@ describe('amm', () => {
     let provider: providers.JsonRpcProvider;
 
     // old pool - to be complted
-    const marginEngineAddress = '0xF45bcaDCc83dea176213Ae4E22f5aF918d08647b'; 
-    const vammAddress = '0xeCaE6Cc78251a4F3B8d70c9BD4De1B3742338489'; 
+    const marginEngineAddress = '0xF45bcaDCc83dea176213Ae4E22f5aF918d08647b';
+    const vammAddress = '0xeCaE6Cc78251a4F3B8d70c9BD4De1B3742338489';
     const fcmAddress = '0x0000000000000000000000000000000000000000';
-    const termStartTimestamp =JSBI.BigInt('1668467301000000000000000000');
+    const termStartTimestamp = JSBI.BigInt('1668467301000000000000000000');
     const termEndTimestamp = JSBI.BigInt('1671059301000000000000000000');
 
     // new pool - to be completed
@@ -661,16 +661,16 @@ describe('amm', () => {
         factoryAddress: '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0',
         peripheryAddress: '0x4c5859f0F772848b2D91F1D83E2Fe57935348029',
         marginEngineAddress: marginEngineAddress,
-        fcmAddress: fcmAddress, 
+        fcmAddress: fcmAddress,
         rateOracle: new RateOracle({
           id: '0x0B306BF915C4d645ff596e518fAf3F9669b97016',
           protocolId: 3,
         }),
         updatedTimestamp: JSBI.BigInt('1658089957000000000000000000'), // not used
-        termEndTimestamp: termEndTimestamp, 
+        termEndTimestamp: termEndTimestamp,
         termStartTimestamp: termStartTimestamp,
         underlyingToken: new Token({
-          id: '0x0165878A594ca255338adfa4d48449f69242Eb8F', 
+          id: '0x0165878A594ca255338adfa4d48449f69242Eb8F',
           name: 'ETH',
           decimals: 18,
         }),
@@ -735,7 +735,7 @@ describe('amm', () => {
       // await vammContract.initializeVAMM(TickMath.getSqrtRatioAtTick(-7000).toString()); // for fcm tests
     });
 
-    describe('position rollover', () =>{
+    describe('position rollover', () => {
       jest.setTimeout(30000);
 
       it.skip('LP mint old pool - both WETH and ETH', async () => {
@@ -744,7 +744,7 @@ describe('amm', () => {
 
         const timestamp = (await provider.getBlock(block)).timestamp;
         console.log(timestamp);
-      
+
         const marginRequirement = await amm_wallet_0.getInfoPostMint({
           fixedLow: 1,
           fixedHigh: 2,
@@ -755,8 +755,8 @@ describe('amm', () => {
           fixedLow: 1,
           fixedHigh: 2,
           notional: 10000,
-          margin: marginRequirement/2,
-          marginEth: marginRequirement/2 + 1
+          margin: marginRequirement / 2,
+          marginEth: marginRequirement / 2 + 1
         });
       });
 
@@ -771,7 +771,7 @@ describe('amm', () => {
           fixedLow: 2,
           fixedHigh: 3,
         })) as InfoPostSwap;
-  
+
         console.log('FT pre-swap req', ft_swap_req);
 
         await amm_wallet_1.swapWithWeth({
@@ -794,7 +794,7 @@ describe('amm', () => {
           fixedLow: 2,
           fixedHigh: 3,
         })) as InfoPostSwap;
-  
+
         console.log('VT pre-swap req', vt_swap_req);
 
         await amm_wallet_2.swapWithWeth({
@@ -809,7 +809,7 @@ describe('amm', () => {
 
       it.skip('did not reach maturity - faild rollover', async () => {
 
-        await expect( amm_wallet_0.rolloverWithMint({
+        await expect(amm_wallet_0.rolloverWithMint({
           fixedLow: 1,
           fixedHigh: 2,
           notional: 100,
@@ -843,7 +843,7 @@ describe('amm', () => {
           oldFixedLow: 2,
           oldFixedHigh: 3
         })).rejects.toThrowError();
-        
+
       });
 
       it.skip('advance time', async () => {
@@ -852,7 +852,7 @@ describe('amm', () => {
         const timestamp = (await provider.getBlock(block)).timestamp;
         console.log(timestamp);
 
-       await advanceTimeAndBlock(BigNumber.from(2592000*2), 1); // two months - 1st pool reached maturity
+        await advanceTimeAndBlock(BigNumber.from(2592000 * 2), 1); // two months - 1st pool reached maturity
 
         const block2 = await provider.getBlockNumber();
 
@@ -885,9 +885,9 @@ describe('amm', () => {
           oldFixedLow: 2,
           oldFixedHigh: 3
         })).rejects.toThrowError();
-        
+
       });
-  
+
       it.skip('rollover with mint for new pool - only ETH', async () => {
 
         const marginRequirement = await amm_wallet_0.getInfoPostRolloverWithMint({
@@ -917,33 +917,33 @@ describe('amm', () => {
       });
 
       it.skip('not enough margin - failed rollover', async () => {
- 
-         await expect(amm_wallet_1.rolloverWithSwap({
-           isFT: true,
-           margin: 0,
-           notional: 6000,
-           fixedLow: 1,
-           fixedHigh: 2,
-           owner: wallet_1.address,
-           newMarginEngine: newMarginEngineAddress,
-           oldFixedLow: 2,
-           oldFixedHigh: 3
-         })).rejects.toThrowError('No enough margin for this operation');
- 
-         await expect(amm_wallet_2.rolloverWithSwap({
-           isFT: false,
-           margin: 0,
-           notional: 6000,
-           fixedLow: 1,
-           fixedHigh: 2,
-           owner: wallet_2.address,
-           newMarginEngine: newMarginEngineAddress,
-           oldFixedLow: 2,
-           oldFixedHigh: 3
-         })).rejects.toThrowError('No enough margin for this operation');
- 
+
+        await expect(amm_wallet_1.rolloverWithSwap({
+          isFT: true,
+          margin: 0,
+          notional: 6000,
+          fixedLow: 1,
+          fixedHigh: 2,
+          owner: wallet_1.address,
+          newMarginEngine: newMarginEngineAddress,
+          oldFixedLow: 2,
+          oldFixedHigh: 3
+        })).rejects.toThrowError('No enough margin for this operation');
+
+        await expect(amm_wallet_2.rolloverWithSwap({
+          isFT: false,
+          margin: 0,
+          notional: 6000,
+          fixedLow: 1,
+          fixedHigh: 2,
+          owner: wallet_2.address,
+          newMarginEngine: newMarginEngineAddress,
+          oldFixedLow: 2,
+          oldFixedHigh: 3
+        })).rejects.toThrowError('No enough margin for this operation');
+
       });
-  
+
       it.skip('rollover with swap ft for new pool - ETH and WETH', async () => {
         const {
           marginRequirement: ft_swap_req,
@@ -962,8 +962,8 @@ describe('amm', () => {
 
         await amm_wallet_1.rolloverWithSwap({
           isFT: true,
-          margin: ft_swap_req/2 + 10,
-          marginEth: ft_swap_req/2,
+          margin: ft_swap_req / 2 + 10,
+          marginEth: ft_swap_req / 2,
           notional: 200,
           fixedLow: 1,
           fixedHigh: 2,
@@ -974,7 +974,7 @@ describe('amm', () => {
         });
 
       });
-  
+
       it.skip('rollover with swap vt for new pool - only WETH', async () => {
 
         const {
@@ -1042,7 +1042,7 @@ describe('amm', () => {
           oldFixedLow: 2,
           oldFixedHigh: 3
         })).toThrow('Position already settled');
-        
+
       });
     })
 
