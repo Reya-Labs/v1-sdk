@@ -11,8 +11,6 @@ let mellowLpRouter: MellowLpRouter;
 
 const mellowRouterAddress = '';
 const defaultWeights: number[] = [];
-const erc20RootVaultAddress = '';
-const erc20RootVaultGovernanceAddress = '';
 
 const signer = new Wallet(
   '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
@@ -26,8 +24,6 @@ describe('Mellow Router Test Suite', () => {
     mellowLpRouter = new MellowLpRouter({
       mellowRouterAddress: mellowRouterAddress,
       defaultWeights: defaultWeights,
-      erc20RootVaultAddress: erc20RootVaultAddress,
-      erc20RootVaultGovernanceAddress: erc20RootVaultGovernanceAddress,
       provider,
     });
 
