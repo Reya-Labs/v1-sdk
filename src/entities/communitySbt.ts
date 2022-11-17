@@ -30,6 +30,14 @@ type MultiRedeemData = {
     roots: Array<Bytes>;
 }
 
+type BadgeResponse = {
+    id: string;
+    badgeType: string;
+    badgeName: string;
+    awardedTimestamp: string;
+    mintedTimestamp: string;
+}
+
 enum TxBadgeStatus {
     SUCCESSFUL,
     FAILED,
@@ -295,8 +303,10 @@ class SBT {
             cache: new InMemoryCache(),
             link: new HttpLink({ uri: subgraphUrl, fetch })
         })
-        const id = `${userAddress}#${season}`
-        const data = await client.query({
+        const id = `${userAddress.toLowerCase()}#${season}`
+        const data = await client.query<{
+            badges: BadgeResponse[]
+        }>({
             query: gql(badgeQuery),
             variables: {
                 id: id,
@@ -306,8 +316,8 @@ class SBT {
         let badgesClaimed = new Array<BadgeWithStatus>();
         for (const badge of data.data.badges) {
             badgesClaimed.push({
-                badgeType: badge.badgeType, 
-                claimingStatus: data.data.badge.mintedTimestamp == 0 ? 
+                badgeType: parseInt(badge.badgeType, 10),
+                claimingStatus: parseInt(badge.mintedTimestamp, 10) === 0 ?
                     BadgeClaimingStatus.NOT_CLAIMED 
                     : BadgeClaimingStatus.CLAIMED // only from subgraph's perspective
             });
