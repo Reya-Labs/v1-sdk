@@ -1,4 +1,4 @@
-import { BigNumber, Bytes, Signer, providers } from 'ethers';
+import { BigNumber, Bytes, Signer, providers, ContractTransaction } from 'ethers';
 import { ApolloClient, gql, HttpLink, InMemoryCache } from '@apollo/client';
 import { CommunitySBT, CommunitySBT__factory } from '../typechain-sbt';
 import { createLeaves } from '../utils/communitySbt/getSubgraphLeaves';
@@ -142,7 +142,7 @@ class SBT {
     owner: string,
     awardedTimestamp: number,
     subgraphAPI: string
-  ): Promise<BigNumber | void> {
+  ): Promise<ContractTransaction | void> {
 
     // wallet was not connected when the object was initialised
     // therefore, it couldn't obtain the contract connection
@@ -170,8 +170,6 @@ class SBT {
 
         const tokenId = await this.contract.callStatic.redeem(leafInfo, proof, rootEntity.merkleRoot);
         const tx = await this.contract.redeem(leafInfo, proof, rootEntity.merkleRoot);
-        await tx.wait();
-        return tokenId;
     } catch (err) {
         console.error(err);
         throw new Error("Unable to claim");
@@ -190,7 +188,8 @@ class SBT {
         owner: string,
         subgraphAPI: string
     ): Promise<{
-        claimedBadgeTypes: number[]
+        claimedBadgeTypes: number[],
+        tx: ContractTransaction
     }> {
         // wallet was not connected when the object was initialised
         // therefore, it couldn't obtain the contract connection
@@ -231,9 +230,9 @@ class SBT {
         try {
             await this.contract.callStatic.multiRedeem(data.leaves, data.proofs, data.roots);
             const tx = await this.contract.multiRedeem(data.leaves, data.proofs, data.roots);
-            await tx.wait()
             return {
-                claimedBadgeTypes
+                claimedBadgeTypes,
+                tx
             }
         } catch (err) {
             throw new Error("Unable to claim multiple badges");
