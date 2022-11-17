@@ -23,22 +23,19 @@ import { abi as IERC20MinimalABI } from '../ABIs/IERC20Minimal.json';
 import { abi as MellowMultiVaultRouterABI } from '../ABIs/MellowMultiVaultRouterABI.json';
 
 export type MellowLpRouterArgs = {
-  mellowRouterAddress: string;
+  mellowRouterAddress: string; // live in env variable per router contract
   defaultWeights: number[]; // live in env variable per router contract
-  erc20RootVaultAddress: string;
-  erc20RootVaultGovernanceAddress: string;
   provider?: providers.Provider;
 };
 
 class MellowLpRouter {
   public readonly mellowRouterAddress: string;
-  public readonly erc20RootVaultAddress: string;
-  public readonly erc20RootVaultGovernanceAddress: string;
   public readonly provider?: providers.Provider;
   public readonly defaultWeights: number[] = [];
 
   public readOnlyContracts?: {
     token: Contract;
+    mellowRouterContract: Contract;
     erc20RootVault: Contract[];
     erc20RootVaultGovernance: Contract[];
   };
@@ -62,17 +59,9 @@ class MellowLpRouter {
   public vaultInitialized = false;
   public userInitialized = false;
 
-  public constructor({
-    mellowRouterAddress,
-    defaultWeights,
-    erc20RootVaultAddress,
-    erc20RootVaultGovernanceAddress,
-    provider,
-  }: MellowLpRouterArgs) {
+  public constructor({ mellowRouterAddress, defaultWeights, provider }: MellowLpRouterArgs) {
     this.mellowRouterAddress = mellowRouterAddress;
     this.defaultWeights = defaultWeights;
-    this.erc20RootVaultAddress = erc20RootVaultAddress;
-    this.erc20RootVaultGovernanceAddress = erc20RootVaultGovernanceAddress;
     this.provider = provider;
   }
 
@@ -110,10 +99,10 @@ class MellowLpRouter {
     console.log('token address:', tokenAddress);
 
     // erc20rootvault addresses
-    const getERC20RootVaultAddresses = await mellowRouterContract.getVaults();
+    const ERC20RootVaultAddresses = await mellowRouterContract.getVaults();
 
     // Map the addresses so that each of them is instantiated into a contract
-    const erc20RootVaultContracts = getERC20RootVaultAddresses.map(
+    const erc20RootVaultContracts = ERC20RootVaultAddresses.map(
       (address: string) => new ethers.Contract(address, Erc20RootVaultABI, this.provider),
     );
 
@@ -132,6 +121,7 @@ class MellowLpRouter {
       token: tokenContract,
       erc20RootVault: erc20RootVaultContracts,
       erc20RootVaultGovernance: erc20RootVaultGovernanceContracts,
+      mellowRouterContract,
     };
 
     console.log('Read-only contracts are ready');
@@ -164,8 +154,10 @@ class MellowLpRouter {
     console.log('user address', this.userAddress);
 
     this.writeContracts = {
-      token: this.readOnlyContracts.token,
-      erc20RootVault: this.readOnlyContracts.erc20RootVault,
+      token: new Contract(this.readOnlyContracts.token.address, IERC20MinimalABI, this.provider),
+      erc20RootVault: this.readOnlyContracts.erc20RootVault.map(
+        (contract) => new ethers.Contract(contract.address, Erc20RootVaultABI, this.signer),
+      ),
       mellowRouter: new ethers.Contract(
         this.mellowRouterAddress,
         MellowMultiVaultRouterABI,
@@ -205,85 +197,76 @@ class MellowLpRouter {
 
   // TODO: to be changed for multi vault support
   refreshVaultCumulative = async (): Promise<void> => {
+    this.vaultCumulative = 0;
+    this.vaultCap = 0;
+
     if (isUndefined(this.readOnlyContracts)) {
-      this.vaultCumulative = 0;
-      this.vaultCap = 0;
       return;
     }
 
-    let vaultCounter = 0;
-    const totalLpTokens = [];
-    const tvl = [];
-    const nft = [];
-    const strategyParams = [];
     for (const erc20RootVaultContract of this.readOnlyContracts.erc20RootVault) {
       // Add totalSupply of tokens of ith vault into this array
-      totalLpTokens.push(await erc20RootVaultContract.totalSupply());
-
-      // Check if the supply is 0
-      if (totalLpTokens[vaultCounter].eq(0)) {
-        this.vaultCumulative = 0;
-        this.vaultCap = 0;
-        return;
-      }
+      const totalLpTokens = await erc20RootVaultContract.totalSupply();
 
       // Add the tvl of the ith vault into this array
-      tvl.push(await erc20RootVaultContract.tvl());
-      console.log('accumulated (tvl):', tvl[vaultCounter].minTokenAmounts[0].toString());
+      const tvl = await erc20RootVaultContract.tvl();
+      console.log('accumulated (tvl):', tvl.minTokenAmounts[0].toString());
 
       // Add the nft of the ith vault into this array
-      nft.push(await erc20RootVaultContract.nft());
+      const nft = await erc20RootVaultContract.nft();
 
       // Add the strategy params of the ith vault into this array
-      strategyParams.push(await erc20RootVaultContract.strategyParams(nft[vaultCounter]));
+      const strategyParams = await erc20RootVaultContract.strategyParams(nft);
       console.log('strategy params:', strategyParams);
-      console.log('token limit', strategyParams[vaultCounter].tokenLimit.toString());
+      console.log('token limit', strategyParams.tokenLimit.toString());
 
-      this.vaultCumulative = this.descale(tvl[vaultCounter].minTokenAmounts[0], this.tokenDecimals);
-      this.vaultCap = this.descale(
-        totalLpTokens[vaultCounter].mul(toBn('1', 18)).div(strategyParams[vaultCounter].tokenLimit),
+      const vaultCumulative = this.descale(tvl.minTokenAmounts[0], this.tokenDecimals);
+      const vaultCap = this.descale(
+        totalLpTokens.mul(toBn('1', 18)).div(strategyParams.tokenLimit),
         16,
       );
 
-      vaultCounter += 1;
+      console.log('vault cumulative:', vaultCumulative);
+      console.log('vault cap:', vaultCap);
+
+      this.vaultCumulative += vaultCumulative;
+      this.vaultCap += vaultCap;
     }
   };
 
   refreshUserDeposit = async (): Promise<void> => {
+    this.userDeposit = 0;
     if (
       isUndefined(this.userAddress) ||
       isUndefined(this.readOnlyContracts) ||
       isUndefined(this.tokenDecimals)
     ) {
-      this.userDeposit = 0;
       return;
     }
 
-    let vaultCounter = 0;
-    const lpTokensBalance = [];
-    const totalLpTokens = [];
-    const tvl = [];
+    const lpTokensBalances = await this.readOnlyContracts.mellowRouterContract.getLPTokenBalances(
+      this.userAddress,
+    );
 
-    for (const erc20RootVaultContract of this.readOnlyContracts.erc20RootVault) {
-      lpTokensBalance.push(await erc20RootVaultContract.balanceOf(this.userAddress));
+    for (let i = 0; i < this.readOnlyContracts.erc20RootVault.length; i += 1) {
+      const erc20RootVaultContract = this.readOnlyContracts.erc20RootVault[i];
+      const lpTokensBalance = lpTokensBalances[i];
 
-      totalLpTokens.push(await erc20RootVaultContract.totalSupply());
+      const totalLpTokens = await erc20RootVaultContract.totalSupply();
 
-      console.log('lp tokens', lpTokensBalance[vaultCounter].toString());
+      console.log('lp tokens', lpTokensBalance.toString());
       console.log('total lp tokens:', totalLpTokens);
 
-      tvl.push(await erc20RootVaultContract.tvl());
-      console.log('tvl', tvl[vaultCounter].toString());
+      const tvl = await erc20RootVaultContract.tvl();
+      console.log('tvl', tvl.toString());
 
-      if (totalLpTokens[vaultCounter].gt(0)) {
-        const userFunds = lpTokensBalance[vaultCounter].mul(tvl[0][0]).div(totalLpTokens);
+      if (totalLpTokens.gt(0)) {
+        const userFunds = lpTokensBalance.mul(tvl[0][0]).div(totalLpTokens);
         console.log('user funds:', userFunds.toString());
-        this.userDeposit = this.descale(userFunds, this.tokenDecimals);
-      } else {
-        this.userDeposit = 0;
+        const userDeposit = this.descale(userFunds, this.tokenDecimals);
+        console.log('user deposit:', userDeposit);
+        this.userDeposit += userDeposit;
       }
-
-      vaultCounter += 1;
     }
   };
 
@@ -387,7 +370,7 @@ class MellowLpRouter {
       if (this.isETH) {
         this.writeContracts.mellowRouter.callStatic.depositEth(weights, tempOverrides);
       } else {
-        await this.writeContracts.mellowRouter.callStatic.depositErc20([scaledAmount], weights);
+        await this.writeContracts.mellowRouter.callStatic.depositErc20(scaledAmount, weights);
       }
     } catch (err) {
       console.log('ERROR', err);
@@ -402,15 +385,16 @@ class MellowLpRouter {
       tempOverrides.gasLimit = getGasBuffer(gasLimit);
     } else {
       const gasLimit = await this.writeContracts.mellowRouter.estimateGas.depositErc20(
-        [scaledAmount],
+        scaledAmount,
         weights,
+        tempOverrides,
       );
       tempOverrides.gasLimit = getGasBuffer(gasLimit);
     }
 
     const tx = this.isETH
       ? await this.writeContracts.mellowRouter.depositEth(weights, tempOverrides)
-      : await this.writeContracts.mellowRouter.depositErc20([scaledAmount], weights); // tempOverrides
+      : await this.writeContracts.mellowRouter.depositErc20(scaledAmount, weights, tempOverrides);
 
     try {
       const receipt = await tx.wait();
