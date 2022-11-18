@@ -44,6 +44,15 @@ type SubgraphBadgeResponse = {
     mintedTimestamp: string;
 }
 
+type SubgraphPointzResponse = {
+    id: string;
+    seasonUser: {id: string};
+    weightedNotionalTraded: string;
+    weightedLiquidityProvided: string;
+    lastSwapTimestamp: string;
+    lastMintTradeTimestamp: string;
+}
+
 enum TxBadgeStatus {
     SUCCESSFUL,
     FAILED,
@@ -291,12 +300,14 @@ class SBT {
             const subgraphBadges = data.data.seasonUser.badges as SubgraphBadgeResponse[];
             let badgesResponse : BadgeResponse[] = [];
             for (const badge of subgraphBadges) {
-                badgesResponse.push({
+                if (parseInt(badge.awardedTimestamp) > 0) {
+                    badgesResponse.push({
                         id: badge.id,
                         badgeType: badge.badgeType,
                         awardedTimestampMs: toMillis(parseInt(badge.awardedTimestamp)),
                         mintedTimestampMs: toMillis(parseInt(badge.mintedTimestamp)),
-                });
+                    });
+                }
             }
             for (const badgeVariant of NON_SUBGRAPH_BADGES_SEASONS[seasonId]) {
                 if (TOP_BADGES_VARIANT[badgeVariant]) {
@@ -325,18 +336,17 @@ class SBT {
             return undefined;
           }
         try {
-            const badgeQuery = `
+            const pointzQuery = `
                 query( $id: BigInt, $unit: String) {
-                    seasonUsers(first: 5, orderBy: $unit, orderDirection: desc) {
+                    seasonUserPointzs(first: 5, orderBy: $unit, orderDirection: desc){
                         id
-                        badges {
+                        seasonUser {
                             id
-                            awardedTimestamp
-                            mintedTimestamp
-                            badgeType
                         }
-                        totalNotionalTraded
-                        totalLiquidityProvided
+                        weightedNotionalTraded
+                        weightedLiquidityProvided
+                        lastMintTradeTimestamp
+                        lastSwapTimestamp
                     }
                 }
             `;
@@ -344,28 +354,48 @@ class SBT {
                 cache: new InMemoryCache(),
                 link: new HttpLink({ uri: subgraphUrl, fetch })
             })
+
             const id = `${userId.toLowerCase()}#${seasonId}`;
             const isNotional = badgeType.indexOf("trade") > -1;
-            const unit = isNotional ? "totalNotionalTraded" : "totalLiquidityProvided";
-            const data = await client.query({
-                query: gql(badgeQuery),
+            const unit = isNotional ? "weightedNotionalTraded" : "weightedLiquidityProvided";
+            const data = await client.query<{
+                seasonUserPointzs: SubgraphPointzResponse[]
+            }>({
+                query: gql(pointzQuery),
                 variables: {
                     id: id,
                     unit: unit
                 },
             });
     
-            if (!data?.data?.seasonUsers) {
+            if (!data?.data?.seasonUserPointzs) {
                 return undefined;
             }
 
-            for (const seasonUser of data.data.seasonUsers) {
-                if (seasonUser.id === userId.toLowerCase()) {
+            for (const pointz of data.data.seasonUserPointzs) {
+                if (pointz.seasonUser.id === userId.toLowerCase()) {
+                    const badgeQuery = `
+                        query( $id: BigInt) {
+                            badge(id: $id){
+                                id
+                                mintedTimestamp
+                            }
+                        }
+                    `;
+                    const idBadge = `${userId.toLowerCase()}#${badgeType}#${seasonId}`;
+                    const badgeData = await client.query<{
+                        badge: SubgraphBadgeResponse;
+                    }>({
+                        query: gql(badgeQuery),
+                        variables: {
+                            id: idBadge,
+                        },
+                    });
                     const badge : BadgeResponse = {
                         id: `${userId}#${seasonId}#${badgeType}`,
                         badgeType: badgeType,
-                        awardedTimestampMs: toMillis(isNotional ? seasonUser.notionalAwardedTimestamp : seasonUser.liquidityAwardedTimestamp),
-                        mintedTimestampMs: toMillis(isNotional ? seasonUser.notionalMintedTimestamp : seasonUser.liquidityMintedTimestamp),
+                        awardedTimestampMs: toMillis(parseInt(isNotional ? pointz.lastSwapTimestamp : pointz.lastMintTradeTimestamp)),
+                        mintedTimestampMs: toMillis(parseInt(badgeData?.data?.badge ? badgeData.data.badge.mintedTimestamp : "0")),
                     }
                     return badge;
                 }
