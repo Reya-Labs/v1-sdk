@@ -1,4 +1,5 @@
 import { Bytes, ethers } from "ethers";
+import { NON_SUBGRAPH_BADGES_SEASONS, TOP_BADGES_VARIANT } from "../../entities/communitySbt";
 import { CommunitySBT__factory } from "../../typechain-sbt";
 
 export function getBadgeTypeFromMetadataUri(metadataURI: string) : number {
@@ -35,3 +36,22 @@ export function getEtherscanURL(network: string, apiKey: string, userAddress: st
             return "";
     }
 }
+
+export function getTopBadgeType(season: number, isTrader: boolean): string | undefined {
+    const actor = isTrader ? 'trader': 'liquidityProvider'
+    return NON_SUBGRAPH_BADGES_SEASONS[season].find((b) => TOP_BADGES_VARIANT[actor].includes(b));
+}
+
+/**
+ * "Convert seconds to milliseconds, but only if the input is a number and not zero."
+ *
+ * @param {number} seconds - number - The number of seconds to convert to milliseconds.
+ * @returns A function that takes a number and returns a number or undefined.
+ */
+ export function toMillis(seconds: number): number | undefined {
+    if (isNaN(seconds) || seconds === 0) {
+      return undefined;
+    }
+  
+    return seconds * 1000;
+};
