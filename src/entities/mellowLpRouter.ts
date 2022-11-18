@@ -25,8 +25,6 @@ import { abi as MellowMultiVaultRouterABI } from '../ABIs/MellowMultiVaultRouter
 export type MellowLpRouterArgs = {
   mellowRouterAddress: string; // live in env variable per router contract
   defaultWeights: number[]; // live in env variable per router contract
-  vaultMaturities: string[];
-  vaultExpectedApy: number[];
   pivot?: number;
   provider?: providers.Provider;
 };
@@ -35,8 +33,6 @@ class MellowLpRouter {
   public readonly mellowRouterAddress: string;
   public readonly provider?: providers.Provider;
   public readonly defaultWeights: number[] = [];
-  public readonly vaultMaturities: string[] = [];
-  public readonly vaultExpectedApy: number[] = [];
   public readonly pivot?: number;
 
   public readOnlyContracts?: {
@@ -65,19 +61,10 @@ class MellowLpRouter {
   public vaultInitialized = false;
   public userInitialized = false;
 
-  public constructor({
-    mellowRouterAddress,
-    defaultWeights,
-    provider,
-    vaultMaturities,
-    vaultExpectedApy,
-    pivot,
-  }: MellowLpRouterArgs) {
+  public constructor({ mellowRouterAddress, defaultWeights, provider, pivot }: MellowLpRouterArgs) {
     this.mellowRouterAddress = mellowRouterAddress;
     this.defaultWeights = defaultWeights;
     this.provider = provider;
-    this.vaultMaturities = vaultMaturities;
-    this.vaultExpectedApy = vaultExpectedApy;
     this.pivot = pivot;
   }
 
