@@ -17,7 +17,7 @@ let erc20MellowLpRouter: MellowLpRouter;
 let localMellowRouterContract: Contract;
 
 const depositAmount = 10; // Set a default 10 ETH constant for use in tests;
-const ethMellowRouterAddress = '0x631cad693b6f0463b2c2729299fcca8731553bb4';
+const MellowRouterAddress = '0x631cad693b6f0463b2c2729299fcca8731553bb4';
 // const erc20MellowRouterAddress = '';
 const defaultWeights: number[] = [50, 50]; // default even split between 2 pools
 
@@ -31,24 +31,18 @@ const userWallet = signer;
 describe('Mellow Router Test Suite', () => {
   before('Setting up the suite', async () => {
     ethMellowLpRouter = new MellowLpRouter({
-      mellowRouterAddress: ethMellowRouterAddress,
+      mellowRouterAddress: MellowRouterAddress,
       defaultWeights: defaultWeights,
       provider,
     });
 
-    // erc20MellowLpRouter = new MellowLpRouter({
-    //   mellowRouterAddress: erc20MellowRouterAddress,
-    //   defaultWeights: defaultWeights,
-    //   provider,
-    // });
-    // Initialise the mellow vault
     await ethMellowLpRouter.vaultInit();
 
     // Initialise the user so the router contract is connected with user to keep track of them as a signer for the deposits
     await ethMellowLpRouter.userInit(userWallet);
 
     localMellowRouterContract = new ethers.Contract(
-      ethMellowRouterAddress,
+      MellowRouterAddress,
       MellowMultiVaultRouterABI,
       signer,
     );
@@ -67,7 +61,7 @@ describe('Mellow Router Test Suite', () => {
     });
   });
 
-  describe('ETH POOLS', async () => {
+  describe('Deposit Scenarios', async () => {
     it('Check that vault has been initialised correctly', async () => {
       expect(ethMellowLpRouter.vaultInitialized).to.be.eq(true);
 
@@ -253,28 +247,6 @@ describe('Mellow Router Test Suite', () => {
     it('Have we descaled properly?', async () => {
       const amount = BigNumber.from('1000000000000000000');
       expect(ethMellowLpRouter.descale(amount, 18)).to.be.eq(BigNumber.from('1'));
-    });
-  });
-
-  describe('ERC20 DEPOSITS', async () => {
-    it('User deposits ERC20 into router with even split', async () => {
-      const mellowRouter = erc20MellowLpRouter;
-      const weights = [50, 50];
-
-      await mellowRouter.deposit(depositAmount, weights);
-    });
-
-    it('User deposits ERC20 into router with uneven split', async () => {
-      const mellowRouter = erc20MellowLpRouter;
-      const weights = [100, 0];
-
-      await mellowRouter.deposit(depositAmount, weights);
-    });
-
-    it('User deposits ERC20 into router without specifying weights', async () => {
-      const mellowRouter = erc20MellowLpRouter;
-
-      await mellowRouter.deposit(depositAmount);
     });
   });
 });
