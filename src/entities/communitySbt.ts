@@ -62,14 +62,6 @@ export type GetBadgesStatusArgs = {
     potentialClaimingBadgeTypes: Array<number>;
 }
 
-export type BadgeResponse = {
-    id: string;
-    badgeType: string;
-    badgeName: string;
-    awardedTimestamp: string;
-    mintedTimestamp: string;
-  };
-
 export type NonProgramaticBadgeResponse = {
     address: string;
     badge: string;
@@ -142,7 +134,7 @@ class SBT {
     owner: string,
     awardedTimestamp: number,
     subgraphAPI: string
-  ): Promise<ContractTransaction | void> {
+  ): Promise<BigNumber | void> {
 
     // wallet was not connected when the object was initialised
     // therefore, it couldn't obtain the contract connection
@@ -170,6 +162,8 @@ class SBT {
 
         const tokenId = await this.contract.callStatic.redeem(leafInfo, proof, rootEntity.merkleRoot);
         const tx = await this.contract.redeem(leafInfo, proof, rootEntity.merkleRoot);
+        await tx.wait();
+        return tokenId;
     } catch (err) {
         console.error(err);
         throw new Error("Unable to claim");
@@ -188,8 +182,7 @@ class SBT {
         owner: string,
         subgraphAPI: string
     ): Promise<{
-        claimedBadgeTypes: number[],
-        tx: ContractTransaction
+        claimedBadgeTypes: number[]
     }> {
         // wallet was not connected when the object was initialised
         // therefore, it couldn't obtain the contract connection
@@ -232,7 +225,6 @@ class SBT {
             const tx = await this.contract.multiRedeem(data.leaves, data.proofs, data.roots);
             return {
                 claimedBadgeTypes,
-                tx
             }
         } catch (err) {
             throw new Error("Unable to claim multiple badges");
