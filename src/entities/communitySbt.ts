@@ -7,7 +7,7 @@ import { getProof } from '../utils/communitySbt/merkle-tree';
 import  axios from 'axios';
 import fetch from 'cross-fetch';
 import { MULTI_REDEEM_METHOD_ID, REDEEM_METHOD_ID } from '../constants';
-import { decodeBadgeType, decodeMultipleBadgeTypes, getBadgeTypeFromMetadataUri, getEtherscanURL } from '../utils/communitySbt/helpers';
+import { decodeBadgeType, decodeMultipleBadgeTypes, getBadgeTypeFromMetadataUri, getEtherscanURL, toMillis } from '../utils/communitySbt/helpers';
 
 export type SBTConstructorArgs = {
     id: string;
@@ -33,7 +33,13 @@ type MultiRedeemData = {
 export type BadgeResponse = {
     id: string;
     badgeType: string;
-    badgeName: string;
+    awardedTimestampMs?: number;
+    mintedTimestampMs?: number;
+}
+
+type SubgraphBadgeResponse = {
+    id: string;
+    badgeType: string;
     awardedTimestamp: string;
     mintedTimestamp: string;
 }
@@ -238,8 +244,8 @@ class SBT {
         userId,
         seasonId,
       }: {
-        subgraphUrl: string;
-        dbUrl: string;
+        subgraphUrl?: string;
+        dbUrl?: string;
         userId: string;
         seasonId: number;
       }): Promise<BadgeResponse[]> {
@@ -256,7 +262,6 @@ class SBT {
                           awardedTimestamp
                           mintedTimestamp
                           badgeType
-                          badgeName
                         }
                     }
                 }
@@ -266,23 +271,32 @@ class SBT {
                 link: new HttpLink({ uri: subgraphUrl, fetch })
             })
             const id = `${userId.toLowerCase()}#${seasonId}`
-            const data = await client.query({
+            const data = await client.query<{
+                seasonUser: {
+                    badges: SubgraphBadgeResponse[]
+                }
+            }>({
                 query: gql(badgeQuery),
                 variables: {
                     id: id,
                 },
             });
       
-            if (!data.data.seasonUser) {
+            if (!data?.data?.seasonUser) {
                 return [];// empty array
             }
 
             const nonProgBadges = await this.getNonProgramaticBadges(userId, dbUrl);
       
-            const subgraphBadges = data.data.seasonUser.badges as BadgeResponse[];
+            const subgraphBadges = data.data.seasonUser.badges as SubgraphBadgeResponse[];
             let badgesResponse : BadgeResponse[] = [];
             for (const badge of subgraphBadges) {
-                badgesResponse.push(badge);
+                badgesResponse.push({
+                        id: badge.id,
+                        badgeType: badge.badgeType,
+                        awardedTimestampMs: toMillis(parseInt(badge.awardedTimestamp)),
+                        mintedTimestampMs: toMillis(parseInt(badge.mintedTimestamp)),
+                });
             }
             for (const badgeVariant of NON_SUBGRAPH_BADGES_SEASONS[seasonId]) {
                 if (TOP_BADGES_VARIANT[badgeVariant]) {
@@ -316,11 +330,10 @@ class SBT {
                     seasonUsers(first: 5, orderBy: $unit, orderDirection: desc) {
                         id
                         badges {
-                        id
-                        awardedTimestamp
-                        mintedTimestamp
-                        badgeType
-                        badgeName
+                            id
+                            awardedTimestamp
+                            mintedTimestamp
+                            badgeType
                         }
                         totalNotionalTraded
                         totalLiquidityProvided
@@ -342,7 +355,7 @@ class SBT {
                 },
             });
     
-            if (!data.data.seasonUsers) {
+            if (!data?.data?.seasonUsers) {
                 return undefined;
             }
 
@@ -351,9 +364,8 @@ class SBT {
                     const badge : BadgeResponse = {
                         id: `${userId}#${seasonId}#${badgeType}`,
                         badgeType: badgeType,
-                        badgeName: TOP_BADGES_VARIANT[badgeType],
-                        awardedTimestamp: isNotional ? seasonUser.notionalAwardedTimestamp : seasonUser.liquidityAwardedTimestamp,
-                        mintedTimestamp: isNotional ? seasonUser.notionalMintedTimestamp : seasonUser.liquidityMintedTimestamp,
+                        awardedTimestampMs: toMillis(isNotional ? seasonUser.notionalAwardedTimestamp : seasonUser.liquidityAwardedTimestamp),
+                        mintedTimestampMs: toMillis(isNotional ? seasonUser.notionalMintedTimestamp : seasonUser.liquidityMintedTimestamp),
                     }
                     return badge;
                 }
@@ -368,7 +380,7 @@ class SBT {
 
         const resp = await axios.get(nonProgramaticBadgesUrl + userId);
         if (!resp.data){
-            return badgeResponssRecord ;
+            return badgeResponssRecord;
         }
 
         const badges: NonProgramaticBadgeResponse[] = resp.data.badges;
@@ -377,10 +389,9 @@ class SBT {
             badgeResponssRecord[entry.badge] = {
                 id: `${userId}#${badgeType}#1`,
                 badgeType: badgeType,
-                badgeName: NON_PROGRAMATIC_BADGES_VARIANT[badgeType],
-                awardedTimestamp: entry.awardedTimestamp.toString(),
-                mintedTimestamp: entry.mintedTimestamp.toString(),
-            };
+                awardedTimestampMs: toMillis(entry.awardedTimestamp),
+                mintedTimestampMs: toMillis(entry.mintedTimestamp),
+            } as BadgeResponse;
         });
         return badgeResponssRecord;
     }
@@ -478,7 +489,6 @@ class SBT {
                 badges(first: 50, where: {seasonUser_contains: $id}) {
                     id
                     badgeType
-                    badgeName
                     awardedTimestamp
                     mintedTimestamp
                 }
@@ -490,7 +500,7 @@ class SBT {
         })
         const id = `${userAddress.toLowerCase()}#${season}`
         const data = await client.query<{
-            badges: BadgeResponse[]
+            badges: SubgraphBadgeResponse[]
         }>({
             query: gql(badgeQuery),
             variables: {
