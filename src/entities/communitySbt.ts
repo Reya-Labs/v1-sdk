@@ -302,13 +302,18 @@ class SBT {
                     });
                 }
             }
+
+            const topLpType = seasonId === 0 ? "12" : "28";
+            const topTraderType = seasonId === 0 ? "15" : "31"
+
+            const topLpBadge =  await this.getTopTraderBadge(subgraphUrl, userId, seasonId, topLpType, false);
+            const topTraderBadge =  await this.getTopTraderBadge(subgraphUrl, userId, seasonId, topTraderType, true);
+            if (topLpBadge) badgesResponse.push(topLpBadge);
+            if (topTraderBadge) badgesResponse.push(topTraderBadge);
+
+            // get non-programatic badges
             for (const badgeType of NON_SUBGRAPH_BADGES_SEASONS[seasonId]) {
-                if (TOP_BADGES_VARIANT.includes(badgeType)) {
-                    const topBadge = await this.getTopTraderBadge(subgraphUrl, userId, seasonId, badgeType);
-                    if (topBadge) {
-                        badgesResponse.push(topBadge);
-                    }
-                } else if (nonProgBadges[badgeType]) {
+                if (nonProgBadges[badgeType]) {
                     const nonProgBadge = nonProgBadges[badgeType];
                     badgesResponse.push(nonProgBadge);
                 }
@@ -323,7 +328,8 @@ class SBT {
         subgraphUrl: string,
         userId: string,
         seasonId: number,
-        badgeType: string
+        badgeType: string,
+        isTrader: boolean
       ): Promise<BadgeResponse | undefined> {
         if (!process.env.REACT_APP_SUBGRAPH_BADGES_URL) {
             return undefined;
@@ -349,8 +355,7 @@ class SBT {
             })
 
             const id = `${userId.toLowerCase()}#${seasonId}`;
-            const isNotional = badgeType.indexOf("trade") > -1;
-            const unit = isNotional ? "weightedNotionalTraded" : "weightedLiquidityProvided";
+            const unit = isTrader ? "weightedNotionalTraded" : "weightedLiquidityProvided";
             const data = await client.query<{
                 seasonUserPointzs: SubgraphPointzResponse[]
             }>({
@@ -387,7 +392,7 @@ class SBT {
                     const badge : BadgeResponse = {
                         id: `${userId}#${seasonId}#${badgeType}`,
                         badgeType: badgeType,
-                        awardedTimestampMs: toMillis(parseInt(isNotional ? pointz.lastSwapTimestamp : pointz.lastMintTradeTimestamp)),
+                        awardedTimestampMs: toMillis(parseInt(isTrader ? pointz.lastSwapTimestamp : pointz.lastMintTradeTimestamp)),
                         mintedTimestampMs: toMillis(parseInt(badgeData?.data?.badge ? badgeData.data.badge.mintedTimestamp : "0")),
                     }
                     return badge;
