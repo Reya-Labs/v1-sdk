@@ -401,7 +401,7 @@ class SBT {
     public async getNonProgramaticBadges(userId: string, nonProgramaticBadgesUrl: string) : Promise<Record<string, BadgeResponse>> {
         let badgeResponseRecord : Record<string, BadgeResponse> = {};
 
-        const resp = await axios.get(nonProgramaticBadgesUrl + userId);
+        const resp = await axios.get(`${nonProgramaticBadgesUrl}/get-badges/${userId}`);
         if (!resp.data){
             return badgeResponseRecord;
         }
