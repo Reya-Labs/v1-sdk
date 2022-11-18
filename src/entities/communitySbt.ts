@@ -15,7 +15,7 @@ export type SBTConstructorArgs = {
 };
 
 export type BadgeRecord = {
-    badgeType: number;
+    badgeType: string;
     awardedTimestamp: number;
 };
 
@@ -139,7 +139,7 @@ class SBT {
    * @returns 
    */
   public async redeemSbt(
-    badgeType: number,
+    badgeType: string,
     owner: string,
     awardedTimestamp: number,
     subgraphAPI: string
@@ -159,14 +159,14 @@ class SBT {
         }
         const leafInfo : LeafInfo = {
             account: owner,
-            badgeId: badgeType
+            badgeId: parseInt(badgeType)
         }
 
         const startTimestamp = rootEntity.startTimestamp;
         const endTimestamp = rootEntity.endTimestamp;
 
         const leaves = await createLeaves(startTimestamp, endTimestamp, subgraphAPI);
-        const proof = getProof(owner, badgeType, leaves);
+        const proof = getProof(owner, parseInt(badgeType), leaves);
 
 
         const tokenId = await this.contract.callStatic.redeem(leafInfo, proof, rootEntity.merkleRoot);
@@ -215,18 +215,18 @@ class SBT {
             }
             const leafInfo: LeafInfo = {
                 account: owner,
-                badgeId: badge.badgeType
+                badgeId:  parseInt(badge.badgeType)
             }
             const startTimestamp = rootEntity.startTimestamp;
             const endTimestamp = rootEntity.endTimestamp;
 
             const leaves = await createLeaves(startTimestamp, endTimestamp, subgraphAPI);
-            const proof = getProof(owner, badge.badgeType, leaves);
+            const proof = getProof(owner,  parseInt(badge.badgeType), leaves);
 
             data.leaves.push(leafInfo);
             data.proofs.push(proof);
             data.roots.push(rootEntity.merkleRoot)
-            claimedBadgeTypes.push(badge.badgeType);
+            claimedBadgeTypes.push( parseInt(badge.badgeType));
         }
 
         try {
