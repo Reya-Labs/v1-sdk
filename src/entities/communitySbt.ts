@@ -30,7 +30,7 @@ type MultiRedeemData = {
     roots: Array<Bytes>;
 }
 
-type BadgeResponse = {
+export type BadgeResponse = {
     id: string;
     badgeType: string;
     badgeName: string;
@@ -65,7 +65,8 @@ export type GetBadgesStatusArgs = {
 export type NonProgramaticBadgeResponse = {
     address: string;
     badge: string;
-    timestamp: string;
+    awardedTimestamp: number;
+    mintedTimestamp: number;
 }
 
 export const NON_SUBGRAPH_BADGES_SEASONS: Record<number, string[]>  = {
@@ -242,7 +243,7 @@ class SBT {
         userId: string;
         seasonId: number;
       }): Promise<BadgeResponse[]> {
-        if (!process.env.REACT_APP_SUBGRAPH_BADGES_URL) {
+        if (!subgraphUrl || !dbUrl) {
           return [];
         }
         try {
@@ -374,11 +375,11 @@ class SBT {
         badges.map((entry) => {
             const badgeType = NON_PROGRAMATIC_BADGES_VARIANT[entry.badge]
             badgeResponssRecord[entry.badge] = {
-                id: `${userId}#${10000}#${badgeType}`,
+                id: `${userId}#${badgeType}#1`,
                 badgeType: badgeType,
                 badgeName: NON_PROGRAMATIC_BADGES_VARIANT[badgeType],
-                awardedTimestamp: entry.timestamp,
-                mintedTimestamp: entry.timestamp,
+                awardedTimestamp: entry.awardedTimestamp.toString(),
+                mintedTimestamp: entry.mintedTimestamp.toString(),
             };
         });
         return badgeResponssRecord;
