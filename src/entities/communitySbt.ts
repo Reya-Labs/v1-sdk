@@ -86,30 +86,23 @@ export type NonProgramaticBadgeResponse = {
 
 export const NON_SUBGRAPH_BADGES_SEASONS: Record<number, string[]>  = {
     0: [
-        'ogTopTrader',
-        'ogBeWaterMyFriend'
+        '15',
+        '12'
     ],
     1: [
-        'topTrader',
-        'beWaterMyFriend',
-        'diplomatz',
-        'governorz',
-        'senatorz',
-        'theOgActivity'
+        '31',
+        '28',
+        '33',
+        '34',
+        '35'
     ]
 }
-export const TOP_BADGES_VARIANT: Record<string, string> = {
-    'topTrader' : '31',
-    'beWaterMyFriend' : '28',
-    'ogTopTrader' : '15',
-    'ogBeWaterMyFriend' : '12'
-}
+export const TOP_BADGES_VARIANT: Array<string> = ['31', '28', '15', '12']
 
 export const NON_PROGRAMATIC_BADGES_VARIANT: Record<string, string> = {
     'diplomatz' : '33',
     'governorz' : '34',
-    'senatorz' : '35',
-    'theOgActivity' : '36'
+    'senatorz' : '35'
 }
 
 
@@ -309,14 +302,14 @@ class SBT {
                     });
                 }
             }
-            for (const badgeVariant of NON_SUBGRAPH_BADGES_SEASONS[seasonId]) {
-                if (TOP_BADGES_VARIANT[badgeVariant]) {
-                    const topBadge = await this.getTopTraderBadge(subgraphUrl, userId, seasonId, TOP_BADGES_VARIANT[badgeVariant]);
+            for (const badgeType of NON_SUBGRAPH_BADGES_SEASONS[seasonId]) {
+                if (TOP_BADGES_VARIANT.includes(badgeType)) {
+                    const topBadge = await this.getTopTraderBadge(subgraphUrl, userId, seasonId, badgeType);
                     if (topBadge) {
                         badgesResponse.push(topBadge);
                     }
-                } else if (NON_PROGRAMATIC_BADGES_VARIANT[badgeVariant] && nonProgBadges[badgeVariant]) {
-                    const nonProgBadge = nonProgBadges[badgeVariant];
+                } else if (nonProgBadges[badgeType]) {
+                    const nonProgBadge = nonProgBadges[badgeType];
                     badgesResponse.push(nonProgBadge);
                 }
             }
@@ -406,24 +399,26 @@ class SBT {
     }
 
     public async getNonProgramaticBadges(userId: string, nonProgramaticBadgesUrl: string) : Promise<Record<string, BadgeResponse>> {
-        let badgeResponssRecord : Record<string, BadgeResponse> = {};
+        let badgeResponseRecord : Record<string, BadgeResponse> = {};
 
         const resp = await axios.get(nonProgramaticBadgesUrl + userId);
         if (!resp.data){
-            return badgeResponssRecord;
+            return badgeResponseRecord;
         }
 
         const badges: NonProgramaticBadgeResponse[] = resp.data.badges;
-        badges.map((entry) => {
-            const badgeType = NON_PROGRAMATIC_BADGES_VARIANT[entry.badge]
-            badgeResponssRecord[entry.badge] = {
-                id: `${userId}#${badgeType}#1`,
-                badgeType: badgeType,
-                awardedTimestampMs: toMillis(entry.awardedTimestamp),
-                mintedTimestampMs: toMillis(entry.mintedTimestamp),
-            } as BadgeResponse;
+        badges.forEach((entry) => {
+            const badgeType = NON_PROGRAMATIC_BADGES_VARIANT[entry.badge];
+            if(badgeType) {
+                badgeResponseRecord[badgeType] = {
+                    id: `${userId}#${badgeType}#1`,
+                    badgeType: badgeType,
+                    awardedTimestampMs: toMillis(entry.awardedTimestamp),
+                    mintedTimestampMs: toMillis(entry.mintedTimestamp),
+                } as BadgeResponse;
+            }
         });
-        return badgeResponssRecord;
+        return badgeResponseRecord;
     }
 
     public async getUserBalance(user: string) : Promise<BigNumber | void> {
