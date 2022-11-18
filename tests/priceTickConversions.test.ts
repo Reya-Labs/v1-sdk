@@ -59,11 +59,15 @@ describe('priceTickConversions', () => {
 
   describe('#fixedRateToPrice', () => {
     it('10000/3679', () => {
-      expect(fixedRateToPrice(new Price(10000, 3679))).to.be.eq(new Price(3679, 10000));
+      const tmp = fixedRateToPrice(new Price(10000, 3679));
+      expect(tmp.denominator.toString()).to.be.eq('3679');
+      expect(tmp.numerator.toString()).to.be.eq('10000');
     });
 
     it('3679/10000', () => {
-      expect(fixedRateToPrice(new Price(3679, 10000))).to.be.eq(new Price(10000, 3679));
+      const tmp = fixedRateToPrice(new Price(3679, 10000));
+      expect(tmp.denominator.toString()).to.be.eq('10000');
+      expect(tmp.numerator.toString()).to.be.eq('3679');
     });
   });
 
@@ -115,7 +119,9 @@ describe('priceTickConversions', () => {
 
   describe('#priceToFixedRate', () => {
     it('10000/3679', () => {
-      expect(priceToFixedRate(new Price(10000, 3679))).to.be.eq(new Price(3679, 10000));
+      const tmp = priceToFixedRate(new Price(10000, 3679));
+      expect(tmp.denominator.toString()).to.be.eq('3679');
+      expect(tmp.numerator.toString()).to.be.eq('10000');
     });
   });
 });
