@@ -11,7 +11,7 @@
     "README.md"
   ],
   "scripts": {
-    "prepare": "husky install",
+    "prepare": "is-ci || husky install",
     "build": "tsc -p tsconfig.build.json",
     "build-release": "rm -rf dist; tsc -p tsconfig.dist.json",
     "prettier": "prettier 'src/**/*.ts'",
@@ -52,6 +52,7 @@
     "ethereum-waffle": "^3.4.4",
     "hardhat": "^2.12.2",
     "husky": "^7.0.2",
+    "is-ci": "3.0.1",
     "lint-staged": "11.1.2",
     "mocha": "^10.1.0",
     "prettier": "2.4.1",
