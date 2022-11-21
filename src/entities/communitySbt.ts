@@ -288,14 +288,10 @@ class SBT {
                     id: id,
                 },
             });
-      
-            if (!data?.data?.seasonUser) {
-                return [];// empty array
-            }
 
             const nonProgBadges = await this.getNonProgramaticBadges(userId, dbUrl);
       
-            const subgraphBadges = data.data.seasonUser.badges as SubgraphBadgeResponse[];
+            const subgraphBadges = (data?.data?.seasonUser ? data.data.seasonUser.badges : []) as SubgraphBadgeResponse[];
             let badgesResponse : BadgeResponse[] = [];
             for (const badge of subgraphBadges) {
                 if (parseInt(badge.awardedTimestamp) > 0) {
@@ -419,6 +415,7 @@ class SBT {
         const badges: NonProgramaticBadgeResponse[] = resp.data.badges;
         badges.forEach((entry) => {
             const badgeType = NON_PROGRAMATIC_BADGES_VARIANT[entry.badge];
+            
             if(badgeType) {
                 badgeResponseRecord[badgeType] = {
                     id: `${userId}#${badgeType}#1`,
