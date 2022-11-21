@@ -1,9 +1,8 @@
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-restricted-syntax */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable object-shorthand */
+
 import { BigNumber, Contract, ethers, Wallet } from 'ethers';
-import { before, describe, it } from 'mocha';
+import { describe, it } from 'mocha';
 import { expect } from 'chai';
 import { network, waffle } from 'hardhat';
 import { isUndefined } from 'lodash';
@@ -13,12 +12,11 @@ import { abi as Erc20RootVaultABI } from '../src/ABIs/Erc20RootVault.json';
 
 const { provider } = waffle;
 let ethMellowLpRouter: MellowLpRouter;
-let erc20MellowLpRouter: MellowLpRouter;
+
 let localMellowRouterContract: Contract;
 
 const depositAmount = 10; // Set a default 10 ETH constant for use in tests;
 const MellowRouterAddress = '0x631cad693b6f0463b2c2729299fcca8731553bb4';
-// const erc20MellowRouterAddress = '';
 const defaultWeights: number[] = [50, 50]; // default even split between 2 pools
 
 const signer = new Wallet(
@@ -29,10 +27,27 @@ const signer = new Wallet(
 const userWallet = signer;
 
 describe('Mellow Router Test Suite', () => {
-  before('Setting up the suite', async () => {
+  const resetNetwork = async () => {
+    await network.provider.request({
+      method: 'hardhat_reset',
+      params: [
+        {
+          chainId: 5,
+          forking: {
+            jsonRpcUrl: process.env.GOERLI_URL,
+            blockNumber: 7976620,
+          },
+        },
+      ],
+    });
+  };
+
+  beforeEach('Setting up the suite', async () => {
+    await resetNetwork();
+
     ethMellowLpRouter = new MellowLpRouter({
       mellowRouterAddress: MellowRouterAddress,
-      defaultWeights: defaultWeights,
+      defaultWeights,
       provider,
     });
 
@@ -46,19 +61,6 @@ describe('Mellow Router Test Suite', () => {
       MellowMultiVaultRouterABI,
       signer,
     );
-  });
-
-  beforeEach(async function resetNetworkFork() {
-    await network.provider.request({
-      method: 'hardhat_reset',
-      params: [
-        {
-          forking: {
-            jsonRpcUrl: process.env.GOERLI_URL,
-          },
-        },
-      ],
-    });
   });
 
   describe('Deposit Scenarios', async () => {
@@ -112,7 +114,7 @@ describe('Mellow Router Test Suite', () => {
       const batchedDeposit =
         await ethMellowLpRouter.writeContracts?.mellowRouter.getBatchedDeposits();
       // eslint-disable-next-line
-      console.log("Get batched deposits in router contract: ", batchedDeposit.toString());
+      console.log('Get batched deposits in router contract: ', batchedDeposit.toString());
 
       // Submit the batch of deposits from the router to the erc20 root vault
       await ethMellowLpRouter.writeContracts?.mellowRouter.submitBatch(0);
@@ -137,7 +139,7 @@ describe('Mellow Router Test Suite', () => {
         }
       }
       // eslint-disable-next-line
-      console.log("Printing tvl list of all erc20 root vaults: ", tvl );
+      console.log('Printing tvl list of all erc20 root vaults: ', tvl);
 
       expect(tvl[0]).to.be.eq('11673207775126148888');
       expect(tvl[1]).to.be.eq('11673207775126148888');
@@ -156,7 +158,7 @@ describe('Mellow Router Test Suite', () => {
       const batchedDeposit =
         await ethMellowLpRouter.writeContracts?.mellowRouter.getBatchedDeposits();
       // eslint-disable-next-line
-      console.log("Get batched deposits in router contract: ", batchedDeposit.toString());
+      console.log('Get batched deposits in router contract: ', batchedDeposit.toString());
 
       // Submit the batch of deposits from the router to the erc20 root vault
       await ethMellowLpRouter.writeContracts?.mellowRouter.submitBatch(0);
@@ -181,7 +183,7 @@ describe('Mellow Router Test Suite', () => {
         }
       }
       // eslint-disable-next-line
-      console.log("Printing tvl list of all erc20 root vaults: ", tvl);
+      console.log('Printing tvl list of all erc20 root vaults: ', tvl);
 
       // For each vault
       expect(tvl[0]).to.be.eq('11673207775126148890');
@@ -200,7 +202,7 @@ describe('Mellow Router Test Suite', () => {
       const batchedDeposit =
         await ethMellowLpRouter.writeContracts?.mellowRouter.getBatchedDeposits();
       // eslint-disable-next-line
-      console.log("Get batched deposits in router contract: ", batchedDeposit.toString());
+      console.log('Get batched deposits in router contract: ', batchedDeposit.toString());
 
       // Submit the batch of deposits from the router to the erc20 root vault
       await ethMellowLpRouter.writeContracts?.mellowRouter.submitBatch(0);
@@ -225,7 +227,7 @@ describe('Mellow Router Test Suite', () => {
         }
       }
       // eslint-disable-next-line
-      console.log("Printing tvl list of all erc20 root vaults: ", tvl);
+      console.log('Printing tvl list of all erc20 root vaults: ', tvl);
 
       // For each vault
       expect(tvl[0]).to.be.eq('11673207775126148888');
