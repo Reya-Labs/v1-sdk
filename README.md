@@ -45,13 +45,12 @@ The address should be included in `--beneficiaries`:
 
 To run the tests execute `yarn test`. This runs all the tests inside the `/tests` directory.
 
-# Testing local version in UI using `yarn link`
+# Testing local version in UI using `yalc`
 
 1. SDK -> Run `yarn build-release` (this prepares the JS build files)
-2. SDK -> Run `yarn link`
-3. UI repo, to test local version(link) -> Run `yarn link @voltz-protocol/v1-sdk`
-4. UI repo, to remove testing local version (unlink) -> run `yarn unlink @voltz-protocol/v1-sdk`
-5. On any changes in SDK re-run steps `1-4`
+2. SDK -> Run `npx yalc publish`
+3. UI repo, to test local version(link) -> run `npx yalc add @voltz-protocol/v1-sdk`
+4. UI repo, to update local version(link) -> run `npx yalc update @voltz-protocol/v1-sdk`
 
 # Terms & Conditions
 
