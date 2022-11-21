@@ -7,7 +7,7 @@ import { getProof } from '../utils/communitySbt/merkle-tree';
 import  axios from 'axios';
 import fetch from 'cross-fetch';
 import { MULTI_REDEEM_METHOD_ID, REDEEM_METHOD_ID } from '../constants';
-import { decodeBadgeType, decodeMultipleBadgeTypes, getBadgeTypeFromMetadataUri, getEtherscanURL, getTopBadgeType, toMillis } from '../utils/communitySbt/helpers';
+import { decodeBadgeType, decodeMultipleBadgeTypes, getEtherscanURL, getTopBadgeType, toMillis } from '../utils/communitySbt/helpers';
 import { DateTime } from 'luxon';
 
 export type SBTConstructorArgs = {
@@ -257,16 +257,18 @@ class SBT {
 
     public async getSeasonBadges({
         subgraphUrl,
-        dbUrl,
+        nonProgDbUrl,
+        referralsDbUrl,
         userId,
         seasonId,
       }: {
         subgraphUrl?: string;
-        dbUrl?: string;
+        nonProgDbUrl?: string;
+        referralsDbUrl? : string,
         userId: string;
         seasonId: number;
       }): Promise<BadgeResponse[]> {
-        if (!subgraphUrl || !dbUrl) {
+        if (!subgraphUrl || !nonProgDbUrl || !referralsDbUrl) {
           return [];
         }
         try {
@@ -299,12 +301,12 @@ class SBT {
                 },
             });
 
-            const nonProgBadges = await this.getNonProgramaticBadges(userId, dbUrl);
+            const nonProgBadges = await this.getNonProgramaticBadges(userId, nonProgDbUrl);
             const referroorBadges = await this.getReferrorBadges(
                 userId,
-                "https://voltz-test-rest-api.herokuapp.com",
-                dbUrl,
-                subgraphUrl
+                referralsDbUrl,
+                subgraphUrl,
+                seasonId
             );
       
             const subgraphBadges = (data?.data?.seasonUser ? data.data.seasonUser.badges : []) as SubgraphBadgeResponse[];
@@ -448,10 +450,9 @@ class SBT {
         return badgeResponseRecord;
     }
 
-    public async getReferrorBadges(userId: string, referroorBadgesUrl: string, dbUrl:  string, subgraphUrl: string) : Promise<Record<string, BadgeResponse>> {
+    public async getReferrorBadges(userId: string, referroorBadgesUrl: string, subgraphUrl: string, seasonId: number) : Promise<Record<string, BadgeResponse>> {
         let badgeResponseRecord : Record<string, BadgeResponse> = {};
 
-        // https://voltz-test-rest-api.herokuapp.com/referrals-by/0xf21d9ef089729933650154eaada95c8f98f62d68
         const resp = await axios.get(`${referroorBadgesUrl}/referrals-by/${userId.toLowerCase()}`);
         if (!resp.data){
             return badgeResponseRecord;
@@ -506,22 +507,22 @@ class SBT {
 
         if (refrees100K > 0) {
             let badgeType = '36'; //referror
-            badgeResponseRecord[badgeType] = this.createReferroorBadgeRecord(badgeType, userId);
+            badgeResponseRecord[badgeType] = this.createReferroorBadgeRecord(badgeType, userId, seasonId);
             if (refrees100K >= 10) {
                 badgeType = '37'; // Notional Influence
-                badgeResponseRecord[badgeType] = this.createReferroorBadgeRecord(badgeType, userId);
+                badgeResponseRecord[badgeType] = this.createReferroorBadgeRecord(badgeType, userId, seasonId);
             }
         }
         if (refrees2M > 0) {
             const badgeType = '38'; //whaleWhisperer
-            badgeResponseRecord[badgeType] = this.createReferroorBadgeRecord(badgeType, userId);
+            badgeResponseRecord[badgeType] = this.createReferroorBadgeRecord(badgeType, userId, seasonId);
         }
         return badgeResponseRecord;
     }
 
-    createReferroorBadgeRecord(badgeType: string, userId: string) : BadgeResponse {
+    createReferroorBadgeRecord(badgeType: string, userId: string, seasonId: number) : BadgeResponse {
         return {
-            id: `${userId}#${badgeType}#1`,
+            id: `${userId}#${badgeType}#${seasonId}`,
             badgeType: badgeType,
             awardedTimestampMs: toMillis(DateTime.now().toSeconds()),
             mintedTimestampMs: undefined,
