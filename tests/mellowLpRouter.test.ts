@@ -67,18 +67,9 @@ describe('Mellow Router Test Suite', () => {
   describe('Deposit Scenarios', async () => {
     it('Check that vault has been initialised correctly', async () => {
       expect(ethMellowLpRouter.vaultInitialized).to.be.eq(true);
-
-      // eslint-disable-next-line
-      console.log('printing chainid: ', network.config.chainId);
-      if (network.config.chainId === 1) {
-        expect(ethMellowLpRouter.readOnlyContracts?.token.address).to.be.eq(
-          '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
-        );
-      } else if (network.config.chainId === 5) {
-        expect(ethMellowLpRouter.readOnlyContracts?.token.address).to.be.eq(
-          '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6',
-        );
-      }
+      expect(ethMellowLpRouter.readOnlyContracts?.token.address).to.be.eq(
+        '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6',
+      );
 
       const erc20RootVaultAddresses = await localMellowRouterContract.getVaults();
       expect(ethMellowLpRouter.readOnlyContracts?.erc20RootVault[0].address).to.be.eq(
