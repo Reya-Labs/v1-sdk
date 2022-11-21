@@ -2,7 +2,7 @@ name: Release
 on:
   push:
     branches:
-      - master
+      - main
 jobs:
   release:
     name: Release
@@ -19,12 +19,10 @@ jobs:
           node-version: 'lts/*'
       - name: Install dependencies
         run: make install-ci
-      - name: Run tests
-        run: make test
       - name: Build release
         run: make build-release
       - name: Release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_PUBLISHING_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_PUBLISHING_TOKEN }}
         run: make release
