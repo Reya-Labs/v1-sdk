@@ -1,6 +1,6 @@
 {
   "name": "@voltz-protocol/v1-sdk",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A TypeScript wrapper for the Voltz smart contract",
   "main": "dist/index.js",
   "types": "dist/types",
@@ -11,7 +11,7 @@
     "README.md"
   ],
   "scripts": {
-    "prepare": "husky install",
+    "prepare": "is-ci || husky install",
     "build": "tsc -p tsconfig.build.json",
     "build-release": "rm -rf dist; tsc -p tsconfig.dist.json",
     "prettier": "prettier 'src/**/*.ts'",
@@ -52,6 +52,7 @@
     "ethereum-waffle": "^3.4.4",
     "hardhat": "^2.12.2",
     "husky": "^7.0.2",
+    "is-ci": "3.0.1",
     "lint-staged": "11.1.2",
     "mocha": "^10.1.0",
     "prettier": "2.4.1",
@@ -78,8 +79,7 @@
     "merkletreejs": "^0.3.0",
     "react": "^18.2.0",
     "tiny-invariant": "^1.2.0",
-    "toformat": "^2.0.0",
-    "yalc": "^1.0.0-pre.53"
+    "toformat": "^2.0.0"
   },
   "lint-staged": {
     "src/**/*.ts": [
@@ -91,18 +91,74 @@
   },
   "release": {
     "branches": [
-      "master"
+      "main"
     ],
     "plugins": [
-      "@semantic-release/commit-analyzer",
+      [
+        "@semantic-release/commit-analyzer",
+        {
+          "preset": "angular",
+          "releaseRules": [
+            {
+              "type": "build",
+              "release": "patch"
+            },
+            {
+              "type": "chore",
+              "release": "patch"
+            },
+            {
+              "type": "ci",
+              "release": "patch"
+            },
+            {
+              "type": "docs",
+              "release": "patch"
+            },
+            {
+              "type": "feat",
+              "release": "minor"
+            },
+            {
+              "type": "fix",
+              "release": "patch"
+            },
+            {
+              "type": "perf",
+              "release": "patch"
+            },
+            {
+              "type": "refactor",
+              "release": "patch"
+            },
+            {
+              "type": "revert",
+              "release": "patch"
+            },
+            {
+              "type": "style",
+              "release": "patch"
+            },
+            {
+              "type": "test",
+              "release": "patch"
+            }
+          ],
+          "parserOpts": {
+            "noteKeywords": [
+              "BREAKING CHANGE",
+              "BREAKING CHANGES"
+            ]
+          }
+        }
+      ],
       "@semantic-release/release-notes-generator",
       "@semantic-release/npm",
       [
         "@semantic-release/git",
         {
           "assets": [
-            "dist/**/*.{js,css}",
-            "docs",
+            "dist/**/*.{js}",
             "package.json"
           ],
           "message": "chore: Release ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
