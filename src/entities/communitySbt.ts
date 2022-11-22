@@ -7,7 +7,7 @@ import { getProof } from '../utils/communitySbt/merkle-tree';
 import  axios from 'axios';
 import fetch from 'cross-fetch';
 import { MULTI_REDEEM_METHOD_ID, REDEEM_METHOD_ID } from '../constants';
-import { decodeBadgeType, decodeMultipleBadgeTypes, getEtherscanURL, getTopBadgeType, toMillis } from '../utils/communitySbt/helpers';
+import { decodeBadgeType, decodeMultipleBadgeTypes, get100KRefereeBenchmark, get2MRefereeBenchmark, getEtherscanURL, getTopBadgeType, toMillis } from '../utils/communitySbt/helpers';
 import { DateTime } from 'luxon';
 
 export type SBTConstructorArgs = {
@@ -256,19 +256,19 @@ class SBT {
     }
 
     public async getSeasonBadges({
-        subgraphUrl,
+        badgesSubgraphUrl,
         nonProgDbUrl,
         referralsDbUrl,
         userId,
         seasonId,
       }: {
-        subgraphUrl?: string;
+        badgesSubgraphUrl?: string;
         nonProgDbUrl?: string;
         referralsDbUrl? : string,
         userId: string;
         seasonId: number;
       }): Promise<BadgeResponse[]> {
-        if (!subgraphUrl || !nonProgDbUrl || !referralsDbUrl) {
+        if (!badgesSubgraphUrl || !nonProgDbUrl || !referralsDbUrl) {
           return [];
         }
         try {
@@ -287,7 +287,7 @@ class SBT {
             `;
             const client = new ApolloClient({
                 cache: new InMemoryCache(),
-                link: new HttpLink({ uri: subgraphUrl, fetch })
+                link: new HttpLink({ uri: badgesSubgraphUrl, fetch })
             })
             const id = `${userId.toLowerCase()}#${seasonId}`
             const data = await client.query<{
@@ -305,7 +305,7 @@ class SBT {
             const referroorBadges = await this.getReferrorBadges(
                 userId,
                 referralsDbUrl,
-                subgraphUrl,
+                badgesSubgraphUrl,
                 seasonId
             );
       
@@ -325,8 +325,8 @@ class SBT {
             const topLpType = getTopBadgeType(seasonId, false);
             const topTraderType = getTopBadgeType(seasonId, false)
 
-            const topLpBadge =  await this.getTopTraderBadge(subgraphUrl, userId, seasonId, false, topLpType);
-            const topTraderBadge =  await this.getTopTraderBadge(subgraphUrl, userId, seasonId, true, topTraderType);
+            const topLpBadge =  await this.getTopTraderBadge(badgesSubgraphUrl, userId, seasonId, false, topLpType);
+            const topTraderBadge =  await this.getTopTraderBadge(badgesSubgraphUrl, userId, seasonId, true, topTraderType);
             if (topLpBadge) badgesResponse.push(topLpBadge);
             if (topTraderBadge) badgesResponse.push(topTraderBadge);
 
@@ -459,8 +459,8 @@ class SBT {
         }
 
         const referees: string[] = resp.data;
-        let refrees100K = 0;
-        let refrees2M = 0;
+        let refereesWith100kNotionalTraded = 0;
+        let refereesWith2mNotionalTraded = 0;
         for (const referee of referees){
             const badgeQuery = `
                 query( $id: String) {
@@ -497,23 +497,23 @@ class SBT {
                     BigNumber.from(user.totalWeightedNotionalTraded)
                 );
             });
-            if(totalPointz.gte(BigNumber.from("100000"))) {
-                refrees100K++;
-                if(totalPointz.gte(BigNumber.from("2000000"))){
-                    refrees2M++;
+            if(totalPointz.gte(get100KRefereeBenchmark(subgraphUrl))) {
+                refereesWith100kNotionalTraded++;
+                if(totalPointz.gte(get2MRefereeBenchmark(subgraphUrl))){
+                    refereesWith2mNotionalTraded++;
                 }
             }
         };
 
-        if (refrees100K > 0) {
+        if (refereesWith100kNotionalTraded > 0) {
             let badgeType = '36'; //referror
             badgeResponseRecord[badgeType] = this.createReferroorBadgeRecord(badgeType, userId, seasonId);
-            if (refrees100K >= 10) {
+            if (refereesWith100kNotionalTraded >= 10) {
                 badgeType = '37'; // Notional Influence
                 badgeResponseRecord[badgeType] = this.createReferroorBadgeRecord(badgeType, userId, seasonId);
             }
         }
-        if (refrees2M > 0) {
+        if (refereesWith2mNotionalTraded > 0) {
             const badgeType = '38'; //whaleWhisperer
             badgeResponseRecord[badgeType] = this.createReferroorBadgeRecord(badgeType, userId, seasonId);
         }
