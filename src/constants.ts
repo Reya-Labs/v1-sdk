@@ -64,8 +64,8 @@ export const MULTI_REDEEM_METHOD_ID = '0x6323ffa5';
 export const REDEEM_METHOD_ID = '0x79a4aaa3';
 
 // benchmarks for referrees notional amount
-export const MAINNET_ONE_HUNDRED_THOUSAND = BigNumber.from('100000');
-export const MAINNET_TWO_MILLON = BigNumber.from('2000000');
+export const MAINNET_ONE_HUNDRED_THOUSAND = 100000;
+export const MAINNET_TWO_MILLON = 2000000;
 
-export const GOERLI_ONE_HUNDRED_THOUSAND = BigNumber.from('1000');
-export const GOERLI_TWO_MILLON = BigNumber.from('20000');
+export const GOERLI_ONE_HUNDRED_THOUSAND = 1000;
+export const GOERLI_TWO_MILLON = 20000;
