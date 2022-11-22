@@ -67,5 +67,5 @@ export const REDEEM_METHOD_ID = '0x79a4aaa3';
 export const MAINNET_ONE_HUNDRED_THOUSAND = 100000;
 export const MAINNET_TWO_MILLON = 2000000;
 
-export const GOERLI_ONE_HUNDRED_THOUSAND = 1000;
-export const GOERLI_TWO_MILLON = 20000;
+export const GOERLI_ONE_HUNDRED_THOUSAND = 1;
+export const GOERLI_TWO_MILLON = 200;
