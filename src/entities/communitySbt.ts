@@ -1,5 +1,5 @@
-import { BigNumber, Bytes, Signer, providers, ContractTransaction } from 'ethers';
-import { ApolloClient, gql, HttpLink, InMemoryCache } from '@apollo/client';
+import { BigNumber, Bytes, Signer, providers } from 'ethers';
+import { ApolloClient, ApolloQueryResult, gql, HttpLink, InMemoryCache } from '@apollo/client';
 import { CommunitySBT, CommunitySBT__factory } from '../typechain-sbt';
 import { createLeaves } from '../utils/communitySbt/getSubgraphLeaves';
 import { getRootFromSubgraph } from '../utils/communitySbt/getSubgraphRoot';
@@ -268,69 +268,69 @@ class SBT {
         userId: string;
         seasonId: number;
       }): Promise<BadgeResponse[]> {
-        if (!badgesSubgraphUrl || !nonProgDbUrl || !referralsDbUrl) {
-          return [];
-        }
         try {
-            const badgeQuery = `
-                query( $id: String) {
-                    seasonUser(id: $id) {
-                        id
-                        badges {
-                          id
-                          awardedTimestamp
-                          mintedTimestamp
-                          badgeType
+            let badgesResponse : BadgeResponse[] = [];
+
+            // programmatic badges
+            if (badgesSubgraphUrl) {
+                const badgeQuery = `
+                    query( $id: String) {
+                        seasonUser(id: $id) {
+                            id
+                            badges {
+                            id
+                            awardedTimestamp
+                            mintedTimestamp
+                            badgeType
+                            }
                         }
                     }
-                }
-            `;
-            const client = new ApolloClient({
-                cache: new InMemoryCache(),
-                link: new HttpLink({ uri: badgesSubgraphUrl, fetch })
-            })
-            const id = `${userId.toLowerCase()}#${seasonId}`
-            const data = await client.query<{
-                seasonUser: {
-                    badges: SubgraphBadgeResponse[]
-                }
-            }>({
-                query: gql(badgeQuery),
-                variables: {
-                    id: id,
-                },
-            });
+                `;
+                const client = new ApolloClient({
+                    cache: new InMemoryCache(),
+                    link: new HttpLink({ uri: badgesSubgraphUrl, fetch })
+                })
+                const id = `${userId.toLowerCase()}#${seasonId}`
+                const data = await client.query<{
+                    seasonUser: {
+                        badges: SubgraphBadgeResponse[]
+                    }
+                }>({
+                    query: gql(badgeQuery),
+                    variables: {
+                        id: id,
+                    },
+                });
 
-            const nonProgBadges = await this.getNonProgramaticBadges(userId, nonProgDbUrl);
-            const referroorBadges = await this.getReferrorBadges(
-                userId,
-                referralsDbUrl,
-                badgesSubgraphUrl,
-                seasonId
-            );
-      
-            const subgraphBadges = (data?.data?.seasonUser ? data.data.seasonUser.badges : []) as SubgraphBadgeResponse[];
-            let badgesResponse : BadgeResponse[] = [];
-            for (const badge of subgraphBadges) {
-                if (parseInt(badge.awardedTimestamp) > 0) {
-                    badgesResponse.push({
-                        id: badge.id,
-                        badgeType: badge.badgeType,
-                        awardedTimestampMs: toMillis(parseInt(badge.awardedTimestamp)),
-                        mintedTimestampMs: toMillis(parseInt(badge.mintedTimestamp)),
-                    });
+                const subgraphBadges = (data?.data?.seasonUser ? data.data.seasonUser.badges : []) as SubgraphBadgeResponse[];
+                for (const badge of subgraphBadges) {
+                    if (parseInt(badge.awardedTimestamp) > 0) {
+                        badgesResponse.push({
+                            id: badge.id,
+                            badgeType: badge.badgeType,
+                            awardedTimestampMs: toMillis(parseInt(badge.awardedTimestamp)),
+                            mintedTimestampMs: toMillis(parseInt(badge.mintedTimestamp)),
+                        });
+                    }
                 }
             }
 
-            const topLpType = getTopBadgeType(seasonId, false);
-            const topTraderType = getTopBadgeType(seasonId, false)
+            // referrer badges & non-programatic badges
+            let referroorBadges : Record<string, BadgeResponse> = {};
+            let nonProgBadges : Record<string, BadgeResponse> = {};
+            if (nonProgDbUrl) {
+                nonProgBadges = await this.getNonProgramaticBadges(userId, nonProgDbUrl);
+            }
+            
+            if (referralsDbUrl && badgesSubgraphUrl) {
+                referroorBadges = await this.getReferrorBadges(
+                    userId,
+                    referralsDbUrl,
+                    badgesSubgraphUrl,
+                    seasonId
+                );
+            }
 
-            const topLpBadge =  await this.getTopTraderBadge(badgesSubgraphUrl, userId, seasonId, false, topLpType);
-            const topTraderBadge =  await this.getTopTraderBadge(badgesSubgraphUrl, userId, seasonId, true, topTraderType);
-            if (topLpBadge) badgesResponse.push(topLpBadge);
-            if (topTraderBadge) badgesResponse.push(topTraderBadge);
-
-            // get non-programatic badges
             for (const badgeType of NON_SUBGRAPH_BADGES_SEASONS[seasonId]) {
                 if (nonProgBadges[badgeType]) {
                     const nonProgBadge = nonProgBadges[badgeType];
@@ -341,6 +341,18 @@ class SBT {
                     badgesResponse.push(referroorBadge);
                 }
             }
+
+            // top LP & trader badges
+            if (badgesSubgraphUrl) {
+                const topLpType = getTopBadgeType(seasonId, false);
+                const topTraderType = getTopBadgeType(seasonId, false)
+
+                const topLpBadge =  await this.getTopTraderBadge(badgesSubgraphUrl, userId, seasonId, false, topLpType);
+                const topTraderBadge =  await this.getTopTraderBadge(badgesSubgraphUrl, userId, seasonId, true, topTraderType);
+                if (topLpBadge) badgesResponse.push(topLpBadge);
+                if (topTraderBadge) badgesResponse.push(topTraderBadge);
+            }
+            
             return badgesResponse;
         } catch (error) {
           return [];
@@ -491,15 +503,13 @@ class SBT {
                 continue;
             }
 
-            let totalPointz = BigNumber.from(0);
+            let totalPointz = 0;
             data.data.seasonUsers.forEach((user) => {
-                totalPointz = totalPointz.add(
-                    BigNumber.from(user.totalWeightedNotionalTraded)
-                );
+                totalPointz = totalPointz + parseFloat(user.totalWeightedNotionalTraded);
             });
-            if(totalPointz.gte(get100KRefereeBenchmark(subgraphUrl))) {
+            if(totalPointz >= get100KRefereeBenchmark(subgraphUrl)) {
                 refereesWith100kNotionalTraded++;
-                if(totalPointz.gte(get2MRefereeBenchmark(subgraphUrl))){
+                if(totalPointz >= get2MRefereeBenchmark(subgraphUrl)){
                     refereesWith2mNotionalTraded++;
                 }
             }
