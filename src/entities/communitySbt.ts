@@ -442,19 +442,17 @@ class SBT {
             ignoredWalletIds
         })
 
-        if (rankResult) {
-            for (let rank = 0; rank < 5; rank++) {
-                const entry = rankResult[rank];
-                if (entry.address === userId) {
-                    const badge = await this.constructTopBadge(
-                        userId,
-                        seasonId,
-                        seasonEnd,
-                        badgeType,
-                        badgesSubgraphUrl
-                    );
-                    return badge;
-                }
+        for (let rank = 0; rank < 5; rank++) {
+            const entry = rankResult[rank];
+            if (entry.address === userId) {
+                const badge = await this.constructTopBadge(
+                    userId,
+                    seasonId,
+                    seasonEnd,
+                    badgeType,
+                    badgesSubgraphUrl
+                );
+                return badge;
             }
         }
 
