@@ -51,6 +51,7 @@ type GetScoresArgs = {
     subgraphUrl: string;
     coingeckoKey: string;
     ignoredWalletIds: Record<string, boolean>;
+    isLP: boolean;
 }
 
 export type GetRankingArgs = {
@@ -60,6 +61,39 @@ export type GetRankingArgs = {
     coingeckoKey?: string;
     ignoredWalletIds?: Record<string, boolean>;
     isLP?: boolean;
+}
+
+type MintOrBurn = {
+    transaction: {
+        createdTimestamp: number;
+    }
+    amount: number;
+}
+
+type Swap = {
+    transaction: {
+        createdTimestamp: number;
+    }
+    cumulativeFeeIncurred: number;
+    variableTokenDelta: number;
+}
+
+enum ActionType {
+    SWAP,
+    MINT,
+    BURN
+}
+
+type UpdateScoreArgs = {
+    score: number;
+    actions: MintOrBurn[] | Swap[];
+    actionType: ActionType;
+    decimals: number;
+    token: string;
+    seasonStart: number;
+    seasonEnd: number;
+    termEnd: number;
+    ethPrice: number;
 }
 
 export type RankType = {
@@ -445,10 +479,11 @@ class SBT {
             seasonEnd: seasonEnd,
             subgraphUrl: subgraphUrl,
             coingeckoKey: coingeckoKey,
-            ignoredWalletIds: ignoredWalletIds
+            ignoredWalletIds: ignoredWalletIds,
+            isLP: isLP ?? false
         }
             
-        const scores = isLP ? (await this.getLPScores(scoreArgs)): (await this.getTraderScores(scoreArgs));
+        const scores = await this.getScores(scoreArgs);
 
         const rankResult: RankType[] = Object.keys(scores)
             .sort((a, b) => scores[b] - scores[a])
@@ -506,117 +541,17 @@ class SBT {
     }
 
     /**
-   * @dev Query the Main subgraph and retrieve season's trading
-   * scores of all users based on time weighted notional.
-   */
-    async getTraderScores({
-        seasonStart,
-        seasonEnd,
-        subgraphUrl,
-        coingeckoKey,
-        ignoredWalletIds
-    } : GetScoresArgs): Promise<Record<string, number>> {
-        const activityQuery = `
-            query( $skipCount: Int) {
-                wallets(first: 1000, skip: $skip) {
-                    id
-                    positions {
-                        amm {
-                            termEndTimestamp
-                            rateOracle {
-                                token {
-                                    name
-                                    decimals
-                                }
-                            }
-                        }
-                        swaps {
-                            transaction {
-                                createdTimestamp
-                            }
-                            cumulativeFeeIncurred
-                            variableTokenDelta
-                        }
-                }
-                }
-            }
-          `
-      
-        const ethPrice = await geckoEthToUsd(coingeckoKey);
-
-        const client = new ApolloClient({
-            cache: new InMemoryCache(),
-            link: new HttpLink({ uri: subgraphUrl, fetch })
-        })
-      
-        const scores: Record<string, number> = {};
-      
-        let skip = 0;
-        while (true) {
-            const data = await client.query({
-                query: gql(activityQuery),
-                variables: {
-                    skipCount: skip,
-                },
-            });
-          skip += 1000;
-      
-          for (const wallet of data.data.wallets) {
-            let score = 0;
-      
-            for (const position of wallet.positions) {
-              const token = position.amm.rateOracle.token.name;
-              const decimals: number = position.amm.rateOracle.token.decimals;
-      
-              const termEnd = Number(
-                ethers.utils.formatUnits(position.amm.termEndTimestamp.toString(), 18),
-              );
-      
-              for (const swap of position.swaps) {
-                const swapTime: number = swap.transaction.createdTimestamp;
-                const swapNotional = Number(
-                  ethers.utils.formatUnits(swap.variableTokenDelta.toString(), decimals),
-                );
-      
-                if (seasonStart < swapTime && swapTime <= seasonEnd) {
-                  const timeWeightedNotional =
-                    (Math.abs(swapNotional) * (termEnd - swapTime)) / ONE_YEAR_IN_SECONDS;
-                  switch (token) {
-                    case 'ETH': {
-                      score += timeWeightedNotional * ethPrice;
-                      break;
-                    }
-                    default: {
-                      score += timeWeightedNotional;
-                    }
-                  }
-                }
-              }
-            }
-      
-            if (score > 0 && !ignoredWalletIds[wallet.id.toLowerCase()]) {
-                scores[wallet.id] = score;
-            }
-          }
-      
-          if (data.data.wallets.length < 1000) {
-            break;
-          }
-        }
-        return scores;
-    }
-
-    /**
    * @dev Query the Main subgraph and retrieve season's liquidity
-   * score of all users based on time weighted liquidity.
+   * or trading score of all users based on time weighted liquidity.
    * Score is based on both mints and swaps.
    */
-    async getLPScores({
+    async getScores({
         seasonStart,
         seasonEnd,
         subgraphUrl,
         coingeckoKey,
-        ignoredWalletIds
+        ignoredWalletIds,
+        isLP
     } : GetScoresArgs): Promise<Record<string, number>> {
         const activityQuery = `
             query( $skipCount: Int) {
@@ -643,6 +578,13 @@ class SBT {
                                 createdTimestamp
                             }
                             amount
+                        }
+                        swaps {
+                            transaction {
+                                createdTimestamp
+                            }
+                            cumulativeFeeIncurred
+                            variableTokenDelta
                         }
                     }
                 }
@@ -678,46 +620,26 @@ class SBT {
               const termEnd = Number(
                 ethers.utils.formatUnits(position.amm.termEndTimestamp.toString(), 18),
               );
-      
-              for (const mints of position.mints) {
-                const mintTime: number = mints.transaction.createdTimestamp;
-                const mintNotional = Number(
-                  ethers.utils.formatUnits(mints.amount.toString(), decimals),
-                );
-      
-                if (seasonStart < mintTime && mintTime <= seasonEnd) {
-                  const timeWeightedNotional =
-                    (Math.abs(mintNotional) * (termEnd - mintTime)) / ONE_YEAR_IN_SECONDS;
-                  switch (token) {
-                    case 'ETH': {
-                      score += timeWeightedNotional * ethPrice;
-                      break;
-                    }
-                    default: {
-                      score += timeWeightedNotional;
-                    }
-                  }
-                }
+
+              let args : UpdateScoreArgs = {
+                score: score,
+                actions: position.burns as MintOrBurn[],
+                actionType: ActionType.BURN,
+                decimals: decimals,
+                token: token,
+                seasonStart: seasonStart,
+                seasonEnd: seasonEnd,
+                termEnd: termEnd,
+                ethPrice: ethPrice
               }
-              for (const burns of position.burns) {
-                const burnTime: number = burns.transaction.createdTimestamp;
-                const burnNotional = Number(
-                  ethers.utils.formatUnits(burns.amount.toString(), decimals),
-                );
-      
-                if (seasonStart < burnTime && burnTime <= seasonEnd) {
-                  const timeWeightedNotional =
-                    (Math.abs(burnNotional) * (termEnd - burnTime)) / ONE_YEAR_IN_SECONDS;
-                  switch (token) {
-                    case 'ETH': {
-                      score -= timeWeightedNotional * ethPrice;
-                      break;
-                    }
-                    default: {
-                      score -= timeWeightedNotional;
-                    }
-                  }
-                }
+              if (isLP) {
+                const burnArgs : UpdateScoreArgs  = {...args, actionType: ActionType.BURN, actions:  position.burns as MintOrBurn[]};
+                score = this.updateScore(burnArgs);
+                const mintArgs : UpdateScoreArgs  = {...args, actionType: ActionType.MINT, actions:  position.mints as MintOrBurn[]};
+                score = this.updateScore(mintArgs);
+              } else {
+                const swapArgs : UpdateScoreArgs  = {...args, actionType: ActionType.SWAP, actions:  position.swaps as Swap[]};
+                score = this.updateScore(swapArgs);
               }
             }
       
@@ -731,6 +653,49 @@ class SBT {
           }
         }
         return scores;
+    }
+
+    updateScore({
+        score,
+        actions,
+        actionType,
+        decimals,
+        token,
+        seasonStart,
+        seasonEnd,
+        termEnd,
+        ethPrice
+    }: UpdateScoreArgs) : number {
+        for (const action of actions) {
+            const actionTime: number = action.transaction.createdTimestamp;
+            let amount = "";
+            switch (actionType) {
+                case ActionType.SWAP: 
+                    amount = (action as Swap).variableTokenDelta.toString();
+                    break;
+                case ActionType.MINT:
+                case ActionType.BURN: 
+                    amount = (action as MintOrBurn).amount.toString()
+            }
+            const mintNotional = Number(
+              ethers.utils.formatUnits(amount, decimals),
+            );
+  
+            if (seasonStart < actionTime && actionTime <= seasonEnd) {
+              const timeWeightedNotional =
+                (Math.abs(mintNotional) * (termEnd - actionTime)) / ONE_YEAR_IN_SECONDS;
+              switch (token) {
+                case 'ETH': {
+                  score += timeWeightedNotional * ethPrice;
+                  break;
+                }
+                default: {
+                  score += timeWeightedNotional;
+                }
+              }
+            }
+          }
+          return score;
     }
 
     public async getNonProgramaticBadges(userId: string, nonProgramaticBadgesUrl: string) : Promise<Record<string, BadgeResponse>> {
