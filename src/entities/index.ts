@@ -38,4 +38,6 @@ export {
   BadgeClaimingStatus,
   BadgeWithStatus,
   BadgeResponse,
+  RankType,
+  GetRankingArgs,
 } from './communitySbt';

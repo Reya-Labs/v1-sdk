@@ -45,14 +45,28 @@ type SubgraphBadgeResponse = {
     mintedTimestamp: string;
 }
 
-type SubgraphPointzResponse = {
-    id: string;
-    seasonUser: {id: string};
-    weightedNotionalTraded: string;
-    weightedLiquidityProvided: string;
-    lastSwapTimestamp: string;
-    lastMintTradeTimestamp: string;
+type GetScoresArgs = {
+    seasonStart: number;
+    seasonEnd: number;
+    subgraphUrl: string;
+    coingeckoKey: string;
+    ignoredWalletIds: Record<string, boolean>;
 }
+
+export type GetRankingArgs = {
+    seasonStart: number;
+    seasonEnd: number;
+    subgraphUrl?: string;
+    coingeckoKey?: string;
+    ignoredWalletIds?: Record<string, boolean>;
+    isLP?: boolean;
+}
+
+export type RankType = {
+    address: string;
+    points: number;
+    rank: number;
+};
 
 enum TxBadgeStatus {
     SUCCESSFUL,
@@ -264,7 +278,8 @@ class SBT {
         userId,
         seasonId,
         seasonStart,
-        seasonEnd
+        seasonEnd,
+        ignoredWalletIds
       }: {
         badgesSubgraphUrl?: string;
         nonProgDbUrl?: string;
@@ -274,7 +289,8 @@ class SBT {
         userId: string;
         seasonId: number;
         seasonStart: number,
-        seasonEnd: number
+        seasonEnd: number,
+        ignoredWalletIds: Record<string, boolean>;
       }): Promise<BadgeResponse[]> {
         try {
             let badgesResponse : BadgeResponse[] = [];
@@ -352,8 +368,8 @@ class SBT {
 
             // top LP & trader badges
             if (badgesSubgraphUrl && subgraphUrl && coingeckoKey) {
-                const topLpBadge =  await this.getTopBadge(userId, seasonId, false, seasonStart, seasonEnd, subgraphUrl, badgesSubgraphUrl, coingeckoKey);
-                const topTraderBadge =  await this.getTopBadge(userId, seasonId, true, seasonStart, seasonEnd, subgraphUrl, badgesSubgraphUrl, coingeckoKey);
+                const topLpBadge =  await this.getTopBadge(userId, seasonId, false, seasonStart, seasonEnd, subgraphUrl, badgesSubgraphUrl, coingeckoKey, ignoredWalletIds);
+                const topTraderBadge =  await this.getTopBadge(userId, seasonId, true, seasonStart, seasonEnd, subgraphUrl, badgesSubgraphUrl, coingeckoKey, ignoredWalletIds);
                 if (topLpBadge) badgesResponse.push(topLpBadge);
                 if (topTraderBadge) badgesResponse.push(topTraderBadge);
             }
@@ -372,40 +388,29 @@ class SBT {
     public async getTopBadge(
         userId: string,
         seasonId: number,
-        isTrader: boolean,
+        isLP: boolean,
         seasonStart: number,
         seasonEnd: number,
         subgraphUrl: string,
         badgesSubgraphUrl: string,
-        coingeckoKey: string
+        coingeckoKey: string,
+        ignoredWalletIds: Record<string, boolean>
     ): Promise<BadgeResponse | undefined> {
-        const badgeType = getTopBadgeType(seasonId, isTrader);
+        const badgeType = getTopBadgeType(seasonId, !isLP);
         if (!badgeType) return undefined;
 
-        const scores = isTrader ? (await this.getTraderScores(
+        const rankResult = await this.getRanking({
+            isLP,
             seasonStart,
             seasonEnd,
             subgraphUrl,
-            coingeckoKey
-        )) : (await this.getLPScores(
-            seasonStart,
-            seasonEnd,
-            subgraphUrl,
-            coingeckoKey
-        ));
+            coingeckoKey,
+            ignoredWalletIds
+        })
 
-        const rankResult: {address: string; points: number}[] = [];
-        const keys = Array.from(scores.keys());
-        keys.forEach((address) => {
-            const value = scores.get(address);
-            rankResult.push({ address: address, points: value ?? 0 });
-        });
-
-        const sorted = rankResult.sort((a, b) => b.points - a.points);
-
-        if (sorted) {
+        if (rankResult) {
             for (let rank = 0; rank < 5; rank++) {
-                const entry = sorted[rank];
+                const entry = rankResult[rank];
                 if (entry.address === userId) {
                     const badge = await this.constructTopBadge(
                         userId,
@@ -420,6 +425,40 @@ class SBT {
         }
 
         return undefined;
+    }
+
+    public async getRanking({
+        seasonStart,
+        seasonEnd,
+        subgraphUrl,
+        coingeckoKey,
+        ignoredWalletIds,
+        isLP
+    } : GetRankingArgs) : Promise<RankType[]> {
+
+        if (!subgraphUrl || !coingeckoKey || !ignoredWalletIds) {
+            return [];
+        }
+
+        const scoreArgs: GetScoresArgs = {
+            seasonStart: seasonStart,
+            seasonEnd: seasonEnd,
+            subgraphUrl: subgraphUrl,
+            coingeckoKey: coingeckoKey,
+            ignoredWalletIds: ignoredWalletIds
+        }
+            
+        const scores = isLP ? (await this.getLPScores(scoreArgs)): (await this.getTraderScores(scoreArgs));
+
+        const rankResult: RankType[] = Object.keys(scores)
+            .sort((a, b) => scores[b] - scores[a])
+            .map((walletId, index) => ({
+            address: walletId,
+            points: scores[walletId] ?? 0,
+            rank: index,
+            }));
+
+        return rankResult;
     }
 
     /**
@@ -470,12 +509,13 @@ class SBT {
    * @dev Query the Main subgraph and retrieve season's trading
    * scores of all users based on time weighted notional.
    */
-    async getTraderScores(
-        seasonStart: number,
-        seasonEnd: number,
-        subgraphUrl: string,
-        coingeckoKey: string
-    ): Promise<Map<string, number>> {
+    async getTraderScores({
+        seasonStart,
+        seasonEnd,
+        subgraphUrl,
+        coingeckoKey,
+        ignoredWalletIds
+    } : GetScoresArgs): Promise<Record<string, number>> {
         const activityQuery = `
             query( $skipCount: Int) {
                 wallets(first: 1000, skip: $skip) {
@@ -509,7 +549,7 @@ class SBT {
             link: new HttpLink({ uri: subgraphUrl, fetch })
         })
       
-        const scores: Map<string, number> = new Map<string, number>();
+        const scores: Record<string, number> = {};
       
         let skip = 0;
         while (true) {
@@ -554,8 +594,8 @@ class SBT {
               }
             }
       
-            if (score > 0) {
-              scores.set(wallet.id as string, score);
+            if (score > 0 && !ignoredWalletIds[wallet.id.toLowerCase()]) {
+                scores[wallet.id] = score;
             }
           }
       
@@ -571,12 +611,13 @@ class SBT {
    * score of all users based on time weighted liquidity.
    * Score is based on both mints and swaps.
    */
-    async getLPScores(
-        seasonStart: number,
-        seasonEnd: number,
-        subgraphUrl: string,
-        coingeckoKey: string
-    ): Promise<Map<string, number>> {
+    async getLPScores({
+        seasonStart,
+        seasonEnd,
+        subgraphUrl,
+        coingeckoKey,
+        ignoredWalletIds
+    } : GetScoresArgs): Promise<Record<string, number>> {
         const activityQuery = `
             query( $skipCount: Int) {
                 wallets(first: 1000, skip: $skipCount) {
@@ -615,7 +656,7 @@ class SBT {
             link: new HttpLink({ uri: subgraphUrl, fetch })
         })
       
-        const scores: Map<string, number> = new Map<string, number>();
+        const scores: Record<string, number> = {};
       
         let skip = 0;
         while (true) {
@@ -680,8 +721,8 @@ class SBT {
               }
             }
       
-            if (score > 0) {
-              scores.set(wallet.id as string, score);
+            if (score > 0 && !ignoredWalletIds[wallet.id.toLowerCase()]) {
+                scores[wallet.id] = score;
             }
           }
       
