@@ -1,3 +1,4 @@
+import axios from "axios";
 import { Bytes, ethers } from "ethers";
 import { GOERLI_ONE_HUNDRED_THOUSAND, GOERLI_TWO_MILLON, MAINNET_ONE_HUNDRED_THOUSAND, MAINNET_TWO_MILLON } from "../../constants";
 import { NON_SUBGRAPH_BADGES_SEASONS, TOP_BADGES_VARIANT } from "../../entities/communitySbt";
@@ -66,3 +67,22 @@ export function get100KRefereeBenchmark(subgraphUrl: string) : number {
     return subgraphUrl.includes("goerli") || subgraphUrl.includes("testnet") ? 
         GOERLI_ONE_HUNDRED_THOUSAND : MAINNET_ONE_HUNDRED_THOUSAND;
 }
+
+export async function geckoEthToUsd(apiKey: string) : Promise<number> {
+    if (!process.env.REACT_APP_COINGECKO_API_KEY) {
+      return 0;
+    }
+    for (let attempt = 0; attempt < 5; attempt++) {
+      try {
+        const data = await axios.get<{
+          ethereum: {
+            usd: number;
+          };
+        }>(
+          `https://pro-api.coingecko.com/api/v3/simple/price?x_cg_pro_api_key=${apiKey}&ids=ethereum&vs_currencies=usd`,
+        );
+        return data.data.ethereum.usd;
+      } catch (error) {}
+    }
+    return 0;
+  };
