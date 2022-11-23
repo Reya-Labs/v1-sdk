@@ -69,9 +69,6 @@ export function get100KRefereeBenchmark(subgraphUrl: string) : number {
 }
 
 export async function geckoEthToUsd(apiKey: string) : Promise<number> {
-    if (!process.env.REACT_APP_COINGECKO_API_KEY) {
-      return 0;
-    }
     for (let attempt = 0; attempt < 5; attempt++) {
       try {
         const data = await axios.get<{
