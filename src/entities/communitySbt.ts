@@ -1,5 +1,5 @@
-import { BigNumber, Bytes, Signer, providers, ContractTransaction } from 'ethers';
-import { ApolloClient, gql, HttpLink, InMemoryCache } from '@apollo/client';
+import { BigNumber, Bytes, Signer, providers } from 'ethers';
+import { ApolloClient, ApolloQueryResult, gql, HttpLink, InMemoryCache } from '@apollo/client';
 import { CommunitySBT, CommunitySBT__factory } from '../typechain-sbt';
 import { createLeaves } from '../utils/communitySbt/getSubgraphLeaves';
 import { getRootFromSubgraph } from '../utils/communitySbt/getSubgraphRoot';
@@ -7,7 +7,8 @@ import { getProof } from '../utils/communitySbt/merkle-tree';
 import  axios from 'axios';
 import fetch from 'cross-fetch';
 import { MULTI_REDEEM_METHOD_ID, REDEEM_METHOD_ID } from '../constants';
-import { decodeBadgeType, decodeMultipleBadgeTypes, getBadgeTypeFromMetadataUri, getEtherscanURL, getTopBadgeType, toMillis } from '../utils/communitySbt/helpers';
+import { decodeBadgeType, decodeMultipleBadgeTypes, get100KRefereeBenchmark, get2MRefereeBenchmark, getEtherscanURL, getTopBadgeType, toMillis } from '../utils/communitySbt/helpers';
+import { DateTime } from 'luxon';
 
 export type SBTConstructorArgs = {
     id: string;
@@ -94,7 +95,10 @@ export const NON_SUBGRAPH_BADGES_SEASONS: Record<number, string[]>  = {
         '28',
         '33',
         '34',
-        '35'
+        '35',
+        '36',
+        '37',
+        '38'
     ]
 }
 
@@ -108,6 +112,12 @@ export const NON_PROGRAMATIC_BADGES_VARIANT: Record<string, string> = {
     'diplomatz' : '33',
     'governorz' : '34',
     'senatorz' : '35'
+}
+
+export const REFERROR_BADGES_VARIANT: Record<string, string> = {
+    'referror' : '36',
+    'notionalInfluencer' : '37',
+    'whaleWhisperer' : '38'
 }
 
 
@@ -246,79 +256,103 @@ class SBT {
     }
 
     public async getSeasonBadges({
-        subgraphUrl,
-        dbUrl,
+        badgesSubgraphUrl,
+        nonProgDbUrl,
+        referralsDbUrl,
         userId,
         seasonId,
       }: {
-        subgraphUrl?: string;
-        dbUrl?: string;
+        badgesSubgraphUrl?: string;
+        nonProgDbUrl?: string;
+        referralsDbUrl? : string,
         userId: string;
         seasonId: number;
       }): Promise<BadgeResponse[]> {
-        if (!subgraphUrl || !dbUrl) {
-          return [];
-        }
         try {
-            const badgeQuery = `
-                query( $id: BigInt) {
-                    seasonUser(id: $id) {
-                        id
-                        badges {
-                          id
-                          awardedTimestamp
-                          mintedTimestamp
-                          badgeType
+            let badgesResponse : BadgeResponse[] = [];
+
+            // programmatic badges
+            if (badgesSubgraphUrl) {
+                const badgeQuery = `
+                    query( $id: String) {
+                        seasonUser(id: $id) {
+                            id
+                            badges {
+                            id
+                            awardedTimestamp
+                            mintedTimestamp
+                            badgeType
+                            }
                         }
                     }
-                }
-            `;
-            const client = new ApolloClient({
-                cache: new InMemoryCache(),
-                link: new HttpLink({ uri: subgraphUrl, fetch })
-            })
-            const id = `${userId.toLowerCase()}#${seasonId}`
-            const data = await client.query<{
-                seasonUser: {
-                    badges: SubgraphBadgeResponse[]
-                }
-            }>({
-                query: gql(badgeQuery),
-                variables: {
-                    id: id,
-                },
-            });
+                `;
+                const client = new ApolloClient({
+                    cache: new InMemoryCache(),
+                    link: new HttpLink({ uri: badgesSubgraphUrl, fetch })
+                })
+                const id = `${userId.toLowerCase()}#${seasonId}`
+                const data = await client.query<{
+                    seasonUser: {
+                        badges: SubgraphBadgeResponse[]
+                    }
+                }>({
+                    query: gql(badgeQuery),
+                    variables: {
+                        id: id,
+                    },
+                });
 
-            const nonProgBadges = await this.getNonProgramaticBadges(userId, dbUrl);
-      
-            const subgraphBadges = (data?.data?.seasonUser ? data.data.seasonUser.badges : []) as SubgraphBadgeResponse[];
-            let badgesResponse : BadgeResponse[] = [];
-            for (const badge of subgraphBadges) {
-                if (parseInt(badge.awardedTimestamp) > 0) {
-                    badgesResponse.push({
-                        id: badge.id,
-                        badgeType: badge.badgeType,
-                        awardedTimestampMs: toMillis(parseInt(badge.awardedTimestamp)),
-                        mintedTimestampMs: toMillis(parseInt(badge.mintedTimestamp)),
-                    });
+                const subgraphBadges = (data?.data?.seasonUser ? data.data.seasonUser.badges : []) as SubgraphBadgeResponse[];
+                for (const badge of subgraphBadges) {
+                    if (parseInt(badge.awardedTimestamp) > 0) {
+                        badgesResponse.push({
+                            id: badge.id,
+                            badgeType: badge.badgeType,
+                            awardedTimestampMs: toMillis(parseInt(badge.awardedTimestamp)),
+                            mintedTimestampMs: toMillis(parseInt(badge.mintedTimestamp)),
+                        });
+                    }
                 }
             }
 
-            const topLpType = getTopBadgeType(seasonId, false);
-            const topTraderType = getTopBadgeType(seasonId, false)
+            // referrer badges & non-programatic badges
+            let referroorBadges : Record<string, BadgeResponse> = {};
+            let nonProgBadges : Record<string, BadgeResponse> = {};
+            if (nonProgDbUrl) {
+                nonProgBadges = await this.getNonProgramaticBadges(userId, nonProgDbUrl);
+            }
+            
+            if (referralsDbUrl && badgesSubgraphUrl) {
+                referroorBadges = await this.getReferrorBadges(
+                    userId,
+                    referralsDbUrl,
+                    badgesSubgraphUrl,
+                    seasonId
+                );
+            }
 
-            const topLpBadge =  await this.getTopTraderBadge(subgraphUrl, userId, seasonId, false, topLpType);
-            const topTraderBadge =  await this.getTopTraderBadge(subgraphUrl, userId, seasonId, true, topTraderType);
-            if (topLpBadge) badgesResponse.push(topLpBadge);
-            if (topTraderBadge) badgesResponse.push(topTraderBadge);
-
-            // get non-programatic badges
             for (const badgeType of NON_SUBGRAPH_BADGES_SEASONS[seasonId]) {
                 if (nonProgBadges[badgeType]) {
                     const nonProgBadge = nonProgBadges[badgeType];
                     badgesResponse.push(nonProgBadge);
                 }
+                if (referroorBadges[badgeType]) {
+                    const referroorBadge = referroorBadges[badgeType];
+                    badgesResponse.push(referroorBadge);
+                }
             }
+
+            // top LP & trader badges
+            if (badgesSubgraphUrl) {
+                const topLpType = getTopBadgeType(seasonId, false);
+                const topTraderType = getTopBadgeType(seasonId, false)
+
+                const topLpBadge =  await this.getTopTraderBadge(badgesSubgraphUrl, userId, seasonId, false, topLpType);
+                const topTraderBadge =  await this.getTopTraderBadge(badgesSubgraphUrl, userId, seasonId, true, topTraderType);
+                if (topLpBadge) badgesResponse.push(topLpBadge);
+                if (topTraderBadge) badgesResponse.push(topTraderBadge);
+            }
+            
             return badgesResponse;
         } catch (error) {
           return [];
@@ -337,7 +371,7 @@ class SBT {
           }
         try {
             const pointzQuery = `
-                query( $id: BigInt, $unit: String) {
+                query( $unit: String) {
                     seasonUserPointzs(first: 5, orderBy: $unit, orderDirection: desc){
                         id
                         seasonUser {
@@ -374,7 +408,7 @@ class SBT {
             for (const pointz of data.data.seasonUserPointzs) {
                 if (pointz.seasonUser.id === userId.toLowerCase()) {
                     const badgeQuery = `
-                        query( $id: BigInt) {
+                        query( $id: String) {
                             badge(id: $id){
                                 id
                                 mintedTimestamp
@@ -426,6 +460,83 @@ class SBT {
             }
         });
         return badgeResponseRecord;
+    }
+
+    public async getReferrorBadges(userId: string, referroorBadgesUrl: string, subgraphUrl: string, seasonId: number) : Promise<Record<string, BadgeResponse>> {
+        let badgeResponseRecord : Record<string, BadgeResponse> = {};
+
+        const resp = await axios.get(`${referroorBadgesUrl}/referrals-by/${userId.toLowerCase()}`);
+        if (!resp.data){
+            return badgeResponseRecord;
+        }
+
+        const referees: string[] = resp.data;
+        let refereesWith100kNotionalTraded = 0;
+        let refereesWith2mNotionalTraded = 0;
+        for (const referee of referees){
+            const badgeQuery = `
+                query( $id: String) {
+                    seasonUsers( where: {owner_contains: $id}) {
+                        id
+                        totalWeightedNotionalTraded
+                      
+                    }
+                }
+            `;
+            const client = new ApolloClient({
+                cache: new InMemoryCache(),
+                link: new HttpLink({ uri: subgraphUrl, fetch })
+            })
+            const id = `${referee.toLowerCase()}`
+            const data = await client.query<{
+                seasonUsers: {
+                    totalWeightedNotionalTraded: string
+                }[]
+            }>({
+                query: gql(badgeQuery),
+                variables: {
+                    id: id,
+                },
+            });
+
+            if(!data?.data?.seasonUsers){
+                continue;
+            }
+
+            let totalPointz = 0;
+            data.data.seasonUsers.forEach((user) => {
+                totalPointz = totalPointz + parseFloat(user.totalWeightedNotionalTraded);
+            });
+            if(totalPointz >= get100KRefereeBenchmark(subgraphUrl)) {
+                refereesWith100kNotionalTraded++;
+                if(totalPointz >= get2MRefereeBenchmark(subgraphUrl)){
+                    refereesWith2mNotionalTraded++;
+                }
+            }
+        };
+
+        if (refereesWith100kNotionalTraded > 0) {
+            let badgeType = '36'; //referror
+            badgeResponseRecord[badgeType] = this.createReferroorBadgeRecord(badgeType, userId, seasonId);
+            if (refereesWith100kNotionalTraded >= 10) {
+                badgeType = '37'; // Notional Influence
+                badgeResponseRecord[badgeType] = this.createReferroorBadgeRecord(badgeType, userId, seasonId);
+            }
+        }
+        if (refereesWith2mNotionalTraded > 0) {
+            const badgeType = '38'; //whaleWhisperer
+            badgeResponseRecord[badgeType] = this.createReferroorBadgeRecord(badgeType, userId, seasonId);
+        }
+        return badgeResponseRecord;
+    }
+
+    createReferroorBadgeRecord(badgeType: string, userId: string, seasonId: number) : BadgeResponse {
+        return {
+            id: `${userId}#${badgeType}#${seasonId}`,
+            badgeType: badgeType,
+            awardedTimestampMs: toMillis(DateTime.now().toSeconds()),
+            mintedTimestampMs: undefined,
+        } as BadgeResponse;
     }
 
     public async getUserBalance(user: string) : Promise<BigNumber | void> {
@@ -517,7 +628,7 @@ class SBT {
 
     async claimedBadgesInSubgraph(subgraphUrl: string, userAddress: string, season: number): Promise<Array<BadgeWithStatus>> {
         const badgeQuery = `
-            query( $id: BigInt) {
+            query( $id: String) {
                 badges(first: 50, where: {seasonUser_contains: $id}) {
                     id
                     badgeType
