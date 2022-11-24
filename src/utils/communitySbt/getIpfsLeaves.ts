@@ -15,15 +15,12 @@ export async function createLeaves(
             metadataURI: string
         }> = data.data.snapshot;
 
-    let subgraphSnapshots: Array<LeafInfo> = [];
-
-    for (const entry of snaphots) {
-        const snpashotEntry = {
+    const subgraphSnapshots : Array<LeafInfo> = snaphots.map((entry) => {
+        return {
             account: entry.owner,
             badgeId: entry.badgeType
         }
-        subgraphSnapshots.push(snpashotEntry);
-    }
+    })
 
     return subgraphSnapshots;
 
