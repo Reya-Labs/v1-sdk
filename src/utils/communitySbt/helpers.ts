@@ -3,6 +3,7 @@ import { Bytes, ethers } from "ethers";
 import { GOERLI_ONE_HUNDRED_THOUSAND, GOERLI_TWO_MILLON, MAINNET_ONE_HUNDRED_THOUSAND, MAINNET_TWO_MILLON } from "../../constants";
 import { NON_SUBGRAPH_BADGES_SEASONS, TOP_BADGES_VARIANT } from "../../entities/communitySbt";
 import { CommunitySBT__factory } from "../../typechain-sbt";
+import { goerliSeasonLeavesCid, mainnetSeasonLeavesCid } from "./seasonsConfig";
 
 export function getBadgeTypeFromMetadataUri(metadataURI: string) : number {
     const filenamme = metadataURI.split('/')[3];
@@ -58,13 +59,13 @@ export function getTopBadgeType(season: number, isTrader: boolean): string | und
     return seconds * 1000;
 };
 
-export function get2MRefereeBenchmark(subgraphUrl: string) : number {
-    return subgraphUrl.includes("goerli") || subgraphUrl.includes("testnet") ? 
+export function get2MRefereeBenchmark(subgraphUrl?: string) : number {
+    return subgraphUrl?.includes("goerli") || subgraphUrl?.includes("testnet") ? 
         GOERLI_TWO_MILLON : MAINNET_TWO_MILLON;
 }
 
-export function get100KRefereeBenchmark(subgraphUrl: string) : number {
-    return subgraphUrl.includes("goerli") || subgraphUrl.includes("testnet") ? 
+export function get100KRefereeBenchmark(subgraphUrl?: string) : number {
+    return subgraphUrl?.includes("goerli") || subgraphUrl?.includes("testnet") ? 
         GOERLI_ONE_HUNDRED_THOUSAND : MAINNET_ONE_HUNDRED_THOUSAND;
 }
 
@@ -82,4 +83,11 @@ export async function geckoEthToUsd(apiKey: string) : Promise<number> {
       } catch (error) {}
     }
     return 0;
-  };
+};
+
+export function geLeavesIpfsUri(network: string, seasonId: number) : string {
+    if (network === "goerli") {
+        return `https://gateway.pinata.cloud/ipfs/${goerliSeasonLeavesCid[seasonId]}`;
+    }
+    return `https://gateway.pinata.cloud/ipfs/${mainnetSeasonLeavesCid[seasonId]}`;
+}
