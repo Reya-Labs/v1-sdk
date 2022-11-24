@@ -388,7 +388,8 @@ class SBT {
             }
 
             // top LP & trader badges
-            if (this.badgesSubgraphUrl && this.subgraphUrl && this.coingeckoKey) {
+            if (this.badgesSubgraphUrl && this.subgraphUrl && this.coingeckoKey &&
+                DateTime.now().toSeconds() > seasonEnd) {
                 const topLpBadge =  await this.getTopBadge(userId, seasonId, false, seasonStart, seasonEnd);
                 const topTraderBadge =  await this.getTopBadge(userId, seasonId, true, seasonStart, seasonEnd);
                 if (topLpBadge) badgesResponse.push(topLpBadge);
