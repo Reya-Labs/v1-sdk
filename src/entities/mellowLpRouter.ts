@@ -322,15 +322,6 @@ class MellowLpRouter {
       throw new Error('Uninitialized contracts.');
     }
 
-    try {
-      await this.writeContracts.token.callStatic.approve(
-        this.writeContracts.mellowRouter.address,
-        MaxUint256Bn,
-      );
-    } catch (_) {
-      throw new Error('Unsuccessful approval simulation.');
-    }
-
     const gasLimit = await this.writeContracts.token.estimateGas.approve(
       this.writeContracts.mellowRouter.address,
       MaxUint256Bn,

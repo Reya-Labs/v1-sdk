@@ -350,15 +350,6 @@ class MellowLpVault {
       throw new Error('Uninitialized contracts.');
     }
 
-    try {
-      await this.writeContracts.token.callStatic.approve(
-        this.readOnlyContracts.erc20RootVault.address,
-        MaxUint256Bn,
-      );
-    } catch (_) {
-      throw new Error('Unsuccessful approval simulation.');
-    }
-
     const gasLimit = await this.writeContracts.token.estimateGas.approve(
       this.readOnlyContracts.erc20RootVault.address,
       MaxUint256Bn,
