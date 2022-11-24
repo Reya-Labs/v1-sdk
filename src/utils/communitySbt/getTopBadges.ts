@@ -111,8 +111,10 @@ export async function getScores({
             },
         });
       skip += 1000;
+
+      const wallets = data?.data?.wallets ?? [];
   
-      for (const wallet of  data.data.wallets) {
+      for (const wallet of  wallets) {
         let score = 0;
   
         for (const position of wallet.positions) {
@@ -150,7 +152,7 @@ export async function getScores({
         }
       }
   
-      if (data.data.wallets.length < 1000) {
+      if (wallets < 1000) {
         break;
       }
     }
