@@ -33,7 +33,7 @@ export async function getRootFromSubgraph(
   const data = await client.query({
     query: gql(rootsQuery),
     variables: {
-      timestamp: timestamp.toString(),
+      timestamp: timestamp,
     },
   });
 
