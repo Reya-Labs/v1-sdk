@@ -1,13 +1,13 @@
-import { BigNumber, Bytes, Signer, providers } from 'ethers';
-import { ApolloClient, ApolloQueryResult, gql, HttpLink, InMemoryCache } from '@apollo/client';
+import { BigNumber, Bytes, Signer, providers, ethers } from 'ethers';
+import { ApolloClient, ApolloQueryResult, gql, HttpLink, InMemoryCache, NormalizedCacheObject } from '@apollo/client';
 import { CommunitySBT, CommunitySBT__factory } from '../typechain-sbt';
 import { createLeaves } from '../utils/communitySbt/getSubgraphLeaves';
 import { getRootFromSubgraph } from '../utils/communitySbt/getSubgraphRoot';
 import { getProof } from '../utils/communitySbt/merkle-tree';
 import  axios from 'axios';
 import fetch from 'cross-fetch';
-import { MULTI_REDEEM_METHOD_ID, REDEEM_METHOD_ID } from '../constants';
-import { decodeBadgeType, decodeMultipleBadgeTypes, get100KRefereeBenchmark, get2MRefereeBenchmark, getEtherscanURL, getTopBadgeType, toMillis } from '../utils/communitySbt/helpers';
+import { MULTI_REDEEM_METHOD_ID, ONE_YEAR_IN_SECONDS, REDEEM_METHOD_ID } from '../constants';
+import { decodeBadgeType, decodeMultipleBadgeTypes, geckoEthToUsd, get100KRefereeBenchmark, get2MRefereeBenchmark, getEtherscanURL, getTopBadgeType, toMillis } from '../utils/communitySbt/helpers';
 import { DateTime } from 'luxon';
 
 export type SBTConstructorArgs = {
@@ -45,14 +45,62 @@ type SubgraphBadgeResponse = {
     mintedTimestamp: string;
 }
 
-type SubgraphPointzResponse = {
-    id: string;
-    seasonUser: {id: string};
-    weightedNotionalTraded: string;
-    weightedLiquidityProvided: string;
-    lastSwapTimestamp: string;
-    lastMintTradeTimestamp: string;
+type GetScoresArgs = {
+    seasonStart: number;
+    seasonEnd: number;
+    subgraphUrl: string;
+    coingeckoKey: string;
+    ignoredWalletIds: Record<string, boolean>;
+    isLP: boolean;
 }
+
+export type GetRankingArgs = {
+    seasonStart: number;
+    seasonEnd: number;
+    subgraphUrl?: string;
+    coingeckoKey?: string;
+    ignoredWalletIds?: Record<string, boolean>;
+    isLP?: boolean;
+}
+
+type MintOrBurn = {
+    transaction: {
+        createdTimestamp: number;
+    }
+    amount: number;
+}
+
+type Swap = {
+    transaction: {
+        createdTimestamp: number;
+    }
+    cumulativeFeeIncurred: number;
+    variableTokenDelta: number;
+}
+
+enum ActionType {
+    SWAP,
+    MINT,
+    BURN
+}
+
+type UpdateScoreArgs = {
+    score: number;
+    actions: MintOrBurn[] | Swap[];
+    actionType: ActionType;
+    decimals: number;
+    token: string;
+    seasonStart: number;
+    seasonEnd: number;
+    termEnd: number;
+    ethPrice: number;
+}
+
+export type RankType = {
+    address: string;
+    points: number;
+    rank: number;
+};
 
 enum TxBadgeStatus {
     SUCCESSFUL,
@@ -259,14 +307,24 @@ class SBT {
         badgesSubgraphUrl,
         nonProgDbUrl,
         referralsDbUrl,
+        subgraphUrl,
+        coingeckoKey,
         userId,
         seasonId,
+        seasonStart,
+        seasonEnd,
+        ignoredWalletIds
       }: {
         badgesSubgraphUrl?: string;
         nonProgDbUrl?: string;
         referralsDbUrl? : string,
+        subgraphUrl?: string,
+        coingeckoKey?: string,
         userId: string;
         seasonId: number;
+        seasonStart: number,
+        seasonEnd: number,
+        ignoredWalletIds: Record<string, boolean>;
       }): Promise<BadgeResponse[]> {
         try {
             let badgesResponse : BadgeResponse[] = [];
@@ -343,12 +401,9 @@ class SBT {
             }
 
             // top LP & trader badges
-            if (badgesSubgraphUrl) {
-                const topLpType = getTopBadgeType(seasonId, false);
-                const topTraderType = getTopBadgeType(seasonId, false)
-
-                const topLpBadge =  await this.getTopTraderBadge(badgesSubgraphUrl, userId, seasonId, false, topLpType);
-                const topTraderBadge =  await this.getTopTraderBadge(badgesSubgraphUrl, userId, seasonId, true, topTraderType);
+            if (badgesSubgraphUrl && subgraphUrl && coingeckoKey) {
+                const topLpBadge =  await this.getTopBadge(userId, seasonId, false, seasonStart, seasonEnd, subgraphUrl, badgesSubgraphUrl, coingeckoKey, ignoredWalletIds);
+                const topTraderBadge =  await this.getTopBadge(userId, seasonId, true, seasonStart, seasonEnd, subgraphUrl, badgesSubgraphUrl, coingeckoKey, ignoredWalletIds);
                 if (topLpBadge) badgesResponse.push(topLpBadge);
                 if (topTraderBadge) badgesResponse.push(topTraderBadge);
             }
@@ -359,83 +414,286 @@ class SBT {
         }
     }
 
-    public async getTopTraderBadge(
-        subgraphUrl: string,
+    /**
+   * @dev Retrieve season's notional
+   * ranking of all users. Check if given user is in top 5.
+   * If so, assign a top trader/LP badge, otherwise return undefined
+   */
+    public async getTopBadge(
         userId: string,
         seasonId: number,
-        isTrader: boolean,
-        badgeType?: string,
-      ): Promise<BadgeResponse | undefined> {
-        if (!subgraphUrl || !badgeType) {
-            return undefined;
-          }
-        try {
-            const pointzQuery = `
-                query( $unit: String) {
-                    seasonUserPointzs(first: 5, orderBy: $unit, orderDirection: desc){
-                        id
-                        seasonUser {
-                            id
-                        }
-                        weightedNotionalTraded
-                        weightedLiquidityProvided
-                        lastMintTradeTimestamp
-                        lastSwapTimestamp
-                    }
-                }
-            `;
-            const client = new ApolloClient({
-                cache: new InMemoryCache(),
-                link: new HttpLink({ uri: subgraphUrl, fetch })
-            })
+        isLP: boolean,
+        seasonStart: number,
+        seasonEnd: number,
+        subgraphUrl: string,
+        badgesSubgraphUrl: string,
+        coingeckoKey: string,
+        ignoredWalletIds: Record<string, boolean>
+    ): Promise<BadgeResponse | undefined> {
+        const badgeType = getTopBadgeType(seasonId, !isLP);
+        if (!badgeType) return undefined;
 
-            const id = `${userId.toLowerCase()}#${seasonId}`;
-            const unit = isTrader ? "weightedNotionalTraded" : "weightedLiquidityProvided";
-            const data = await client.query<{
-                seasonUserPointzs: SubgraphPointzResponse[]
-            }>({
-                query: gql(pointzQuery),
-                variables: {
-                    id: id,
-                    unit: unit
-                },
-            });
-    
-            if (!data?.data?.seasonUserPointzs) {
-                return undefined;
+        const rankResult = await this.getRanking({
+            isLP,
+            seasonStart,
+            seasonEnd,
+            subgraphUrl,
+            coingeckoKey,
+            ignoredWalletIds
+        })
+
+        for (let rank = 0; rank < 5; rank++) {
+            const entry = rankResult[rank];
+            if (entry.address === userId) {
+                const badge = await this.constructTopBadge(
+                    userId,
+                    seasonId,
+                    seasonEnd,
+                    badgeType,
+                    badgesSubgraphUrl
+                );
+                return badge;
             }
+        }
 
-            for (const pointz of data.data.seasonUserPointzs) {
-                if (pointz.seasonUser.id === userId.toLowerCase()) {
-                    const badgeQuery = `
-                        query( $id: String) {
-                            badge(id: $id){
-                                id
-                                mintedTimestamp
+        return undefined;
+    }
+
+    public async getRanking({
+        seasonStart,
+        seasonEnd,
+        subgraphUrl,
+        coingeckoKey,
+        ignoredWalletIds,
+        isLP
+    } : GetRankingArgs) : Promise<RankType[]> {
+
+        if (!subgraphUrl || !coingeckoKey || !ignoredWalletIds) {
+            return [];
+        }
+
+        const scoreArgs: GetScoresArgs = {
+            seasonStart: seasonStart,
+            seasonEnd: seasonEnd,
+            subgraphUrl: subgraphUrl,
+            coingeckoKey: coingeckoKey,
+            ignoredWalletIds: ignoredWalletIds,
+            isLP: isLP ?? false
+        }
+            
+        const scores = await this.getScores(scoreArgs);
+
+        const rankResult: RankType[] = Object.keys(scores)
+            .sort((a, b) => scores[b] - scores[a])
+            .map((walletId, index) => ({
+            address: walletId,
+            points: scores[walletId] ?? 0,
+            rank: index,
+            }));
+
+        return rankResult;
+    }
+
+    /**
+   * @dev Query the Badges subgraph to assess if the top 
+   * badge was claimed. Create a Badge Response with
+   * the awarded time as end of season and claimed time 
+   * as eithr zero if not claimed or subgrap's minted timestamp
+   */
+    async constructTopBadge(
+        userId: string,
+        seasonId: number,
+        seasonEnd: number,
+        badgeType: string,
+        badgesSubgraphUrl: string
+    ) : Promise<BadgeResponse> {
+        const badgeQuery = `
+            query( $id: String) {
+                badge(id: $id){
+                    id
+                    mintedTimestamp
+                }
+            }
+        `;
+        const client = new ApolloClient({
+            cache: new InMemoryCache(),
+            link: new HttpLink({ uri: badgesSubgraphUrl, fetch })
+        })
+      
+        const idBadge = `${userId.toLowerCase()}#${badgeType}#${seasonId}`;
+        const badgeData = await client.query<{
+            badge: SubgraphBadgeResponse;
+        }>({
+            query: gql(badgeQuery),
+            variables: {
+                id: idBadge,
+            },
+        });
+        const badge : BadgeResponse = {
+            id: `${userId}#${seasonId}#${badgeType}`,
+            badgeType: badgeType,
+            awardedTimestampMs: toMillis(seasonEnd),
+            mintedTimestampMs: toMillis(parseInt(badgeData?.data?.badge ? badgeData.data.badge.mintedTimestamp : "0")),
+        }
+        return badge;
+    }
+
+    /**
+   * @dev Query the Main subgraph and retrieve season's liquidity
+   * or trading score of all users based on time weighted liquidity.
+   * Score is based on both mints and swaps.
+   */
+    async getScores({
+        seasonStart,
+        seasonEnd,
+        subgraphUrl,
+        coingeckoKey,
+        ignoredWalletIds,
+        isLP
+    } : GetScoresArgs): Promise<Record<string, number>> {
+        const activityQuery = `
+            query( $skipCount: Int) {
+                wallets(first: 1000, skip: $skipCount) {
+                    id
+                    positions {
+                        amm {
+                            termEndTimestamp
+                            rateOracle {
+                                token {
+                                    name
+                                    decimals
+                                }
                             }
                         }
-                    `;
-                    const idBadge = `${userId.toLowerCase()}#${badgeType}#${seasonId}`;
-                    const badgeData = await client.query<{
-                        badge: SubgraphBadgeResponse;
-                    }>({
-                        query: gql(badgeQuery),
-                        variables: {
-                            id: idBadge,
-                        },
-                    });
-                    const badge : BadgeResponse = {
-                        id: `${userId}#${seasonId}#${badgeType}`,
-                        badgeType: badgeType,
-                        awardedTimestampMs: toMillis(parseInt(isTrader ? pointz.lastSwapTimestamp : pointz.lastMintTradeTimestamp)),
-                        mintedTimestampMs: toMillis(parseInt(badgeData?.data?.badge ? badgeData.data.badge.mintedTimestamp : "0")),
+                        mints {
+                            transaction {
+                                createdTimestamp
+                            }
+                            amount
+                        }
+                        burns {
+                            transaction {
+                                createdTimestamp
+                            }
+                            amount
+                        }
+                        swaps {
+                            transaction {
+                                createdTimestamp
+                            }
+                            cumulativeFeeIncurred
+                            variableTokenDelta
+                        }
                     }
-                    return badge;
                 }
             }
-        } catch (error) {
-            return undefined;
+          `
+      
+        const ethPrice = await geckoEthToUsd(coingeckoKey);
+
+        const client = new ApolloClient({
+            cache: new InMemoryCache(),
+            link: new HttpLink({ uri: subgraphUrl, fetch })
+        })
+      
+        const scores: Record<string, number> = {};
+      
+        let skip = 0;
+        while (true) {
+            const data = await client.query({
+                query: gql(activityQuery),
+                variables: {
+                    skipCount: skip,
+                },
+            });
+          skip += 1000;
+      
+          for (const wallet of  data.data.wallets) {
+            let score = 0;
+      
+            for (const position of wallet.positions) {
+              const token = position.amm.rateOracle.token.name;
+              const decimals: number = position.amm.rateOracle.token.decimals;
+      
+              const termEnd = Number(
+                ethers.utils.formatUnits(position.amm.termEndTimestamp.toString(), 18),
+              );
+
+              let args : UpdateScoreArgs = {
+                score: score,
+                actions: position.burns as MintOrBurn[],
+                actionType: ActionType.BURN,
+                decimals: decimals,
+                token: token,
+                seasonStart: seasonStart,
+                seasonEnd: seasonEnd,
+                termEnd: termEnd,
+                ethPrice: ethPrice
+              }
+              if (isLP) {
+                const burnArgs : UpdateScoreArgs  = {...args, actionType: ActionType.BURN, actions:  position.burns as MintOrBurn[]};
+                score = this.updateScore(burnArgs);
+                const mintArgs : UpdateScoreArgs  = {...args, actionType: ActionType.MINT, actions:  position.mints as MintOrBurn[]};
+                score = this.updateScore(mintArgs);
+              } else {
+                const swapArgs : UpdateScoreArgs  = {...args, actionType: ActionType.SWAP, actions:  position.swaps as Swap[]};
+                score = this.updateScore(swapArgs);
+              }
+            }
+      
+            if (score > 0 && !ignoredWalletIds[wallet.id.toLowerCase()]) {
+                scores[wallet.id] = score;
+            }
+          }
+      
+          if (data.data.wallets.length < 1000) {
+            break;
+          }
         }
+        return scores;
+    }
+
+    updateScore({
+        score,
+        actions,
+        actionType,
+        decimals,
+        token,
+        seasonStart,
+        seasonEnd,
+        termEnd,
+        ethPrice
+    }: UpdateScoreArgs) : number {
+        for (const action of actions) {
+            const actionTime: number = action.transaction.createdTimestamp;
+            let amount = "";
+            switch (actionType) {
+                case ActionType.SWAP: 
+                    amount = (action as Swap).variableTokenDelta.toString();
+                    break;
+                case ActionType.MINT:
+                case ActionType.BURN: 
+                    amount = (action as MintOrBurn).amount.toString()
+            }
+            const mintNotional = Number(
+              ethers.utils.formatUnits(amount, decimals),
+            );
+  
+            if (seasonStart < actionTime && actionTime <= seasonEnd) {
+              const timeWeightedNotional =
+                (Math.abs(mintNotional) * (termEnd - actionTime)) / ONE_YEAR_IN_SECONDS;
+              switch (token) {
+                case 'ETH': {
+                  score += timeWeightedNotional * ethPrice;
+                  break;
+                }
+                default: {
+                  score += timeWeightedNotional;
+                }
+              }
+            }
+          }
+          return score;
     }
 
     public async getNonProgramaticBadges(userId: string, nonProgramaticBadgesUrl: string) : Promise<Record<string, BadgeResponse>> {
