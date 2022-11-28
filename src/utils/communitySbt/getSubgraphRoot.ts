@@ -4,7 +4,7 @@ import { Bytes } from 'ethers';
 
 const rootsQuery = `
   query($timestamp: BigInt) {
-    roots(where: {startTimestamp_lte: $timestamp, endTimestamp_gt: $timestamp}) {
+    roots(where: {startTimestamp_lte: $timestamp, endTimestamp_gte: $timestamp}) {
         id
         root
         startTimestamp
