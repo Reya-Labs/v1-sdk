@@ -1,7 +1,9 @@
 export { default as AMM } from './amm';
 export { default as BorrowAMM } from './borrowAMM';
-export { BorrowAMMConstructorArgs } from './borrowAMM';
+export { BorrowAMMConstructorArgs, BorrowSwapInfo } from './borrowAMM';
 export type {
+  AMMRolloverWithSwapArgs,
+  AMMRolloverWithMintArgs,
   AMMConstructorArgs,
   AMMGetInfoPostMintArgs,
   AMMGetInfoPostSwapArgs,
@@ -40,4 +42,5 @@ export {
   BadgeResponse,
   RankType,
   GetRankingArgs,
+  SBTConstructorArgs,
 } from './communitySbt';
