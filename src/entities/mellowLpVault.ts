@@ -94,12 +94,10 @@ class MellowLpVault {
   // NEXT: to offload this to subgraph
   vaultInit = async (): Promise<void> => {
     if (this.vaultInitialized) {
-      console.log('The vault is already initialized');
       return;
     }
 
     if (isUndefined(this.provider)) {
-      console.log('Stop here... No provider provided');
       return;
     }
 
@@ -108,7 +106,6 @@ class MellowLpVault {
       VoltzVaultABI,
       this.provider,
     );
-    console.log('voltz vault address:', this.voltzVaultAddress);
 
     const marginEngineAddress = await voltzVaultContract.marginEngine();
     const marginEngineContract = new ethers.Contract(
@@ -117,17 +114,11 @@ class MellowLpVault {
       this.provider,
     );
 
-    console.log('margin engine address:', marginEngineAddress);
-
     const tokenAddress = await marginEngineContract.underlyingToken();
     const tokenContract = new Contract(tokenAddress, IERC20MinimalABI, this.provider);
 
-    console.log('token address:', tokenAddress);
-
     const rateOracleAddress = await marginEngineContract.rateOracle();
     const rateOracleContract = new Contract(rateOracleAddress, BaseRateOracleABI, this.provider);
-
-    console.log('rate oracle:', rateOracleAddress);
 
     this.readOnlyContracts = {
       marginEngine: marginEngineContract,
@@ -146,25 +137,15 @@ class MellowLpVault {
       ),
     };
 
-    console.log('read-only contracts ready');
-
     this.protocolId = await rateOracleContract.UNDERLYING_YIELD_BEARING_PROTOCOL_ID();
-
-    console.log('protocol ID:', this.protocolId);
 
     const maturityWad = await marginEngineContract.termEndTimestampWad();
     const date = timestampWadToDateTime(maturityWad);
 
     this.maturity = `${date.day} ${date.monthShort} ${date.year % 100}`;
 
-    console.log('maturity:', this.maturity);
-
     await this.refreshVaultCumulative();
-    console.log('vault accumulative refreshed', this.vaultCumulative);
-    console.log('vault cap refreshed', this.vaultCap);
-
     await this.refreshVaultExpectedApy();
-    console.log('vault expected apy refreshed', this.vaultExpectedApy);
 
     this.vaultInitialized = true;
   };
@@ -173,12 +154,10 @@ class MellowLpVault {
     this.signer = signer;
 
     if (this.userInitialized) {
-      console.log('The user is already initialized');
       return;
     }
 
     if (!this.vaultInitialized) {
-      console.log('The vault should be initialized first');
       return;
     }
 
@@ -187,7 +166,6 @@ class MellowLpVault {
     }
 
     this.userAddress = await this.signer.getAddress();
-    console.log('user address', this.userAddress);
 
     this.writeContracts = {
       token: new ethers.Contract(
@@ -203,12 +181,8 @@ class MellowLpVault {
       ethWrapper: new ethers.Contract(this.ethWrapperAddress, MellowDepositWrapperABI, this.signer),
     };
 
-    console.log('write contracts ready');
-
     await this.refreshUserDeposit();
-    console.log('user deposit refreshed', this.userDeposit);
     await this.refreshWalletBalance();
-    console.log('user wallet balance refreshed', this.userWalletBalance);
 
     this.userInitialized = true;
   };
@@ -259,14 +233,11 @@ class MellowLpVault {
     }
 
     const tvl = await this.readOnlyContracts.erc20RootVault.tvl();
-    console.log('accumulated (tvl):', tvl.minTokenAmounts[0].toString());
 
     const nft = await this.readOnlyContracts.erc20RootVault.nft();
     const strategyParams = await this.readOnlyContracts.erc20RootVaultGovernance.strategyParams(
       nft,
     );
-    console.log('strategy params:', strategyParams);
-    console.log('token limit', strategyParams.tokenLimit.toString());
 
     this.vaultCumulative = this.descale(tvl.minTokenAmounts[0], this.tokenDecimals);
     this.vaultCap = this.descale(
@@ -292,14 +263,10 @@ class MellowLpVault {
     const lpTokens = await this.readOnlyContracts.erc20RootVault.balanceOf(this.userAddress);
     const totalLpTokens = await this.readOnlyContracts.erc20RootVault.totalSupply();
 
-    console.log('lp tokens', lpTokens.toString());
-    console.log('total lp tokens:', totalLpTokens);
     const tvl = await this.readOnlyContracts.erc20RootVault.tvl();
-    console.log('tvl', tvl.toString());
 
     if (totalLpTokens.gt(0)) {
       const userFunds = lpTokens.mul(tvl[0][0]).div(totalLpTokens);
-      console.log('user funds:', userFunds.toString());
       this.userDeposit = this.descale(userFunds, this.tokenDecimals);
     } else {
       this.userDeposit = 0;
@@ -382,11 +349,7 @@ class MellowLpVault {
 
     const scaledAmount = this.scale(amount);
 
-    console.log(`Calling deposit(${scaledAmount})...`);
-
     const minLPTokens = BigNumber.from(0);
-
-    console.log(`args of deposit: (${[scaledAmount]}, ${minLPTokens.toString()}, ${[]}`);
 
     const tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
 
@@ -410,7 +373,7 @@ class MellowLpVault {
         );
       }
     } catch (err) {
-      console.log('ERROR', err);
+      console.error('Error in deposit simulation:', err);
       throw new Error('Unsuccessful deposit simulation.');
     }
 
@@ -468,7 +431,6 @@ class MellowLpVault {
 
       return receipt;
     } catch (err) {
-      console.log('ERROR', err);
       throw new Error('Unsucessful deposit confirmation.');
     }
   };
@@ -482,24 +444,58 @@ class MellowLpVault {
       throw new Error('Uninitialized contracts.');
     }
 
+    // Get the balance of LP tokens
     const lpTokens = await this.readOnlyContracts.erc20RootVault.balanceOf(this.userAddress);
 
     console.log(`Calling withdraw (${this.descale(lpTokens, this.tokenDecimals)} lp tokens)...`);
 
+    // Get the number of subvaults to input the correct vault options
+    const subvaultsCount: number = (await this.readOnlyContracts.erc20RootVault[0].subvaultNfts())
+      .length;
+
+    // Default arguments for withdraw
     const minTokenAmounts = BigNumber.from(0);
+    const vaultsOptions = new Array(subvaultsCount).fill(0x0);
+
     console.log(
       `args of withdraw: (${this.userAddress}, ${lpTokens.toString()}, ${[
         minTokenAmounts.toString(),
-      ]}, ${[]}`,
+      ]}, ${vaultsOptions}`,
     );
 
+    // Simulate the withdrawal
+    try {
+      await this.writeContracts.erc20RootVault.callStatic.withdraw(
+        this.userAddress,
+        lpTokens,
+        minTokenAmounts,
+        vaultsOptions,
+      );
+    } catch (err) {
+      console.error('Error in withdrawal simulation:', err);
+      throw new Error('Unsuccessful withdrawal simulation.');
+    }
+
+    // Estimate the gas for this transaction
+    const gasLimit = await this.writeContracts.erc20RootVault.estimateGas.withdraw(
+      this.userAddress,
+      lpTokens,
+      minTokenAmounts,
+      vaultsOptions,
+    );
+
+    // Send the transaction
     const tx = await this.writeContracts.erc20RootVault.withdraw(
       this.userAddress,
       lpTokens,
       minTokenAmounts,
-      [],
+      vaultsOptions,
+      {
+        gasLimit: getGasBuffer(gasLimit),
+      },
     );
 
+    // Wait for the confirmation and update the state post-operation
     try {
       const receipt = await tx.wait();
 
@@ -515,16 +511,8 @@ class MellowLpVault {
         console.error('User deposit failed to refresh after withdraw');
       }
 
-      // TO DO: do we want to update this after withdrawal?
-      try {
-        await this.refreshVaultCumulative();
-      } catch (_) {
-        console.error('Vault accumulative failed to refresh after withdraw');
-      }
-
       return receipt;
     } catch (err) {
-      console.log('ERROR', err);
       throw new Error('Unsucessful withdraw confirmation.');
     }
   };

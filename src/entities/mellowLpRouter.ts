@@ -30,11 +30,6 @@ export type MellowLpRouterArgs = {
   provider?: providers.Provider;
 };
 
-export type ERC20RootVaultInfo = {
-  index: number; // Vault Index in the Router
-  subvaultsCount: number; // Number of subvaults in ERC20RootVault
-};
-
 class MellowLpRouter {
   public readonly mellowRouterAddress: string;
   public readonly provider?: providers.Provider;
@@ -68,8 +63,6 @@ class MellowLpRouter {
   public vaultInitialized = false;
   public userInitialized = false;
 
-  public erc20RootVaultInfo?: ERC20RootVaultInfo[];
-
   public constructor({
     mellowRouterAddress,
     defaultWeights,
@@ -95,12 +88,10 @@ class MellowLpRouter {
   // NEXT: to offload this to subgraph
   vaultInit = async (): Promise<void> => {
     if (this.vaultInitialized) {
-      console.log('The vault is already initialized');
       return;
     }
 
     if (isUndefined(this.provider)) {
-      console.log('Stop here... No provider provided');
       return;
     }
 
@@ -115,34 +106,17 @@ class MellowLpRouter {
     const tokenAddress = await mellowRouterContract.token();
     const tokenContract = new Contract(tokenAddress, IERC20MinimalABI, this.provider);
 
-    console.log('token address:', tokenAddress);
-
     // erc20rootvault addresses
     let ERC20RootVaultAddresses: string[] = await mellowRouterContract.getVaults();
-    this.erc20RootVaultInfo = Array.from(ERC20RootVaultAddresses.keys()).map(
-      (index: number) =>
-        <ERC20RootVaultInfo>{
-          index,
-          subvaultsCount: 0, // populated below
-        },
-    );
 
     if (!isUndefined(this.pivot)) {
       ERC20RootVaultAddresses = ERC20RootVaultAddresses.slice(this.pivot, this.pivot + 1);
-      this.erc20RootVaultInfo = this.erc20RootVaultInfo.slice(this.pivot, this.pivot + 1);
     }
 
     // Map the addresses so that each of them is instantiated into a contract
     const erc20RootVaultContracts = ERC20RootVaultAddresses.map(
       (address: string) => new ethers.Contract(address, Erc20RootVaultABI, this.provider),
     );
-
-    // Populate subvaults count
-    for (let i = 0; i < erc20RootVaultContracts.length; i += 1) {
-      this.erc20RootVaultInfo[i].subvaultsCount = (
-        await erc20RootVaultContracts[i].subvaultNfts()
-      ).length;
-    }
 
     // Instantiate an empty array of addresses
     const erc20RootVaultGovernanceAddresses = [];
@@ -162,11 +136,7 @@ class MellowLpRouter {
       mellowRouterContract,
     };
 
-    console.log('Read-only contracts are ready');
-
     await this.refreshVaultCumulative();
-    console.log('vault cumulative refreshed', this.vaultCumulative);
-    console.log('vault cap refreshed', this.vaultCap);
 
     this.vaultInitialized = true;
   };
@@ -175,12 +145,10 @@ class MellowLpRouter {
     this.signer = signer;
 
     if (this.userInitialized) {
-      console.log('The user is already initialized');
       return;
     }
 
     if (!this.vaultInitialized) {
-      console.log('The vault should be initialized first');
       return;
     }
 
@@ -189,7 +157,6 @@ class MellowLpRouter {
     }
 
     this.userAddress = await this.signer.getAddress();
-    console.log('user address', this.userAddress);
 
     this.writeContracts = {
       token: new Contract(this.readOnlyContracts.token.address, IERC20MinimalABI, this.signer),
@@ -203,12 +170,8 @@ class MellowLpRouter {
       ),
     };
 
-    console.log('write contracts ready');
-
     await this.refreshUserDeposit();
-    console.log('user deposit refreshed', this.userDeposit);
     await this.refreshWalletBalance();
-    console.log('user wallet balance refreshed', this.userWalletBalance);
 
     this.userInitialized = true;
   };
@@ -244,25 +207,18 @@ class MellowLpRouter {
     for (const erc20RootVaultContract of this.readOnlyContracts.erc20RootVault) {
       const totalLpTokens = await erc20RootVaultContract.totalSupply();
       const tvl = await erc20RootVaultContract.tvl();
-      console.log('accumulated (tvl):', tvl.minTokenAmounts[0].toString());
 
       const nft = await erc20RootVaultContract.nft();
 
       for (const erc20RootVaultGovernanceContract of this.readOnlyContracts
         .erc20RootVaultGovernance) {
         const strategyParams = await erc20RootVaultGovernanceContract.strategyParams(nft);
-        console.log('governance contract address: ', erc20RootVaultGovernanceContract.address);
-        console.log('strategy params:', strategyParams);
-        console.log('token limit', strategyParams.tokenLimit.toString());
 
         const vaultCumulative = this.descale(tvl.minTokenAmounts[0], this.tokenDecimals);
         const vaultCap = this.descale(
           totalLpTokens.mul(toBn('1', 18)).div(strategyParams.tokenLimit),
           16,
         );
-
-        console.log('vault cumulative:', vaultCumulative);
-        console.log('vault cap:', vaultCap);
 
         this.vaultCumulative += vaultCumulative;
         this.vaultCap += vaultCap;
@@ -293,17 +249,12 @@ class MellowLpRouter {
 
       const totalLpTokens = await erc20RootVaultContract.totalSupply();
 
-      console.log('lp tokens', lpTokensBalance.toString());
-      console.log('total lp tokens:', totalLpTokens);
-
       const tvl = await erc20RootVaultContract.tvl();
-      console.log('tvl', tvl.toString());
 
       if (totalLpTokens.gt(0)) {
         const userFunds = lpTokensBalance.mul(tvl[0][0]).div(totalLpTokens);
-        console.log('user funds:', userFunds.toString());
         const userDeposit = this.descale(userFunds, this.tokenDecimals);
-        console.log('user deposit:', userDeposit);
+
         this.userDeposit += userDeposit;
       }
     }
@@ -387,7 +338,6 @@ class MellowLpRouter {
     }
 
     const scaledAmount = this.scale(amount);
-    console.log(`Calling deposit(${scaledAmount})...`);
 
     const tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
 
@@ -402,7 +352,6 @@ class MellowLpRouter {
         await this.writeContracts.mellowRouter.callStatic.depositErc20(scaledAmount, weights);
       }
     } catch (err) {
-      console.log('ERROR', err);
       throw new Error('Unsuccessful deposit simulation.');
     }
 
@@ -436,7 +385,6 @@ class MellowLpRouter {
 
       return receipt;
     } catch (err) {
-      console.log('ERROR', err);
       throw new Error('Unsucessful deposit confirmation.');
     }
   };
@@ -445,45 +393,51 @@ class MellowLpRouter {
     if (
       isUndefined(this.readOnlyContracts) ||
       isUndefined(this.writeContracts) ||
-      isUndefined(this.userAddress) ||
-      isUndefined(this.erc20RootVaultInfo)
+      isUndefined(this.userAddress)
     ) {
       throw new Error('Uninitialized contracts.');
     }
 
-    if (this.readOnlyContracts.erc20RootVault.length > 1) {
-      throw new Error('Too many ERC20RootVaults to withdraw from.');
+    if (isUndefined(this.pivot)) {
+      throw new Error(`It doesn't currently support withdrawals on un-pivoted routers.`);
     }
 
-    const index = 0;
-    const erc20RootVaultInfo = this.erc20RootVaultInfo[index];
+    const subvaultsCount: number = (await this.readOnlyContracts.erc20RootVault[0].subvaultNfts())
+      .length;
 
     const minTokenAmounts = BigNumber.from(0);
-    const vaultsOptions = new Array(erc20RootVaultInfo.subvaultsCount).fill(0x0);
+    const vaultsOptions = new Array(subvaultsCount).fill(0x0);
 
     console.log(
-      `Calling claimLPTokens (ERC20RootVault: ${this.readOnlyContracts.erc20RootVault[index].address})`,
+      `Calling claimLPTokens (ERC20RootVault: ${this.readOnlyContracts.erc20RootVault[0].address})`,
     );
 
-    console.log(
-      `args of claimLPTokens: ${erc20RootVaultInfo.index}, ${[minTokenAmounts]}, ${vaultsOptions}`,
-    );
+    console.log(`args of claimLPTokens: ${this.pivot}, ${[minTokenAmounts]}, ${vaultsOptions}`);
 
     try {
       await this.writeContracts.mellowRouter.callStatic.claimLPTokens(
-        erc20RootVaultInfo.index,
+        this.pivot,
         [minTokenAmounts],
         vaultsOptions,
       );
     } catch (err) {
-      console.log('ERROR', err);
+      console.error('Error during claimLPTokens:', err);
       throw new Error('Unsuccessful claimLPTokens simulation.');
     }
 
-    const tx = await this.writeContracts.mellowRouter.claimLPTokens(
-      erc20RootVaultInfo.index,
+    const gasLimit = await this.writeContracts.mellowRouter.estimateGas.claimLPTokens(
+      this.pivot,
       [minTokenAmounts],
       vaultsOptions,
+    );
+
+    const tx = await this.writeContracts.mellowRouter.claimLPTokens(
+      this.pivot,
+      [minTokenAmounts],
+      vaultsOptions,
+      {
+        gasLimit: getGasBuffer(gasLimit),
+      },
     );
 
     try {
@@ -501,16 +455,8 @@ class MellowLpRouter {
         console.error('User deposit failed to refresh after withdraw');
       }
 
-      // TO DO: do we want to update this after withdrawal?
-      try {
-        await this.refreshVaultCumulative();
-      } catch (_) {
-        console.error('Vault accumulative failed to refresh after withdraw');
-      }
-
       return receipt;
     } catch (err) {
-      console.log('ERROR', err);
       throw new Error('Unsucessful withdraw confirmation.');
     }
   };
@@ -519,49 +465,56 @@ class MellowLpRouter {
     if (
       isUndefined(this.readOnlyContracts) ||
       isUndefined(this.writeContracts) ||
-      isUndefined(this.userAddress) ||
-      isUndefined(this.erc20RootVaultInfo)
+      isUndefined(this.userAddress)
     ) {
       throw new Error('Uninitialized contracts.');
     }
 
-    if (this.readOnlyContracts.erc20RootVault.length > 1) {
-      throw new Error('Too many ERC20RootVaults to rollover from.');
+    if (isUndefined(this.pivot)) {
+      throw new Error(`It doesn't currently support withdrawals on un-pivoted routers.`);
     }
 
-    const index = 0;
-    const erc20RootVaultInfo = this.erc20RootVaultInfo[index];
+    const subvaultsCount: number = (await this.readOnlyContracts.erc20RootVault[0].subvaultNfts())
+      .length;
 
     const minTokenAmounts = BigNumber.from(0);
-    const vaultsOptions = new Array(erc20RootVaultInfo.subvaultsCount).fill(0x0);
+    const vaultsOptions = new Array(subvaultsCount).fill(0x0);
 
     console.log(
-      `Calling rolloverLPTokens (ERC20RootVault: ${this.readOnlyContracts.erc20RootVault[index].address})`,
+      `Calling rolloverLPTokens (ERC20RootVault: ${this.readOnlyContracts.erc20RootVault[0].address})`,
     );
 
     console.log(
-      `args of rolloverLPTokens: ${erc20RootVaultInfo.index}, ${[
-        minTokenAmounts,
-      ]}, ${vaultsOptions}, ${weights}`,
+      `args of rolloverLPTokens: ${this.pivot}, ${[minTokenAmounts]}, ${vaultsOptions}, ${weights}`,
     );
 
     try {
       await this.writeContracts.mellowRouter.callStatic.rolloverLPTokens(
-        erc20RootVaultInfo.index,
+        this.pivot,
         [minTokenAmounts],
         vaultsOptions,
         weights,
       );
     } catch (err) {
-      console.log('ERROR', err);
+      console.error('Error during rolloverLPTokens', err);
       throw new Error('Unsuccessful rolloverLPTokens simulation.');
     }
 
-    const tx = await this.writeContracts.mellowRouter.rolloverLPTokens(
-      erc20RootVaultInfo.index,
+    const gasLimit = await this.writeContracts.mellowRouter.estimateGas.rolloverLPTokens(
+      this.pivot,
       [minTokenAmounts],
       vaultsOptions,
       weights,
+    );
+
+    const tx = await this.writeContracts.mellowRouter.rolloverLPTokens(
+      this.pivot,
+      [minTokenAmounts],
+      vaultsOptions,
+      weights,
+      {
+        gasLimit: getGasBuffer(gasLimit),
+      },
     );
 
     try {
@@ -579,16 +532,8 @@ class MellowLpRouter {
         console.error('User deposit failed to refresh after rollover');
       }
 
-      // TO DO: do we want to update this after rollover?
-      try {
-        await this.refreshVaultCumulative();
-      } catch (_) {
-        console.error('Vault accumulative failed to refresh after rollover');
-      }
-
       return receipt;
     } catch (err) {
-      console.log('ERROR', err);
       throw new Error('Unsucessful rollover confirmation.');
     }
   };
