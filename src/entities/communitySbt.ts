@@ -599,7 +599,7 @@ class SBT {
             }
         };
 
-        if (refereesWith100kNotionalTraded > 0) {
+        if (refereesWith100kNotionalTraded >= 1) {
             let badgeType = '36'; //referror
             badgeResponseRecord[badgeType] = this.createReferroorBadgeRecord(badgeType, userId, seasonId);
             if (refereesWith100kNotionalTraded >= 10) {
@@ -607,7 +607,7 @@ class SBT {
                 badgeResponseRecord[badgeType] = this.createReferroorBadgeRecord(badgeType, userId, seasonId);
             }
         }
-        if (refereesWith2mNotionalTraded > 0) {
+        if (refereesWith2mNotionalTraded >= 5) {
             const badgeType = '38'; //whaleWhisperer
             badgeResponseRecord[badgeType] = this.createReferroorBadgeRecord(badgeType, userId, seasonId);
         }
