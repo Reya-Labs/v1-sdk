@@ -472,6 +472,62 @@ class MellowLpVault {
       throw new Error('Unsucessful deposit confirmation.');
     }
   };
+
+  withdraw = async (): Promise<ContractReceipt> => {
+    if (
+      isUndefined(this.readOnlyContracts) ||
+      isUndefined(this.writeContracts) ||
+      isUndefined(this.userAddress)
+    ) {
+      throw new Error('Uninitialized contracts.');
+    }
+
+    const lpTokens = await this.readOnlyContracts.erc20RootVault.balanceOf(this.userAddress);
+
+    console.log(`Calling withdraw (${this.descale(lpTokens, this.tokenDecimals)} lp tokens)...`);
+
+    const minTokenAmounts = BigNumber.from(0);
+    console.log(
+      `args of withdraw: (${this.userAddress}, ${lpTokens.toString()}, ${[
+        minTokenAmounts.toString(),
+      ]}, ${[]}`,
+    );
+
+    const tx = await this.writeContracts.erc20RootVault.withdraw(
+      this.userAddress,
+      lpTokens,
+      minTokenAmounts,
+      [],
+    );
+
+    try {
+      const receipt = await tx.wait();
+
+      try {
+        await this.refreshWalletBalance();
+      } catch (_) {
+        console.error('Wallet user balance failed to refresh after withdraw');
+      }
+
+      try {
+        await this.refreshUserDeposit();
+      } catch (_) {
+        console.error('User deposit failed to refresh after withdraw');
+      }
+
+      // TO DO: do we want to update this after withdrawal?
+      try {
+        await this.refreshVaultCumulative();
+      } catch (_) {
+        console.error('Vault accumulative failed to refresh after withdraw');
+      }
+
+      return receipt;
+    } catch (err) {
+      console.log('ERROR', err);
+      throw new Error('Unsucessful withdraw confirmation.');
+    }
+  };
 }
 
 export default MellowLpVault;
