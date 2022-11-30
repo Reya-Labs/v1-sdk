@@ -7,9 +7,10 @@ import { getProof } from '../utils/communitySbt/merkle-tree';
 import  axios from 'axios';
 import fetch from 'cross-fetch';
 import { MULTI_REDEEM_METHOD_ID, REDEEM_METHOD_ID } from '../constants';
-import { decodeBadgeType, decodeMultipleBadgeTypes, geckoEthToUsd, get100KRefereeBenchmark, get2MRefereeBenchmark, getEtherscanURL, getTopBadgeType, toMillis } from '../utils/communitySbt/helpers';
+import { decodeBadgeType, decodeMultipleBadgeTypes, geckoEthToUsd, geLeavesIpfsUri, get100KRefereeBenchmark, get2MRefereeBenchmark, getEtherscanURL, getTopBadgeType, toMillis } from '../utils/communitySbt/helpers';
 import { DateTime } from 'luxon';
 import { getScores, GetScoresArgs } from '../utils/communitySbt/getTopBadges';
+import { getSubgraphBadges } from '../utils/communitySbt/getSubgraphBadges';
 
 import { sentryTracker } from '../utils/sentry';
 
@@ -47,7 +48,7 @@ export type BadgeResponse = {
     mintedTimestampMs?: number;
 }
 
-type SubgraphBadgeResponse = {
+export type SubgraphBadgeResponse = {
     id: string;
     badgeType: string;
     awardedTimestamp: string;
@@ -320,52 +321,100 @@ class SBT {
         seasonStart: number,
         seasonEnd: number,
       }): Promise<BadgeResponse[]> {
-        try {
-            let badgesResponse : BadgeResponse[] = [];
 
-            // programmatic badges
-            if (this.badgesSubgraphUrl) {
-                const badgeQuery = `
-                    query( $id: String) {
-                        seasonUser(id: $id) {
-                            id
-                            badges {
-                            id
-                            awardedTimestamp
-                            mintedTimestamp
-                            badgeType
-                            }
-                        }
-                    }
-                `;
-                const client = new ApolloClient({
-                    cache: new InMemoryCache(),
-                    link: new HttpLink({ uri: this.badgesSubgraphUrl, fetch })
-                })
-                const id = `${userId.toLowerCase()}#${seasonId}`
-                const data = await client.query<{
-                    seasonUser: {
-                        badges: SubgraphBadgeResponse[]
-                    }
-                }>({
-                    query: gql(badgeQuery),
-                    variables: {
-                        id: id,
-                    },
-                });
+        // past season
+        if (seasonEnd < DateTime.now().toSeconds()) {
+            const badges = await this.getOldSeasonBadges({
+                userId,
+                seasonId,
+                seasonStart,
+                seasonEnd,
+            })
+            return badges;
+        }
 
-                const subgraphBadges = (data?.data?.seasonUser ? data.data.seasonUser.badges : []) as SubgraphBadgeResponse[];
-                for (const badge of subgraphBadges) {
-                    if (parseInt(badge.awardedTimestamp) > 0 && !["14", "30"].includes(badge.badgeType)) {
-                        badgesResponse.push({
-                            id: badge.id,
-                            badgeType: badge.badgeType,
-                            awardedTimestampMs: toMillis(parseInt(badge.awardedTimestamp)),
-                            mintedTimestampMs: toMillis(parseInt(badge.mintedTimestamp)),
-                        });
-                    }
-                }
+        const badges = await this.computeSeasonBadges({
+            userId,
+            seasonId,
+            seasonStart,
+            seasonEnd,
+        });
+        return badges;
+
+      } 
+    
+    public async getOldSeasonBadges({
+        userId,
+        seasonId,
+        seasonStart,
+        seasonEnd,
+        }: {
+        userId: string;
+        seasonId: number;
+        seasonStart: number,
+        seasonEnd: number,
+    }): Promise<BadgeResponse[]> {
+
+        if (!this.provider) {
+            throw new Error('Wallet not connected');
+        }
+
+        //programmatic badges
+        let badgesResponse : BadgeResponse[] = await getSubgraphBadges({
+            userId,
+            seasonId,
+            seasonStart,
+            seasonEnd,
+            badgesSubgraphUrl: this.badgesSubgraphUrl
+        });
+        const mapBadges = new Map<string, BadgeResponse>();
+        badgesResponse.forEach((entry) => {
+            mapBadges.set(entry.id, entry);
+        })
+
+        const network = (await this.provider.getNetwork()).name;
+        const data = await axios.get(geLeavesIpfsUri(network, seasonId));
+
+        const snaphots : Array<{
+                owner: string
+                badgeType: number,
+                metadataURI: string
+            }> = data.data.snapshot;
+    
+        // to speed things up, awarded timestamp 
+        const subgraphSnapshots : BadgeResponse[] = snaphots.map((entry) => {
+            const id = `${entry.owner.toLowerCase()}#${entry.badgeType}#${seasonId}`
+            return {
+                id: id,
+                badgeType: entry.badgeType.toString(),
+                awardedTimestampMs: mapBadges.get(id)?.awardedTimestampMs || toMillis(seasonEnd),
+                mintedTimestampMs: mapBadges.get(id)?.awardedTimestampMs || undefined,
             }
+        })
+    
+        return subgraphSnapshots;
+    }
+
+    public async computeSeasonBadges({
+        userId,
+        seasonId,
+        seasonStart,
+        seasonEnd,
+      }: {
+        userId: string;
+        seasonId: number;
+        seasonStart: number,
+        seasonEnd: number,
+      }): Promise<BadgeResponse[]> {
+        try {
+            //programmatic badges
+            let badgesResponse : BadgeResponse[] = await getSubgraphBadges({
+                userId,
+                seasonId,
+                seasonStart,
+                seasonEnd,
+                badgesSubgraphUrl: this.badgesSubgraphUrl
+            });
 
             // referrer badges & non-programatic badges
             let referroorBadges : Record<string, BadgeResponse> = {};
