@@ -11,6 +11,7 @@ import {
 } from 'ethers';
 import { isUndefined } from 'lodash';
 import { toBn } from 'evm-bn';
+import * as Sentry from '@sentry/browser';
 import { getProtocolPrefix, getTokenInfo } from '../services/getTokenInfo';
 import timestampWadToDateTime from '../utils/timestampWadToDateTime';
 import { getGasBuffer, MaxUint256Bn, TresholdApprovalBn } from '../constants';
@@ -366,8 +367,10 @@ class MellowLpVault {
     try {
       const receipt = await tx.wait();
       return receipt;
-    } catch (_) {
-      throw new Error('Unsucessful approval confirmation.');
+    } catch (error) {
+      Sentry.captureException(error);
+      Sentry.captureMessage('Unsuccessful approval confirmation.');
+      throw new Error('Unsuccessful approval confirmation.');
     }
   };
 
@@ -409,8 +412,10 @@ class MellowLpVault {
           [],
         );
       }
-    } catch (err) {
-      console.log('ERROR', err);
+    } catch (error) {
+      console.log('ERROR', error);
+      Sentry.captureException(error);
+      Sentry.captureMessage('Unsuccessful deposit simulation.');
       throw new Error('Unsuccessful deposit simulation.');
     }
 
@@ -450,19 +455,25 @@ class MellowLpVault {
 
       try {
         await this.refreshWalletBalance();
-      } catch (_) {
+      } catch (error) {
+        Sentry.captureException(error);
+        Sentry.captureMessage('Wallet user balance failed to refresh after deposit');
         console.error('Wallet user balance failed to refresh after deposit');
       }
 
       try {
         await this.refreshUserDeposit();
-      } catch (_) {
+      } catch (error) {
+        Sentry.captureException(error);
+        Sentry.captureMessage('User deposit failed to refresh after deposit');
         console.error('User deposit failed to refresh after deposit');
       }
 
       try {
         await this.refreshVaultCumulative();
-      } catch (_) {
+      } catch (error) {
+        Sentry.captureException(error);
+        Sentry.captureMessage('Vault accumulative failed to refresh after deposit');
         console.error('Vault accumulative failed to refresh after deposit');
       }
 
