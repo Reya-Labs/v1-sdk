@@ -10,6 +10,7 @@ import { MULTI_REDEEM_METHOD_ID, REDEEM_METHOD_ID } from '../constants';
 import { decodeBadgeType, decodeMultipleBadgeTypes, geckoEthToUsd, get100KRefereeBenchmark, get2MRefereeBenchmark, getEtherscanURL, getTopBadgeType, toMillis } from '../utils/communitySbt/helpers';
 import { DateTime } from 'luxon';
 import { getScores, GetScoresArgs } from '../utils/communitySbt/getTopBadges';
+import * as Sentry from '@sentry/browser';
 
 export type SBTConstructorArgs = {
     id: string;
@@ -229,8 +230,9 @@ class SBT {
         const tx = await this.contract.redeem(leafInfo, proof, rootEntity.merkleRoot);
         await tx.wait();
         return tokenId;
-    } catch (err) {
-        console.error(err);
+    } catch (error) {
+        Sentry.captureException(error);
+        Sentry.captureMessage("Unable to claim");
         throw new Error("Unable to claim");
     }
   }
@@ -299,7 +301,9 @@ class SBT {
             return {
                 claimedBadgeTypes,
             }
-        } catch (err) {
+        } catch (error) {
+            Sentry.captureException(error);
+            Sentry.captureMessage("Unable to claim multiple badges");
             throw new Error("Unable to claim multiple badges");
         }
     }
@@ -398,6 +402,7 @@ class SBT {
             
             return badgesResponse;
         } catch (error) {
+          Sentry.captureException(error);
           return [];
         }
     }

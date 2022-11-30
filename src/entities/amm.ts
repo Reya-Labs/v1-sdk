@@ -47,6 +47,7 @@ import { getAccruedCashflow, transformSwaps } from '../services/getAccruedCashfl
 
 import axios from 'axios';
 import { getProtocolPrefix } from '../services/getTokenInfo';
+import * as Sentry from '@sentry/browser';
 
 var geckoEthToUsd = async () => {
   for (let attempt = 0; attempt < 5; attempt++) {
@@ -522,7 +523,9 @@ class AMM {
       return receipt;
     }
     catch (error) {
-      throw new Error("Transaction Confirmation Error");
+        Sentry.captureException(error);
+        Sentry.captureMessage("Transaction Confirmation Error");
+        throw new Error("Transaction Confirmation Error");
     }
   }
 
@@ -651,7 +654,9 @@ class AMM {
       return receipt;
     }
     catch (error) {
-      throw new Error("Transaction Confirmation Error");
+        Sentry.captureException(error);
+        Sentry.captureMessage("Transaction Confirmation Error");
+        throw new Error("Transaction Confirmation Error");
     }
   }
 
@@ -875,7 +880,9 @@ class AMM {
           });
           accruedCashflow = accruedCashflowInfo.accruedCashflow;
         }
-      } catch { }
+      } catch (error) {
+         Sentry.captureException(error);
+      }
     }
 
     const [expectedApy, expectedCashflow] = await this.expectedApy(
@@ -1036,7 +1043,9 @@ class AMM {
       return receipt;
     }
     catch (error) {
-      throw new Error("Transaction Confirmation Error");
+        Sentry.captureException(error);
+        Sentry.captureMessage("Transaction Confirmation Error");
+        throw new Error("Transaction Confirmation Error");
     }
   }
 
@@ -1147,7 +1156,9 @@ class AMM {
       return receipt;
     }
     catch (error) {
-      throw new Error("Transaction Confirmation Error");
+        Sentry.captureException(error);
+        Sentry.captureMessage("Transaction Confirmation Error");
+        throw new Error("Transaction Confirmation Error");
     }
   }
 
@@ -1320,7 +1331,9 @@ class AMM {
       return receipt;
     }
     catch (error) {
-      throw new Error("Transaction Confirmation Error");
+        Sentry.captureException(error);
+        Sentry.captureMessage("Transaction Confirmation Error");
+        throw new Error("Transaction Confirmation Error");
     }
   }
 
@@ -1417,7 +1430,9 @@ class AMM {
       return receipt;
     }
     catch (error) {
-      throw new Error("Transaction Confirmation Error");
+        Sentry.captureException(error);
+        Sentry.captureMessage("Transaction Confirmation Error");
+        throw new Error("Transaction Confirmation Error");
     }
   }
 
@@ -1491,7 +1506,9 @@ class AMM {
       return receipt;
     }
     catch (error) {
-      throw new Error("Transaction Confirmation Error");
+        Sentry.captureException(error);
+        Sentry.captureMessage("Transaction Confirmation Error");
+        throw new Error("Transaction Confirmation Error");
     }
   }
 
@@ -1575,7 +1592,9 @@ class AMM {
       return receipt;
     }
     catch (error) {
-      throw new Error("Transaction Confirmation Error");
+        Sentry.captureException(error);
+        Sentry.captureMessage("Transaction Confirmation Error");
+        throw new Error("Transaction Confirmation Error");
     }
   }
 
@@ -1611,7 +1630,9 @@ class AMM {
       return receipt;
     }
     catch (error) {
-      throw new Error("Transaction Confirmation Error");
+        Sentry.captureException(error);
+        Sentry.captureMessage("Transaction Confirmation Error");
+        throw new Error("Transaction Confirmation Error");
     }
   }
 
@@ -1668,7 +1689,9 @@ class AMM {
       return receipt;
     }
     catch (error) {
-      throw new Error("Transaction Confirmation Error");
+        Sentry.captureException(error);
+        Sentry.captureMessage("Transaction Confirmation Error");
+        throw new Error("Transaction Confirmation Error");
     }
   }
 
@@ -1844,7 +1867,9 @@ class AMM {
       return receipt;
     }
     catch (error) {
-      throw new Error("Transaction Confirmation Error");
+        Sentry.captureException(error);
+        Sentry.captureMessage("Transaction Confirmation Error");
+        throw new Error("Transaction Confirmation Error");
     }
   }
 
@@ -1998,7 +2023,9 @@ class AMM {
       return receipt;
     }
     catch (error) {
-      throw new Error("Transaction Confirmation Error");
+        Sentry.captureException(error);
+        Sentry.captureMessage("Transaction Confirmation Error");
+        throw new Error("Transaction Confirmation Error");
     }
   }
 
@@ -2039,7 +2066,9 @@ class AMM {
       return receipt;
     }
     catch (error) {
-      throw new Error("Transaction Confirmation Error");
+        Sentry.captureException(error);
+        Sentry.captureMessage("Transaction Confirmation Error");
+        throw new Error("Transaction Confirmation Error");
     }
   }
 
@@ -2105,7 +2134,9 @@ class AMM {
       return receipt;
     }
     catch (error) {
-      throw new Error("Transaction Confirmation Error");
+        Sentry.captureException(error);
+        Sentry.captureMessage("Transaction Confirmation Error");
+        throw new Error("Transaction Confirmation Error");
     }
   }
 
@@ -2203,7 +2234,9 @@ class AMM {
       return receipt;
     }
     catch (error) {
-      throw new Error("Token approval failed");
+        Sentry.captureException(error);
+        Sentry.captureMessage("Token approval failed");
+        throw new Error("Token approval failed");
     }
   }
 
@@ -2254,6 +2287,8 @@ class AMM {
       return receipt;
     }
     catch (error) {
+        Sentry.captureException(error);
+        Sentry.captureMessage("Token approval failed");
       throw new Error("Token approval failed");
     }
   }
@@ -2342,6 +2377,8 @@ class AMM {
       return receipt;
     }
     catch (error) {
+        Sentry.captureException(error);
+        Sentry.captureMessage("Token approval failed");
       throw new Error("Token approval failed");
     }
   }
@@ -2397,6 +2434,8 @@ class AMM {
       return resultScaled;
     }
     catch (error) {
+        Sentry.captureException(error);
+        Sentry.captureMessage("Cannot get variable factor");
       throw new Error("Cannot get variable factor");
     }
   }
@@ -2465,7 +2504,9 @@ class AMM {
 
             results.accruedCashflowInUSD = results.accruedCashflow * usdExchangeRate;
 
-          } catch (_) { }
+          } catch (error) {
+              Sentry.captureException(error);
+          }
       }
       else {
         if (!position.isSettled) {
@@ -2483,7 +2524,9 @@ class AMM {
 
             results.accruedCashflowInUSD = accruedCashflowInfo.accruedCashflow * usdExchangeRate;
 
-          } catch (_) { }
+          } catch (error) {
+              Sentry.captureException(error);
+          }
         }
       }
     }
@@ -2559,7 +2602,9 @@ class AMM {
             true
           );
           results.liquidationThreshold = this.descale(liquidationThreshold);
-        } catch (_) { }
+        } catch (error) {
+            Sentry.captureException(error);
+        }
 
         try {
           const safetyThreshold = await marginEngineContract.callStatic.getPositionMarginRequirement(
@@ -2570,7 +2615,9 @@ class AMM {
           );
           results.safetyThreshold = this.descale(safetyThreshold);
         }
-        catch (_) { }
+        catch (error) {
+            Sentry.captureException(error);
+        }
 
         if (!isUndefined(results.liquidationThreshold) && !isUndefined(results.safetyThreshold)) {
           results.healthFactor = (results.margin < results.liquidationThreshold) ? 1 : (results.margin < results.safetyThreshold ? 2 : 3);
@@ -2866,6 +2913,8 @@ class AMM {
       await isAlphaTransaction.wait();
     }
     catch (error) {
+      Sentry.captureException(error);
+        Sentry.captureMessage("Setting Alpha failed");
       throw new Error("Setting Alpha failed");
     }
 
@@ -2875,6 +2924,8 @@ class AMM {
       await isAlphaTransactionME.wait();
     }
     catch (error) {
+      Sentry.captureException(error);
+        Sentry.captureMessage("Setting Alpha failed");
       throw new Error("Setting Alpha failed");
     }
 
@@ -2884,6 +2935,8 @@ class AMM {
       await setCapTransaction.wait();
     }
     catch (error) {
+      Sentry.captureException(error);
+        Sentry.captureMessage("Setting cap failed");
       throw new Error("Setting cap failed");
     }
   }

@@ -13,6 +13,7 @@ import {
 } from 'ethers';
 import { isUndefined } from 'lodash';
 import { toBn } from 'evm-bn';
+import * as Sentry from '@sentry/browser';
 import { getTokenInfo } from '../services/getTokenInfo';
 
 import { getGasBuffer, MaxUint256Bn, TresholdApprovalBn } from '../constants';
@@ -338,8 +339,10 @@ class MellowLpRouter {
     try {
       const receipt = await tx.wait();
       return receipt;
-    } catch (_) {
-      throw new Error('Unsucessful approval confirmation.');
+    } catch (error) {
+      Sentry.captureException(error);
+      Sentry.captureMessage('Unsuccessful approval confirmation.');
+      throw new Error('Unsuccessful approval confirmation.');
     }
   };
 
@@ -370,8 +373,10 @@ class MellowLpRouter {
       } else {
         await this.writeContracts.mellowRouter.callStatic.depositErc20(scaledAmount, weights);
       }
-    } catch (err) {
-      console.log('ERROR', err);
+    } catch (error) {
+      console.log('ERROR', error);
+      Sentry.captureException(error);
+      Sentry.captureMessage('Unsuccessful deposit simulation.');
       throw new Error('Unsuccessful deposit simulation.');
     }
 
@@ -399,14 +404,18 @@ class MellowLpRouter {
 
       try {
         await this.refreshWalletBalance();
-      } catch (_) {
+      } catch (error) {
+        Sentry.captureException(error);
+        Sentry.captureMessage('Wallet user balance failed to refresh after deposit');
         console.error('Wallet user balance failed to refresh after deposit');
       }
 
       return receipt;
-    } catch (err) {
-      console.log('ERROR', err);
-      throw new Error('Unsucessful deposit confirmation.');
+    } catch (error) {
+      console.log('ERROR', error);
+      Sentry.captureException(error);
+      Sentry.captureMessage('Unsuccessful deposit confirmation.');
+      throw new Error('Unsuccessful deposit confirmation.');
     }
   };
 }
