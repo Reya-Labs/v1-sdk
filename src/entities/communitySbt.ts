@@ -10,7 +10,8 @@ import { MULTI_REDEEM_METHOD_ID, REDEEM_METHOD_ID } from '../constants';
 import { decodeBadgeType, decodeMultipleBadgeTypes, geckoEthToUsd, get100KRefereeBenchmark, get2MRefereeBenchmark, getEtherscanURL, getTopBadgeType, toMillis } from '../utils/communitySbt/helpers';
 import { DateTime } from 'luxon';
 import { getScores, GetScoresArgs } from '../utils/communitySbt/getTopBadges';
-import * as Sentry from '@sentry/browser';
+
+import { sentryTracker } from '../utils/sentry';
 
 export type SBTConstructorArgs = {
     id: string;
@@ -231,8 +232,8 @@ class SBT {
         await tx.wait();
         return tokenId;
     } catch (error) {
-        Sentry.captureException(error);
-        Sentry.captureMessage("Unable to claim");
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage("Unable to claim");
         throw new Error("Unable to claim");
     }
   }
@@ -302,8 +303,8 @@ class SBT {
                 claimedBadgeTypes,
             }
         } catch (error) {
-            Sentry.captureException(error);
-            Sentry.captureMessage("Unable to claim multiple badges");
+            sentryTracker.captureException(error);
+            sentryTracker.captureMessage("Unable to claim multiple badges");
             throw new Error("Unable to claim multiple badges");
         }
     }
@@ -402,7 +403,7 @@ class SBT {
             
             return badgesResponse;
         } catch (error) {
-          Sentry.captureException(error);
+            sentryTracker.captureException(error);
           return [];
         }
     }

@@ -4,7 +4,8 @@ import { GOERLI_ONE_HUNDRED_THOUSAND, GOERLI_TWO_MILLON, MAINNET_ONE_HUNDRED_THO
 import { NON_SUBGRAPH_BADGES_SEASONS, TOP_BADGES_VARIANT } from "../../entities/communitySbt";
 import { CommunitySBT__factory } from "../../typechain-sbt";
 import { goerliSeasonLeavesCid, mainnetSeasonLeavesCid } from "./seasonsConfig";
-import * as Sentry from '@sentry/browser';
+
+import { sentryTracker } from '../sentry';
 
 export function getBadgeTypeFromMetadataUri(metadataURI: string) : number {
     const filenamme = metadataURI.split('/')[3];
@@ -82,7 +83,7 @@ export async function geckoEthToUsd(apiKey: string) : Promise<number> {
         );
         return data.data.ethereum.usd;
       } catch (error) {
-          Sentry.captureException(error);
+          sentryTracker.captureException(error);
       }
     }
     return 0;

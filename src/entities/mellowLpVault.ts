@@ -11,7 +11,7 @@ import {
 } from 'ethers';
 import { isUndefined } from 'lodash';
 import { toBn } from 'evm-bn';
-import * as Sentry from '@sentry/browser';
+
 import { getProtocolPrefix, getTokenInfo } from '../services/getTokenInfo';
 import timestampWadToDateTime from '../utils/timestampWadToDateTime';
 import { getGasBuffer, MaxUint256Bn, TresholdApprovalBn } from '../constants';
@@ -23,6 +23,7 @@ import { abi as MarginEngineABI } from '../ABIs/MarginEngine.json';
 import { abi as BaseRateOracleABI } from '../ABIs/BaseRateOracle.json';
 import { abi as IERC20MinimalABI } from '../ABIs/IERC20Minimal.json';
 import { abi as MellowDepositWrapperABI } from '../ABIs/MellowDepositWrapper.json';
+import { sentryTracker } from '../utils/sentry';
 
 export type MellowLpVaultArgs = {
   ethWrapperAddress: string;
@@ -368,8 +369,8 @@ class MellowLpVault {
       const receipt = await tx.wait();
       return receipt;
     } catch (error) {
-      Sentry.captureException(error);
-      Sentry.captureMessage('Unsuccessful approval confirmation.');
+      sentryTracker.captureException(error);
+      sentryTracker.captureMessage('Unsuccessful approval confirmation.');
       throw new Error('Unsuccessful approval confirmation.');
     }
   };
@@ -414,8 +415,8 @@ class MellowLpVault {
       }
     } catch (error) {
       console.log('ERROR', error);
-      Sentry.captureException(error);
-      Sentry.captureMessage('Unsuccessful deposit simulation.');
+      sentryTracker.captureException(error);
+      sentryTracker.captureMessage('Unsuccessful deposit simulation.');
       throw new Error('Unsuccessful deposit simulation.');
     }
 
@@ -456,24 +457,24 @@ class MellowLpVault {
       try {
         await this.refreshWalletBalance();
       } catch (error) {
-        Sentry.captureException(error);
-        Sentry.captureMessage('Wallet user balance failed to refresh after deposit');
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage('Wallet user balance failed to refresh after deposit');
         console.error('Wallet user balance failed to refresh after deposit');
       }
 
       try {
         await this.refreshUserDeposit();
       } catch (error) {
-        Sentry.captureException(error);
-        Sentry.captureMessage('User deposit failed to refresh after deposit');
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage('User deposit failed to refresh after deposit');
         console.error('User deposit failed to refresh after deposit');
       }
 
       try {
         await this.refreshVaultCumulative();
       } catch (error) {
-        Sentry.captureException(error);
-        Sentry.captureMessage('Vault accumulative failed to refresh after deposit');
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage('Vault accumulative failed to refresh after deposit');
         console.error('Vault accumulative failed to refresh after deposit');
       }
 
