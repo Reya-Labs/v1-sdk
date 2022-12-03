@@ -341,21 +341,21 @@ class SBT {
         });
         return badges;
 
-      } 
+    } 
     
     public async getOldSeasonBadges({
         userId,
         seasonId,
         seasonStart,
         seasonEnd,
-        }: {
+    }: {
         userId: string;
         seasonId: number;
         seasonStart: number,
         seasonEnd: number,
     }): Promise<BadgeResponse[]> {
 
-        if (!this.provider) {
+        if (!this.provider || !this.signer) {
             throw new Error('Wallet not connected');
         }
 
@@ -382,14 +382,18 @@ class SBT {
             }> = data.data.snapshot;
     
         // to speed things up, awarded timestamp 
-        const subgraphSnapshots : BadgeResponse[] = snaphots.map((entry) => {
-            const id = `${entry.owner.toLowerCase()}#${entry.badgeType}#${seasonId}`
-            return {
-                id: id,
-                badgeType: entry.badgeType.toString(),
-                awardedTimestampMs: mapBadges.get(id)?.awardedTimestampMs || toMillis(seasonEnd),
-                mintedTimestampMs: mapBadges.get(id)?.awardedTimestampMs || undefined,
+        const subgraphSnapshots : BadgeResponse[] = [];
+        snaphots.forEach((entry) => {
+            if(entry.owner.toLowerCase() === userId.toLowerCase()) {
+                const id = `${entry.owner.toLowerCase()}#${entry.badgeType}#${seasonId}`
+                subgraphSnapshots.push({
+                    id: id,
+                    badgeType: entry.badgeType.toString(),
+                    awardedTimestampMs: mapBadges.get(id)?.awardedTimestampMs || toMillis(seasonEnd),
+                    mintedTimestampMs: mapBadges.get(id)?.awardedTimestampMs || undefined,
+                })
             }
+            
         })
     
         return subgraphSnapshots;
