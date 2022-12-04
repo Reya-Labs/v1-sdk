@@ -31,6 +31,11 @@ export type MellowLpRouterArgs = {
   provider?: providers.Provider;
 };
 
+type BatchedDeposit = {
+  author: string;
+  amount: BigNumber;
+};
+
 class MellowLpRouter {
   public readonly mellowRouterAddress: string;
   public readonly vaultIndices: number[];
@@ -55,7 +60,10 @@ class MellowLpRouter {
   public vaultCumulative?: number;
   public vaultCap?: number;
 
+  public userCommittedDeposit?: number;
+  public userPendingDeposit?: number;
   public userDeposit?: number;
+
   public userWalletBalance?: number;
 
   public userAddress?: string;
@@ -302,8 +310,8 @@ class MellowLpRouter {
     }
   };
 
-  refreshUserDeposit = async (): Promise<void> => {
-    this.userDeposit = 0;
+  refreshUserCommittedDeposit = async (): Promise<void> => {
+    this.userCommittedDeposit = 0;
     if (
       isUndefined(this.userAddress) ||
       isUndefined(this.readOnlyContracts) ||
@@ -331,11 +339,54 @@ class MellowLpRouter {
 
       if (totalLpTokens.gt(0)) {
         const userFunds = lpTokensBalance.mul(tvl[0][0]).div(totalLpTokens);
-        console.log('user funds:', userFunds.toString());
-        const userDeposit = this.descale(userFunds, this.tokenDecimals);
-        console.log('user deposit:', userDeposit);
-        this.userDeposit += userDeposit;
+        console.log('user committed funds:', userFunds.toString());
+        const userCommittedDeposit = this.descale(userFunds, this.tokenDecimals);
+        console.log('user committed deposit:', userCommittedDeposit);
+        this.userCommittedDeposit += userCommittedDeposit;
       }
+    }
+  };
+
+  refreshUserPendingDeposit = async (): Promise<void> => {
+    this.userPendingDeposit = 0;
+    if (
+      isUndefined(this.userAddress) ||
+      isUndefined(this.readOnlyContracts) ||
+      isUndefined(this.tokenDecimals)
+    ) {
+      return;
+    }
+
+    for (let i = 0; i < this.readOnlyContracts.erc20RootVault.length; i += 1) {
+      const batchedDeposits: BatchedDeposit[] =
+        await this.readOnlyContracts.mellowRouterContract.getBatchedDeposits(this.vaultIndices[i]);
+
+      const userBatchedDeposits: BatchedDeposit[] = batchedDeposits.filter(
+        (batchedDeposit) => batchedDeposit.author.toLowerCase() === this.userAddress?.toLowerCase(),
+      );
+
+      console.log('user batched deposits:', userBatchedDeposits);
+
+      const userPendingFunds = userBatchedDeposits.reduce(
+        (sum, batchedDeposit) => sum.add(batchedDeposit.amount),
+        BigNumber.from(0),
+      );
+
+      console.log('user pending funds:', userPendingFunds.toString());
+
+      const userPendingDeposit = this.descale(userPendingFunds, this.tokenDecimals);
+      console.log('user pending deposit:', userPendingDeposit);
+
+      this.userPendingDeposit += userPendingDeposit;
+    }
+  };
+
+  refreshUserDeposit = async (): Promise<void> => {
+    await this.refreshUserCommittedDeposit();
+    await this.refreshUserPendingDeposit();
+    this.userDeposit = this.userCommittedDeposit;
+    if (!isUndefined(this.userDeposit) && !isUndefined(this.userPendingDeposit)) {
+      this.userDeposit += this.userPendingDeposit;
     }
   };
 
