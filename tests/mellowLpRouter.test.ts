@@ -140,7 +140,7 @@ describe('Mellow Router Test Suite', () => {
   });
 
   describe('Deposit Scenarios', async () => {
-    beforeEach('Setting up the suite', async () => {
+    beforeEach('Setting up the Router Object', async () => {
       ethMellowLpRouter = new MellowLpRouter({
         mellowRouterAddress: MellowRouterAddress,
         vaultIndices,
@@ -633,10 +633,49 @@ describe('Mellow Router Test Suite', () => {
         expect(userLpTokenBalance[1]).to.be.eq(BigNumber.from('5000000000000000000'));
       });
     });
+
+    it('Only committed deposits', async () => {
+      await ethMellowLpRouter.deposit(1, [100, 0]);
+      await ethMellowLpRouter.deposit(2, [0, 100]);
+      await ethMellowLpRouter.deposit(3, [50, 50]);
+      for (let vaultIndex = 0; vaultIndex < 2; vaultIndex += 1) {
+        await ethMellowLpRouter.writeContracts?.mellowRouter.submitBatch(vaultIndex, 0);
+      }
+
+      await ethMellowLpRouter.refreshUserDeposit();
+      expect(ethMellowLpRouter.userCommittedDeposit).to.be.eq(6);
+      expect(ethMellowLpRouter.userPendingDeposit).to.be.eq(0);
+      expect(ethMellowLpRouter.userDeposit).to.be.eq(6);
+    });
+
+    it('Only pending deposits', async () => {
+      await ethMellowLpRouter.deposit(1, [100, 0]);
+      await ethMellowLpRouter.deposit(2, [0, 100]);
+      await ethMellowLpRouter.deposit(3, [50, 50]);
+
+      await ethMellowLpRouter.refreshUserDeposit();
+      expect(ethMellowLpRouter.userCommittedDeposit).to.be.eq(0);
+      expect(ethMellowLpRouter.userPendingDeposit).to.be.eq(6);
+      expect(ethMellowLpRouter.userDeposit).to.be.eq(6);
+    });
+
+    it('Pending and committed deposits', async () => {
+      await ethMellowLpRouter.deposit(1, [100, 0]);
+      for (let vaultIndex = 0; vaultIndex < 2; vaultIndex += 1) {
+        await ethMellowLpRouter.writeContracts?.mellowRouter.submitBatch(vaultIndex, 0);
+      }
+      await ethMellowLpRouter.deposit(2, [0, 100]);
+      await ethMellowLpRouter.deposit(3, [50, 50]);
+
+      await ethMellowLpRouter.refreshUserDeposit();
+      expect(ethMellowLpRouter.userCommittedDeposit).to.be.eq(1);
+      expect(ethMellowLpRouter.userPendingDeposit).to.be.eq(5);
+      expect(ethMellowLpRouter.userDeposit).to.be.eq(6);
+    });
   });
 
   describe('Check deposit when weights are expanded', async () => {
-    beforeEach('Adding a third vault', async () => {
+    beforeEach('Adding a third vault & Setup Router Object', async () => {
       await withSigner(
         network,
         await localMellowRouterContract.owner(),
