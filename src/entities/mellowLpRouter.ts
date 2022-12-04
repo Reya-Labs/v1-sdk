@@ -26,16 +26,16 @@ import { sentryTracker } from '../utils/sentry';
 
 export type MellowLpRouterArgs = {
   mellowRouterAddress: string; // live in env variable per router contract
+  vaultIndices: number[]; // live in env variable per router contract
   defaultWeights: number[]; // live in env variable per router contract
-  pivot?: number;
   provider?: providers.Provider;
 };
 
 class MellowLpRouter {
   public readonly mellowRouterAddress: string;
-  public readonly provider?: providers.Provider;
+  public readonly vaultIndices: number[];
   public readonly defaultWeights: number[] = [];
-  public readonly pivot?: number;
+  public readonly provider?: providers.Provider;
 
   public readOnlyContracts?: {
     token: Contract;
@@ -63,11 +63,18 @@ class MellowLpRouter {
   public vaultInitialized = false;
   public userInitialized = false;
 
-  public constructor({ mellowRouterAddress, defaultWeights, provider, pivot }: MellowLpRouterArgs) {
+  public vaultsCount = 0;
+
+  public constructor({
+    mellowRouterAddress,
+    vaultIndices,
+    defaultWeights,
+    provider,
+  }: MellowLpRouterArgs) {
     this.mellowRouterAddress = mellowRouterAddress;
+    this.vaultIndices = vaultIndices;
     this.defaultWeights = defaultWeights;
     this.provider = provider;
-    this.pivot = pivot;
   }
 
   descale = (amount: BigNumberish, decimals: number): number => {
@@ -76,6 +83,53 @@ class MellowLpRouter {
 
   scale = (amount: number): BigNumber => {
     return ethers.utils.parseUnits(amount.toString(), this.tokenDecimals);
+  };
+
+  validateVaultIndices = (): boolean => {
+    if (!this.vaultIndices.every((val, i, arr) => !i || arr[i - 1] <= val)) {
+      console.log('The vault indices array is not sorted');
+      return false;
+    }
+
+    if (this.vaultIndices.length !== new Set(this.vaultIndices).size) {
+      console.log('The vault indices array contains duplicate values');
+      return false;
+    }
+
+    if (this.vaultIndices.length === 0) {
+      console.log('The vault indices array is empty');
+      return false;
+    }
+
+    if (this.vaultIndices[0] < 0 || this.vaultIndices.slice(-1)[0] >= this.vaultsCount) {
+      console.log('The vault indices array contains out-of-range values');
+      return false;
+    }
+
+    return true;
+  };
+
+  validateWeights = (weights: number[]): boolean => {
+    if (!weights.every((value) => Number.isInteger(value))) {
+      console.log('All values of default weights must be integer');
+      return false;
+    }
+
+    if (weights.length !== this.vaultIndices.length) {
+      console.log('Lengths of vault indices and default weights array do not match');
+      return false;
+    }
+
+    return true;
+  };
+
+  expandedWeights = (weights: number[]): number[] => {
+    const expandedWeights = new Array(this.vaultsCount).fill(0);
+    for (let i = 0; i < this.vaultIndices.length; i += 1) {
+      expandedWeights[this.vaultIndices[i]] = weights[i];
+    }
+
+    return expandedWeights;
   };
 
   // NEXT: to offload this to subgraph
@@ -105,10 +159,17 @@ class MellowLpRouter {
 
     // erc20rootvault addresses
     let ERC20RootVaultAddresses: string[] = await mellowRouterContract.getVaults();
+    this.vaultsCount = ERC20RootVaultAddresses.length;
 
-    if (!isUndefined(this.pivot)) {
-      ERC20RootVaultAddresses = ERC20RootVaultAddresses.slice(this.pivot, this.pivot + 1);
+    if (!this.validateVaultIndices()) {
+      return;
     }
+
+    if (!this.validateWeights(this.defaultWeights)) {
+      return;
+    }
+
+    ERC20RootVaultAddresses = this.vaultIndices.map((index) => ERC20RootVaultAddresses[index]);
 
     // Map the addresses so that each of them is instantiated into a contract
     const erc20RootVaultContracts = ERC20RootVaultAddresses.map(
@@ -254,9 +315,7 @@ class MellowLpRouter {
     let lpTokensBalances: BigNumber[] =
       await this.readOnlyContracts.mellowRouterContract.getLPTokenBalances(this.userAddress);
 
-    if (!isUndefined(this.pivot)) {
-      lpTokensBalances = lpTokensBalances.slice(this.pivot, this.pivot + 1);
-    }
+    lpTokensBalances = this.vaultIndices?.map((index) => lpTokensBalances[index]);
 
     for (let i = 0; i < this.readOnlyContracts.erc20RootVault.length; i += 1) {
       const erc20RootVaultContract = this.readOnlyContracts.erc20RootVault[i];
@@ -359,8 +418,15 @@ class MellowLpRouter {
       throw new Error('Uninitialized contracts.');
     }
 
+    if (!this.validateWeights(weights)) {
+      throw new Error('Weights are invalid');
+    }
+
+    const expandedWeights = this.expandedWeights(weights);
+
     const scaledAmount = this.scale(amount);
     console.log(`Calling deposit(${scaledAmount})...`);
+    console.log('Weights', expandedWeights);
 
     const tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
 
@@ -370,9 +436,12 @@ class MellowLpRouter {
 
     try {
       if (this.isETH) {
-        this.writeContracts.mellowRouter.callStatic.depositEth(weights, tempOverrides);
+        this.writeContracts.mellowRouter.callStatic.depositEth(expandedWeights, tempOverrides);
       } else {
-        await this.writeContracts.mellowRouter.callStatic.depositErc20(scaledAmount, weights);
+        await this.writeContracts.mellowRouter.callStatic.depositErc20(
+          scaledAmount,
+          expandedWeights,
+        );
       }
     } catch (error) {
       console.log('ERROR', error);
@@ -383,22 +452,26 @@ class MellowLpRouter {
 
     if (this.isETH) {
       const gasLimit = await this.writeContracts.mellowRouter.estimateGas.depositEth(
-        weights,
+        expandedWeights,
         tempOverrides,
       );
       tempOverrides.gasLimit = getGasBuffer(gasLimit);
     } else {
       const gasLimit = await this.writeContracts.mellowRouter.estimateGas.depositErc20(
         scaledAmount,
-        weights,
+        expandedWeights,
         tempOverrides,
       );
       tempOverrides.gasLimit = getGasBuffer(gasLimit);
     }
 
     const tx = this.isETH
-      ? await this.writeContracts.mellowRouter.depositEth(weights, tempOverrides)
-      : await this.writeContracts.mellowRouter.depositErc20(scaledAmount, weights, tempOverrides);
+      ? await this.writeContracts.mellowRouter.depositEth(expandedWeights, tempOverrides)
+      : await this.writeContracts.mellowRouter.depositErc20(
+          scaledAmount,
+          expandedWeights,
+          tempOverrides,
+        );
 
     try {
       const receipt = await tx.wait();
