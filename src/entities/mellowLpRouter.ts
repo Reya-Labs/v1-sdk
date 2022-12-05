@@ -95,22 +95,22 @@ class MellowLpRouter {
 
   validateVaultIndices = (): boolean => {
     if (!this.vaultIndices.every((val, i, arr) => !i || arr[i - 1] <= val)) {
-      console.log('The vault indices array is not sorted');
+      // The vault indices array is not sorted
       return false;
     }
 
     if (this.vaultIndices.length !== new Set(this.vaultIndices).size) {
-      console.log('The vault indices array contains duplicate values');
+      // The vault indices array contains duplicate values
       return false;
     }
 
     if (this.vaultIndices.length === 0) {
-      console.log('The vault indices array is empty');
+      // The vault indices array is empty
       return false;
     }
 
     if (this.vaultIndices[0] < 0 || this.vaultIndices.slice(-1)[0] >= this.vaultsCount) {
-      console.log('The vault indices array contains out-of-range values');
+      // The vault indices array contains out-of-range values
       return false;
     }
 
@@ -119,12 +119,12 @@ class MellowLpRouter {
 
   validateWeights = (weights: number[]): boolean => {
     if (!weights.every((value) => Number.isInteger(value))) {
-      console.log('All values of default weights must be integer');
+      // All values of default weights must be integer
       return false;
     }
 
     if (weights.length !== this.vaultIndices.length) {
-      console.log('Lengths of vault indices and default weights array do not match');
+      // Lengths of vault indices and default weights array do not match
       return false;
     }
 
