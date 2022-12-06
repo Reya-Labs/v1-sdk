@@ -26,7 +26,6 @@ import { sentryTracker } from '../utils/sentry';
 
 export type MellowLpRouterArgs = {
   mellowRouterAddress: string; // live in env variable per router contract
-  vaultIndices: number[]; // live in env variable per router contract
   defaultWeights: number[]; // live in env variable per router contract
   provider?: providers.Provider;
 };
@@ -38,7 +37,6 @@ type BatchedDeposit = {
 
 class MellowLpRouter {
   public readonly mellowRouterAddress: string;
-  public readonly vaultIndices: number[];
   public readonly defaultWeights: number[] = [];
   public readonly provider?: providers.Provider;
 
@@ -60,9 +58,9 @@ class MellowLpRouter {
   public vaultCumulative?: number;
   public vaultCap?: number;
 
-  public userCommittedDeposit?: number;
-  public userPendingDeposit?: number;
-  public userDeposit?: number;
+  public userCommittedDeposit = 0;
+  public userPendingDeposit = 0;
+  public userDeposit = 0;
 
   public userWalletBalance?: number;
 
@@ -73,14 +71,8 @@ class MellowLpRouter {
 
   public vaultsCount = 0;
 
-  public constructor({
-    mellowRouterAddress,
-    vaultIndices,
-    defaultWeights,
-    provider,
-  }: MellowLpRouterArgs) {
+  public constructor({ mellowRouterAddress, defaultWeights, provider }: MellowLpRouterArgs) {
     this.mellowRouterAddress = mellowRouterAddress;
-    this.vaultIndices = vaultIndices;
     this.defaultWeights = defaultWeights;
     this.provider = provider;
   }
@@ -93,51 +85,18 @@ class MellowLpRouter {
     return ethers.utils.parseUnits(amount.toString(), this.tokenDecimals);
   };
 
-  validateVaultIndices = (): boolean => {
-    if (!this.vaultIndices.every((val, i, arr) => !i || arr[i - 1] <= val)) {
-      // The vault indices array is not sorted
-      return false;
-    }
-
-    if (this.vaultIndices.length !== new Set(this.vaultIndices).size) {
-      // The vault indices array contains duplicate values
-      return false;
-    }
-
-    if (this.vaultIndices.length === 0) {
-      // The vault indices array is empty
-      return false;
-    }
-
-    if (this.vaultIndices[0] < 0 || this.vaultIndices.slice(-1)[0] >= this.vaultsCount) {
-      // The vault indices array contains out-of-range values
-      return false;
-    }
-
-    return true;
-  };
-
   validateWeights = (weights: number[]): boolean => {
     if (!weights.every((value) => Number.isInteger(value))) {
       // All values of default weights must be integer
       return false;
     }
 
-    if (weights.length !== this.vaultIndices.length) {
+    if (weights.length !== this.vaultsCount) {
       // Lengths of vault indices and default weights array do not match
       return false;
     }
 
     return true;
-  };
-
-  expandedWeights = (weights: number[]): number[] => {
-    const expandedWeights = new Array(this.vaultsCount).fill(0);
-    for (let i = 0; i < this.vaultIndices.length; i += 1) {
-      expandedWeights[this.vaultIndices[i]] = weights[i];
-    }
-
-    return expandedWeights;
   };
 
   // NEXT: to offload this to subgraph
@@ -166,18 +125,12 @@ class MellowLpRouter {
     console.log('token address:', tokenAddress);
 
     // erc20rootvault addresses
-    let ERC20RootVaultAddresses: string[] = await mellowRouterContract.getVaults();
+    const ERC20RootVaultAddresses: string[] = await mellowRouterContract.getVaults();
     this.vaultsCount = ERC20RootVaultAddresses.length;
-
-    if (!this.validateVaultIndices()) {
-      return;
-    }
 
     if (!this.validateWeights(this.defaultWeights)) {
       return;
     }
-
-    ERC20RootVaultAddresses = this.vaultIndices.map((index) => ERC20RootVaultAddresses[index]);
 
     // Map the addresses so that each of them is instantiated into a contract
     const erc20RootVaultContracts = ERC20RootVaultAddresses.map(
@@ -320,10 +273,8 @@ class MellowLpRouter {
       return;
     }
 
-    let lpTokensBalances: BigNumber[] =
+    const lpTokensBalances: BigNumber[] =
       await this.readOnlyContracts.mellowRouterContract.getLPTokenBalances(this.userAddress);
-
-    lpTokensBalances = this.vaultIndices?.map((index) => lpTokensBalances[index]);
 
     for (let i = 0; i < this.readOnlyContracts.erc20RootVault.length; i += 1) {
       const erc20RootVaultContract = this.readOnlyContracts.erc20RootVault[i];
@@ -359,7 +310,7 @@ class MellowLpRouter {
 
     for (let i = 0; i < this.readOnlyContracts.erc20RootVault.length; i += 1) {
       const batchedDeposits: BatchedDeposit[] =
-        await this.readOnlyContracts.mellowRouterContract.getBatchedDeposits(this.vaultIndices[i]);
+        await this.readOnlyContracts.mellowRouterContract.getBatchedDeposits(i);
 
       const userBatchedDeposits: BatchedDeposit[] = batchedDeposits.filter(
         (batchedDeposit) => batchedDeposit.author.toLowerCase() === this.userAddress?.toLowerCase(),
@@ -384,10 +335,7 @@ class MellowLpRouter {
   refreshUserDeposit = async (): Promise<void> => {
     await this.refreshUserCommittedDeposit();
     await this.refreshUserPendingDeposit();
-    this.userDeposit = this.userCommittedDeposit;
-    if (!isUndefined(this.userDeposit) && !isUndefined(this.userPendingDeposit)) {
-      this.userDeposit += this.userPendingDeposit;
-    }
+    this.userDeposit = this.userCommittedDeposit + this.userPendingDeposit;
   };
 
   refreshWalletBalance = async (): Promise<void> => {
@@ -473,11 +421,8 @@ class MellowLpRouter {
       throw new Error('Weights are invalid');
     }
 
-    const expandedWeights = this.expandedWeights(weights);
-
     const scaledAmount = this.scale(amount);
     console.log(`Calling deposit(${scaledAmount})...`);
-    console.log('Weights', expandedWeights);
 
     const tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
 
@@ -487,12 +432,9 @@ class MellowLpRouter {
 
     try {
       if (this.isETH) {
-        this.writeContracts.mellowRouter.callStatic.depositEth(expandedWeights, tempOverrides);
+        this.writeContracts.mellowRouter.callStatic.depositEth(weights, tempOverrides);
       } else {
-        await this.writeContracts.mellowRouter.callStatic.depositErc20(
-          scaledAmount,
-          expandedWeights,
-        );
+        await this.writeContracts.mellowRouter.callStatic.depositErc20(scaledAmount, weights);
       }
     } catch (error) {
       console.log('ERROR', error);
@@ -503,26 +445,22 @@ class MellowLpRouter {
 
     if (this.isETH) {
       const gasLimit = await this.writeContracts.mellowRouter.estimateGas.depositEth(
-        expandedWeights,
+        weights,
         tempOverrides,
       );
       tempOverrides.gasLimit = getGasBuffer(gasLimit);
     } else {
       const gasLimit = await this.writeContracts.mellowRouter.estimateGas.depositErc20(
         scaledAmount,
-        expandedWeights,
+        weights,
         tempOverrides,
       );
       tempOverrides.gasLimit = getGasBuffer(gasLimit);
     }
 
     const tx = this.isETH
-      ? await this.writeContracts.mellowRouter.depositEth(expandedWeights, tempOverrides)
-      : await this.writeContracts.mellowRouter.depositErc20(
-          scaledAmount,
-          expandedWeights,
-          tempOverrides,
-        );
+      ? await this.writeContracts.mellowRouter.depositEth(weights, tempOverrides)
+      : await this.writeContracts.mellowRouter.depositErc20(scaledAmount, weights, tempOverrides);
 
     try {
       const receipt = await tx.wait();

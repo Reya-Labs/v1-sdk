@@ -19,7 +19,6 @@ let localMellowRouterContract: Contract;
 
 const depositAmount = 10; // Set a default 10 ETH constant for use in tests;
 const MellowRouterAddress = '0x704F6E9cB4f7e041CC89B6a49DF8EE2027a55164';
-const vaultIndices: number[] = [0, 1];
 const defaultWeights: number[] = [50, 50]; // default even split between 2 pools
 
 const signer = new Wallet(
@@ -66,58 +65,9 @@ describe('Mellow Router Test Suite', () => {
   });
 
   describe('Invalid vault initialisation scenarios', async () => {
-    it('Empty vault indices array', async () => {
-      ethMellowLpRouter = new MellowLpRouter({
-        mellowRouterAddress: MellowRouterAddress,
-        vaultIndices: [],
-        defaultWeights,
-        provider,
-      });
-
-      await ethMellowLpRouter.vaultInit();
-      expect(ethMellowLpRouter.vaultInitialized).to.be.eq(false);
-    });
-
-    it('Vault indices array not sorted', async () => {
-      ethMellowLpRouter = new MellowLpRouter({
-        mellowRouterAddress: MellowRouterAddress,
-        vaultIndices: [1, 0],
-        defaultWeights,
-        provider,
-      });
-
-      await ethMellowLpRouter.vaultInit();
-      expect(ethMellowLpRouter.vaultInitialized).to.be.eq(false);
-    });
-
-    it('Vault indices array contains duplicates', async () => {
-      ethMellowLpRouter = new MellowLpRouter({
-        mellowRouterAddress: MellowRouterAddress,
-        vaultIndices: [0, 0],
-        defaultWeights,
-        provider,
-      });
-
-      await ethMellowLpRouter.vaultInit();
-      expect(ethMellowLpRouter.vaultInitialized).to.be.eq(false);
-    });
-
-    it('Vault indices array contain out-of-range values', async () => {
-      ethMellowLpRouter = new MellowLpRouter({
-        mellowRouterAddress: MellowRouterAddress,
-        vaultIndices: [0, 2],
-        defaultWeights,
-        provider,
-      });
-
-      await ethMellowLpRouter.vaultInit();
-      expect(ethMellowLpRouter.vaultInitialized).to.be.eq(false);
-    });
-
     it('Weights values are not all integer', async () => {
       ethMellowLpRouter = new MellowLpRouter({
         mellowRouterAddress: MellowRouterAddress,
-        vaultIndices: [0, 1],
         defaultWeights: [49.5, 50.5],
         provider,
       });
@@ -126,10 +76,9 @@ describe('Mellow Router Test Suite', () => {
       expect(ethMellowLpRouter.vaultInitialized).to.be.eq(false);
     });
 
-    it('Vault indices and default weights arrays do not match', async () => {
+    it('Length of default weights arrays does not match', async () => {
       ethMellowLpRouter = new MellowLpRouter({
         mellowRouterAddress: MellowRouterAddress,
-        vaultIndices: [0, 1],
         defaultWeights: [100],
         provider,
       });
@@ -143,7 +92,6 @@ describe('Mellow Router Test Suite', () => {
     beforeEach('Setting up the Router Object', async () => {
       ethMellowLpRouter = new MellowLpRouter({
         mellowRouterAddress: MellowRouterAddress,
-        vaultIndices,
         defaultWeights,
         provider,
       });
@@ -671,64 +619,6 @@ describe('Mellow Router Test Suite', () => {
       expect(ethMellowLpRouter.userCommittedDeposit).to.be.eq(1);
       expect(ethMellowLpRouter.userPendingDeposit).to.be.eq(5);
       expect(ethMellowLpRouter.userDeposit).to.be.eq(6);
-    });
-  });
-
-  describe('Check deposit when weights are expanded', async () => {
-    beforeEach('Adding a third vault & Setup Router Object', async () => {
-      await withSigner(
-        network,
-        await localMellowRouterContract.owner(),
-        async (routerOwnerSigner) => {
-          await localMellowRouterContract
-            .connect(routerOwnerSigner)
-            .addVault((await localMellowRouterContract.getVaults())[0]);
-        },
-      );
-
-      ethMellowLpRouter = new MellowLpRouter({
-        mellowRouterAddress: MellowRouterAddress,
-        vaultIndices: [0, 2],
-        defaultWeights: [50, 50],
-        provider,
-      });
-
-      await ethMellowLpRouter.vaultInit();
-
-      // Initialise the user so the router contract is connected with user to keep track of them as a signer for the deposits
-      await ethMellowLpRouter.userInit(userWallet);
-    });
-
-    it('Deposit with default weights', async () => {
-      await ethMellowLpRouter.deposit(10);
-
-      // Submit the batch of deposits from the router to the erc20 root vaults
-      for (let vaultIndex = 0; vaultIndex < 3; vaultIndex += 1) {
-        await ethMellowLpRouter.writeContracts?.mellowRouter.submitBatch(vaultIndex, 0);
-      }
-
-      // Get the user lp token balance after the router receives it from the erc20 root vault upon batch submission
-      const userLpTokenBalance =
-        await ethMellowLpRouter.writeContracts?.mellowRouter.getLPTokenBalances(userWallet.address);
-      expect(userLpTokenBalance[0]).to.be.eq('5000000000000000000');
-      expect(userLpTokenBalance[1]).to.be.eq('0');
-      expect(userLpTokenBalance[2]).to.be.eq('5000000000000000000');
-    });
-
-    it('Deposit with custom weights', async () => {
-      await ethMellowLpRouter.deposit(10, [30, 70]);
-
-      // Submit the batch of deposits from the router to the erc20 root vaults
-      for (let vaultIndex = 0; vaultIndex < 3; vaultIndex += 1) {
-        await ethMellowLpRouter.writeContracts?.mellowRouter.submitBatch(vaultIndex, 0);
-      }
-
-      // Get the user lp token balance after the router receives it from the erc20 root vault upon batch submission
-      const userLpTokenBalance =
-        await ethMellowLpRouter.writeContracts?.mellowRouter.getLPTokenBalances(userWallet.address);
-      expect(userLpTokenBalance[0]).to.be.eq('3000000000000000000');
-      expect(userLpTokenBalance[1]).to.be.eq('0');
-      expect(userLpTokenBalance[2]).to.be.eq('7000000000000000000');
     });
   });
 });
