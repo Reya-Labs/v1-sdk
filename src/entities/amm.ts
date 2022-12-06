@@ -48,6 +48,8 @@ import { getAccruedCashflow, transformSwaps } from '../services/getAccruedCashfl
 import axios from 'axios';
 import { getProtocolPrefix } from '../services/getTokenInfo';
 
+import { sentryTracker } from '../utils/sentry';
+
 var geckoEthToUsd = async () => {
   for (let attempt = 0; attempt < 5; attempt++) {
     try{
@@ -522,7 +524,9 @@ class AMM {
       return receipt;
     }
     catch (error) {
-      throw new Error("Transaction Confirmation Error");
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage("Transaction Confirmation Error");
+        throw new Error("Transaction Confirmation Error");
     }
   }
 
@@ -651,7 +655,9 @@ class AMM {
       return receipt;
     }
     catch (error) {
-      throw new Error("Transaction Confirmation Error");
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage("Transaction Confirmation Error");
+        throw new Error("Transaction Confirmation Error");
     }
   }
 
@@ -875,7 +881,9 @@ class AMM {
           });
           accruedCashflow = accruedCashflowInfo.accruedCashflow;
         }
-      } catch { }
+      } catch (error) {
+          sentryTracker.captureException(error);
+      }
     }
 
     const [expectedApy, expectedCashflow] = await this.expectedApy(
@@ -1036,7 +1044,9 @@ class AMM {
       return receipt;
     }
     catch (error) {
-      throw new Error("Transaction Confirmation Error");
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage("Transaction Confirmation Error");
+        throw new Error("Transaction Confirmation Error");
     }
   }
 
@@ -1147,7 +1157,9 @@ class AMM {
       return receipt;
     }
     catch (error) {
-      throw new Error("Transaction Confirmation Error");
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage("Transaction Confirmation Error");
+        throw new Error("Transaction Confirmation Error");
     }
   }
 
@@ -1320,7 +1332,9 @@ class AMM {
       return receipt;
     }
     catch (error) {
-      throw new Error("Transaction Confirmation Error");
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage("Transaction Confirmation Error");
+        throw new Error("Transaction Confirmation Error");
     }
   }
 
@@ -1417,7 +1431,9 @@ class AMM {
       return receipt;
     }
     catch (error) {
-      throw new Error("Transaction Confirmation Error");
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage("Transaction Confirmation Error");
+        throw new Error("Transaction Confirmation Error");
     }
   }
 
@@ -1491,7 +1507,9 @@ class AMM {
       return receipt;
     }
     catch (error) {
-      throw new Error("Transaction Confirmation Error");
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage("Transaction Confirmation Error");
+        throw new Error("Transaction Confirmation Error");
     }
   }
 
@@ -1575,7 +1593,9 @@ class AMM {
       return receipt;
     }
     catch (error) {
-      throw new Error("Transaction Confirmation Error");
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage("Transaction Confirmation Error");
+        throw new Error("Transaction Confirmation Error");
     }
   }
 
@@ -1611,7 +1631,9 @@ class AMM {
       return receipt;
     }
     catch (error) {
-      throw new Error("Transaction Confirmation Error");
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage("Transaction Confirmation Error");
+        throw new Error("Transaction Confirmation Error");
     }
   }
 
@@ -1668,7 +1690,9 @@ class AMM {
       return receipt;
     }
     catch (error) {
-      throw new Error("Transaction Confirmation Error");
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage("Transaction Confirmation Error");
+        throw new Error("Transaction Confirmation Error");
     }
   }
 
@@ -1844,7 +1868,9 @@ class AMM {
       return receipt;
     }
     catch (error) {
-      throw new Error("Transaction Confirmation Error");
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage("Transaction Confirmation Error");
+        throw new Error("Transaction Confirmation Error");
     }
   }
 
@@ -1998,7 +2024,9 @@ class AMM {
       return receipt;
     }
     catch (error) {
-      throw new Error("Transaction Confirmation Error");
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage("Transaction Confirmation Error");
+        throw new Error("Transaction Confirmation Error");
     }
   }
 
@@ -2039,7 +2067,9 @@ class AMM {
       return receipt;
     }
     catch (error) {
-      throw new Error("Transaction Confirmation Error");
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage("Transaction Confirmation Error");
+        throw new Error("Transaction Confirmation Error");
     }
   }
 
@@ -2105,7 +2135,9 @@ class AMM {
       return receipt;
     }
     catch (error) {
-      throw new Error("Transaction Confirmation Error");
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage("Transaction Confirmation Error");
+        throw new Error("Transaction Confirmation Error");
     }
   }
 
@@ -2203,7 +2235,9 @@ class AMM {
       return receipt;
     }
     catch (error) {
-      throw new Error("Token approval failed");
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage("Token approval failed");
+        throw new Error("Token approval failed");
     }
   }
 
@@ -2254,6 +2288,8 @@ class AMM {
       return receipt;
     }
     catch (error) {
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage("Token approval failed");
       throw new Error("Token approval failed");
     }
   }
@@ -2342,6 +2378,8 @@ class AMM {
       return receipt;
     }
     catch (error) {
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage("Token approval failed");
       throw new Error("Token approval failed");
     }
   }
@@ -2397,6 +2435,8 @@ class AMM {
       return resultScaled;
     }
     catch (error) {
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage("Cannot get variable factor");
       throw new Error("Cannot get variable factor");
     }
   }
@@ -2465,7 +2505,9 @@ class AMM {
 
             results.accruedCashflowInUSD = results.accruedCashflow * usdExchangeRate;
 
-          } catch (_) { }
+          } catch (error) {
+              sentryTracker.captureException(error);
+          }
       }
       else {
         if (!position.isSettled) {
@@ -2483,7 +2525,9 @@ class AMM {
 
             results.accruedCashflowInUSD = accruedCashflowInfo.accruedCashflow * usdExchangeRate;
 
-          } catch (_) { }
+          } catch (error) {
+              sentryTracker.captureException(error);
+          }
         }
       }
     }
@@ -2559,7 +2603,9 @@ class AMM {
             true
           );
           results.liquidationThreshold = this.descale(liquidationThreshold);
-        } catch (_) { }
+        } catch (error) {
+            sentryTracker.captureException(error);
+        }
 
         try {
           const safetyThreshold = await marginEngineContract.callStatic.getPositionMarginRequirement(
@@ -2570,7 +2616,9 @@ class AMM {
           );
           results.safetyThreshold = this.descale(safetyThreshold);
         }
-        catch (_) { }
+        catch (error) {
+            sentryTracker.captureException(error);
+        }
 
         if (!isUndefined(results.liquidationThreshold) && !isUndefined(results.safetyThreshold)) {
           results.healthFactor = (results.margin < results.liquidationThreshold) ? 1 : (results.margin < results.safetyThreshold ? 2 : 3);
@@ -2866,6 +2914,8 @@ class AMM {
       await isAlphaTransaction.wait();
     }
     catch (error) {
+      sentryTracker.captureException(error);
+        sentryTracker.captureMessage("Setting Alpha failed");
       throw new Error("Setting Alpha failed");
     }
 
@@ -2875,6 +2925,8 @@ class AMM {
       await isAlphaTransactionME.wait();
     }
     catch (error) {
+      sentryTracker.captureException(error);
+        sentryTracker.captureMessage("Setting Alpha failed");
       throw new Error("Setting Alpha failed");
     }
 
@@ -2884,6 +2936,8 @@ class AMM {
       await setCapTransaction.wait();
     }
     catch (error) {
+      sentryTracker.captureException(error);
+        sentryTracker.captureMessage("Setting cap failed");
       throw new Error("Setting cap failed");
     }
   }

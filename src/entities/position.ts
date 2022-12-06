@@ -17,6 +17,8 @@ import { tickToPrice, tickToFixedRate } from '../utils/priceTickConversions';
 import { TickMath } from '../utils/tickMath';
 import { Price } from './fractions/price';
 import { BaseRateOracle__factory, MarginEngine__factory } from '../typechain';
+import { sentryTracker } from '../utils/sentry';
+
 
 export type PositionConstructorArgs = {
   source: string;
@@ -282,7 +284,8 @@ class Position {
   
         return this.amm.descale(cashFlow);
 
-      } catch (e) {
+      } catch (error) {
+        sentryTracker.captureException(error);
         return undefined;
       }
     }

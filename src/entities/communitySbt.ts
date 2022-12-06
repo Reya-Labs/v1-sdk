@@ -11,6 +11,8 @@ import { decodeBadgeType, decodeMultipleBadgeTypes, geckoEthToUsd, get100KRefere
 import { DateTime } from 'luxon';
 import { getScores, GetScoresArgs } from '../utils/communitySbt/getTopBadges';
 
+import { sentryTracker } from '../utils/sentry';
+
 export type SBTConstructorArgs = {
     id: string;
     signer: Signer| null;
@@ -229,8 +231,9 @@ class SBT {
         const tx = await this.contract.redeem(leafInfo, proof, rootEntity.merkleRoot);
         await tx.wait();
         return tokenId;
-    } catch (err) {
-        console.error(err);
+    } catch (error) {
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage("Unable to claim");
         throw new Error("Unable to claim");
     }
   }
@@ -299,7 +302,9 @@ class SBT {
             return {
                 claimedBadgeTypes,
             }
-        } catch (err) {
+        } catch (error) {
+            sentryTracker.captureException(error);
+            sentryTracker.captureMessage("Unable to claim multiple badges");
             throw new Error("Unable to claim multiple badges");
         }
     }
@@ -398,6 +403,7 @@ class SBT {
             
             return badgesResponse;
         } catch (error) {
+            sentryTracker.captureException(error);
           return [];
         }
     }

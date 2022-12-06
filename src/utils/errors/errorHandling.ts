@@ -1,5 +1,7 @@
 import { BigNumber, ethers, utils } from 'ethers';
 import * as factory from './Factory.json';
+import { sentryTracker } from '../sentry';
+
 
 export const iface = new ethers.utils.Interface(factory.abi);
 
@@ -176,33 +178,34 @@ export const extractErrorSignature = (message: string): string => {
       return errSig;
     }
   }
-  throw new Error('Unrecognized error signature');
+  return 'Unrecognized error signature';
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const getErrorSignature = (error: any, environment: string): string => {
   switch (environment) {
     case 'LOCALHOST_SDK': {
-      try {
         const message = error.message as string;
-        const errSig = extractErrorSignature(message);
-        return errSig;
-      } catch {
-        console.log(error);
-        throw new Error('Unrecognized error type');
-      }
+        const extractedMessage = extractErrorSignature(message);
+        sentryTracker.captureException(new Error(message));
+        sentryTracker.captureMessage(extractedMessage);
+        if(extractedMessage === 'Unrecognized error type') {
+            throw new Error(extractedMessage)
+        }
+        return extractedMessage;
     }
     case 'LOCALHOST_UI': {
       try {
         const reason = error.data.data.data.toString() as string;
         if (reason.startsWith('0x08c379a0')) {
+          sentryTracker.captureException(new Error('Error LOCALHOST_UI. reason starts with 0x08c379a0'));
           return 'Error';
         }
         const decodedError = iface.parseError(reason);
-        const errSig = decodedError.signature.split('(')[0];
-        return errSig;
-      } catch {
-        console.log(error);
+        return decodedError.signature.split('(')[0];
+      } catch(err: unknown) {
+        sentryTracker.captureException(err);
+        sentryTracker.captureMessage((err as Error).message);
         throw new Error('Unrecognized error type');
       }
     }
@@ -210,14 +213,16 @@ export const getErrorSignature = (error: any, environment: string): string => {
       try {
         const reason = error.data.toString().replace('Reverted ', '') as string;
         if (reason.startsWith('0x08c379a0')) {
+          sentryTracker.captureException(new Error('Error KOVAN. reason starts with 0x08c379a0'));
           return 'Error';
         }
         const decodedError = iface.parseError(reason);
         const errSig = decodedError.signature.split('(')[0];
         return errSig;
-      } catch {
-        console.log(error);
-        throw new Error('Unrecognized error type');
+      } catch(err: unknown) {
+          sentryTracker.captureException(err);
+          sentryTracker.captureMessage((err as Error).message);
+          throw new Error('Unrecognized error type');
       }
     }
     case 'MAINNET': {
@@ -237,22 +242,26 @@ export const getErrorSignature = (error: any, environment: string): string => {
           if (typeof error.error.data.originalError.data === 'string') {
             reason = error.error.data.originalError.data;
           } else {
+            sentryTracker.captureMessage("typeof error.error.data.originalError.data is not string");
             throw new Error('Unrecognized error type');
           }
         }
 
         if (reason.startsWith('0x08c379a0')) {
+          sentryTracker.captureException(new Error('Error MAINNET. reason starts with 0x08c379a0'));
           return 'Error';
         }
         const decodedError = iface.parseError(reason);
         const errSig = decodedError.signature.split('(')[0];
         return errSig;
-      } catch {
-        console.log(error);
-        throw new Error('Unrecognized error type');
+      } catch(err: unknown) {
+          sentryTracker.captureException(err);
+          sentryTracker.captureMessage((err as Error).message);
+          throw new Error('Unrecognized error type');
       }
     }
     default: {
+      sentryTracker.captureMessage("Unrecognized network for decoding errors");
       throw new Error('Unrecognized network for decoding errors');
     }
   }
@@ -277,8 +286,9 @@ export const getReadableErrorMessage = (error: any, environment: string): string
           }
 
           return `Unrecognized error (Raw error: ${rawErrorMessage})`;
-        } catch (_) {
-          return 'Unrecognized error';
+        } catch (error) {
+          sentryTracker.captureException(error);
+            return 'Unrecognized error';
         }
       }
       case 'KOVAN': {
@@ -292,7 +302,8 @@ export const getReadableErrorMessage = (error: any, environment: string): string
           }
 
           return `Unrecognized error (Raw error: ${rawErrorMessage})`;
-        } catch (_) {
+        } catch (error) {
+          sentryTracker.captureException(error);
           return 'Unrecognized error';
         }
       }
@@ -313,7 +324,10 @@ export const getReadableErrorMessage = (error: any, environment: string): string
           if (typeof error.error.data.originalError.data === 'string') {
             reason = error.error.data.originalError.data;
           } else {
-            throw new Error('Unrecognized error type');
+            sentryTracker.captureException(error);
+            sentryTracker.captureMessage("Unrecognized error type");
+
+              throw new Error('Unrecognized error type');
           }
         }
 
@@ -325,11 +339,13 @@ export const getReadableErrorMessage = (error: any, environment: string): string
           }
 
           return `Unrecognized error (Raw error: ${rawErrorMessage})`;
-        } catch (_) {
-          return 'Unrecognized error';
+        } catch (error) {
+          sentryTracker.captureException(error);
+            return 'Unrecognized error';
         }
       }
       default: {
+        sentryTracker.captureMessage('Unrecognized network for decoding errors');
         throw new Error('Unrecognized network for decoding errors');
       }
     }
@@ -362,7 +378,8 @@ export const decodeInfoPostMint = (error: any, environment: string): RawInfoPost
           const result = { marginRequirement: BigNumber.from(args[0]) };
           return result;
         } catch {
-          console.log(error);
+          sentryTracker.captureException(error);
+          sentryTracker.captureMessage("Unrecognized error type");
           throw new Error('Unrecognized error type');
         }
       }
@@ -375,7 +392,8 @@ export const decodeInfoPostMint = (error: any, environment: string): RawInfoPost
           };
           return result;
         } catch {
-          console.log(error);
+          sentryTracker.captureException(error);
+          sentryTracker.captureMessage("Unrecognized error type");
           throw new Error('Unrecognized error type');
         }
       }
@@ -388,7 +406,8 @@ export const decodeInfoPostMint = (error: any, environment: string): RawInfoPost
           };
           return result;
         } catch {
-          console.log(error);
+          sentryTracker.captureException(error);
+          sentryTracker.captureMessage("Unrecognized error type");
           throw new Error('Unrecognized error type');
         }
       }
@@ -408,6 +427,8 @@ export const decodeInfoPostMint = (error: any, environment: string): RawInfoPost
             if (typeof error.error.data.originalError.data === 'string') {
               reason = error.error.data.originalError.data;
             } else {
+              sentryTracker.captureException(error);
+              sentryTracker.captureMessage("Unrecognized error type");
               throw new Error('Unrecognized error type');
             }
           }
@@ -418,15 +439,20 @@ export const decodeInfoPostMint = (error: any, environment: string): RawInfoPost
           };
           return result;
         } catch {
-          console.log(error);
+          sentryTracker.captureException(error);
+          sentryTracker.captureMessage("Unrecognized error type");
           throw new Error('Unrecognized error type');
         }
       }
       default: {
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage("Unrecognized network for decoding errors");
         throw new Error('Unrecognized network for decoding errors');
       }
     }
   }
+  sentryTracker.captureException(getReadableErrorMessage(error, environment));
+  sentryTracker.captureMessage(getReadableErrorMessage(error, environment));
   throw new Error(getReadableErrorMessage(error, environment));
 };
 
@@ -464,7 +490,8 @@ export const decodeInfoPostSwap = (error: any, environment: string): RawInfoPost
           };
           return result;
         } catch {
-          console.log(error);
+          sentryTracker.captureException(error);
+          sentryTracker.captureMessage('Unrecognized error type');
           throw new Error('Unrecognized error type');
         }
       }
@@ -482,7 +509,8 @@ export const decodeInfoPostSwap = (error: any, environment: string): RawInfoPost
           };
           return result;
         } catch {
-          console.log(error);
+          sentryTracker.captureException(error);
+          sentryTracker.captureMessage('Unrecognized error type');
           throw new Error('Unrecognized error type');
         }
       }
@@ -500,7 +528,8 @@ export const decodeInfoPostSwap = (error: any, environment: string): RawInfoPost
           };
           return result;
         } catch {
-          console.log(error);
+          sentryTracker.captureException(error);
+          sentryTracker.captureMessage('Unrecognized error type');
           throw new Error('Unrecognized error type');
         }
       }
@@ -521,6 +550,8 @@ export const decodeInfoPostSwap = (error: any, environment: string): RawInfoPost
             if (typeof error.error.data.originalError.data === 'string') {
               reason = error.error.data.originalError.data;
             } else {
+              sentryTracker.captureException(error);
+              sentryTracker.captureMessage('Unrecognized error type');
               throw new Error('Unrecognized error type');
             }
           }
@@ -537,14 +568,19 @@ export const decodeInfoPostSwap = (error: any, environment: string): RawInfoPost
           };
           return result;
         } catch {
-          console.log(error);
+          sentryTracker.captureException(error);
+          sentryTracker.captureMessage('Unrecognized error type');
           throw new Error('Unrecognized error type');
         }
       }
       default: {
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage('Unrecognized network for decoding errors');
         throw new Error('Unrecognized network for decoding errors');
       }
     }
   }
+  sentryTracker.captureException(error);
+  sentryTracker.captureMessage(getReadableErrorMessage(error, environment));
   throw new Error(getReadableErrorMessage(error, environment));
 };

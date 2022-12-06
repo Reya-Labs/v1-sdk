@@ -5,6 +5,8 @@ import { NON_SUBGRAPH_BADGES_SEASONS, TOP_BADGES_VARIANT } from "../../entities/
 import { CommunitySBT__factory } from "../../typechain-sbt";
 import { goerliSeasonLeavesCid, mainnetSeasonLeavesCid } from "./seasonsConfig";
 
+import { sentryTracker } from '../sentry';
+
 export function getBadgeTypeFromMetadataUri(metadataURI: string) : number {
     const filenamme = metadataURI.split('/')[3];
     const badgeType = parseInt(filenamme.split('.')[0]);
@@ -80,7 +82,9 @@ export async function geckoEthToUsd(apiKey: string) : Promise<number> {
           `https://pro-api.coingecko.com/api/v3/simple/price?x_cg_pro_api_key=${apiKey}&ids=ethereum&vs_currencies=usd`,
         );
         return data.data.ethereum.usd;
-      } catch (error) {}
+      } catch (error) {
+          sentryTracker.captureException(error);
+      }
     }
     return 0;
 };

@@ -1,6 +1,6 @@
 {
   "name": "@voltz-protocol/v1-sdk",
-  "version": "1.2.9",
+  "version": "1.3.2",
   "description": "A TypeScript wrapper for the Voltz smart contract",
   "main": "dist/index.js",
   "types": "dist/types",
@@ -64,8 +64,11 @@
   },
   "dependencies": {
     "@apollo/client": "^3.7.1",
+    "@ethersproject/address": "^5.7.0",
     "@graphprotocol/graph-cli": "^0.35.0",
     "@metamask/detect-provider": "^1.2.0",
+    "@sentry/browser": "^7.22.0",
+    "@sentry/tracing": "^7.22.0",
     "big.js": "^6.1.1",
     "coingecko-api": "^1.0.10",
     "cross-fetch": "^3.1.5",
