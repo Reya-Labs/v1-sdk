@@ -601,7 +601,6 @@ describe('Mellow Router Test Suite', () => {
       await ethMellowLpRouter.deposit(2, [0, 100]);
       await ethMellowLpRouter.deposit(3, [50, 50]);
 
-      await ethMellowLpRouter.refreshUserDeposit();
       expect(ethMellowLpRouter.userCommittedDeposit).to.be.eq(0);
       expect(ethMellowLpRouter.userPendingDeposit).to.be.eq(6);
       expect(ethMellowLpRouter.userDeposit).to.be.eq(6);
@@ -615,7 +614,6 @@ describe('Mellow Router Test Suite', () => {
       await ethMellowLpRouter.deposit(2, [0, 100]);
       await ethMellowLpRouter.deposit(3, [50, 50]);
 
-      await ethMellowLpRouter.refreshUserDeposit();
       expect(ethMellowLpRouter.userCommittedDeposit).to.be.eq(1);
       expect(ethMellowLpRouter.userPendingDeposit).to.be.eq(5);
       expect(ethMellowLpRouter.userDeposit).to.be.eq(6);
