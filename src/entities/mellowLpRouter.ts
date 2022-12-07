@@ -466,6 +466,14 @@ class MellowLpRouter {
       const receipt = await tx.wait();
 
       try {
+        await this.refreshUserDeposit();
+      } catch (error) {
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage('User deposit failed to refresh after deposit');
+        console.error('User deposit failed to refresh after deposit');
+      }
+
+      try {
         await this.refreshWalletBalance();
       } catch (error) {
         sentryTracker.captureException(error);
