@@ -63,7 +63,7 @@ class MellowLpVault {
   public vaultCap?: number;
   public vaultExpectedApy?: number;
 
-  public userDeposit?: number;
+  public userTotalDeposit?: number;
   public userWalletBalance?: number;
 
   public userAddress?: string;
@@ -207,8 +207,8 @@ class MellowLpVault {
 
     console.log('write contracts ready');
 
-    await this.refreshUserDeposit();
-    console.log('user deposit refreshed', this.userDeposit);
+    await this.refreshuserTotalDeposit();
+    console.log('user deposit refreshed', this.userTotalDeposit);
     await this.refreshWalletBalance();
     console.log('user wallet balance refreshed', this.userWalletBalance);
 
@@ -281,13 +281,13 @@ class MellowLpVault {
     this.vaultExpectedApy = 31.03;
   };
 
-  refreshUserDeposit = async (): Promise<void> => {
+  refreshuserTotalDeposit = async (): Promise<void> => {
     if (
       isUndefined(this.userAddress) ||
       isUndefined(this.readOnlyContracts) ||
       isUndefined(this.tokenDecimals)
     ) {
-      this.userDeposit = 0;
+      this.userTotalDeposit = 0;
       return;
     }
 
@@ -302,9 +302,9 @@ class MellowLpVault {
     if (totalLpTokens.gt(0)) {
       const userFunds = lpTokens.mul(tvl[0][0]).div(totalLpTokens);
       console.log('user funds:', userFunds.toString());
-      this.userDeposit = this.descale(userFunds, this.tokenDecimals);
+      this.userTotalDeposit = this.descale(userFunds, this.tokenDecimals);
     } else {
-      this.userDeposit = 0;
+      this.userTotalDeposit = 0;
     }
   };
 
@@ -463,7 +463,7 @@ class MellowLpVault {
       }
 
       try {
-        await this.refreshUserDeposit();
+        await this.refreshuserTotalDeposit();
       } catch (error) {
         sentryTracker.captureException(error);
         sentryTracker.captureMessage('User deposit failed to refresh after deposit');

@@ -58,9 +58,9 @@ class MellowLpRouter {
   public vaultCumulative?: number;
   public vaultCap?: number;
 
-  public userCommittedDeposit = 0;
-  public userPendingDeposit = 0;
   public userDeposit = 0;
+  public userPendingDeposit = 0;
+  public userTotalDeposit = 0;
 
   public userWalletBalance?: number;
 
@@ -198,8 +198,8 @@ class MellowLpRouter {
 
     console.log('write contracts ready');
 
-    await this.refreshUserDeposit();
-    console.log('user deposit refreshed', this.userDeposit);
+    await this.refreshuserTotalDeposit();
+    console.log('user deposit refreshed', this.userTotalDeposit);
     await this.refreshWalletBalance();
     console.log('user wallet balance refreshed', this.userWalletBalance);
 
@@ -263,8 +263,8 @@ class MellowLpRouter {
     }
   };
 
-  refreshUserCommittedDeposit = async (): Promise<void> => {
-    this.userCommittedDeposit = 0;
+  refreshuserDeposit = async (): Promise<void> => {
+    this.userDeposit = 0;
     if (
       isUndefined(this.userAddress) ||
       isUndefined(this.readOnlyContracts) ||
@@ -291,9 +291,9 @@ class MellowLpRouter {
       if (totalLpTokens.gt(0)) {
         const userFunds = lpTokensBalance.mul(tvl[0][0]).div(totalLpTokens);
         console.log('user committed funds:', userFunds.toString());
-        const userCommittedDeposit = this.descale(userFunds, this.tokenDecimals);
-        console.log('user committed deposit:', userCommittedDeposit);
-        this.userCommittedDeposit += userCommittedDeposit;
+        const userDeposit = this.descale(userFunds, this.tokenDecimals);
+        console.log('user committed deposit:', userDeposit);
+        this.userDeposit += userDeposit;
       }
     }
   };
@@ -332,10 +332,10 @@ class MellowLpRouter {
     }
   };
 
-  refreshUserDeposit = async (): Promise<void> => {
-    await this.refreshUserCommittedDeposit();
+  refreshuserTotalDeposit = async (): Promise<void> => {
+    await this.refreshuserDeposit();
     await this.refreshUserPendingDeposit();
-    this.userDeposit = this.userCommittedDeposit + this.userPendingDeposit;
+    this.userTotalDeposit = this.userDeposit + this.userPendingDeposit;
   };
 
   refreshWalletBalance = async (): Promise<void> => {
@@ -466,7 +466,7 @@ class MellowLpRouter {
       const receipt = await tx.wait();
 
       try {
-        await this.refreshUserDeposit();
+        await this.refreshuserTotalDeposit();
       } catch (error) {
         sentryTracker.captureException(error);
         sentryTracker.captureMessage('User deposit failed to refresh after deposit');
