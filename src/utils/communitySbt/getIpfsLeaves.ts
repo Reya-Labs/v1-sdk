@@ -7,7 +7,7 @@ export async function createLeaves(
     seasonId: number,
 ): Promise<Array<LeafInfo>> {
 
-    const data = await axios.get(geLeavesIpfsUri(network, seasonId));
+    const data = await axios.get(geLeavesIpfsUri(network, seasonId, true));
 
     const snaphots : Array<{
             owner: string

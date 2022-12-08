@@ -373,7 +373,7 @@ class SBT {
         })
 
         const network = (await this.provider.getNetwork()).name;
-        const data = await axios.get(geLeavesIpfsUri(network, seasonId));
+        const data = await axios.get(geLeavesIpfsUri(network, seasonId, false));
 
         const snasphots : Array<{
                 owner: string
