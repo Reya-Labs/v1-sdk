@@ -375,7 +375,7 @@ class SBT {
         const network = (await this.provider.getNetwork()).name;
         const data = await axios.get(geLeavesIpfsUri(network, seasonId));
 
-        const snaphots : Array<{
+        const snasphots : Array<{
                 owner: string
                 badgeType: number,
                 metadataURI: string
@@ -383,7 +383,7 @@ class SBT {
     
         // to speed things up, awarded timestamp 
         const subgraphSnapshots : BadgeResponse[] = [];
-        snaphots.forEach((entry) => {
+        snasphots.forEach((entry) => {
             if(entry.owner.toLowerCase() === userId.toLowerCase()) {
                 const id = `${entry.owner.toLowerCase()}#${entry.badgeType}#${seasonId}`
                 subgraphSnapshots.push({

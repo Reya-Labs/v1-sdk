@@ -2,6 +2,7 @@ import { BadgeResponse } from "../../entities";
 import { ApolloClient, gql, HttpLink, InMemoryCache } from '@apollo/client';
 import { SubgraphBadgeResponse } from "../../entities/communitySbt";
 import { toMillis } from "./helpers";
+import { sentryTracker } from "../sentry";
 
 export async function getSubgraphBadges({
     userId,
@@ -65,6 +66,7 @@ export async function getSubgraphBadges({
         
         return badgesResponse;
     } catch (error) {
-      return [];
+        sentryTracker.captureException(error);
+        return [];
     }
 }
