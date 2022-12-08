@@ -390,7 +390,7 @@ class SBT {
                     id: id,
                     badgeType: entry.badgeType.toString(),
                     awardedTimestampMs: mapBadges.get(id)?.awardedTimestampMs || toMillis(seasonEnd),
-                    mintedTimestampMs: mapBadges.get(id)?.awardedTimestampMs || undefined,
+                    mintedTimestampMs: mapBadges.get(id)?.mintedTimestampMs || undefined,
                 })
             }
             
