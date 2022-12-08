@@ -53,7 +53,7 @@ export async function getSubgraphBadges({
 
             const subgraphBadges = (data?.data?.seasonUser ? data.data.seasonUser.badges : []) as SubgraphBadgeResponse[];
             for (const badge of subgraphBadges) {
-                if (parseInt(badge.awardedTimestamp) > 0 && !["14", "30"].includes(badge.badgeType)) {
+                if (parseInt(badge.awardedTimestamp) > 0) {
                     badgesResponse.push({
                         id: badge.id,
                         badgeType: badge.badgeType,
