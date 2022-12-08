@@ -10,16 +10,16 @@ import MellowLpRouter from '../src/entities/mellowLpRouter';
 import { abi as MellowMultiVaultRouterABI } from '../src/ABIs/MellowMultiVaultRouterABI.json';
 import { abi as Erc20RootVaultABI } from '../src/ABIs/Erc20RootVault.json';
 import { abi as WethABI } from '../src/ABIs/WethABI.json';
+import { abi as IERC20MinimalABI } from '../src/ABIs/IERC20Minimal.json';
 import { withSigner } from './utils';
+import { advanceTimeAndBlock } from './time';
 
 const { provider } = waffle;
 let ethMellowLpRouter: MellowLpRouter;
 
 let localMellowRouterContract: Contract;
 
-const depositAmount = 10; // Set a default 10 ETH constant for use in tests;
 const MellowRouterAddress = '0x704F6E9cB4f7e041CC89B6a49DF8EE2027a55164';
-const defaultWeights: number[] = [50, 50]; // default even split between 2 pools
 
 const signer = new Wallet(
   '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
@@ -29,7 +29,7 @@ const signer = new Wallet(
 const userWallet = signer;
 
 describe('Mellow Router Test Suite', () => {
-  const resetNetwork = async () => {
+  const resetNetwork = async (blockNumber: number) => {
     await network.provider.request({
       method: 'hardhat_reset',
       params: [
@@ -37,16 +37,14 @@ describe('Mellow Router Test Suite', () => {
           chainId: 5,
           forking: {
             jsonRpcUrl: process.env.GOERLI_URL,
-            blockNumber: 7992457,
+            blockNumber,
           },
         },
       ],
     });
   };
 
-  beforeEach('Reset Network & Setup Router Contract', async () => {
-    await resetNetwork();
-
+  const extendRouter = async () => {
     localMellowRouterContract = new ethers.Contract(
       MellowRouterAddress,
       MellowMultiVaultRouterABI,
@@ -62,9 +60,14 @@ describe('Mellow Router Test Suite', () => {
           .addVault((await localMellowRouterContract.getVaults())[0]);
       },
     );
-  });
+  };
 
   describe('Invalid vault initialisation scenarios', async () => {
+    beforeEach('Setting up the Router Object', async () => {
+      await resetNetwork(7992457);
+      await extendRouter();
+    });
+
     it('Weights values are not all integer', async () => {
       ethMellowLpRouter = new MellowLpRouter({
         mellowRouterAddress: MellowRouterAddress,
@@ -90,9 +93,12 @@ describe('Mellow Router Test Suite', () => {
 
   describe('Deposit Scenarios', async () => {
     beforeEach('Setting up the Router Object', async () => {
+      await resetNetwork(7992457);
+      await extendRouter();
+
       ethMellowLpRouter = new MellowLpRouter({
         mellowRouterAddress: MellowRouterAddress,
-        defaultWeights,
+        defaultWeights: [50, 50],
         provider,
       });
 
@@ -146,7 +152,7 @@ describe('Mellow Router Test Suite', () => {
       const weights = [50, 50]; // Needs to sum to 100
 
       // User deposits funds into the router
-      await ethMellowLpRouter.deposit(depositAmount, weights);
+      await ethMellowLpRouter.deposit(10, weights);
 
       // Router gets the batched deposits
       for (let vaultIndex = 0; vaultIndex < 2; vaultIndex += 1) {
@@ -154,9 +160,7 @@ describe('Mellow Router Test Suite', () => {
           await ethMellowLpRouter.writeContracts?.mellowRouter.getBatchedDeposits(vaultIndex);
         expect(batchedDeposit.length).to.be.eq(1);
         expect(batchedDeposit[0][0]).to.be.eq(userWallet.address);
-        expect(batchedDeposit[0][1]).to.be.eq(
-          BigNumber.from(depositAmount).mul('1000000000000000000').div(2),
-        );
+        expect(batchedDeposit[0][1]).to.be.eq(BigNumber.from(10).mul('1000000000000000000').div(2));
 
         // eslint-disable-next-line
         console.log(`Batched deposits in router for vault index ${vaultIndex}: ${batchedDeposit.toString()}`);
@@ -208,7 +212,7 @@ describe('Mellow Router Test Suite', () => {
       const weights = [100, 0];
 
       // User deposits funds into the router
-      await ethMellowLpRouter.deposit(depositAmount, weights);
+      await ethMellowLpRouter.deposit(10, weights);
 
       // Router gets the batched deposits
       for (let vaultIndex = 0; vaultIndex < 2; vaultIndex += 1) {
@@ -218,7 +222,7 @@ describe('Mellow Router Test Suite', () => {
         if (batchedDeposit.length) {
           expect(batchedDeposit[0][0]).to.be.eq(userWallet.address);
           expect(batchedDeposit[0][1]).to.be.eq(
-            BigNumber.from(depositAmount)
+            BigNumber.from(10)
               .mul('1000000000000000000')
               .mul(1 - vaultIndex),
           );
@@ -277,7 +281,7 @@ describe('Mellow Router Test Suite', () => {
 
     it('User deposits eth into router without specifying weights', async () => {
       // User deposits funds into the router
-      await ethMellowLpRouter.deposit(depositAmount);
+      await ethMellowLpRouter.deposit(10);
 
       // Router gets the batched deposits
       for (let vaultIndex = 0; vaultIndex < 2; vaultIndex += 1) {
@@ -285,9 +289,7 @@ describe('Mellow Router Test Suite', () => {
           await ethMellowLpRouter.writeContracts?.mellowRouter.getBatchedDeposits(vaultIndex);
         expect(batchedDeposit.length).to.be.eq(1);
         expect(batchedDeposit[0][0]).to.be.eq(userWallet.address);
-        expect(batchedDeposit[0][1]).to.be.eq(
-          BigNumber.from(depositAmount).mul('1000000000000000000').div(2),
-        );
+        expect(batchedDeposit[0][1]).to.be.eq(BigNumber.from(10).mul('1000000000000000000').div(2));
 
         // eslint-disable-next-line
         console.log(`Batched deposits in router for vault index ${vaultIndex}: ${batchedDeposit.toString()}`);
@@ -372,7 +374,7 @@ describe('Mellow Router Test Suite', () => {
         // Check if WETH is approved to router from the beforeEach statement
         expect(await ethMellowLpRouter.isTokenApproved()).to.be.eq(true);
         // User deposits funds into the router
-        await ethMellowLpRouter.deposit(depositAmount);
+        await ethMellowLpRouter.deposit(10);
 
         // Router gets the batched deposits
         for (let vaultIndex = 0; vaultIndex < 2; vaultIndex += 1) {
@@ -381,7 +383,7 @@ describe('Mellow Router Test Suite', () => {
           expect(batchedDeposit.length).to.be.eq(1);
           expect(batchedDeposit[0][0]).to.be.eq(userWallet.address);
           expect(batchedDeposit[0][1]).to.be.eq(
-            BigNumber.from(depositAmount).mul('1000000000000000000').div(2),
+            BigNumber.from(10).mul('1000000000000000000').div(2),
           );
 
           // eslint-disable-next-line
@@ -443,7 +445,7 @@ describe('Mellow Router Test Suite', () => {
         const weights = [100, 0];
 
         // User deposits funds into the router
-        await ethMellowLpRouter.deposit(depositAmount, weights);
+        await ethMellowLpRouter.deposit(10, weights);
 
         // Router gets the batched deposits
         for (let vaultIndex = 0; vaultIndex < 2; vaultIndex += 1) {
@@ -453,7 +455,7 @@ describe('Mellow Router Test Suite', () => {
           if (batchedDeposit.length) {
             expect(batchedDeposit[0][0]).to.be.eq(userWallet.address);
             expect(batchedDeposit[0][1]).to.be.eq(
-              BigNumber.from(depositAmount)
+              BigNumber.from(10)
                 .mul('1000000000000000000')
                 .mul(1 - vaultIndex),
             );
@@ -516,7 +518,7 @@ describe('Mellow Router Test Suite', () => {
         // Check if WETH is approved to router from the beforeEach statement
         expect(await ethMellowLpRouter.isTokenApproved()).to.be.eq(true);
         // User deposits funds into the router
-        await ethMellowLpRouter.deposit(depositAmount);
+        await ethMellowLpRouter.deposit(10);
 
         // Router gets the batched deposits
         for (let vaultIndex = 0; vaultIndex < 2; vaultIndex += 1) {
@@ -525,7 +527,7 @@ describe('Mellow Router Test Suite', () => {
           expect(batchedDeposit.length).to.be.eq(1);
           expect(batchedDeposit[0][0]).to.be.eq(userWallet.address);
           expect(batchedDeposit[0][1]).to.be.eq(
-            BigNumber.from(depositAmount).mul('1000000000000000000').div(2),
+            BigNumber.from(10).mul('1000000000000000000').div(2),
           );
 
           // eslint-disable-next-line
@@ -590,10 +592,10 @@ describe('Mellow Router Test Suite', () => {
         await ethMellowLpRouter.writeContracts?.mellowRouter.submitBatch(vaultIndex, 0);
       }
 
-      await ethMellowLpRouter.refreshuserTotalDeposit();
-      expect(ethMellowLpRouter.userDeposit).to.be.eq(6);
+      await ethMellowLpRouter.refreshUserDeposit();
+      expect(ethMellowLpRouter.userComittedDeposit).to.be.eq(6);
       expect(ethMellowLpRouter.userPendingDeposit).to.be.eq(0);
-      expect(ethMellowLpRouter.userTotalDeposit).to.be.eq(6);
+      expect(ethMellowLpRouter.userDeposit).to.be.eq(6);
     });
 
     it('Only pending deposits', async () => {
@@ -601,9 +603,9 @@ describe('Mellow Router Test Suite', () => {
       await ethMellowLpRouter.deposit(2, [0, 100]);
       await ethMellowLpRouter.deposit(3, [50, 50]);
 
-      expect(ethMellowLpRouter.userDeposit).to.be.eq(0);
+      expect(ethMellowLpRouter.userComittedDeposit).to.be.eq(0);
       expect(ethMellowLpRouter.userPendingDeposit).to.be.eq(6);
-      expect(ethMellowLpRouter.userTotalDeposit).to.be.eq(6);
+      expect(ethMellowLpRouter.userDeposit).to.be.eq(6);
     });
 
     it('Pending and committed deposits', async () => {
@@ -614,9 +616,149 @@ describe('Mellow Router Test Suite', () => {
       await ethMellowLpRouter.deposit(2, [0, 100]);
       await ethMellowLpRouter.deposit(3, [50, 50]);
 
-      expect(ethMellowLpRouter.userDeposit).to.be.eq(1);
+      expect(ethMellowLpRouter.userComittedDeposit).to.be.eq(1);
       expect(ethMellowLpRouter.userPendingDeposit).to.be.eq(5);
-      expect(ethMellowLpRouter.userTotalDeposit).to.be.eq(6);
+      expect(ethMellowLpRouter.userDeposit).to.be.eq(6);
+    });
+  });
+
+  describe('Withdrawal Scenarios', async () => {
+    beforeEach('Setting up the Router Object', async () => {
+      await resetNetwork(8099085);
+      await extendRouter();
+
+      ethMellowLpRouter = new MellowLpRouter({
+        mellowRouterAddress: MellowRouterAddress,
+        defaultWeights: [50, 50],
+        provider,
+      });
+
+      await ethMellowLpRouter.vaultInit();
+
+      // Initialise the user so the router contract is connected with user to keep track of them as a signer for the deposits
+      await ethMellowLpRouter.userInit(userWallet);
+    });
+
+    it('2-vault withdrawal', async () => {
+      const wethContract = new ethers.Contract(
+        ethMellowLpRouter.readOnlyContracts?.token.address || '',
+        IERC20MinimalABI,
+        signer,
+      );
+
+      // User deposits funds into the router
+      await ethMellowLpRouter.deposit(10);
+
+      // Submit the batch of deposits from the router to the erc20 root vaults
+      for (let vaultIndex = 0; vaultIndex < 2; vaultIndex += 1) {
+        await ethMellowLpRouter.writeContracts?.mellowRouter.submitBatch(vaultIndex, 0);
+      }
+
+      await advanceTimeAndBlock(30 * 24 * 60 * 60, 1);
+
+      await ethMellowLpRouter.refreshUserDeposit();
+      expect(ethMellowLpRouter.userDeposit).to.be.eq(10);
+
+      const initBalance: BigNumber = await wethContract.balanceOf(ethMellowLpRouter.userAddress);
+
+      await ethMellowLpRouter.withdraw(0);
+
+      await ethMellowLpRouter.refreshUserDeposit();
+      expect(ethMellowLpRouter.userDeposit).to.be.eq(5);
+
+      const midBalance: BigNumber = await wethContract.balanceOf(ethMellowLpRouter.userAddress);
+      expect(ethMellowLpRouter.descale(midBalance.sub(initBalance), 18)).to.be.eq(5);
+
+      await ethMellowLpRouter.withdraw(1);
+
+      await ethMellowLpRouter.refreshUserDeposit();
+      expect(ethMellowLpRouter.userDeposit).to.be.eq(0);
+
+      const finalBalance: BigNumber = await wethContract.balanceOf(ethMellowLpRouter.userAddress);
+      expect(ethMellowLpRouter.descale(finalBalance.sub(midBalance), 18)).to.be.eq(5);
+    });
+  });
+
+  describe('Rollover Scenarios', async () => {
+    beforeEach('Setting up the Router Object for Deposit', async () => {
+      await resetNetwork(8099085);
+      await extendRouter();
+      await extendRouter();
+      await extendRouter();
+
+      ethMellowLpRouter = new MellowLpRouter({
+        mellowRouterAddress: MellowRouterAddress,
+        defaultWeights: [50, 50, 0, 0],
+        provider,
+      });
+
+      await ethMellowLpRouter.vaultInit();
+
+      // Initialise the user so the router contract is connected with user to keep track of them as a signer for the deposits
+      await ethMellowLpRouter.userInit(userWallet);
+    });
+
+    it.only('2-vault rollover', async () => {
+      const wethContract = new ethers.Contract(
+        ethMellowLpRouter.readOnlyContracts?.token.address || '',
+        IERC20MinimalABI,
+        signer,
+      );
+
+      // User deposits funds into the router
+      await ethMellowLpRouter.deposit(10);
+
+      ethMellowLpRouter = new MellowLpRouter({
+        mellowRouterAddress: MellowRouterAddress,
+        defaultWeights: [0, 0, 25, 75],
+        provider,
+      });
+
+      await ethMellowLpRouter.vaultInit();
+
+      // Initialise the user so the router contract is connected with user to keep track of them as a signer for the deposits
+      await ethMellowLpRouter.userInit(userWallet);
+
+      // Submit the batch of deposits from the router to the erc20 root vaults
+      for (let vaultIndex = 0; vaultIndex < 2; vaultIndex += 1) {
+        await ethMellowLpRouter.writeContracts?.mellowRouter.submitBatch(vaultIndex, 0);
+      }
+
+      await advanceTimeAndBlock(30 * 24 * 60 * 60, 1);
+
+      await ethMellowLpRouter.refreshUserDeposit();
+      expect(ethMellowLpRouter.userComittedDeposit).to.be.eq(10);
+      expect(ethMellowLpRouter.userPendingDeposit).to.be.eq(0);
+
+      const initBalance: BigNumber = await wethContract.balanceOf(ethMellowLpRouter.userAddress);
+
+      await ethMellowLpRouter.rollover(0);
+
+      await ethMellowLpRouter.refreshUserDeposit();
+      expect(ethMellowLpRouter.userComittedDeposit).to.be.eq(5);
+      expect(ethMellowLpRouter.userPendingDeposit).to.be.eq(5);
+
+      const midBalance: BigNumber = await wethContract.balanceOf(ethMellowLpRouter.userAddress);
+      expect(ethMellowLpRouter.descale(midBalance.sub(initBalance), 18)).to.be.eq(0);
+
+      await ethMellowLpRouter.rollover(1);
+
+      await ethMellowLpRouter.refreshUserDeposit();
+      expect(ethMellowLpRouter.userComittedDeposit).to.be.eq(0);
+      expect(ethMellowLpRouter.userPendingDeposit).to.be.eq(10);
+
+      await ethMellowLpRouter.writeContracts?.mellowRouter.submitBatch(2, 0);
+      await ethMellowLpRouter.refreshUserDeposit();
+      expect(ethMellowLpRouter.userComittedDeposit).to.be.eq(2.5);
+      expect(ethMellowLpRouter.userPendingDeposit).to.be.eq(7.5);
+
+      await ethMellowLpRouter.writeContracts?.mellowRouter.submitBatch(3, 0);
+      await ethMellowLpRouter.refreshUserDeposit();
+      expect(ethMellowLpRouter.userComittedDeposit).to.be.eq(10);
+      expect(ethMellowLpRouter.userPendingDeposit).to.be.eq(0);
+
+      const finalBalance: BigNumber = await wethContract.balanceOf(ethMellowLpRouter.userAddress);
+      expect(ethMellowLpRouter.descale(finalBalance.sub(midBalance), 18)).to.be.eq(0);
     });
   });
 });
