@@ -27,15 +27,18 @@ import { sentryTracker } from '../utils/sentry';
 export type MellowLpRouterArgs = {
   mellowRouterAddress: string; // live in env variable per router contract
   defaultWeights: number[]; // live in env variable per router contract
-  pivot?: number;
   provider?: providers.Provider;
+};
+
+type BatchedDeposit = {
+  author: string;
+  amount: BigNumber;
 };
 
 class MellowLpRouter {
   public readonly mellowRouterAddress: string;
-  public readonly provider?: providers.Provider;
   public readonly defaultWeights: number[] = [];
-  public readonly pivot?: number;
+  public readonly provider?: providers.Provider;
 
   public readOnlyContracts?: {
     token: Contract;
@@ -55,7 +58,10 @@ class MellowLpRouter {
   public vaultCumulative?: number;
   public vaultCap?: number;
 
-  public userDeposit?: number;
+  public userDeposit = 0;
+  public userPendingDeposit = 0;
+  public userTotalDeposit = 0;
+
   public userWalletBalance?: number;
 
   public userAddress?: string;
@@ -63,11 +69,12 @@ class MellowLpRouter {
   public vaultInitialized = false;
   public userInitialized = false;
 
-  public constructor({ mellowRouterAddress, defaultWeights, provider, pivot }: MellowLpRouterArgs) {
+  public vaultsCount = 0;
+
+  public constructor({ mellowRouterAddress, defaultWeights, provider }: MellowLpRouterArgs) {
     this.mellowRouterAddress = mellowRouterAddress;
     this.defaultWeights = defaultWeights;
     this.provider = provider;
-    this.pivot = pivot;
   }
 
   descale = (amount: BigNumberish, decimals: number): number => {
@@ -76,6 +83,20 @@ class MellowLpRouter {
 
   scale = (amount: number): BigNumber => {
     return ethers.utils.parseUnits(amount.toString(), this.tokenDecimals);
+  };
+
+  validateWeights = (weights: number[]): boolean => {
+    if (!weights.every((value) => Number.isInteger(value))) {
+      // All values of default weights must be integer
+      return false;
+    }
+
+    if (weights.length !== this.vaultsCount) {
+      // Lengths of vault indices and default weights array do not match
+      return false;
+    }
+
+    return true;
   };
 
   // NEXT: to offload this to subgraph
@@ -104,10 +125,11 @@ class MellowLpRouter {
     console.log('token address:', tokenAddress);
 
     // erc20rootvault addresses
-    let ERC20RootVaultAddresses: string[] = await mellowRouterContract.getVaults();
+    const ERC20RootVaultAddresses: string[] = await mellowRouterContract.getVaults();
+    this.vaultsCount = ERC20RootVaultAddresses.length;
 
-    if (!isUndefined(this.pivot)) {
-      ERC20RootVaultAddresses = ERC20RootVaultAddresses.slice(this.pivot, this.pivot + 1);
+    if (!this.validateWeights(this.defaultWeights)) {
+      return;
     }
 
     // Map the addresses so that each of them is instantiated into a contract
@@ -176,8 +198,8 @@ class MellowLpRouter {
 
     console.log('write contracts ready');
 
-    await this.refreshUserDeposit();
-    console.log('user deposit refreshed', this.userDeposit);
+    await this.refreshuserTotalDeposit();
+    console.log('user deposit refreshed', this.userTotalDeposit);
     await this.refreshWalletBalance();
     console.log('user wallet balance refreshed', this.userWalletBalance);
 
@@ -241,7 +263,7 @@ class MellowLpRouter {
     }
   };
 
-  refreshUserDeposit = async (): Promise<void> => {
+  refreshuserDeposit = async (): Promise<void> => {
     this.userDeposit = 0;
     if (
       isUndefined(this.userAddress) ||
@@ -251,12 +273,8 @@ class MellowLpRouter {
       return;
     }
 
-    let lpTokensBalances: BigNumber[] =
+    const lpTokensBalances: BigNumber[] =
       await this.readOnlyContracts.mellowRouterContract.getLPTokenBalances(this.userAddress);
-
-    if (!isUndefined(this.pivot)) {
-      lpTokensBalances = lpTokensBalances.slice(this.pivot, this.pivot + 1);
-    }
 
     for (let i = 0; i < this.readOnlyContracts.erc20RootVault.length; i += 1) {
       const erc20RootVaultContract = this.readOnlyContracts.erc20RootVault[i];
@@ -272,12 +290,52 @@ class MellowLpRouter {
 
       if (totalLpTokens.gt(0)) {
         const userFunds = lpTokensBalance.mul(tvl[0][0]).div(totalLpTokens);
-        console.log('user funds:', userFunds.toString());
+        console.log('user committed funds:', userFunds.toString());
         const userDeposit = this.descale(userFunds, this.tokenDecimals);
-        console.log('user deposit:', userDeposit);
+        console.log('user committed deposit:', userDeposit);
         this.userDeposit += userDeposit;
       }
     }
+  };
+
+  refreshUserPendingDeposit = async (): Promise<void> => {
+    this.userPendingDeposit = 0;
+    if (
+      isUndefined(this.userAddress) ||
+      isUndefined(this.readOnlyContracts) ||
+      isUndefined(this.tokenDecimals)
+    ) {
+      return;
+    }
+
+    for (let i = 0; i < this.readOnlyContracts.erc20RootVault.length; i += 1) {
+      const batchedDeposits: BatchedDeposit[] =
+        await this.readOnlyContracts.mellowRouterContract.getBatchedDeposits(i);
+
+      const userBatchedDeposits: BatchedDeposit[] = batchedDeposits.filter(
+        (batchedDeposit) => batchedDeposit.author.toLowerCase() === this.userAddress?.toLowerCase(),
+      );
+
+      console.log('user batched deposits:', userBatchedDeposits);
+
+      const userPendingFunds = userBatchedDeposits.reduce(
+        (sum, batchedDeposit) => sum.add(batchedDeposit.amount),
+        BigNumber.from(0),
+      );
+
+      console.log('user pending funds:', userPendingFunds.toString());
+
+      const userPendingDeposit = this.descale(userPendingFunds, this.tokenDecimals);
+      console.log('user pending deposit:', userPendingDeposit);
+
+      this.userPendingDeposit += userPendingDeposit;
+    }
+  };
+
+  refreshuserTotalDeposit = async (): Promise<void> => {
+    await this.refreshuserDeposit();
+    await this.refreshUserPendingDeposit();
+    this.userTotalDeposit = this.userDeposit + this.userPendingDeposit;
   };
 
   refreshWalletBalance = async (): Promise<void> => {
@@ -359,6 +417,10 @@ class MellowLpRouter {
       throw new Error('Uninitialized contracts.');
     }
 
+    if (!this.validateWeights(weights)) {
+      throw new Error('Weights are invalid');
+    }
+
     const scaledAmount = this.scale(amount);
     console.log(`Calling deposit(${scaledAmount})...`);
 
@@ -402,6 +464,14 @@ class MellowLpRouter {
 
     try {
       const receipt = await tx.wait();
+
+      try {
+        await this.refreshuserTotalDeposit();
+      } catch (error) {
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage('User deposit failed to refresh after deposit');
+        console.error('User deposit failed to refresh after deposit');
+      }
 
       try {
         await this.refreshWalletBalance();

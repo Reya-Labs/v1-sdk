@@ -10,6 +10,7 @@ import MellowLpRouter from '../src/entities/mellowLpRouter';
 import { abi as MellowMultiVaultRouterABI } from '../src/ABIs/MellowMultiVaultRouterABI.json';
 import { abi as Erc20RootVaultABI } from '../src/ABIs/Erc20RootVault.json';
 import { abi as WethABI } from '../src/ABIs/WethABI.json';
+import { withSigner } from './utils';
 
 const { provider } = waffle;
 let ethMellowLpRouter: MellowLpRouter;
@@ -17,7 +18,7 @@ let ethMellowLpRouter: MellowLpRouter;
 let localMellowRouterContract: Contract;
 
 const depositAmount = 10; // Set a default 10 ETH constant for use in tests;
-const MellowRouterAddress = '0x631cad693b6f0463b2c2729299fcca8731553bb4';
+const MellowRouterAddress = '0x704F6E9cB4f7e041CC89B6a49DF8EE2027a55164';
 const defaultWeights: number[] = [50, 50]; // default even split between 2 pools
 
 const signer = new Wallet(
@@ -36,35 +37,71 @@ describe('Mellow Router Test Suite', () => {
           chainId: 5,
           forking: {
             jsonRpcUrl: process.env.GOERLI_URL,
-            blockNumber: 7976620,
+            blockNumber: 7992457,
           },
         },
       ],
     });
   };
 
-  beforeEach('Setting up the suite', async () => {
+  beforeEach('Reset Network & Setup Router Contract', async () => {
     await resetNetwork();
-
-    ethMellowLpRouter = new MellowLpRouter({
-      mellowRouterAddress: MellowRouterAddress,
-      defaultWeights,
-      provider,
-    });
-
-    await ethMellowLpRouter.vaultInit();
-
-    // Initialise the user so the router contract is connected with user to keep track of them as a signer for the deposits
-    await ethMellowLpRouter.userInit(userWallet);
 
     localMellowRouterContract = new ethers.Contract(
       MellowRouterAddress,
       MellowMultiVaultRouterABI,
       signer,
     );
+
+    await withSigner(
+      network,
+      await localMellowRouterContract.owner(),
+      async (routerOwnerSigner) => {
+        await localMellowRouterContract
+          .connect(routerOwnerSigner)
+          .addVault((await localMellowRouterContract.getVaults())[0]);
+      },
+    );
+  });
+
+  describe('Invalid vault initialisation scenarios', async () => {
+    it('Weights values are not all integer', async () => {
+      ethMellowLpRouter = new MellowLpRouter({
+        mellowRouterAddress: MellowRouterAddress,
+        defaultWeights: [49.5, 50.5],
+        provider,
+      });
+
+      await ethMellowLpRouter.vaultInit();
+      expect(ethMellowLpRouter.vaultInitialized).to.be.eq(false);
+    });
+
+    it('Length of default weights arrays does not match', async () => {
+      ethMellowLpRouter = new MellowLpRouter({
+        mellowRouterAddress: MellowRouterAddress,
+        defaultWeights: [100],
+        provider,
+      });
+
+      await ethMellowLpRouter.vaultInit();
+      expect(ethMellowLpRouter.vaultInitialized).to.be.eq(false);
+    });
   });
 
   describe('Deposit Scenarios', async () => {
+    beforeEach('Setting up the Router Object', async () => {
+      ethMellowLpRouter = new MellowLpRouter({
+        mellowRouterAddress: MellowRouterAddress,
+        defaultWeights,
+        provider,
+      });
+
+      await ethMellowLpRouter.vaultInit();
+
+      // Initialise the user so the router contract is connected with user to keep track of them as a signer for the deposits
+      await ethMellowLpRouter.userInit(userWallet);
+    });
+
     it('Check that vault has been initialised correctly', async () => {
       expect(ethMellowLpRouter.vaultInitialized).to.be.eq(true);
       expect(ethMellowLpRouter.readOnlyContracts?.token.address).to.be.eq(
@@ -112,18 +149,18 @@ describe('Mellow Router Test Suite', () => {
       await ethMellowLpRouter.deposit(depositAmount, weights);
 
       // Router gets the batched deposits
-      const batchedDeposit =
-        await ethMellowLpRouter.writeContracts?.mellowRouter.getBatchedDeposits();
-      expect(batchedDeposit.length).to.be.eq(1);
-      expect(batchedDeposit[0][0]).to.be.eq(userWallet.address);
-      expect(batchedDeposit[0][1][0]).to.be.eq(
-        BigNumber.from(depositAmount).mul('1000000000000000000').div(2),
-      );
-      expect(batchedDeposit[0][1][1]).to.be.eq(
-        BigNumber.from(depositAmount).mul('1000000000000000000').div(2),
-      );
-      // eslint-disable-next-line
-      console.log('Get batched deposits in router contract: ', batchedDeposit.toString());
+      for (let vaultIndex = 0; vaultIndex < 2; vaultIndex += 1) {
+        const batchedDeposit =
+          await ethMellowLpRouter.writeContracts?.mellowRouter.getBatchedDeposits(vaultIndex);
+        expect(batchedDeposit.length).to.be.eq(1);
+        expect(batchedDeposit[0][0]).to.be.eq(userWallet.address);
+        expect(batchedDeposit[0][1]).to.be.eq(
+          BigNumber.from(depositAmount).mul('1000000000000000000').div(2),
+        );
+
+        // eslint-disable-next-line
+        console.log(`Batched deposits in router for vault index ${vaultIndex}: ${batchedDeposit.toString()}`);
+      }
 
       // Make sure the user LP token balance before batch submission is 0 for each vault
       expect(
@@ -134,15 +171,16 @@ describe('Mellow Router Test Suite', () => {
         ).toString(),
       ).to.be.eq('0,0');
 
-      // Submit the batch of deposits from the router to the erc20 root vault
-      await ethMellowLpRouter.writeContracts?.mellowRouter.submitBatch(0);
+      // Submit the batch of deposits from the router to the erc20 root vaults
+      for (let vaultIndex = 0; vaultIndex < 2; vaultIndex += 1) {
+        await ethMellowLpRouter.writeContracts?.mellowRouter.submitBatch(vaultIndex, 0);
+      }
 
       // Get the user lp token balance after the router receives it from the erc20 root vault upon batch submission
       const userLpTokenBalance =
         await ethMellowLpRouter.writeContracts?.mellowRouter.getLPTokenBalances(userWallet.address);
-      expect(userLpTokenBalance[0]).to.be.closeTo(userLpTokenBalance[1], 1);
-      expect(userLpTokenBalance[0]).to.be.eq('4898906633876018356');
-      expect(userLpTokenBalance[1]).to.be.eq('4898906633876018355');
+      expect(userLpTokenBalance[0]).to.be.eq('5000000000000000000');
+      expect(userLpTokenBalance[1]).to.be.eq('5000000000000000000');
       // eslint-disable-next-line
       console.log('user LP token balance in Router: ', userLpTokenBalance.toString());
 
@@ -162,11 +200,8 @@ describe('Mellow Router Test Suite', () => {
       // eslint-disable-next-line
       console.log('Printing tvl list of all erc20 root vaults: ', tvl);
 
-      expect(tvl[0]).to.be.eq('11673207775126148888');
-      expect(tvl[1]).to.be.eq('11673207775126148888');
-
-      expect(userLpTokenBalance[0]).to.be.eq(BigNumber.from('4898906633876018356'));
-      expect(userLpTokenBalance[1]).to.be.eq(BigNumber.from('4898906633876018355'));
+      expect(tvl[0]).to.be.eq('10010000000000000000');
+      expect(tvl[1]).to.be.eq('10010000000000000000');
     });
 
     it('User deposits eth into router contract uneven split', async () => {
@@ -176,16 +211,22 @@ describe('Mellow Router Test Suite', () => {
       await ethMellowLpRouter.deposit(depositAmount, weights);
 
       // Router gets the batched deposits
-      const batchedDeposit =
-        await ethMellowLpRouter.writeContracts?.mellowRouter.getBatchedDeposits();
-      expect(batchedDeposit.length).to.be.eq(1);
-      expect(batchedDeposit[0][0]).to.be.eq(userWallet.address);
-      expect(batchedDeposit[0][1][0]).to.be.eq(
-        BigNumber.from(depositAmount).mul('1000000000000000000'),
-      );
-      expect(batchedDeposit[0][1][1]).to.be.eq(BigNumber.from(0));
-      // eslint-disable-next-line
-      console.log('Get batched deposits in router contract: ', batchedDeposit.toString());
+      for (let vaultIndex = 0; vaultIndex < 2; vaultIndex += 1) {
+        const batchedDeposit =
+          await ethMellowLpRouter.writeContracts?.mellowRouter.getBatchedDeposits(vaultIndex);
+        expect(batchedDeposit.length).to.be.eq(1 - vaultIndex);
+        if (batchedDeposit.length) {
+          expect(batchedDeposit[0][0]).to.be.eq(userWallet.address);
+          expect(batchedDeposit[0][1]).to.be.eq(
+            BigNumber.from(depositAmount)
+              .mul('1000000000000000000')
+              .mul(1 - vaultIndex),
+          );
+        }
+
+        // eslint-disable-next-line
+        console.log(`Batched deposits in router for vault index ${vaultIndex}: ${batchedDeposit.toString()}`);
+      }
 
       // Make sure the user LP token balance before batch submission is 0 for each vault
       expect(
@@ -196,13 +237,15 @@ describe('Mellow Router Test Suite', () => {
         ).toString(),
       ).to.be.eq('0,0');
 
-      // Submit the batch of deposits from the router to the erc20 root vault
-      await ethMellowLpRouter.writeContracts?.mellowRouter.submitBatch(0);
+      // Submit the batch of deposits from the router to the erc20 root vaults
+      for (let vaultIndex = 0; vaultIndex < 2; vaultIndex += 1) {
+        await ethMellowLpRouter.writeContracts?.mellowRouter.submitBatch(vaultIndex, 0);
+      }
 
       // Get the user lp token balance after the router receives it from the erc20 root vault upon batch submission
       const userLpTokenBalance =
         await ethMellowLpRouter.writeContracts?.mellowRouter.getLPTokenBalances(userWallet.address);
-      expect(userLpTokenBalance[0]).to.be.eq('9797813267752036713');
+      expect(userLpTokenBalance[0]).to.be.eq('10000000000000000000');
       expect(userLpTokenBalance[1]).to.be.eq('0');
       // eslint-disable-next-line
       console.log('user LP token balance in Router: ', userLpTokenBalance.toString());
@@ -224,11 +267,11 @@ describe('Mellow Router Test Suite', () => {
       console.log('Printing tvl list of all erc20 root vaults: ', tvl);
 
       // For each vault
-      expect(tvl[0]).to.be.eq('11673207775126148890');
-      expect(tvl[1]).to.be.eq('11673207775126148890');
+      expect(tvl[0]).to.be.eq('10010000000000000000');
+      expect(tvl[1]).to.be.eq('10010000000000000000');
 
       // For each vault
-      expect(userLpTokenBalance[0]).to.be.eq(BigNumber.from('9797813267752036713'));
+      expect(userLpTokenBalance[0]).to.be.eq(BigNumber.from('10000000000000000000'));
       expect(userLpTokenBalance[1]).to.be.eq(BigNumber.from('0'));
     });
 
@@ -237,18 +280,18 @@ describe('Mellow Router Test Suite', () => {
       await ethMellowLpRouter.deposit(depositAmount);
 
       // Router gets the batched deposits
-      const batchedDeposit =
-        await ethMellowLpRouter.writeContracts?.mellowRouter.getBatchedDeposits();
-      expect(batchedDeposit.length).to.be.eq(1);
-      expect(batchedDeposit[0][0]).to.be.eq(userWallet.address);
-      expect(batchedDeposit[0][1][0]).to.be.eq(
-        BigNumber.from(depositAmount).mul('1000000000000000000').div(2),
-      );
-      expect(batchedDeposit[0][1][1]).to.be.eq(
-        BigNumber.from(depositAmount).mul('1000000000000000000').div(2),
-      );
-      // eslint-disable-next-line
-      console.log('Get batched deposits in router contract: ', batchedDeposit.toString());
+      for (let vaultIndex = 0; vaultIndex < 2; vaultIndex += 1) {
+        const batchedDeposit =
+          await ethMellowLpRouter.writeContracts?.mellowRouter.getBatchedDeposits(vaultIndex);
+        expect(batchedDeposit.length).to.be.eq(1);
+        expect(batchedDeposit[0][0]).to.be.eq(userWallet.address);
+        expect(batchedDeposit[0][1]).to.be.eq(
+          BigNumber.from(depositAmount).mul('1000000000000000000').div(2),
+        );
+
+        // eslint-disable-next-line
+        console.log(`Batched deposits in router for vault index ${vaultIndex}: ${batchedDeposit.toString()}`);
+      }
 
       // Make sure the user LP token balance before batch submission is 0 for each vault
       expect(
@@ -259,15 +302,16 @@ describe('Mellow Router Test Suite', () => {
         ).toString(),
       ).to.be.eq('0,0');
 
-      // Submit the batch of deposits from the router to the erc20 root vault
-      await ethMellowLpRouter.writeContracts?.mellowRouter.submitBatch(0);
+      // Submit the batch of deposits from the router to the erc20 root vaults
+      for (let vaultIndex = 0; vaultIndex < 2; vaultIndex += 1) {
+        await ethMellowLpRouter.writeContracts?.mellowRouter.submitBatch(vaultIndex, 0);
+      }
 
       // Get the user lp token balance after the router receives it from the erc20 root vault upon batch submission
       const userLpTokenBalance =
         await ethMellowLpRouter.writeContracts?.mellowRouter.getLPTokenBalances(userWallet.address);
-      expect(userLpTokenBalance[0]).to.be.closeTo(userLpTokenBalance[1], 1);
-      expect(userLpTokenBalance[0]).to.be.eq('4898906633876018356');
-      expect(userLpTokenBalance[1]).to.be.eq('4898906633876018355');
+      expect(userLpTokenBalance[0]).to.be.eq('5000000000000000000');
+      expect(userLpTokenBalance[1]).to.be.eq('5000000000000000000');
       // eslint-disable-next-line
       console.log('user LP token balance in Router: ', userLpTokenBalance.toString());
 
@@ -288,18 +332,19 @@ describe('Mellow Router Test Suite', () => {
       console.log('Printing tvl list of all erc20 root vaults: ', tvl);
 
       // For each vault
-      expect(tvl[0]).to.be.eq('11673207775126148888');
-      expect(tvl[1]).to.be.eq('11673207775126148888');
+      expect(tvl[0]).to.be.eq('10010000000000000000');
+      expect(tvl[1]).to.be.eq('10010000000000000000');
 
       // For each vault
-      expect(userLpTokenBalance[0]).to.be.eq(BigNumber.from('4898906633876018356'));
-      expect(userLpTokenBalance[1]).to.be.eq(BigNumber.from('4898906633876018355'));
+      expect(userLpTokenBalance[0]).to.be.eq(BigNumber.from('5000000000000000000'));
+      expect(userLpTokenBalance[1]).to.be.eq(BigNumber.from('5000000000000000000'));
     });
 
     it('Have we scaled properly?', async () => {
       const amount = 1;
       expect(ethMellowLpRouter.scale(amount)).to.be.eq(BigNumber.from('1000000000000000000'));
     });
+
     it('Have we descaled properly?', async () => {
       const amount = BigNumber.from('1000000000000000000');
       expect(ethMellowLpRouter.descale(amount, 18)).to.be.eq(BigNumber.from('1'));
@@ -322,6 +367,7 @@ describe('Mellow Router Test Suite', () => {
           );
         }
       });
+
       it('User deposits erc20 into router with even split', async () => {
         // Check if WETH is approved to router from the beforeEach statement
         expect(await ethMellowLpRouter.isTokenApproved()).to.be.eq(true);
@@ -329,18 +375,18 @@ describe('Mellow Router Test Suite', () => {
         await ethMellowLpRouter.deposit(depositAmount);
 
         // Router gets the batched deposits
-        const batchedDeposit =
-          await ethMellowLpRouter.writeContracts?.mellowRouter.getBatchedDeposits();
-        expect(batchedDeposit.length).to.be.eq(1);
-        expect(batchedDeposit[0][0]).to.be.eq(userWallet.address);
-        expect(batchedDeposit[0][1][0]).to.be.eq(
-          BigNumber.from(depositAmount).mul('1000000000000000000').div(2),
-        );
-        expect(batchedDeposit[0][1][1]).to.be.eq(
-          BigNumber.from(depositAmount).mul('1000000000000000000').div(2),
-        );
-        // eslint-disable-next-line
-      console.log('Get batched deposits in router contract: ', batchedDeposit.toString());
+        for (let vaultIndex = 0; vaultIndex < 2; vaultIndex += 1) {
+          const batchedDeposit =
+            await ethMellowLpRouter.writeContracts?.mellowRouter.getBatchedDeposits(vaultIndex);
+          expect(batchedDeposit.length).to.be.eq(1);
+          expect(batchedDeposit[0][0]).to.be.eq(userWallet.address);
+          expect(batchedDeposit[0][1]).to.be.eq(
+            BigNumber.from(depositAmount).mul('1000000000000000000').div(2),
+          );
+
+          // eslint-disable-next-line
+          console.log(`Batched deposits in router for vault index ${vaultIndex}: ${batchedDeposit.toString()}`);
+        }
 
         // Make sure the user LP token balance before batch submission is 0 for each vault
         expect(
@@ -351,17 +397,18 @@ describe('Mellow Router Test Suite', () => {
           ).toString(),
         ).to.be.eq('0,0');
 
-        // Submit the batch of deposits from the router to the erc20 root vault
-        await ethMellowLpRouter.writeContracts?.mellowRouter.submitBatch(0);
+        // Submit the batch of deposits from the router to the erc20 root vaults
+        for (let vaultIndex = 0; vaultIndex < 2; vaultIndex += 1) {
+          await ethMellowLpRouter.writeContracts?.mellowRouter.submitBatch(vaultIndex, 0);
+        }
 
         // Get the user lp token balance after the router receives it from the erc20 root vault upon batch submission
         const userLpTokenBalance =
           await ethMellowLpRouter.writeContracts?.mellowRouter.getLPTokenBalances(
             userWallet.address,
           );
-        expect(userLpTokenBalance[0]).to.be.closeTo(userLpTokenBalance[1], 1);
-        expect(userLpTokenBalance[0]).to.be.eq('4898906633876018356');
-        expect(userLpTokenBalance[1]).to.be.eq('4898906633876018355');
+        expect(userLpTokenBalance[0]).to.be.eq('5000000000000000000');
+        expect(userLpTokenBalance[1]).to.be.eq('5000000000000000000');
         // eslint-disable-next-line
       console.log('user LP token balance in Router: ', userLpTokenBalance.toString());
 
@@ -382,12 +429,12 @@ describe('Mellow Router Test Suite', () => {
       console.log('Printing tvl list of all erc20 root vaults: ', tvl);
 
         // For each vault
-        expect(tvl[0]).to.be.eq('11673207775126148888');
-        expect(tvl[1]).to.be.eq('11673207775126148888');
+        expect(tvl[0]).to.be.eq('10010000000000000000');
+        expect(tvl[1]).to.be.eq('10010000000000000000');
 
         // For each vault
-        expect(userLpTokenBalance[0]).to.be.eq(BigNumber.from('4898906633876018356'));
-        expect(userLpTokenBalance[1]).to.be.eq(BigNumber.from('4898906633876018355'));
+        expect(userLpTokenBalance[0]).to.be.eq(BigNumber.from('5000000000000000000'));
+        expect(userLpTokenBalance[1]).to.be.eq(BigNumber.from('5000000000000000000'));
       });
 
       it('User deposits eth into router contract uneven split', async () => {
@@ -399,16 +446,22 @@ describe('Mellow Router Test Suite', () => {
         await ethMellowLpRouter.deposit(depositAmount, weights);
 
         // Router gets the batched deposits
-        const batchedDeposit =
-          await ethMellowLpRouter.writeContracts?.mellowRouter.getBatchedDeposits();
-        expect(batchedDeposit.length).to.be.eq(1);
-        expect(batchedDeposit[0][0]).to.be.eq(userWallet.address);
-        expect(batchedDeposit[0][1][0]).to.be.eq(
-          BigNumber.from(depositAmount).mul('1000000000000000000'),
-        );
-        expect(batchedDeposit[0][1][1]).to.be.eq(BigNumber.from(0));
-        // eslint-disable-next-line
-        console.log('Get batched deposits in router contract: ', batchedDeposit.toString());
+        for (let vaultIndex = 0; vaultIndex < 2; vaultIndex += 1) {
+          const batchedDeposit =
+            await ethMellowLpRouter.writeContracts?.mellowRouter.getBatchedDeposits(vaultIndex);
+          expect(batchedDeposit.length).to.be.eq(1 - vaultIndex);
+          if (batchedDeposit.length) {
+            expect(batchedDeposit[0][0]).to.be.eq(userWallet.address);
+            expect(batchedDeposit[0][1]).to.be.eq(
+              BigNumber.from(depositAmount)
+                .mul('1000000000000000000')
+                .mul(1 - vaultIndex),
+            );
+          }
+
+          // eslint-disable-next-line
+          console.log(`Batched deposits in router for vault index ${vaultIndex}: ${batchedDeposit.toString()}`);
+        }
 
         // Make sure the user LP token balance before batch submission is 0 for each vault
         expect(
@@ -419,15 +472,17 @@ describe('Mellow Router Test Suite', () => {
           ).toString(),
         ).to.be.eq('0,0');
 
-        // Submit the batch of deposits from the router to the erc20 root vault
-        await ethMellowLpRouter.writeContracts?.mellowRouter.submitBatch(0);
+        // Submit the batch of deposits from the router to the erc20 root vaults
+        for (let vaultIndex = 0; vaultIndex < 2; vaultIndex += 1) {
+          await ethMellowLpRouter.writeContracts?.mellowRouter.submitBatch(vaultIndex, 0);
+        }
 
         // Get the user lp token balance after the router receives it from the erc20 root vault upon batch submission
         const userLpTokenBalance =
           await ethMellowLpRouter.writeContracts?.mellowRouter.getLPTokenBalances(
             userWallet.address,
           );
-        expect(userLpTokenBalance[0]).to.be.eq('9797813267752036713');
+        expect(userLpTokenBalance[0]).to.be.eq('10000000000000000000');
         expect(userLpTokenBalance[1]).to.be.eq('0');
         // eslint-disable-next-line
         console.log('user LP token balance in Router: ', userLpTokenBalance.toString());
@@ -449,11 +504,11 @@ describe('Mellow Router Test Suite', () => {
         console.log('Printing tvl list of all erc20 root vaults: ', tvl);
 
         // For each vault
-        expect(tvl[0]).to.be.eq('11673207775126148890');
-        expect(tvl[1]).to.be.eq('11673207775126148890');
+        expect(tvl[0]).to.be.eq('10010000000000000000');
+        expect(tvl[1]).to.be.eq('10010000000000000000');
 
         // For each vault
-        expect(userLpTokenBalance[0]).to.be.eq(BigNumber.from('9797813267752036713'));
+        expect(userLpTokenBalance[0]).to.be.eq(BigNumber.from('10000000000000000000'));
         expect(userLpTokenBalance[1]).to.be.eq(BigNumber.from('0'));
       });
 
@@ -464,18 +519,18 @@ describe('Mellow Router Test Suite', () => {
         await ethMellowLpRouter.deposit(depositAmount);
 
         // Router gets the batched deposits
-        const batchedDeposit =
-          await ethMellowLpRouter.writeContracts?.mellowRouter.getBatchedDeposits();
-        expect(batchedDeposit.length).to.be.eq(1);
-        expect(batchedDeposit[0][0]).to.be.eq(userWallet.address);
-        expect(batchedDeposit[0][1][0]).to.be.eq(
-          BigNumber.from(depositAmount).mul('1000000000000000000').div(2),
-        );
-        expect(batchedDeposit[0][1][1]).to.be.eq(
-          BigNumber.from(depositAmount).mul('1000000000000000000').div(2),
-        );
-        // eslint-disable-next-line
-        console.log('Get batched deposits in router contract: ', batchedDeposit.toString());
+        for (let vaultIndex = 0; vaultIndex < 2; vaultIndex += 1) {
+          const batchedDeposit =
+            await ethMellowLpRouter.writeContracts?.mellowRouter.getBatchedDeposits(vaultIndex);
+          expect(batchedDeposit.length).to.be.eq(1);
+          expect(batchedDeposit[0][0]).to.be.eq(userWallet.address);
+          expect(batchedDeposit[0][1]).to.be.eq(
+            BigNumber.from(depositAmount).mul('1000000000000000000').div(2),
+          );
+
+          // eslint-disable-next-line
+          console.log(`Batched deposits in router for vault index ${vaultIndex}: ${batchedDeposit.toString()}`);
+        }
 
         // Make sure the user LP token balance before batch submission is 0 for each vault
         expect(
@@ -486,17 +541,18 @@ describe('Mellow Router Test Suite', () => {
           ).toString(),
         ).to.be.eq('0,0');
 
-        // Submit the batch of deposits from the router to the erc20 root vault
-        await ethMellowLpRouter.writeContracts?.mellowRouter.submitBatch(0);
+        // Submit the batch of deposits from the router to the erc20 root vaults
+        for (let vaultIndex = 0; vaultIndex < 2; vaultIndex += 1) {
+          await ethMellowLpRouter.writeContracts?.mellowRouter.submitBatch(vaultIndex, 0);
+        }
 
         // Get the user lp token balance after the router receives it from the erc20 root vault upon batch submission
         const userLpTokenBalance =
           await ethMellowLpRouter.writeContracts?.mellowRouter.getLPTokenBalances(
             userWallet.address,
           );
-        expect(userLpTokenBalance[0]).to.be.closeTo(userLpTokenBalance[1], 1);
-        expect(userLpTokenBalance[0]).to.be.eq('4898906633876018356');
-        expect(userLpTokenBalance[1]).to.be.eq('4898906633876018355');
+        expect(userLpTokenBalance[0]).to.be.eq('5000000000000000000');
+        expect(userLpTokenBalance[1]).to.be.eq('5000000000000000000');
         // eslint-disable-next-line
         console.log('user LP token balance in Router: ', userLpTokenBalance.toString());
 
@@ -517,13 +573,50 @@ describe('Mellow Router Test Suite', () => {
         console.log('Printing tvl list of all erc20 root vaults: ', tvl);
 
         // For each vault
-        expect(tvl[0]).to.be.eq('11673207775126148888');
-        expect(tvl[1]).to.be.eq('11673207775126148888');
+        expect(tvl[0]).to.be.eq('10010000000000000000');
+        expect(tvl[1]).to.be.eq('10010000000000000000');
 
         // For each vault
-        expect(userLpTokenBalance[0]).to.be.eq(BigNumber.from('4898906633876018356'));
-        expect(userLpTokenBalance[1]).to.be.eq(BigNumber.from('4898906633876018355'));
+        expect(userLpTokenBalance[0]).to.be.eq(BigNumber.from('5000000000000000000'));
+        expect(userLpTokenBalance[1]).to.be.eq(BigNumber.from('5000000000000000000'));
       });
+    });
+
+    it('Only committed deposits', async () => {
+      await ethMellowLpRouter.deposit(1, [100, 0]);
+      await ethMellowLpRouter.deposit(2, [0, 100]);
+      await ethMellowLpRouter.deposit(3, [50, 50]);
+      for (let vaultIndex = 0; vaultIndex < 2; vaultIndex += 1) {
+        await ethMellowLpRouter.writeContracts?.mellowRouter.submitBatch(vaultIndex, 0);
+      }
+
+      await ethMellowLpRouter.refreshuserTotalDeposit();
+      expect(ethMellowLpRouter.userDeposit).to.be.eq(6);
+      expect(ethMellowLpRouter.userPendingDeposit).to.be.eq(0);
+      expect(ethMellowLpRouter.userTotalDeposit).to.be.eq(6);
+    });
+
+    it('Only pending deposits', async () => {
+      await ethMellowLpRouter.deposit(1, [100, 0]);
+      await ethMellowLpRouter.deposit(2, [0, 100]);
+      await ethMellowLpRouter.deposit(3, [50, 50]);
+
+      expect(ethMellowLpRouter.userDeposit).to.be.eq(0);
+      expect(ethMellowLpRouter.userPendingDeposit).to.be.eq(6);
+      expect(ethMellowLpRouter.userTotalDeposit).to.be.eq(6);
+    });
+
+    it('Pending and committed deposits', async () => {
+      await ethMellowLpRouter.deposit(1, [100, 0]);
+      for (let vaultIndex = 0; vaultIndex < 2; vaultIndex += 1) {
+        await ethMellowLpRouter.writeContracts?.mellowRouter.submitBatch(vaultIndex, 0);
+      }
+      await ethMellowLpRouter.deposit(2, [0, 100]);
+      await ethMellowLpRouter.deposit(3, [50, 50]);
+
+      expect(ethMellowLpRouter.userDeposit).to.be.eq(1);
+      expect(ethMellowLpRouter.userPendingDeposit).to.be.eq(5);
+      expect(ethMellowLpRouter.userTotalDeposit).to.be.eq(6);
     });
   });
 });

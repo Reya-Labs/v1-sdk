@@ -63,7 +63,7 @@ class MellowLpVault {
   public vaultCap?: number;
   public vaultExpectedApy?: number;
 
-  public userDeposit?: number;
+  public userDeposit = 0;
   public userWalletBalance?: number;
 
   public userAddress?: string;
@@ -207,7 +207,7 @@ class MellowLpVault {
 
     console.log('write contracts ready');
 
-    await this.refreshUserDeposit();
+    await this.refreshuserDeposit();
     console.log('user deposit refreshed', this.userDeposit);
     await this.refreshWalletBalance();
     console.log('user wallet balance refreshed', this.userWalletBalance);
@@ -281,7 +281,7 @@ class MellowLpVault {
     this.vaultExpectedApy = 31.03;
   };
 
-  refreshUserDeposit = async (): Promise<void> => {
+  refreshuserDeposit = async (): Promise<void> => {
     if (
       isUndefined(this.userAddress) ||
       isUndefined(this.readOnlyContracts) ||
@@ -463,7 +463,7 @@ class MellowLpVault {
       }
 
       try {
-        await this.refreshUserDeposit();
+        await this.refreshuserDeposit();
       } catch (error) {
         sentryTracker.captureException(error);
         sentryTracker.captureMessage('User deposit failed to refresh after deposit');
