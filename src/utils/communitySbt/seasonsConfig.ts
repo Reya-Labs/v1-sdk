@@ -8,3 +8,8 @@ export const mainnetSeasonLeavesCid:  Record<number, string>  = {
     0: "QmefHAb6KEY8jjYCQNz4TPFLLRfD9SadfZpBpVSPHJUQGm",
     1: ""
 }
+
+export const mainnetSeasonBadgesCid:  Record<number, string>  = {
+    0: "QmefHAb6KEY8jjYCQNz4TPFLLRfD9SadfZpBpVSPHJUQGm",
+    1: ""
+}
