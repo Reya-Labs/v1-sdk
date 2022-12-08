@@ -58,9 +58,9 @@ class MellowLpRouter {
   public vaultCumulative?: number;
   public vaultCap?: number;
 
-  public userDeposit = 0;
+  public userComittedDeposit = 0;
   public userPendingDeposit = 0;
-  public userTotalDeposit = 0;
+  public userDeposit = 0;
 
   public userWalletBalance?: number;
 
@@ -185,7 +185,7 @@ class MellowLpRouter {
       ),
     };
 
-    await this.refreshuserTotalDeposit();
+    await this.refreshUserDeposit();
     await this.refreshWalletBalance();
 
     this.userInitialized = true;
@@ -241,8 +241,8 @@ class MellowLpRouter {
     }
   };
 
-  refreshuserDeposit = async (): Promise<void> => {
-    this.userDeposit = 0;
+  refreshUserComittedDeposit = async (): Promise<void> => {
+    this.userComittedDeposit = 0;
     if (
       isUndefined(this.userAddress) ||
       isUndefined(this.readOnlyContracts) ||
@@ -264,8 +264,8 @@ class MellowLpRouter {
 
       if (totalLpTokens.gt(0)) {
         const userFunds = lpTokensBalance.mul(tvl[0][0]).div(totalLpTokens);
-        const userDeposit = this.descale(userFunds, this.tokenDecimals);
-        this.userDeposit += userDeposit;
+        const userComittedDeposit = this.descale(userFunds, this.tokenDecimals);
+        this.userComittedDeposit += userComittedDeposit;
       }
     }
   };
@@ -298,10 +298,10 @@ class MellowLpRouter {
     }
   };
 
-  refreshuserTotalDeposit = async (): Promise<void> => {
-    await this.refreshuserDeposit();
+  refreshUserDeposit = async (): Promise<void> => {
+    await this.refreshUserComittedDeposit();
     await this.refreshUserPendingDeposit();
-    this.userTotalDeposit = this.userDeposit + this.userPendingDeposit;
+    this.userDeposit = this.userComittedDeposit + this.userPendingDeposit;
   };
 
   refreshWalletBalance = async (): Promise<void> => {
@@ -430,7 +430,7 @@ class MellowLpRouter {
       const receipt = await tx.wait();
 
       try {
-        await this.refreshuserTotalDeposit();
+        await this.refreshUserDeposit();
       } catch (error) {
         sentryTracker.captureException(error);
         sentryTracker.captureMessage('User deposit failed to refresh after deposit');
@@ -451,6 +451,157 @@ class MellowLpRouter {
       sentryTracker.captureException(error);
       sentryTracker.captureMessage('Unsuccessful deposit confirmation.');
       throw new Error('Unsuccessful deposit confirmation.');
+    }
+  };
+
+  withdraw = async (vaultIndex: number): Promise<ContractReceipt> => {
+    if (
+      isUndefined(this.readOnlyContracts) ||
+      isUndefined(this.writeContracts) ||
+      isUndefined(this.userAddress)
+    ) {
+      throw new Error('Uninitialized contracts.');
+    }
+
+    const subvaultsCount: number = (
+      await this.readOnlyContracts.erc20RootVault[vaultIndex].subvaultNfts()
+    ).length;
+
+    const minTokenAmounts = BigNumber.from(0);
+    const vaultsOptions = new Array(subvaultsCount).fill(0x0);
+
+    console.log(`Calling claimLPTokens(${vaultIndex}, ${[minTokenAmounts]}, [${vaultsOptions}])`);
+
+    try {
+      await this.writeContracts.mellowRouter.callStatic.claimLPTokens(
+        vaultIndex,
+        [minTokenAmounts],
+        vaultsOptions,
+      );
+    } catch (err) {
+      console.error('Error during claimLPTokens:', err);
+      sentryTracker.captureException(err);
+      sentryTracker.captureMessage('Unsuccessful claimLPTokens simulation.');
+      throw new Error('Unsuccessful claimLPTokens simulation.');
+    }
+
+    const gasLimit = await this.writeContracts.mellowRouter.estimateGas.claimLPTokens(
+      vaultIndex,
+      [minTokenAmounts],
+      vaultsOptions,
+    );
+
+    const tx = await this.writeContracts.mellowRouter.claimLPTokens(
+      vaultIndex,
+      [minTokenAmounts],
+      vaultsOptions,
+      {
+        gasLimit: getGasBuffer(gasLimit),
+      },
+    );
+
+    try {
+      const receipt = await tx.wait();
+
+      try {
+        await this.refreshWalletBalance();
+      } catch (err) {
+        sentryTracker.captureException(err);
+        sentryTracker.captureMessage('Wallet user balance failed to refresh after withdrawal');
+        console.error('Wallet user balance failed to refresh after withdraw');
+      }
+
+      try {
+        await this.refreshUserComittedDeposit();
+      } catch (err) {
+        sentryTracker.captureException(err);
+        sentryTracker.captureMessage('User deposit failed to refresh after withdrawal');
+        console.error('User deposit failed to refresh after withdraw');
+      }
+
+      return receipt;
+    } catch (err) {
+      sentryTracker.captureException(err);
+      sentryTracker.captureMessage('Unsucessful withdrawal confirmation.');
+      throw new Error('Unsucessful withdraw confirmation.');
+    }
+  };
+
+  rollover = async (vaultIndex: number): Promise<ContractReceipt> => {
+    if (
+      isUndefined(this.readOnlyContracts) ||
+      isUndefined(this.writeContracts) ||
+      isUndefined(this.userAddress)
+    ) {
+      throw new Error('Uninitialized contracts.');
+    }
+
+    const subvaultsCount: number = (
+      await this.readOnlyContracts.erc20RootVault[vaultIndex].subvaultNfts()
+    ).length;
+
+    const minTokenAmounts = BigNumber.from(0);
+    const vaultsOptions = new Array(subvaultsCount).fill(0x0);
+
+    console.log(
+      `Calling rolloverLPTokens(${vaultIndex}, ${[minTokenAmounts]}, [${vaultsOptions}], ${
+        this.defaultWeights
+      })`,
+    );
+
+    try {
+      await this.writeContracts.mellowRouter.callStatic.rolloverLPTokens(
+        vaultIndex,
+        [minTokenAmounts],
+        vaultsOptions,
+        this.defaultWeights,
+      );
+    } catch (err) {
+      console.error('Error during rolloverLPTokens', err);
+      throw new Error('Unsuccessful rolloverLPTokens simulation.');
+    }
+
+    const gasLimit = await this.writeContracts.mellowRouter.estimateGas.rolloverLPTokens(
+      vaultIndex,
+      [minTokenAmounts],
+      vaultsOptions,
+      this.defaultWeights,
+    );
+
+    const tx = await this.writeContracts.mellowRouter.rolloverLPTokens(
+      vaultIndex,
+      [minTokenAmounts],
+      vaultsOptions,
+      this.defaultWeights,
+      {
+        gasLimit: getGasBuffer(gasLimit),
+      },
+    );
+
+    try {
+      const receipt = await tx.wait();
+
+      try {
+        await this.refreshWalletBalance();
+      } catch (err) {
+        sentryTracker.captureException(err);
+        sentryTracker.captureMessage('Wallet user balance failed to refresh after rollover');
+        console.error('Wallet user balance failed to refresh after rollover');
+      }
+
+      try {
+        await this.refreshUserComittedDeposit();
+      } catch (err) {
+        sentryTracker.captureException(err);
+        sentryTracker.captureMessage('User deposit failed to refresh after rollover');
+        console.error('User deposit failed to refresh after rollover');
+      }
+
+      return receipt;
+    } catch (err) {
+      sentryTracker.captureException(err);
+      sentryTracker.captureMessage('Unsucessful rollover confirmation.');
+      throw new Error('Unsucessful rollover confirmation.');
     }
   };
 }

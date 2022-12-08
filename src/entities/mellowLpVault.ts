@@ -63,7 +63,7 @@ class MellowLpVault {
   public vaultCap?: number;
   public vaultExpectedApy?: number;
 
-  public userDeposit = 0;
+  public userComittedDeposit = 0;
   public userWalletBalance?: number;
 
   public userAddress?: string;
@@ -183,7 +183,7 @@ class MellowLpVault {
       ethWrapper: new ethers.Contract(this.ethWrapperAddress, MellowDepositWrapperABI, this.signer),
     };
 
-    await this.refreshuserDeposit();
+    await this.refreshUserComittedDeposit();
     await this.refreshWalletBalance();
 
     this.userInitialized = true;
@@ -252,13 +252,13 @@ class MellowLpVault {
     this.vaultExpectedApy = 31.03;
   };
 
-  refreshuserDeposit = async (): Promise<void> => {
+  refreshUserComittedDeposit = async (): Promise<void> => {
     if (
       isUndefined(this.userAddress) ||
       isUndefined(this.readOnlyContracts) ||
       isUndefined(this.tokenDecimals)
     ) {
-      this.userDeposit = 0;
+      this.userComittedDeposit = 0;
       return;
     }
 
@@ -269,9 +269,9 @@ class MellowLpVault {
 
     if (totalLpTokens.gt(0)) {
       const userFunds = lpTokens.mul(tvl[0][0]).div(totalLpTokens);
-      this.userDeposit = this.descale(userFunds, this.tokenDecimals);
+      this.userComittedDeposit = this.descale(userFunds, this.tokenDecimals);
     } else {
-      this.userDeposit = 0;
+      this.userComittedDeposit = 0;
     }
   };
 
@@ -426,7 +426,7 @@ class MellowLpVault {
       }
 
       try {
-        await this.refreshuserDeposit();
+        await this.refreshUserComittedDeposit();
       } catch (error) {
         sentryTracker.captureException(error);
         sentryTracker.captureMessage('User deposit failed to refresh after deposit');
@@ -444,7 +444,96 @@ class MellowLpVault {
       return receipt;
     } catch (err) {
       console.error('Unsucessful deposit confirmation.', err);
+      sentryTracker.captureException(err);
+      sentryTracker.captureMessage('Unsucessful deposit confirmation.');
       throw new Error('Unsucessful deposit confirmation.');
+    }
+  };
+
+  withdraw = async (): Promise<ContractReceipt> => {
+    if (
+      isUndefined(this.readOnlyContracts) ||
+      isUndefined(this.writeContracts) ||
+      isUndefined(this.userAddress)
+    ) {
+      throw new Error('Uninitialized contracts.');
+    }
+
+    // Get the balance of LP tokens
+    const lpTokens = await this.readOnlyContracts.erc20RootVault.balanceOf(this.userAddress);
+
+    // Get the number of subvaults to input the correct vault options
+    const subvaultsCount: number = (await this.readOnlyContracts.erc20RootVault[0].subvaultNfts())
+      .length;
+
+    // Default arguments for withdraw
+    const minTokenAmounts = BigNumber.from(0);
+    const vaultsOptions = new Array(subvaultsCount).fill(0x0);
+    console.log(
+      `Calling withdraw(${this.userAddress}, ${lpTokens.toString()}, ${[
+        minTokenAmounts.toString(),
+      ]}, ${vaultsOptions})`,
+    );
+
+    // Simulate the withdrawal
+    try {
+      await this.writeContracts.erc20RootVault.callStatic.withdraw(
+        this.userAddress,
+        lpTokens,
+        minTokenAmounts,
+        vaultsOptions,
+      );
+    } catch (error) {
+      console.error('Error in withdrawal simulation:', error);
+      sentryTracker.captureException(error);
+      sentryTracker.captureMessage('Unsuccessful withdrawal simulation.');
+      throw new Error('Unsuccessful withdrawal simulation.');
+    }
+
+    // Estimate the gas for this transaction
+    const gasLimit = await this.writeContracts.erc20RootVault.estimateGas.withdraw(
+      this.userAddress,
+      lpTokens,
+      minTokenAmounts,
+      vaultsOptions,
+    );
+
+    // Send the transaction
+    const tx = await this.writeContracts.erc20RootVault.withdraw(
+      this.userAddress,
+      lpTokens,
+      minTokenAmounts,
+      vaultsOptions,
+      {
+        gasLimit: getGasBuffer(gasLimit),
+      },
+    );
+
+    // Wait for the confirmation and update the state post-operation
+    try {
+      const receipt = await tx.wait();
+
+      try {
+        await this.refreshWalletBalance();
+      } catch (err) {
+        sentryTracker.captureException(err);
+        sentryTracker.captureMessage('Wallet user balance failed to refresh after withdrawal');
+        console.error('Wallet user balance failed to refresh after withdrawal.', err);
+      }
+
+      try {
+        await this.refreshUserComittedDeposit();
+      } catch (err) {
+        sentryTracker.captureException(err);
+        sentryTracker.captureMessage('User deposit failed to refresh after withdrawal');
+        console.error('User deposit failed to refresh after withdrawal.', err);
+      }
+
+      return receipt;
+    } catch (err) {
+      sentryTracker.captureException(err);
+      sentryTracker.captureMessage('Unsucessful withdrawal confirmation.');
+      throw new Error('Unsucessful withdraw confirmation.');
     }
   };
 }
