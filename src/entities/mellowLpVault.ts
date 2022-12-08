@@ -96,12 +96,10 @@ class MellowLpVault {
   // NEXT: to offload this to subgraph
   vaultInit = async (): Promise<void> => {
     if (this.vaultInitialized) {
-      console.log('The vault is already initialized');
       return;
     }
 
     if (isUndefined(this.provider)) {
-      console.log('Stop here... No provider provided');
       return;
     }
 
@@ -110,7 +108,6 @@ class MellowLpVault {
       VoltzVaultABI,
       this.provider,
     );
-    console.log('voltz vault address:', this.voltzVaultAddress);
 
     const marginEngineAddress = await voltzVaultContract.marginEngine();
     const marginEngineContract = new ethers.Contract(
@@ -119,17 +116,11 @@ class MellowLpVault {
       this.provider,
     );
 
-    console.log('margin engine address:', marginEngineAddress);
-
     const tokenAddress = await marginEngineContract.underlyingToken();
     const tokenContract = new Contract(tokenAddress, IERC20MinimalABI, this.provider);
 
-    console.log('token address:', tokenAddress);
-
     const rateOracleAddress = await marginEngineContract.rateOracle();
     const rateOracleContract = new Contract(rateOracleAddress, BaseRateOracleABI, this.provider);
-
-    console.log('rate oracle:', rateOracleAddress);
 
     this.readOnlyContracts = {
       marginEngine: marginEngineContract,
@@ -148,25 +139,15 @@ class MellowLpVault {
       ),
     };
 
-    console.log('read-only contracts ready');
-
     this.protocolId = await rateOracleContract.UNDERLYING_YIELD_BEARING_PROTOCOL_ID();
-
-    console.log('protocol ID:', this.protocolId);
 
     const maturityWad = await marginEngineContract.termEndTimestampWad();
     const date = timestampWadToDateTime(maturityWad);
 
     this.maturity = `${date.day} ${date.monthShort} ${date.year % 100}`;
 
-    console.log('maturity:', this.maturity);
-
     await this.refreshVaultCumulative();
-    console.log('vault accumulative refreshed', this.vaultCumulative);
-    console.log('vault cap refreshed', this.vaultCap);
-
     await this.refreshVaultExpectedApy();
-    console.log('vault expected apy refreshed', this.vaultExpectedApy);
 
     this.vaultInitialized = true;
   };
@@ -175,12 +156,10 @@ class MellowLpVault {
     this.signer = signer;
 
     if (this.userInitialized) {
-      console.log('The user is already initialized');
       return;
     }
 
     if (!this.vaultInitialized) {
-      console.log('The vault should be initialized first');
       return;
     }
 
@@ -189,7 +168,6 @@ class MellowLpVault {
     }
 
     this.userAddress = await this.signer.getAddress();
-    console.log('user address', this.userAddress);
 
     this.writeContracts = {
       token: new ethers.Contract(
@@ -205,12 +183,8 @@ class MellowLpVault {
       ethWrapper: new ethers.Contract(this.ethWrapperAddress, MellowDepositWrapperABI, this.signer),
     };
 
-    console.log('write contracts ready');
-
     await this.refreshuserDeposit();
-    console.log('user deposit refreshed', this.userDeposit);
     await this.refreshWalletBalance();
-    console.log('user wallet balance refreshed', this.userWalletBalance);
 
     this.userInitialized = true;
   };
@@ -261,14 +235,11 @@ class MellowLpVault {
     }
 
     const tvl = await this.readOnlyContracts.erc20RootVault.tvl();
-    console.log('accumulated (tvl):', tvl.minTokenAmounts[0].toString());
 
     const nft = await this.readOnlyContracts.erc20RootVault.nft();
     const strategyParams = await this.readOnlyContracts.erc20RootVaultGovernance.strategyParams(
       nft,
     );
-    console.log('strategy params:', strategyParams);
-    console.log('token limit', strategyParams.tokenLimit.toString());
 
     this.vaultCumulative = this.descale(tvl.minTokenAmounts[0], this.tokenDecimals);
     this.vaultCap = this.descale(
@@ -294,14 +265,10 @@ class MellowLpVault {
     const lpTokens = await this.readOnlyContracts.erc20RootVault.balanceOf(this.userAddress);
     const totalLpTokens = await this.readOnlyContracts.erc20RootVault.totalSupply();
 
-    console.log('lp tokens', lpTokens.toString());
-    console.log('total lp tokens:', totalLpTokens);
     const tvl = await this.readOnlyContracts.erc20RootVault.tvl();
-    console.log('tvl', tvl.toString());
 
     if (totalLpTokens.gt(0)) {
       const userFunds = lpTokens.mul(tvl[0][0]).div(totalLpTokens);
-      console.log('user funds:', userFunds.toString());
       this.userDeposit = this.descale(userFunds, this.tokenDecimals);
     } else {
       this.userDeposit = 0;
@@ -369,6 +336,7 @@ class MellowLpVault {
       const receipt = await tx.wait();
       return receipt;
     } catch (error) {
+      console.error('Unsuccessful approval confirmation.', error);
       sentryTracker.captureException(error);
       sentryTracker.captureMessage('Unsuccessful approval confirmation.');
       throw new Error('Unsuccessful approval confirmation.');
@@ -385,12 +353,7 @@ class MellowLpVault {
     }
 
     const scaledAmount = this.scale(amount);
-
-    console.log(`Calling deposit(${scaledAmount})...`);
-
     const minLPTokens = BigNumber.from(0);
-
-    console.log(`args of deposit: (${[scaledAmount]}, ${minLPTokens.toString()}, ${[]}`);
 
     const tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
 
@@ -414,7 +377,7 @@ class MellowLpVault {
         );
       }
     } catch (error) {
-      console.log('ERROR', error);
+      console.error('Unsuccessful deposit simulation.', error);
       sentryTracker.captureException(error);
       sentryTracker.captureMessage('Unsuccessful deposit simulation.');
       throw new Error('Unsuccessful deposit simulation.');
@@ -459,7 +422,7 @@ class MellowLpVault {
       } catch (error) {
         sentryTracker.captureException(error);
         sentryTracker.captureMessage('Wallet user balance failed to refresh after deposit');
-        console.error('Wallet user balance failed to refresh after deposit');
+        console.error('Wallet user balance failed to refresh after deposit.', error);
       }
 
       try {
@@ -467,7 +430,7 @@ class MellowLpVault {
       } catch (error) {
         sentryTracker.captureException(error);
         sentryTracker.captureMessage('User deposit failed to refresh after deposit');
-        console.error('User deposit failed to refresh after deposit');
+        console.error('User deposit failed to refresh after deposit.', error);
       }
 
       try {
@@ -475,12 +438,12 @@ class MellowLpVault {
       } catch (error) {
         sentryTracker.captureException(error);
         sentryTracker.captureMessage('Vault accumulative failed to refresh after deposit');
-        console.error('Vault accumulative failed to refresh after deposit');
+        console.error('Vault accumulative failed to refresh after deposit.', error);
       }
 
       return receipt;
     } catch (err) {
-      console.log('ERROR', err);
+      console.error('Unsucessful deposit confirmation.', err);
       throw new Error('Unsucessful deposit confirmation.');
     }
   };
