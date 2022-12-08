@@ -2490,14 +2490,12 @@ class AMM {
           try {
             results.variableRateSinceLastSwap = await this.getInstantApy() * 100;
 
-            console.log("Getting accrued cashflow info...");
             const accruedCashflowInfo = await getAccruedCashflow({
               swaps: transformSwaps(position.swaps, this.underlyingToken.decimals),
               rateOracle: rateOracleContract,
               currentTime: Number(lastBlockTimestamp.toString()),
               endTime: Number(utils.formatUnits(this.termEndTimestamp.toString(), 18)),
             });
-            console.log("Result:", accruedCashflowInfo);
 
             results.accruedCashflow = accruedCashflowInfo.accruedCashflow;
 
@@ -2512,14 +2510,12 @@ class AMM {
       else {
         if (!position.isSettled) {
           try {
-            console.log("Getting accrued cashflow info...");
             const accruedCashflowInfo = await getAccruedCashflow({
               swaps: transformSwaps(position.swaps, this.underlyingToken.decimals),
               rateOracle: rateOracleContract,
               currentTime: Number(utils.formatUnits(this.termEndTimestamp.toString(), 18)),
               endTime: Number(utils.formatUnits(this.termEndTimestamp.toString(), 18)),
             });
-            console.log("Result:", accruedCashflowInfo);
 
             results.accruedCashflow = accruedCashflowInfo.accruedCashflow;
 

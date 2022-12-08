@@ -102,12 +102,10 @@ class MellowLpRouter {
   // NEXT: to offload this to subgraph
   vaultInit = async (): Promise<void> => {
     if (this.vaultInitialized) {
-      console.log('The vault is already initialized');
       return;
     }
 
     if (isUndefined(this.provider)) {
-      console.log('Stop here... No provider provided');
       return;
     }
 
@@ -121,8 +119,6 @@ class MellowLpRouter {
     // Get the token from mellowRouter.token() here
     const tokenAddress = await mellowRouterContract.token();
     const tokenContract = new Contract(tokenAddress, IERC20MinimalABI, this.provider);
-
-    console.log('token address:', tokenAddress);
 
     // erc20rootvault addresses
     const ERC20RootVaultAddresses: string[] = await mellowRouterContract.getVaults();
@@ -155,11 +151,7 @@ class MellowLpRouter {
       mellowRouterContract,
     };
 
-    console.log('Read-only contracts are ready');
-
     await this.refreshVaultCumulative();
-    console.log('vault cumulative refreshed', this.vaultCumulative);
-    console.log('vault cap refreshed', this.vaultCap);
 
     this.vaultInitialized = true;
   };
@@ -168,12 +160,10 @@ class MellowLpRouter {
     this.signer = signer;
 
     if (this.userInitialized) {
-      console.log('The user is already initialized');
       return;
     }
 
     if (!this.vaultInitialized) {
-      console.log('The vault should be initialized first');
       return;
     }
 
@@ -182,7 +172,6 @@ class MellowLpRouter {
     }
 
     this.userAddress = await this.signer.getAddress();
-    console.log('user address', this.userAddress);
 
     this.writeContracts = {
       token: new Contract(this.readOnlyContracts.token.address, IERC20MinimalABI, this.signer),
@@ -196,12 +185,8 @@ class MellowLpRouter {
       ),
     };
 
-    console.log('write contracts ready');
-
     await this.refreshuserTotalDeposit();
-    console.log('user deposit refreshed', this.userTotalDeposit);
     await this.refreshWalletBalance();
-    console.log('user wallet balance refreshed', this.userWalletBalance);
 
     this.userInitialized = true;
   };
@@ -237,25 +222,18 @@ class MellowLpRouter {
     for (const erc20RootVaultContract of this.readOnlyContracts.erc20RootVault) {
       const totalLpTokens = await erc20RootVaultContract.totalSupply();
       const tvl = await erc20RootVaultContract.tvl();
-      console.log('accumulated (tvl):', tvl.minTokenAmounts[0].toString());
 
       const nft = await erc20RootVaultContract.nft();
 
       for (const erc20RootVaultGovernanceContract of this.readOnlyContracts
         .erc20RootVaultGovernance) {
         const strategyParams = await erc20RootVaultGovernanceContract.strategyParams(nft);
-        console.log('governance contract address: ', erc20RootVaultGovernanceContract.address);
-        console.log('strategy params:', strategyParams);
-        console.log('token limit', strategyParams.tokenLimit.toString());
 
         const vaultCumulative = this.descale(tvl.minTokenAmounts[0], this.tokenDecimals);
         const vaultCap = this.descale(
           totalLpTokens.mul(toBn('1', 18)).div(strategyParams.tokenLimit),
           16,
         );
-
-        console.log('vault cumulative:', vaultCumulative);
-        console.log('vault cap:', vaultCap);
 
         this.vaultCumulative += vaultCumulative;
         this.vaultCap += vaultCap;
@@ -282,17 +260,11 @@ class MellowLpRouter {
 
       const totalLpTokens = await erc20RootVaultContract.totalSupply();
 
-      console.log('lp tokens', lpTokensBalance.toString());
-      console.log('total lp tokens:', totalLpTokens);
-
       const tvl = await erc20RootVaultContract.tvl();
-      console.log('tvl', tvl.toString());
 
       if (totalLpTokens.gt(0)) {
         const userFunds = lpTokensBalance.mul(tvl[0][0]).div(totalLpTokens);
-        console.log('user committed funds:', userFunds.toString());
         const userDeposit = this.descale(userFunds, this.tokenDecimals);
-        console.log('user committed deposit:', userDeposit);
         this.userDeposit += userDeposit;
       }
     }
@@ -316,18 +288,12 @@ class MellowLpRouter {
         (batchedDeposit) => batchedDeposit.author.toLowerCase() === this.userAddress?.toLowerCase(),
       );
 
-      console.log('user batched deposits:', userBatchedDeposits);
-
       const userPendingFunds = userBatchedDeposits.reduce(
         (sum, batchedDeposit) => sum.add(batchedDeposit.amount),
         BigNumber.from(0),
       );
 
-      console.log('user pending funds:', userPendingFunds.toString());
-
       const userPendingDeposit = this.descale(userPendingFunds, this.tokenDecimals);
-      console.log('user pending deposit:', userPendingDeposit);
-
       this.userPendingDeposit += userPendingDeposit;
     }
   };
@@ -422,8 +388,6 @@ class MellowLpRouter {
     }
 
     const scaledAmount = this.scale(amount);
-    console.log(`Calling deposit(${scaledAmount})...`);
-
     const tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
 
     if (this.isETH) {
@@ -437,7 +401,7 @@ class MellowLpRouter {
         await this.writeContracts.mellowRouter.callStatic.depositErc20(scaledAmount, weights);
       }
     } catch (error) {
-      console.log('ERROR', error);
+      console.error('Error when simulating deposit.', error);
       sentryTracker.captureException(error);
       sentryTracker.captureMessage('Unsuccessful deposit simulation.');
       throw new Error('Unsuccessful deposit simulation.');
@@ -470,7 +434,7 @@ class MellowLpRouter {
       } catch (error) {
         sentryTracker.captureException(error);
         sentryTracker.captureMessage('User deposit failed to refresh after deposit');
-        console.error('User deposit failed to refresh after deposit');
+        console.error('User deposit failed to refresh after deposit.', error);
       }
 
       try {
@@ -478,12 +442,12 @@ class MellowLpRouter {
       } catch (error) {
         sentryTracker.captureException(error);
         sentryTracker.captureMessage('Wallet user balance failed to refresh after deposit');
-        console.error('Wallet user balance failed to refresh after deposit');
+        console.error('Wallet user balance failed to refresh after deposit.', error);
       }
 
       return receipt;
     } catch (error) {
-      console.log('ERROR', error);
+      console.error('Unsuccessful deposit confirmation.', error);
       sentryTracker.captureException(error);
       sentryTracker.captureMessage('Unsuccessful deposit confirmation.');
       throw new Error('Unsuccessful deposit confirmation.');
