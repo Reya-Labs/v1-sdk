@@ -698,7 +698,7 @@ describe('Mellow Router Test Suite', () => {
       await ethMellowLpRouter.userInit(userWallet);
     });
 
-    it.only('2-vault rollover', async () => {
+    it('2-vault rollover', async () => {
       const wethContract = new ethers.Contract(
         ethMellowLpRouter.readOnlyContracts?.token.address || '',
         IERC20MinimalABI,
