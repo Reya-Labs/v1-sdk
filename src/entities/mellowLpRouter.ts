@@ -502,7 +502,7 @@ class MellowLpRouter {
       }
 
       try {
-        await this.refreshUserComittedDeposit();
+        await this.refreshUserDeposit();
       } catch (err) {
         sentryTracker.captureException(err);
         sentryTracker.captureMessage('User deposit failed to refresh after withdrawal');
@@ -584,7 +584,7 @@ class MellowLpRouter {
       }
 
       try {
-        await this.refreshUserComittedDeposit();
+        await this.refreshUserDeposit();
       } catch (err) {
         sentryTracker.captureException(err);
         sentryTracker.captureMessage('User deposit failed to refresh after rollover');
