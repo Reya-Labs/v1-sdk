@@ -26,7 +26,6 @@ import { sentryTracker } from '../utils/sentry';
 
 export type MellowLpRouterArgs = {
   mellowRouterAddress: string; // live in env variable per router contract
-  defaultWeights: number[]; // live in env variable per router contract
   provider?: providers.Provider;
 };
 
@@ -37,7 +36,6 @@ type BatchedDeposit = {
 
 class MellowLpRouter {
   public readonly mellowRouterAddress: string;
-  public readonly defaultWeights: number[] = [];
   public readonly provider?: providers.Provider;
 
   public readOnlyContracts?: {
@@ -71,9 +69,8 @@ class MellowLpRouter {
 
   public vaultsCount = 0;
 
-  public constructor({ mellowRouterAddress, defaultWeights, provider }: MellowLpRouterArgs) {
+  public constructor({ mellowRouterAddress, provider }: MellowLpRouterArgs) {
     this.mellowRouterAddress = mellowRouterAddress;
-    this.defaultWeights = defaultWeights;
     this.provider = provider;
   }
 
@@ -123,10 +120,6 @@ class MellowLpRouter {
     // erc20rootvault addresses
     const ERC20RootVaultAddresses: string[] = await mellowRouterContract.getVaults();
     this.vaultsCount = ERC20RootVaultAddresses.length;
-
-    if (!this.validateWeights(this.defaultWeights)) {
-      return;
-    }
 
     // Map the addresses so that each of them is instantiated into a contract
     const erc20RootVaultContracts = ERC20RootVaultAddresses.map(
@@ -371,10 +364,7 @@ class MellowLpRouter {
     }
   };
 
-  deposit = async (
-    amount: number,
-    weights: number[] = this.defaultWeights,
-  ): Promise<ContractReceipt> => {
+  deposit = async (amount: number, weights: number[]): Promise<ContractReceipt> => {
     if (
       isUndefined(this.readOnlyContracts) ||
       isUndefined(this.writeContracts) ||
@@ -527,16 +517,17 @@ class MellowLpRouter {
     }
   };
 
-  rollover = async (
-    vaultIndex: number,
-    weights: number[] = this.defaultWeights,
-  ): Promise<ContractReceipt> => {
+  rollover = async (vaultIndex: number, weights: number[]): Promise<ContractReceipt> => {
     if (
       isUndefined(this.readOnlyContracts) ||
       isUndefined(this.writeContracts) ||
       isUndefined(this.userAddress)
     ) {
       throw new Error('Uninitialized contracts.');
+    }
+
+    if (!this.validateWeights(weights)) {
+      throw new Error('Weights are invalid');
     }
 
     const subvaultsCount: number = (
