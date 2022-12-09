@@ -5,6 +5,11 @@ export const goerliSeasonLeavesCid: Record<number, string> = {
 
 // TODO: after deployment on mainnet badges, replace CID
 export const mainnetSeasonLeavesCid:  Record<number, string>  = {
-    0: "QmefHAb6KEY8jjYCQNz4TPFLLRfD9SadfZpBpVSPHJUQGm",
+    0: "QmYGApREh6m163xQU9izU7MZDBK59oNTCCKUWKfmBz57GJ",
+    1: ""
+}
+
+export const mainnetSeasonBadgesCid:  Record<number, string>  = {
+    0: "QmXaFnWn7KnN3GdgZJ5xn5wKGYusVbFGUNnNTpf8ndBT7P",
     1: ""
 }
