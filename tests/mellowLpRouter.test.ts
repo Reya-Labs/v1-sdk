@@ -760,5 +760,62 @@ describe('Mellow Router Test Suite', () => {
       const finalBalance: BigNumber = await wethContract.balanceOf(ethMellowLpRouter.userAddress);
       expect(ethMellowLpRouter.descale(finalBalance.sub(midBalance), 18)).to.be.eq(0);
     });
+
+    it('2-vault rollover with specific weights', async () => {
+      const wethContract = new ethers.Contract(
+        ethMellowLpRouter.readOnlyContracts?.token.address || '',
+        IERC20MinimalABI,
+        signer,
+      );
+
+      // User deposits funds into the router
+      await ethMellowLpRouter.deposit(10);
+
+      await ethMellowLpRouter.vaultInit();
+
+      // Initialise the user so the router contract is connected with user to keep track of them as a signer for the deposits
+      await ethMellowLpRouter.userInit(userWallet);
+
+      // Submit the batch of deposits from the router to the erc20 root vaults
+      for (let vaultIndex = 0; vaultIndex < 2; vaultIndex += 1) {
+        await ethMellowLpRouter.writeContracts?.mellowRouter.submitBatch(vaultIndex, 0);
+      }
+
+      await advanceTimeAndBlock(30 * 24 * 60 * 60, 1);
+
+      await ethMellowLpRouter.refreshUserDeposit();
+      expect(ethMellowLpRouter.userComittedDeposit).to.be.eq(10);
+      expect(ethMellowLpRouter.userPendingDeposit).to.be.eq(0);
+
+      const initBalance: BigNumber = await wethContract.balanceOf(ethMellowLpRouter.userAddress);
+
+      await ethMellowLpRouter.rollover(0, [0, 0, 25, 75]);
+
+      await ethMellowLpRouter.refreshUserDeposit();
+      expect(ethMellowLpRouter.userComittedDeposit).to.be.eq(5);
+      expect(ethMellowLpRouter.userPendingDeposit).to.be.eq(5);
+
+      const midBalance: BigNumber = await wethContract.balanceOf(ethMellowLpRouter.userAddress);
+      expect(ethMellowLpRouter.descale(midBalance.sub(initBalance), 18)).to.be.eq(0);
+
+      await ethMellowLpRouter.rollover(1, [0, 0, 50, 50]);
+
+      await ethMellowLpRouter.refreshUserDeposit();
+      expect(ethMellowLpRouter.userComittedDeposit).to.be.eq(0);
+      expect(ethMellowLpRouter.userPendingDeposit).to.be.eq(10);
+
+      await ethMellowLpRouter.writeContracts?.mellowRouter.submitBatch(2, 0);
+      await ethMellowLpRouter.refreshUserDeposit();
+      expect(ethMellowLpRouter.userComittedDeposit).to.be.eq(3.75);
+      expect(ethMellowLpRouter.userPendingDeposit).to.be.eq(6.25);
+
+      await ethMellowLpRouter.writeContracts?.mellowRouter.submitBatch(3, 0);
+      await ethMellowLpRouter.refreshUserDeposit();
+      expect(ethMellowLpRouter.userComittedDeposit).to.be.eq(10);
+      expect(ethMellowLpRouter.userPendingDeposit).to.be.eq(0);
+
+      const finalBalance: BigNumber = await wethContract.balanceOf(ethMellowLpRouter.userAddress);
+      expect(ethMellowLpRouter.descale(finalBalance.sub(midBalance), 18)).to.be.eq(0);
+    });
   });
 });

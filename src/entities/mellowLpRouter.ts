@@ -527,7 +527,10 @@ class MellowLpRouter {
     }
   };
 
-  rollover = async (vaultIndex: number): Promise<ContractReceipt> => {
+  rollover = async (
+    vaultIndex: number,
+    weights: number[] = this.defaultWeights,
+  ): Promise<ContractReceipt> => {
     if (
       isUndefined(this.readOnlyContracts) ||
       isUndefined(this.writeContracts) ||
@@ -544,9 +547,9 @@ class MellowLpRouter {
     const vaultsOptions = new Array(subvaultsCount).fill(0x0);
 
     console.log(
-      `Calling rolloverLPTokens(${vaultIndex}, ${[minTokenAmounts]}, [${vaultsOptions}], ${
-        this.defaultWeights
-      })`,
+      `Calling rolloverLPTokens(${vaultIndex}, ${[
+        minTokenAmounts,
+      ]}, [${vaultsOptions}], ${weights})`,
     );
 
     try {
@@ -554,7 +557,7 @@ class MellowLpRouter {
         vaultIndex,
         [minTokenAmounts],
         vaultsOptions,
-        this.defaultWeights,
+        weights,
       );
     } catch (err) {
       console.error('Error during rolloverLPTokens', err);
@@ -565,14 +568,14 @@ class MellowLpRouter {
       vaultIndex,
       [minTokenAmounts],
       vaultsOptions,
-      this.defaultWeights,
+      weights,
     );
 
     const tx = await this.writeContracts.mellowRouter.rolloverLPTokens(
       vaultIndex,
       [minTokenAmounts],
       vaultsOptions,
-      this.defaultWeights,
+      weights,
       {
         gasLimit: getGasBuffer(gasLimit),
       },
