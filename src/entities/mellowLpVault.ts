@@ -63,7 +63,7 @@ class MellowLpVault {
   public vaultCap?: number;
   public vaultExpectedApy?: number;
 
-  public userComittedDeposit = 0;
+  public userDeposit = 0;
   public userWalletBalance?: number;
 
   public userAddress?: string;
@@ -183,7 +183,7 @@ class MellowLpVault {
       ethWrapper: new ethers.Contract(this.ethWrapperAddress, MellowDepositWrapperABI, this.signer),
     };
 
-    await this.refreshUserComittedDeposit();
+    await this.refreshUserDeposit();
     await this.refreshWalletBalance();
 
     this.userInitialized = true;
@@ -252,13 +252,13 @@ class MellowLpVault {
     this.vaultExpectedApy = 31.03;
   };
 
-  refreshUserComittedDeposit = async (): Promise<void> => {
+  refreshUserDeposit = async (): Promise<void> => {
     if (
       isUndefined(this.userAddress) ||
       isUndefined(this.readOnlyContracts) ||
       isUndefined(this.tokenDecimals)
     ) {
-      this.userComittedDeposit = 0;
+      this.userDeposit = 0;
       return;
     }
 
@@ -269,9 +269,9 @@ class MellowLpVault {
 
     if (totalLpTokens.gt(0)) {
       const userFunds = lpTokens.mul(tvl[0][0]).div(totalLpTokens);
-      this.userComittedDeposit = this.descale(userFunds, this.tokenDecimals);
+      this.userDeposit = this.descale(userFunds, this.tokenDecimals);
     } else {
-      this.userComittedDeposit = 0;
+      this.userDeposit = 0;
     }
   };
 
@@ -426,7 +426,7 @@ class MellowLpVault {
       }
 
       try {
-        await this.refreshUserComittedDeposit();
+        await this.refreshUserDeposit();
       } catch (error) {
         sentryTracker.captureException(error);
         sentryTracker.captureMessage('User deposit failed to refresh after deposit');
@@ -522,7 +522,7 @@ class MellowLpVault {
       }
 
       try {
-        await this.refreshUserComittedDeposit();
+        await this.refreshUserDeposit();
       } catch (err) {
         sentryTracker.captureException(err);
         sentryTracker.captureMessage('User deposit failed to refresh after withdrawal');
