@@ -23,10 +23,15 @@ import { abi as Erc20RootVaultGovernanceABI } from '../../ABIs/Erc20RootVaultGov
 import { abi as IERC20MinimalABI } from '../../ABIs/IERC20Minimal.json';
 import { abi as MellowMultiVaultRouterABI } from '../../ABIs/MellowMultiVaultRouterABI.json';
 import { sentryTracker } from '../../utils/sentry';
+import { MellowProductMetadata } from './config/types';
 
 export type MellowLpRouterArgs = {
+  id: string;
   mellowRouterAddress: string; // live in env variable per router contract
-  provider?: providers.Provider;
+  provider: providers.Provider;
+  metadata: MellowProductMetadata & {
+    underlyingPools: string[];
+  };
 };
 
 type BatchedDeposit = {
@@ -35,8 +40,12 @@ type BatchedDeposit = {
 };
 
 class MellowLpRouter {
+  public readonly id: string;
   public readonly mellowRouterAddress: string;
-  public readonly provider?: providers.Provider;
+  public readonly provider: providers.Provider;
+  metadata: MellowProductMetadata & {
+    underlyingPools: string[];
+  };
 
   public readOnlyContracts?: {
     token: Contract;
@@ -69,9 +78,11 @@ class MellowLpRouter {
 
   public vaultsCount = 0;
 
-  public constructor({ mellowRouterAddress, provider }: MellowLpRouterArgs) {
+  public constructor({ mellowRouterAddress, id, provider, metadata }: MellowLpRouterArgs) {
     this.mellowRouterAddress = mellowRouterAddress;
+    this.id = id;
     this.provider = provider;
+    this.metadata = metadata;
   }
 
   descale = (amount: BigNumberish, decimals: number): number => {

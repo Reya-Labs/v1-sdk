@@ -16,13 +16,7 @@ export type MellowProductMetadata = {
   }[];
 };
 
-export type MellowProduct = {
-  id: string;
-  vault: MellowLpVault | MellowLpRouter;
-  metadata: MellowProductMetadata & {
-    underlyingPools: string[];
-  };
-};
+export type MellowProduct = MellowLpVault | MellowLpRouter;
 
 export type NetworkConfiguration = {
   MELLOW_ETH_WRAPPER: string;

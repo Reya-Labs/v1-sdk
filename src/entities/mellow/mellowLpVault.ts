@@ -24,21 +24,31 @@ import { abi as BaseRateOracleABI } from '../../ABIs/BaseRateOracle.json';
 import { abi as IERC20MinimalABI } from '../../ABIs/IERC20Minimal.json';
 import { abi as MellowDepositWrapperABI } from '../../ABIs/MellowDepositWrapper.json';
 import { sentryTracker } from '../../utils/sentry';
+import { MellowProductMetadata } from './config/types';
 
 export type MellowLpVaultArgs = {
+  id: string;
   ethWrapperAddress: string;
   voltzVaultAddress: string;
   erc20RootVaultAddress: string;
   erc20RootVaultGovernanceAddress: string;
-  provider?: providers.Provider;
+  provider: providers.Provider;
+  metadata: MellowProductMetadata & {
+    underlyingPools: string[];
+  };
 };
 
 class MellowLpVault {
+  public readonly id: string;
   public readonly voltzVaultAddress: string;
   public readonly erc20RootVaultAddress: string;
   public readonly erc20RootVaultGovernanceAddress: string;
-  public readonly provider?: providers.Provider;
+  public readonly provider: providers.Provider;
   public readonly ethWrapperAddress: string;
+
+  metadata: MellowProductMetadata & {
+    underlyingPools: string[];
+  };
 
   public readOnlyContracts?: {
     marginEngine: Contract;
@@ -72,17 +82,21 @@ class MellowLpVault {
   public userInitialized = false;
 
   public constructor({
+    id,
     ethWrapperAddress,
     erc20RootVaultAddress,
     erc20RootVaultGovernanceAddress,
     voltzVaultAddress,
     provider,
+    metadata,
   }: MellowLpVaultArgs) {
+    this.id = id;
     this.ethWrapperAddress = ethWrapperAddress;
     this.erc20RootVaultAddress = erc20RootVaultAddress;
     this.erc20RootVaultGovernanceAddress = erc20RootVaultGovernanceAddress;
     this.voltzVaultAddress = voltzVaultAddress;
     this.provider = provider;
+    this.metadata = metadata;
   }
 
   descale = (amount: BigNumberish, decimals: number): number => {
