@@ -16,7 +16,7 @@ import { toBn } from 'evm-bn';
 
 import { getTokenInfo } from '../../services/getTokenInfo';
 
-import { getGasBuffer, MaxUint256Bn, ONE_HOUR_IN_MS, TresholdApprovalBn } from '../../constants';
+import { getGasBuffer, MaxUint256Bn, DEPOSIT_WINDOW, TresholdApprovalBn } from '../../constants';
 
 import { abi as Erc20RootVaultABI } from '../../ABIs/Erc20RootVault.json';
 import { abi as Erc20RootVaultGovernanceABI } from '../../ABIs/Erc20RootVaultGovernance.json';
@@ -224,7 +224,7 @@ class MellowLpRouter {
       (latest, vault) => Math.max(latest, vault.maturityTimestampMS),
       0,
     );
-    return !this.metadata.deprecated && Date.now().valueOf() + 48 * ONE_HOUR_IN_MS < latestMaturity;
+    return !this.metadata.deprecated && Date.now().valueOf() + DEPOSIT_WINDOW < latestMaturity;
   }
 
   public get withdrawable(): boolean {

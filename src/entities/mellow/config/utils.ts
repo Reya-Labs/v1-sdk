@@ -1,4 +1,4 @@
-import { ONE_HOUR_IN_MS } from '../../../constants';
+import { DEPOSIT_WINDOW } from '../../../constants';
 import { NetworkConfiguration } from './types';
 
 export const disableMaturedWeights = (config: NetworkConfiguration): NetworkConfiguration => {
@@ -13,7 +13,7 @@ export const disableMaturedWeights = (config: NetworkConfiguration): NetworkConf
             return {
               ...vault,
               weight:
-                Date.now().valueOf() + 48 * ONE_HOUR_IN_MS > vault.maturityTimestampMS
+                Date.now().valueOf() + DEPOSIT_WINDOW > vault.maturityTimestampMS
                   ? 0
                   : vault.weight,
             };
