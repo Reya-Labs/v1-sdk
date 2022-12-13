@@ -12,18 +12,18 @@ import {
 import { isUndefined } from 'lodash';
 import { toBn } from 'evm-bn';
 
-import { getProtocolPrefix, getTokenInfo } from '../services/getTokenInfo';
-import timestampWadToDateTime from '../utils/timestampWadToDateTime';
-import { getGasBuffer, MaxUint256Bn, TresholdApprovalBn } from '../constants';
+import { getProtocolPrefix, getTokenInfo } from '../../services/getTokenInfo';
+import timestampWadToDateTime from '../../utils/timestampWadToDateTime';
+import { getGasBuffer, MaxUint256Bn, TresholdApprovalBn } from '../../constants';
 
-import { abi as VoltzVaultABI } from '../ABIs/VoltzVault.json';
-import { abi as Erc20RootVaultABI } from '../ABIs/Erc20RootVault.json';
-import { abi as Erc20RootVaultGovernanceABI } from '../ABIs/Erc20RootVaultGovernance.json';
-import { abi as MarginEngineABI } from '../ABIs/MarginEngine.json';
-import { abi as BaseRateOracleABI } from '../ABIs/BaseRateOracle.json';
-import { abi as IERC20MinimalABI } from '../ABIs/IERC20Minimal.json';
-import { abi as MellowDepositWrapperABI } from '../ABIs/MellowDepositWrapper.json';
-import { sentryTracker } from '../utils/sentry';
+import { abi as VoltzVaultABI } from '../../ABIs/VoltzVault.json';
+import { abi as Erc20RootVaultABI } from '../../ABIs/Erc20RootVault.json';
+import { abi as Erc20RootVaultGovernanceABI } from '../../ABIs/Erc20RootVaultGovernance.json';
+import { abi as MarginEngineABI } from '../../ABIs/MarginEngine.json';
+import { abi as BaseRateOracleABI } from '../../ABIs/BaseRateOracle.json';
+import { abi as IERC20MinimalABI } from '../../ABIs/IERC20Minimal.json';
+import { abi as MellowDepositWrapperABI } from '../../ABIs/MellowDepositWrapper.json';
+import { sentryTracker } from '../../utils/sentry';
 
 export type MellowLpVaultArgs = {
   ethWrapperAddress: string;

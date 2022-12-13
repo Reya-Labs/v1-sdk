@@ -14,15 +14,15 @@ import {
 import { isUndefined } from 'lodash';
 import { toBn } from 'evm-bn';
 
-import { getTokenInfo } from '../services/getTokenInfo';
+import { getTokenInfo } from '../../services/getTokenInfo';
 
-import { getGasBuffer, MaxUint256Bn, TresholdApprovalBn } from '../constants';
+import { getGasBuffer, MaxUint256Bn, TresholdApprovalBn } from '../../constants';
 
-import { abi as Erc20RootVaultABI } from '../ABIs/Erc20RootVault.json';
-import { abi as Erc20RootVaultGovernanceABI } from '../ABIs/Erc20RootVaultGovernance.json';
-import { abi as IERC20MinimalABI } from '../ABIs/IERC20Minimal.json';
-import { abi as MellowMultiVaultRouterABI } from '../ABIs/MellowMultiVaultRouterABI.json';
-import { sentryTracker } from '../utils/sentry';
+import { abi as Erc20RootVaultABI } from '../../ABIs/Erc20RootVault.json';
+import { abi as Erc20RootVaultGovernanceABI } from '../../ABIs/Erc20RootVaultGovernance.json';
+import { abi as IERC20MinimalABI } from '../../ABIs/IERC20Minimal.json';
+import { abi as MellowMultiVaultRouterABI } from '../../ABIs/MellowMultiVaultRouterABI.json';
+import { sentryTracker } from '../../utils/sentry';
 
 export type MellowLpRouterArgs = {
   mellowRouterAddress: string; // live in env variable per router contract

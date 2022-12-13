@@ -6,7 +6,7 @@ import { describe, it } from 'mocha';
 import { expect } from 'chai';
 import { network, waffle } from 'hardhat';
 import { isUndefined } from 'lodash';
-import MellowLpRouter from '../src/entities/mellowLpRouter';
+import MellowLpRouter from '../src/entities/mellow/mellowLpRouter';
 import { abi as MellowMultiVaultRouterABI } from '../src/ABIs/MellowMultiVaultRouterABI.json';
 import { abi as Erc20RootVaultABI } from '../src/ABIs/Erc20RootVault.json';
 import { abi as WethABI } from '../src/ABIs/WethABI.json';
