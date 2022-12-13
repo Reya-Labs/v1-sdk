@@ -18,13 +18,13 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
           show: true,
           soon: false,
           deprecated: true,
-          withdrawable: false,
           vaults: [
             {
               weight: 100,
               pools: ['Lido - ETH'],
               maturityTimestampMS: 1672491600000,
               estimatedHistoricApy: 31.03,
+              withdrawable: false,
             },
           ],
         },
@@ -40,19 +40,20 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
           show: true,
           soon: false,
           deprecated: false,
-          withdrawable: false,
           vaults: [
             {
               weight: 50,
               pools: ['AAVE - USDC LEND'],
               maturityTimestampMS: 1672488000000,
               estimatedHistoricApy: 6.51,
+              withdrawable: false,
             },
             {
               weight: 50,
               pools: ['AAVE - USDC BORROW'],
               maturityTimestampMS: 1680264000000,
               estimatedHistoricApy: 17.66,
+              withdrawable: false,
             },
           ],
         },
@@ -67,13 +68,13 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
           show: true,
           soon: false,
           deprecated: false,
-          withdrawable: false,
           vaults: [
             {
               weight: 100,
               maturityTimestampMS: 1672491600000,
               pools: ['AAVE - ETH BORROW', 'AAVE - ETH LEND', 'LIDO - ETH', 'ROCKET - ETH'],
               estimatedHistoricApy: 10.96,
+              withdrawable: false,
             },
           ],
         },
@@ -88,13 +89,13 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
           show: true,
           soon: false,
           deprecated: false,
-          withdrawable: false,
           vaults: [
             {
               weight: 100,
               maturityTimestampMS: 1672488000000,
               pools: ['AAVE - DAI LEND', 'COMPOUND - DAI LEND'],
               estimatedHistoricApy: 10.3,
+              withdrawable: false,
             },
           ],
         },
@@ -109,13 +110,13 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
           show: true,
           soon: false,
           deprecated: false,
-          withdrawable: false,
           vaults: [
             {
               weight: 100,
               maturityTimestampMS: 1680264000000,
               pools: ['COMPOUND - USDT BORROW'],
               estimatedHistoricApy: 36.96,
+              withdrawable: false,
             },
           ],
         },
@@ -137,13 +138,13 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
           show: true,
           soon: false,
           deprecated: true,
-          withdrawable: true,
           vaults: [
             {
               weight: 100,
               pools: ['Compound - ETH'],
               maturityTimestampMS: 1670427875000,
               estimatedHistoricApy: 31.03,
+              withdrawable: true,
             },
           ],
         },
@@ -160,13 +161,13 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
           show: true,
           soon: false,
           deprecated: false,
-          withdrawable: true,
           vaults: [
             {
               weight: 100,
               pools: ['Compound - ETH', 'Compound - ETH'],
               maturityTimestampMS: 1670427875000,
               estimatedHistoricApy: 10,
+              withdrawable: true,
             },
           ],
         },
@@ -181,12 +182,12 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
           show: true,
           soon: false,
           deprecated: false,
-          withdrawable: true,
           vaults: [
             {
               weight: 50,
               pools: ['Compound - USDC', 'Compound - USDC'],
               maturityTimestampMS: 1670427875000,
+              withdrawable: true,
               estimatedHistoricApy: 10,
             },
             {
@@ -194,6 +195,7 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
               pools: ['Compound - USDC', 'Compound - USDC'],
               maturityTimestampMS: 1670427875000,
               estimatedHistoricApy: 30,
+              withdrawable: true,
             },
           ],
         },
