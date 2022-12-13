@@ -65,7 +65,7 @@ class MellowLpRouter {
   public vaultCumulative?: number;
   public vaultCap?: number;
 
-  public userComittedDeposit = 0;
+  public userIndividualComittedDeposits: number[] = [];
   public userPendingDeposit = 0;
   public userDeposit = 0;
 
@@ -157,6 +157,10 @@ class MellowLpRouter {
 
     await this.refreshVaultCumulative();
 
+    this.userIndividualComittedDeposits = new Array(
+      this.readOnlyContracts.erc20RootVault.length,
+    ).fill(0x0);
+
     this.vaultInitialized = true;
   };
 
@@ -215,6 +219,10 @@ class MellowLpRouter {
     return getTokenInfo(this.readOnlyContracts.token.address).decimals;
   }
 
+  public get userComittedDeposit(): number {
+    return this.userIndividualComittedDeposits.reduce((total, deposit) => total + deposit, 0);
+  }
+
   refreshVaultCumulative = async (): Promise<void> => {
     this.vaultCumulative = 0;
     this.vaultCap = 0;
@@ -246,7 +254,8 @@ class MellowLpRouter {
   };
 
   refreshUserComittedDeposit = async (): Promise<void> => {
-    this.userComittedDeposit = 0;
+    this.userIndividualComittedDeposits = this.userIndividualComittedDeposits.map(() => 0);
+
     if (
       isUndefined(this.userAddress) ||
       isUndefined(this.readOnlyContracts) ||
@@ -268,8 +277,7 @@ class MellowLpRouter {
 
       if (totalLpTokens.gt(0)) {
         const userFunds = lpTokensBalance.mul(tvl[0][0]).div(totalLpTokens);
-        const userComittedDeposit = this.descale(userFunds, this.tokenDecimals);
-        this.userComittedDeposit += userComittedDeposit;
+        this.userIndividualComittedDeposits[i] = this.descale(userFunds, this.tokenDecimals);
       }
     }
   };
