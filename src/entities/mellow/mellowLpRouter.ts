@@ -16,14 +16,14 @@ import { toBn } from 'evm-bn';
 
 import { getTokenInfo } from '../../services/getTokenInfo';
 
-import { getGasBuffer, MaxUint256Bn, DEPOSIT_WINDOW, TresholdApprovalBn } from '../../constants';
+import { getGasBuffer, MaxUint256Bn, TresholdApprovalBn } from '../../constants';
 
 import { abi as Erc20RootVaultABI } from '../../ABIs/Erc20RootVault.json';
 import { abi as Erc20RootVaultGovernanceABI } from '../../ABIs/Erc20RootVaultGovernance.json';
 import { abi as IERC20MinimalABI } from '../../ABIs/IERC20Minimal.json';
 import { abi as MellowMultiVaultRouterABI } from '../../ABIs/MellowMultiVaultRouterABI.json';
 import { sentryTracker } from '../../utils/sentry';
-import { MellowProductMetadata } from './config';
+import { closeOrPastMaturity, MellowProductMetadata } from './config';
 
 export type MellowLpRouterArgs = {
   id: string;
@@ -224,7 +224,7 @@ class MellowLpRouter {
       (latest, vault) => Math.max(latest, vault.maturityTimestampMS),
       0,
     );
-    return !this.metadata.deprecated && Date.now().valueOf() + DEPOSIT_WINDOW < latestMaturity;
+    return !this.metadata.deprecated && !closeOrPastMaturity(latestMaturity);
   }
 
   public withdrawable(vaultIndex: number): boolean {
