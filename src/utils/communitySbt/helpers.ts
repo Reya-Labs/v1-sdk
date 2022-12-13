@@ -3,7 +3,6 @@ import { Bytes, ethers } from "ethers";
 import { GOERLI_ONE_HUNDRED_THOUSAND, GOERLI_TWO_MILLON, MAINNET_ONE_HUNDRED_THOUSAND, MAINNET_TWO_MILLON } from "../../constants";
 import { NON_SUBGRAPH_BADGES_SEASONS, TOP_BADGES_VARIANT } from "../../entities/communitySbt";
 import { CommunitySBT__factory } from "../../typechain-sbt";
-import { goerliSeasonLeavesCid, mainnetSeasonBadgesCid, mainnetSeasonLeavesCid } from "./seasonsConfig";
 
 import { sentryTracker } from '../sentry';
 
@@ -89,13 +88,9 @@ export async function geckoEthToUsd(apiKey: string) : Promise<number> {
     return 0;
 };
 
-export function geLeavesIpfsUri(network: string, seasonId: number, isClaiming: boolean) : string {
-    if (network === "goerli") {
-        return `https://gateway.pinata.cloud/ipfs/${goerliSeasonLeavesCid[seasonId]}`;
+export function geLeavesIpfsUri(seasonId: number, cidsRecord: Record<number, string>) : string {
+    if (!cidsRecord[seasonId]) {
+        throw new Error(`No IPFS CID found for season ${seasonId}`);
     }
-    if (isClaiming) {
-        return `https://gateway.pinata.cloud/ipfs/${mainnetSeasonLeavesCid[seasonId]}`;
-    }
-    return `https://gateway.pinata.cloud/ipfs/${mainnetSeasonBadgesCid[seasonId]}`;
-    
+    return `https://gateway.pinata.cloud/ipfs/${cidsRecord[seasonId]}`;
 }
