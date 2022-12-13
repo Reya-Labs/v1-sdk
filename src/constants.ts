@@ -69,3 +69,5 @@ export const MAINNET_TWO_MILLON = 2000000;
 
 export const GOERLI_ONE_HUNDRED_THOUSAND = 1;
 export const GOERLI_TWO_MILLON = 200;
+
+export const ONE_HOUR_IN_MS = 60 * 60 * 1000;
