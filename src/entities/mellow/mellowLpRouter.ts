@@ -220,10 +220,7 @@ class MellowLpRouter {
   }
 
   public get depositable(): boolean {
-    const latestMaturity = this.metadata.vaults.reduce(
-      (latest, vault) => Math.max(latest, vault.maturityTimestampMS),
-      0,
-    );
+    const latestMaturity = Math.max(...this.metadata.vaults.map((v) => v.maturityTimestampMS));
     return !this.metadata.deprecated && !closeOrPastMaturity(latestMaturity);
   }
 
