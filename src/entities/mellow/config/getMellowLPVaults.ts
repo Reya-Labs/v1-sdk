@@ -18,16 +18,12 @@ export const getMellowLPVaults = ({
   const vaults: MellowProduct[] = config.MELLOW_VAULTS.filter((item) => item.metadata.show).map(
     (item) => {
       const vault = new MellowLpVault({
+        id: item.voltzVault,
         ethWrapperAddress: config.MELLOW_ETH_WRAPPER,
         voltzVaultAddress: item.voltzVault,
         erc20RootVaultAddress: item.erc20RootVault,
         erc20RootVaultGovernanceAddress: item.erc20RootVaultGovernance,
         provider: config.PROVIDER,
-      });
-
-      return {
-        id: item.voltzVault,
-        vault,
         metadata: {
           ...item.metadata,
           underlyingPools: item.metadata.vaults.reduce(
@@ -35,20 +31,18 @@ export const getMellowLPVaults = ({
             [] as string[],
           ),
         },
-      };
+      });
+
+      return vault;
     },
   );
 
   const routers: MellowProduct[] = config.MELLOW_ROUTERS.filter((item) => item.metadata.show).map(
     (item) => {
       const vault = new MellowLpRouter({
+        id: `mellow-${item.metadata.token.toLowerCase()}`,
         mellowRouterAddress: item.router,
         provider: config.PROVIDER,
-      });
-
-      return {
-        id: `mellow-${item.metadata.token.toLowerCase()}`,
-        vault,
         metadata: {
           ...item.metadata,
           underlyingPools: item.metadata.vaults.reduce(
@@ -56,7 +50,9 @@ export const getMellowLPVaults = ({
             [] as string[],
           ),
         },
-      };
+      });
+
+      return vault;
     },
   );
 
