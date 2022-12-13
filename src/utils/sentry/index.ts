@@ -14,4 +14,5 @@ export const sentryTracker = new BrowserClient({
   // of transactions for performance monitoring.
   // We recommend adjusting this value in production
   tracesSampleRate: 1.0,
+  release: '<VERSION>',
 });
