@@ -1,6 +1,10 @@
 import { DEPOSIT_WINDOW } from '../../../constants';
 import { NetworkConfiguration } from './types';
 
+export const closeOrPastMaturity = (timestampMS: number): boolean => {
+  return Date.now().valueOf() + DEPOSIT_WINDOW > timestampMS;
+};
+
 export const disableMaturedWeights = (config: NetworkConfiguration): NetworkConfiguration => {
   return {
     ...config,
@@ -12,10 +16,7 @@ export const disableMaturedWeights = (config: NetworkConfiguration): NetworkConf
           vaults: router.metadata.vaults.map((vault) => {
             return {
               ...vault,
-              weight:
-                Date.now().valueOf() + DEPOSIT_WINDOW > vault.maturityTimestampMS
-                  ? 0
-                  : vault.weight,
+              weight: closeOrPastMaturity(vault.maturityTimestampMS) ? 0 : vault.weight,
             };
           }),
         },
