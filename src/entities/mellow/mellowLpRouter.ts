@@ -227,10 +227,6 @@ class MellowLpRouter {
     return !this.metadata.deprecated && Date.now().valueOf() + DEPOSIT_WINDOW < latestMaturity;
   }
 
-  public get withdrawable(): boolean {
-    return this.metadata.withdrawable;
-  }
-
   public get userComittedDeposit(): number {
     return this.userIndividualComittedDeposits.reduce((total, deposit) => total + deposit, 0);
   }
