@@ -18,6 +18,7 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
           show: true,
           soon: false,
           deprecated: true,
+          withdrawable: false,
           vaults: [
             {
               weight: 100,
@@ -39,6 +40,7 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
           show: true,
           soon: false,
           deprecated: false,
+          withdrawable: false,
           vaults: [
             {
               weight: 50,
@@ -65,6 +67,7 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
           show: true,
           soon: false,
           deprecated: false,
+          withdrawable: false,
           vaults: [
             {
               weight: 100,
@@ -85,6 +88,7 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
           show: true,
           soon: false,
           deprecated: false,
+          withdrawable: false,
           vaults: [
             {
               weight: 100,
@@ -105,6 +109,7 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
           show: true,
           soon: false,
           deprecated: false,
+          withdrawable: false,
           vaults: [
             {
               weight: 100,
@@ -132,6 +137,7 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
           show: true,
           soon: false,
           deprecated: true,
+          withdrawable: true,
           vaults: [
             {
               weight: 100,
@@ -154,6 +160,7 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
           show: true,
           soon: false,
           deprecated: false,
+          withdrawable: true,
           vaults: [
             {
               weight: 100,
@@ -174,6 +181,7 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
           show: true,
           soon: false,
           deprecated: false,
+          withdrawable: true,
           vaults: [
             {
               weight: 50,

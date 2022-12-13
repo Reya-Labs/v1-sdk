@@ -5,6 +5,7 @@ export type MellowProductMetadata = {
   show: boolean;
   soon: boolean;
   deprecated: boolean;
+  withdrawable: boolean;
   title: string;
   token: string;
   description: string;

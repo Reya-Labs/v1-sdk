@@ -16,14 +16,14 @@ import { toBn } from 'evm-bn';
 
 import { getTokenInfo } from '../../services/getTokenInfo';
 
-import { getGasBuffer, MaxUint256Bn, TresholdApprovalBn } from '../../constants';
+import { getGasBuffer, MaxUint256Bn, ONE_HOUR_IN_MS, TresholdApprovalBn } from '../../constants';
 
 import { abi as Erc20RootVaultABI } from '../../ABIs/Erc20RootVault.json';
 import { abi as Erc20RootVaultGovernanceABI } from '../../ABIs/Erc20RootVaultGovernance.json';
 import { abi as IERC20MinimalABI } from '../../ABIs/IERC20Minimal.json';
 import { abi as MellowMultiVaultRouterABI } from '../../ABIs/MellowMultiVaultRouterABI.json';
 import { sentryTracker } from '../../utils/sentry';
-import { MellowProductMetadata } from './config/types';
+import { MellowProductMetadata } from './config';
 
 export type MellowLpRouterArgs = {
   id: string;
@@ -217,6 +217,18 @@ class MellowLpRouter {
     }
 
     return getTokenInfo(this.readOnlyContracts.token.address).decimals;
+  }
+
+  public get depositable(): boolean {
+    const latestMaturity = this.metadata.vaults.reduce(
+      (latest, vault) => Math.max(latest, vault.maturityTimestampMS),
+      0,
+    );
+    return !this.metadata.deprecated && Date.now().valueOf() + 48 * ONE_HOUR_IN_MS < latestMaturity;
+  }
+
+  public get withdrawable(): boolean {
+    return this.metadata.withdrawable;
   }
 
   public get userComittedDeposit(): number {

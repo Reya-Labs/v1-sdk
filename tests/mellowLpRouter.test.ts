@@ -76,7 +76,32 @@ describe('Mellow Router Test Suite', () => {
 
       ethMellowLpRouter = new MellowLpRouter({
         mellowRouterAddress: MellowRouterAddress,
+        id: 'test',
         provider,
+        metadata: {
+          title: 'Test - ETH',
+          token: 'ETH',
+          description: 'Test',
+          show: true,
+          soon: false,
+          deprecated: false,
+          withdrawable: true,
+          vaults: [
+            {
+              weight: 50,
+              pools: ['Compound - ETH'],
+              maturityTimestampMS: 1670427875000,
+              estimatedHistoricApy: 0.0,
+            },
+            {
+              weight: 50,
+              pools: ['Compound - ETH'],
+              maturityTimestampMS: 1670427875000,
+              estimatedHistoricApy: 0.0,
+            },
+          ],
+          underlyingPools: [],
+        },
       });
 
       await ethMellowLpRouter.vaultInit();
@@ -606,7 +631,32 @@ describe('Mellow Router Test Suite', () => {
 
       ethMellowLpRouter = new MellowLpRouter({
         mellowRouterAddress: MellowRouterAddress,
+        id: 'Test - ETH',
         provider,
+        metadata: {
+          title: 'Test - Router',
+          token: 'ETH',
+          description: 'Test',
+          show: true,
+          soon: false,
+          deprecated: false,
+          withdrawable: true,
+          vaults: [
+            {
+              weight: 50,
+              pools: ['Compound - ETH'],
+              maturityTimestampMS: 1670427875000,
+              estimatedHistoricApy: 0.0,
+            },
+            {
+              weight: 50,
+              pools: ['Compound - ETH'],
+              maturityTimestampMS: 1670427875000,
+              estimatedHistoricApy: 0.0,
+            },
+          ],
+          underlyingPools: [],
+        },
       });
 
       await ethMellowLpRouter.vaultInit();
@@ -664,7 +714,44 @@ describe('Mellow Router Test Suite', () => {
 
       ethMellowLpRouter = new MellowLpRouter({
         mellowRouterAddress: MellowRouterAddress,
+        id: 'Test - ETH',
         provider,
+        metadata: {
+          title: 'Test - Router',
+          token: 'ETH',
+          description: 'Test',
+          show: true,
+          soon: false,
+          deprecated: false,
+          withdrawable: true,
+          vaults: [
+            {
+              weight: 25,
+              pools: ['Compound - ETH'],
+              maturityTimestampMS: 1670427875000,
+              estimatedHistoricApy: 0.0,
+            },
+            {
+              weight: 25,
+              pools: ['Compound - ETH'],
+              maturityTimestampMS: 1670427875000,
+              estimatedHistoricApy: 0.0,
+            },
+            {
+              weight: 25,
+              pools: ['Compound - ETH'],
+              maturityTimestampMS: 1670427875000,
+              estimatedHistoricApy: 0.0,
+            },
+            {
+              weight: 25,
+              pools: ['Compound - ETH'],
+              maturityTimestampMS: 1670427875000,
+              estimatedHistoricApy: 0.0,
+            },
+          ],
+          underlyingPools: [],
+        },
       });
 
       await ethMellowLpRouter.vaultInit();
