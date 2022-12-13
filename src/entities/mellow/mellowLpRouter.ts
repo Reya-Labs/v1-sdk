@@ -227,6 +227,13 @@ class MellowLpRouter {
     return !this.metadata.deprecated && Date.now().valueOf() + DEPOSIT_WINDOW < latestMaturity;
   }
 
+  public withdrawable(vaultIndex: number): boolean {
+    return (
+      this.metadata.vaults[vaultIndex].withdrawable &&
+      Date.now().valueOf() > this.metadata.vaults[vaultIndex].maturityTimestampMS
+    );
+  }
+
   public get userComittedDeposit(): number {
     return this.userIndividualComittedDeposits.reduce((total, deposit) => total + deposit, 0);
   }
