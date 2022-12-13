@@ -23,6 +23,8 @@ export type SBTConstructorArgs = {
     referralsDbUrl?: string;
     subgraphUrl?: string;
     ignoredWalletIds?: Record<string, boolean>;
+    badgesCids?: Record<number, string>; 
+    leavesCids?: Record<number, string>; 
 };
 
 export type BadgeRecord = {
@@ -149,6 +151,8 @@ class SBT {
   public readonly referralsDbUrl?: string;
   public readonly subgraphUrl?: string;
   public readonly ignoredWalletIds?: Record<string, boolean>; 
+  public readonly badgesCids?: Record<number, string>; 
+  public readonly leavesCids?: Record<number, string>; 
   public contract: CommunitySBT | null;
   public ethPrice: number | undefined;
 
@@ -165,7 +169,9 @@ class SBT {
     nonProgDbUrl,
     referralsDbUrl,
     subgraphUrl,
-    ignoredWalletIds
+    ignoredWalletIds,
+    badgesCids,
+    leavesCids
  }: SBTConstructorArgs) {
     this.id = id;
     this.signer = signer;
@@ -176,7 +182,8 @@ class SBT {
     this.referralsDbUrl = referralsDbUrl;
     this.subgraphUrl = subgraphUrl
     this.ignoredWalletIds = ignoredWalletIds ?? {};
-    ;
+    this.badgesCids = badgesCids;
+    this.leavesCids = leavesCids;
     if (signer) {
         this.contract = CommunitySBT__factory.connect(id, signer);
         this.provider = signer.provider;
@@ -207,7 +214,12 @@ class SBT {
     }
 
     try {
-        if (!this.badgesSubgraphUrl || !this.coingeckoKey || !this.subgraphUrl || !this.provider) {
+        if (!this.badgesSubgraphUrl 
+            || !this.coingeckoKey 
+            || !this.subgraphUrl 
+            || !this.provider
+            || !this.leavesCids
+        ) {
             throw new Error('Missing env vars');
         }
 
@@ -222,11 +234,8 @@ class SBT {
             badgeId: parseInt(badgeType)
         }
 
-        const network = (await this.provider.getNetwork()).name;
-
-        const leaves = await createLeaves(network, seasonId);
+        const leaves = await createLeaves(seasonId, this.leavesCids);
         const proof = getProof(owner, parseInt(badgeType), leaves);
-
 
         const tokenId = await this.contract.callStatic.redeem(leafInfo, proof, rootEntity.merkleRoot);
         const tx = await this.contract.redeem(leafInfo, proof, rootEntity.merkleRoot);
@@ -255,7 +264,10 @@ class SBT {
     }> {
         // wallet was not connected when the object was initialised
         // therefore, it couldn't obtain the contract connection
-        if (!this.contract || !this.provider) {
+        if (!this.contract 
+            || !this.provider
+            || !this.leavesCids
+        ) {
             throw new Error('Wallet not connected');
         }
 
@@ -286,8 +298,7 @@ class SBT {
                 badgeId: parseInt(badge.badgeType)
             }
             
-
-            const leaves = await createLeaves(network, seasonId);
+            const leaves = await createLeaves(seasonId, this.leavesCids);
             const proof = getProof(owner, parseInt(badge.badgeType), leaves);
 
             data.leaves.push(leafInfo);
@@ -322,24 +333,31 @@ class SBT {
         seasonEnd: number,
       }): Promise<BadgeResponse[]> {
 
-        // past season
-        if (seasonEnd < DateTime.now().toSeconds()) {
-            const badges = await this.getOldSeasonBadges({
+        try{
+            // past season
+            if (seasonEnd < DateTime.now().toSeconds()) {
+                const badges = await this.getOldSeasonBadges({
+                    userId,
+                    seasonId,
+                    seasonStart,
+                    seasonEnd,
+                })
+                return badges;
+            }
+
+            const badges = await this.computeSeasonBadges({
                 userId,
                 seasonId,
                 seasonStart,
                 seasonEnd,
-            })
+            });
             return badges;
-        }
 
-        const badges = await this.computeSeasonBadges({
-            userId,
-            seasonId,
-            seasonStart,
-            seasonEnd,
-        });
-        return badges;
+        } catch (error) {
+            sentryTracker.captureException(error);
+            sentryTracker.captureMessage("Failed to get season badges");
+            throw new Error("Failed to get season badges");
+        }
 
     } 
     
@@ -355,7 +373,10 @@ class SBT {
         seasonEnd: number,
     }): Promise<BadgeResponse[]> {
 
-        if (!this.provider || !this.signer) {
+        if (!this.provider 
+            || !this.signer
+            || !this.badgesCids
+        ) {
             throw new Error('Wallet not connected');
         }
 
@@ -373,7 +394,7 @@ class SBT {
         })
 
         const network = (await this.provider.getNetwork()).name;
-        const data = await axios.get(geLeavesIpfsUri(network, seasonId, false));
+        const data = await axios.get(geLeavesIpfsUri(seasonId, this.badgesCids));
 
         const snasphots : Array<{
                 owner: string
