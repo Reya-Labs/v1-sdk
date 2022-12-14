@@ -52,7 +52,6 @@ class BorrowAMM {
   public readonly id: string;
   public readonly signer: Signer | null;
   public readonly provider?: providers.Provider;
-  public readonly environment: string;
   public readonly rateOracle: RateOracle;
   public readonly termStartTimestamp: JSBI;
   public readonly termEndTimestamp: JSBI;
@@ -74,7 +73,6 @@ class BorrowAMM {
     this.id = id;
     this.signer = amm.signer;
     this.provider = amm.provider || amm.signer?.provider;
-    this.environment = amm.environment;
     this.rateOracle = amm.rateOracle;
     this.termStartTimestamp = amm.termStartTimestamp;
     this.termEndTimestamp = amm.termEndTimestamp;

@@ -66,7 +66,6 @@ export type AMMConstructorArgs = {
   id: string;
   signer: Signer | null;
   provider?: providers.Provider;
-  environment: string;
   factoryAddress: string;
   marginEngineAddress: string;
   fcmAddress: string;
@@ -290,7 +289,6 @@ class AMM {
   public readonly id: string;
   public readonly signer: Signer | null;
   public readonly provider?: providers.Provider;
-  public readonly environment: string;
   public readonly factoryAddress: string;
   public readonly marginEngineAddress: string;
   public readonly fcmAddress: string;
@@ -312,7 +310,6 @@ class AMM {
     id,
     signer,
     provider,
-    environment,
     factoryAddress,
     marginEngineAddress,
     fcmAddress,
@@ -331,7 +328,6 @@ class AMM {
     this.id = id;
     this.signer = signer;
     this.provider = provider || signer?.provider;
-    this.environment = environment;
     this.factoryAddress = factoryAddress;
     this.marginEngineAddress = marginEngineAddress;
     this.fcmAddress = fcmAddress;
@@ -489,7 +485,7 @@ class AMM {
       swapPeripheryParams,
       tempOverrides
     ).catch(async (error: any) => {
-      const errorMessage = getReadableErrorMessage(error, this.environment);
+      const errorMessage = getReadableErrorMessage(error);
       throw new Error(errorMessage);
     })
 
@@ -501,7 +497,7 @@ class AMM {
       swapPeripheryParams,
       tempOverrides
     ).catch((error) => {
-      const errorMessage = getReadableErrorMessage(error, this.environment);
+      const errorMessage = getReadableErrorMessage(error);
       throw new Error(errorMessage);
     });
 
@@ -515,7 +511,7 @@ class AMM {
       swapPeripheryParams,
       tempOverrides
     ).catch((error) => {
-      const errorMessage = getReadableErrorMessage(error, this.environment);
+      const errorMessage = getReadableErrorMessage(error);
       throw new Error(errorMessage);
     });
 
@@ -620,7 +616,7 @@ class AMM {
       mintOrBurnParams,
       tempOverrides
     ).catch((error) => {
-      const errorMessage = getReadableErrorMessage(error, this.environment);
+      const errorMessage = getReadableErrorMessage(error);
       throw new Error(errorMessage);
     });
 
@@ -632,7 +628,7 @@ class AMM {
       mintOrBurnParams,
       tempOverrides
     ).catch((error) => {
-      const errorMessage = getReadableErrorMessage(error, this.environment);
+      const errorMessage = getReadableErrorMessage(error);
       throw new Error(errorMessage);
     });
 
@@ -646,7 +642,7 @@ class AMM {
       mintOrBurnParams,
       tempOverrides
     ).catch((error) => {
-      const errorMessage = getReadableErrorMessage(error, this.environment);
+      const errorMessage = getReadableErrorMessage(error);
       throw new Error(errorMessage);
     });
 
@@ -743,7 +739,7 @@ class AMM {
         fixedTokenDelta = result[0];
       },
       (error: any) => {
-        const result = decodeInfoPostSwap(error, this.environment);
+        const result = decodeInfoPostSwap(error);
         marginRequirement = result.marginRequirement;
         tickAfter = result.tick;
         fee = result.fee;
@@ -791,7 +787,7 @@ class AMM {
         maxAvailableNotional = result[1];
       },
       (error: any) => {
-        const result = decodeInfoPostSwap(error, this.environment);
+        const result = decodeInfoPostSwap(error);
         maxAvailableNotional = result.availableNotional;
       },
     );
@@ -997,20 +993,20 @@ class AMM {
     let swapTransaction;
     if (fullyCollateralisedVTSwap === undefined || fullyCollateralisedVTSwap === false) {
       await peripheryContract.callStatic.swap(swapPeripheryParams, tempOverrides).catch(async (error: any) => {
-        let result = decodeInfoPostSwap(error, this.environment);
-        const errorMessage = getReadableErrorMessage(error, this.environment);
+        let result = decodeInfoPostSwap(error);
+        const errorMessage = getReadableErrorMessage(error);
         throw new Error(errorMessage);
       });
   
       const estimatedGas = await peripheryContract.estimateGas.swap(swapPeripheryParams, tempOverrides).catch((error) => {
-        const errorMessage = getReadableErrorMessage(error, this.environment);
+        const errorMessage = getReadableErrorMessage(error);
         throw new Error(errorMessage);
       });
   
       tempOverrides.gasLimit = getGasBuffer(estimatedGas);
   
       swapTransaction = await peripheryContract.swap(swapPeripheryParams, tempOverrides).catch((error) => {
-        const errorMessage = getReadableErrorMessage(error, this.environment);
+        const errorMessage = getReadableErrorMessage(error);
         throw new Error(errorMessage);
       });
     } else {
@@ -1021,20 +1017,20 @@ class AMM {
       );
 
       await peripheryContract.callStatic.fullyCollateralisedVTSwap(swapPeripheryParams, variableFactorFromStartToNowWad, tempOverrides).catch(async (error: any) => {
-        let result = decodeInfoPostSwap(error, this.environment);
-        const errorMessage = getReadableErrorMessage(error, this.environment);
+        let result = decodeInfoPostSwap(error);
+        const errorMessage = getReadableErrorMessage(error);
         throw new Error(errorMessage);
       });
   
       const estimatedGas = await peripheryContract.estimateGas.fullyCollateralisedVTSwap(swapPeripheryParams, variableFactorFromStartToNowWad, tempOverrides).catch((error) => {
-        const errorMessage = getReadableErrorMessage(error, this.environment);
+        const errorMessage = getReadableErrorMessage(error);
         throw new Error(errorMessage);
       });
   
       tempOverrides.gasLimit = getGasBuffer(estimatedGas);
   
       swapTransaction = await peripheryContract.fullyCollateralisedVTSwap(swapPeripheryParams, variableFactorFromStartToNowWad, tempOverrides).catch((error) => {
-        const errorMessage = getReadableErrorMessage(error, this.environment);
+        const errorMessage = getReadableErrorMessage(error);
         throw new Error(errorMessage);
       });
     }
@@ -1136,19 +1132,19 @@ class AMM {
     };
 
     await peripheryContract.callStatic.swap(swapPeripheryParams, tempOverrides).catch(async (error: any) => {
-      const errorMessage = getReadableErrorMessage(error, this.environment);
+      const errorMessage = getReadableErrorMessage(error);
       throw new Error(errorMessage);
     });
 
     const estimatedGas = await peripheryContract.estimateGas.swap(swapPeripheryParams, tempOverrides).catch((error) => {
-      const errorMessage = getReadableErrorMessage(error, this.environment);
+      const errorMessage = getReadableErrorMessage(error);
       throw new Error(errorMessage);
     });
 
     tempOverrides.gasLimit = getGasBuffer(estimatedGas);
 
     const swapTransaction = await peripheryContract.swap(swapPeripheryParams, tempOverrides).catch((error) => {
-      const errorMessage = getReadableErrorMessage(error, this.environment);
+      const errorMessage = getReadableErrorMessage(error);
       throw new Error(errorMessage);
     });
 
@@ -1214,7 +1210,7 @@ class AMM {
         marginRequirement = BigNumber.from(result);
       },
       (error) => {
-        const result = decodeInfoPostMint(error, this.environment);
+        const result = decodeInfoPostMint(error);
         marginRequirement = result.marginRequirement;
       },
     );
@@ -1311,19 +1307,19 @@ class AMM {
     }
 
     await peripheryContract.callStatic.mintOrBurn(mintOrBurnParams, tempOverrides).catch((error) => {
-      const errorMessage = getReadableErrorMessage(error, this.environment);
+      const errorMessage = getReadableErrorMessage(error);
       throw new Error(errorMessage);
     });
 
     const estimatedGas = await peripheryContract.estimateGas.mintOrBurn(mintOrBurnParams, tempOverrides).catch((error) => {
-      const errorMessage = getReadableErrorMessage(error, this.environment);
+      const errorMessage = getReadableErrorMessage(error);
       throw new Error(errorMessage);
     });
 
     tempOverrides.gasLimit = getGasBuffer(estimatedGas);
 
     const mintTransaction = await peripheryContract.mintOrBurn(mintOrBurnParams, tempOverrides).catch((error) => {
-      const errorMessage = getReadableErrorMessage(error, this.environment);
+      const errorMessage = getReadableErrorMessage(error);
       throw new Error(errorMessage);
     });
 
@@ -1410,19 +1406,19 @@ class AMM {
 
 
     await peripheryContract.callStatic.mintOrBurn(mintOrBurnParams, tempOverrides).catch((error) => {
-      const errorMessage = getReadableErrorMessage(error, this.environment);
+      const errorMessage = getReadableErrorMessage(error);
       throw new Error(errorMessage);
     });
 
     const estimatedGas = await peripheryContract.estimateGas.mintOrBurn(mintOrBurnParams, tempOverrides).catch((error) => {
-      const errorMessage = getReadableErrorMessage(error, this.environment);
+      const errorMessage = getReadableErrorMessage(error);
       throw new Error(errorMessage);
     });
 
     tempOverrides.gasLimit = getGasBuffer(estimatedGas);
 
     const mintTransaction = await peripheryContract.mintOrBurn(mintOrBurnParams, tempOverrides).catch((error) => {
-      const errorMessage = getReadableErrorMessage(error, this.environment);
+      const errorMessage = getReadableErrorMessage(error);
       throw new Error(errorMessage);
     });
 
@@ -1489,7 +1485,7 @@ class AMM {
     };
 
     await peripheryContract.callStatic.mintOrBurn(mintOrBurnParams).catch((error) => {
-      const errorMessage = getReadableErrorMessage(error, this.environment);
+      const errorMessage = getReadableErrorMessage(error);
       throw new Error(errorMessage);
     });
 
@@ -1498,7 +1494,7 @@ class AMM {
     const burnTransaction = await peripheryContract.mintOrBurn(mintOrBurnParams, {
       gasLimit: getGasBuffer(estimatedGas)
     }).catch((error) => {
-      const errorMessage = getReadableErrorMessage(error, this.environment);
+      const errorMessage = getReadableErrorMessage(error);
       throw new Error(errorMessage);
     });
 
@@ -1564,7 +1560,7 @@ class AMM {
       false,
       tempOverrides
     ).catch(async (error: any) => {
-      const errorMessage = getReadableErrorMessage(error, this.environment);
+      const errorMessage = getReadableErrorMessage(error);
       throw new Error(errorMessage);
     });
 
@@ -1616,7 +1612,7 @@ class AMM {
     const marginEngineContract = marginEngineFactory.connect(this.marginEngineAddress, this.signer);
 
     await marginEngineContract.callStatic.liquidatePosition(owner, tickLower, tickUpper).catch((error) => {
-      const errorMessage = getReadableErrorMessage(error, this.environment);
+      const errorMessage = getReadableErrorMessage(error);
       throw new Error(errorMessage);
     });
 
@@ -1664,7 +1660,7 @@ class AMM {
       tickLower,
       tickUpper
     ).catch((error) => {
-      const errorMessage = getReadableErrorMessage(error, this.environment);
+      const errorMessage = getReadableErrorMessage(error);
       throw new Error(errorMessage);
     });
 
@@ -1754,7 +1750,7 @@ class AMM {
       tickAfter = await peripheryContract.getCurrentTick(this.marginEngineAddress);
     },
       (error: any) => {
-        const result = decodeInfoPostSwap(error, this.environment);
+        const result = decodeInfoPostSwap(error);
         fixedTokenDelta = result.fixedTokenDelta;
         tickAfter = result.tick;
         fee = result.fee;
@@ -1846,7 +1842,7 @@ class AMM {
       scaledNotional,
       sqrtPriceLimitX96
     ).catch((error) => {
-      const errorMessage = getReadableErrorMessage(error, this.environment);
+      const errorMessage = getReadableErrorMessage(error);
       throw new Error(errorMessage);
     });
 
@@ -1931,7 +1927,7 @@ class AMM {
       tickAfter = await peripheryContract.getCurrentTick(this.marginEngineAddress);
     },
       (error: any) => {
-        const result = decodeInfoPostSwap(error, this.environment);
+        const result = decodeInfoPostSwap(error);
         fixedTokenDelta = result.fixedTokenDelta;
         tickAfter = result.tick;
         fee = result.fee;
@@ -2002,7 +1998,7 @@ class AMM {
       scaledNotional,
       sqrtPriceLimitX96
     ).catch((error) => {
-      const errorMessage = getReadableErrorMessage(error, this.environment);
+      const errorMessage = getReadableErrorMessage(error);
       throw new Error(errorMessage);
     });
 
@@ -2052,7 +2048,7 @@ class AMM {
     }
 
     await fcmContract.callStatic.settleTrader().catch((error) => {
-      const errorMessage = getReadableErrorMessage(error, this.environment);
+      const errorMessage = getReadableErrorMessage(error);
       throw new Error(errorMessage);
     });
 
