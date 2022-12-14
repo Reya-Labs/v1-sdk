@@ -3,9 +3,9 @@ import { abi as FactoryABI } from '../../ABIs/Factory.json';
 import { sentryTracker } from '../sentry';
 import * as errorJson from './errorMapping.json';
 
-export const iface = new ethers.utils.Interface(FactoryABI);
+const iface = new ethers.utils.Interface(FactoryABI);
 
-export const getErrorData = (error: any): string => {
+const getErrorData = (error: any): string => {
   try {
     if (typeof error.error.error.data.data === 'string') {
       return error.error.error.data.data;
@@ -42,10 +42,10 @@ export const getErrorData = (error: any): string => {
   throw new Error('Unknown error type');
 };
 
-export const getErrorSignature = (error: any): string => {
-  try {
-    const reason = getErrorData(error);
+const getErrorSignature = (error: any): string => {
+  const reason = getErrorData(error);
 
+  try {
     if (reason.startsWith('0x08c379a0')) {
       return 'Error';
     }
@@ -57,11 +57,11 @@ export const getErrorSignature = (error: any): string => {
     console.error(`Failing to get error signature. ${error}`);
     sentryTracker.captureException(error);
     sentryTracker.captureMessage(`Failing to get error signature. ${error}`);
-    throw new Error('Unknown error type');
+    throw new Error('Phew, that was unexpected. Reach out to our support via Discord!');
   }
 };
 
-export const getReadableErrorMessage = (error: any): string => {
+const getReadableErrorMessageWithoutSentry = (error: any): string => {
   const errSig = getErrorSignature(error);
 
   if (errSig === 'Error') {
@@ -73,11 +73,9 @@ export const getReadableErrorMessage = (error: any): string => {
       if (rawErrorMessage in Object.keys(errorJson)) {
         return errorJson[rawErrorMessage as keyof typeof errorJson];
       }
+    } catch (_) {}
 
-      return `Unrecognised error. ${rawErrorMessage}`;
-    } catch (_) {
-      return 'Unknown error';
-    }
+    return 'Phew, that was unexpected. Reach out to our support via Discord!';
   }
 
   try {
@@ -90,7 +88,14 @@ export const getReadableErrorMessage = (error: any): string => {
     }
   } catch (_) {}
 
-  return 'Unknown error';
+  return 'Phew, that was unexpected. Reach out to our support via Discord!';
+};
+
+export const getReadableErrorMessage = (error: any): string => {
+  const message = getReadableErrorMessageWithoutSentry(error);
+  sentryTracker.captureException(error);
+  sentryTracker.captureMessage(`Error message: ${message}`);
+  return message;
 };
 
 export type RawInfoPostMint = {
@@ -109,7 +114,7 @@ export const decodeInfoPostMint = (error: any): RawInfoPostMint => {
   }
 
   sentryTracker.captureException(error);
-  sentryTracker.captureMessage(`Failing to get info post mint. ${error}`);
+  sentryTracker.captureMessage(`Failing to get info post mint.`);
   throw new Error(getReadableErrorMessage(error));
 };
 
@@ -139,6 +144,6 @@ export const decodeInfoPostSwap = (error: any): RawInfoPostSwap => {
   }
 
   sentryTracker.captureException(error);
-  sentryTracker.captureMessage(`Failing to get info post swap. ${error}`);
+  sentryTracker.captureMessage(`Failing to get info post swap.`);
   throw new Error(getReadableErrorMessage(error));
 };
