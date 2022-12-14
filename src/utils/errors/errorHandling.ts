@@ -1,5 +1,5 @@
 import { BigNumber, ethers, utils } from 'ethers';
-import {abi as FactoryABI} from '../../ABIs/Factory.json';
+import { abi as FactoryABI } from '../../ABIs/Factory.json';
 import { sentryTracker } from '../sentry';
 import * as errorJson from './errorMapping.json';
 
@@ -82,9 +82,15 @@ export const getReadableErrorMessage = (error: any): string => {
 
   try {
     return errorJson[errSig as keyof typeof errorJson];
-  } catch (_) {
-    return 'Unknown error';
-  }
+  } catch (_) {}
+
+  try {
+    if (typeof error.message === 'string') {
+      return error.message;
+    }
+  } catch (_) {}
+
+  return 'Unknown error';
 };
 
 export type RawInfoPostMint = {
@@ -101,7 +107,7 @@ export const decodeInfoPostMint = (error: any): RawInfoPostMint => {
       marginRequirement: decodingResult.marginRequirement,
     };
   }
-  
+
   sentryTracker.captureException(error);
   sentryTracker.captureMessage(`Failing to get info post mint. ${error}`);
   throw new Error(getReadableErrorMessage(error));
@@ -120,19 +126,19 @@ export const decodeInfoPostSwap = (error: any): RawInfoPostSwap => {
   const errSig = getErrorSignature(error);
   if (errSig === 'MarginRequirementNotMet') {
     const reason = getErrorData(error);
-  const decodingResult = iface.decodeErrorResult(errSig, reason);
+    const decodingResult = iface.decodeErrorResult(errSig, reason);
 
-    return  {
-          marginRequirement: decodingResult.marginRequirement,
-          tick: decodingResult.tick,
-          fee: decodingResult.cumulativeFeeIncurred,
-          availableNotional: decodingResult.variableTokenDelta,
-          fixedTokenDelta: decodingResult.fixedTokenDelta,
-          fixedTokenDeltaUnbalanced: decodingResult.fixedTokenDeltaUnbalanced,
-        };
+    return {
+      marginRequirement: decodingResult.marginRequirement,
+      tick: decodingResult.tick,
+      fee: decodingResult.cumulativeFeeIncurred,
+      availableNotional: decodingResult.variableTokenDelta,
+      fixedTokenDelta: decodingResult.fixedTokenDelta,
+      fixedTokenDeltaUnbalanced: decodingResult.fixedTokenDeltaUnbalanced,
+    };
   }
-  
+
   sentryTracker.captureException(error);
   sentryTracker.captureMessage(`Failing to get info post swap. ${error}`);
   throw new Error(getReadableErrorMessage(error));
-}
+};
