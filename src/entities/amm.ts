@@ -3005,14 +3005,6 @@ class AMM {
 
     switch (this.rateOracle.protocolId) {
       case 1: {
-        // old implementation based on the rate oracle
-        // const lastBlock = await this.provider.getBlockNumber();
-        // const oneBlockAgo = BigNumber.from((await this.provider.getBlock(lastBlock - 1)).timestamp);
-        // const twoBlocksAgo = BigNumber.from((await this.provider.getBlock(lastBlock - 2)).timestamp);
-        // const rateOracleContract = BaseRateOracle__factory.connect(this.rateOracle.id, this.provider);
-        // const oneWeekApy = await rateOracleContract.callStatic.getApyFromTo(twoBlocksAgo, oneBlockAgo);
-        // return oneWeekApy.div(BigNumber.from(1000000000000)).toNumber() / 1000000;
-
         if (!this.underlyingToken.id) {
           throw new Error('No underlying error');
         }
