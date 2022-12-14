@@ -23,8 +23,8 @@ export type SBTConstructorArgs = {
     referralsDbUrl?: string;
     subgraphUrl?: string;
     ignoredWalletIds?: Record<string, boolean>;
-    badgesCids?: Record<number, string>; 
-    leavesCids?: Record<number, string>; 
+    badgesCids?: Array<string>; 
+    leavesCids?: Array<string>; 
 };
 
 export type BadgeRecord = {
@@ -151,8 +151,8 @@ class SBT {
   public readonly referralsDbUrl?: string;
   public readonly subgraphUrl?: string;
   public readonly ignoredWalletIds?: Record<string, boolean>; 
-  public readonly badgesCids?: Record<number, string>; 
-  public readonly leavesCids?: Record<number, string>; 
+  public readonly badgesCids?: Array<string>; 
+  public readonly leavesCids?: Array<string>; 
   public contract: CommunitySBT | null;
   public ethPrice: number | undefined;
 
