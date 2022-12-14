@@ -4,7 +4,7 @@ import { geLeavesIpfsUri } from './helpers';
 
 export async function createLeaves(
     seasonId: number,
-    leavesCids: Record<number, string>
+    leavesCids: Array<string>
 ): Promise<Array<LeafInfo>> {
 
     const data = await axios.get(geLeavesIpfsUri(seasonId, leavesCids));
