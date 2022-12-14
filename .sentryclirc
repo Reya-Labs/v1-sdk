@@ -1,0 +1,6 @@
+[auth]
+token=a24e3732ef634d7da3ae11d2f8c644a6388c0fe0c0d34692b53d7cbbec9ff1b9
+
+[defaults]
+org=voltz-labs-ge
+project=voltz-sdk

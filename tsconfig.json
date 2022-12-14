@@ -15,6 +15,14 @@
     "strict": true,
     "noImplicitAny": true,
     "skipDefaultLibCheck": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    // Needed for Sentry debugging
+    "sourceMap": true,
+    "inlineSources": true,
+
+    // Set `sourceRoot` to  `/` to strip the build path prefix from
+    // generated source code references. This allows Sentry to match source files
+    // relative to your source root folder.
+    "sourceRoot": "/"
   }
 }
