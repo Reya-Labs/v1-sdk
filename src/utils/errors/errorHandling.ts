@@ -82,12 +82,6 @@ const getReadableErrorMessageWithoutSentry = (error: any): string => {
     return errorJson[errSig as keyof typeof errorJson];
   } catch (_) {}
 
-  try {
-    if (typeof error.message === 'string') {
-      return error.message;
-    }
-  } catch (_) {}
-
   return 'Phew, that was unexpected. Reach out to our support via Discord!';
 };
 

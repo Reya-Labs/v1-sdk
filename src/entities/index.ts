@@ -11,8 +11,6 @@ export type {
   AMMLiquidatePositionArgs,
   AMMSettlePositionArgs,
   AMMSwapArgs,
-  fcmSwapArgs,
-  fcmUnwindArgs,
   AMMMintArgs,
   InfoPostSwap,
   AMMBurnArgs,
@@ -29,9 +27,6 @@ export { default as Swap } from './swap';
 export { default as MarginUpdate } from './marginUpdate';
 export { default as Liquidation } from './liquidation';
 export { default as Settlement } from './settlement';
-export { default as FCMSwap } from './fcmSwap';
-export { default as FCMUnwind } from './fcmUnwind';
-export { default as FCMSettlement } from './fcmSettlement';
 export { default as MellowLpRouter } from './mellow/mellowLpRouter';
 export { default as MellowLpVault } from './mellow/mellowLpVault';
 export {
