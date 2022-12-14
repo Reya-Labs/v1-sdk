@@ -12,7 +12,7 @@ build:
 
 build-release:
 	rm -rf dist/
-	yarn build-release
+	SENTRY_RELEASE=true yarn build-release
 
 release:
 	yarn release

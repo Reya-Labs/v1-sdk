@@ -81,6 +81,10 @@ function restoreOldFile(oldContent) {
 }
 
 function release() {
+    if(!process.env.SENTRY_RELEASE) {
+        tsCompile();
+        return;
+    }
     const version = `v1-sdk@${packageJsonVersion}-${getCommitHash()}`.trim();
     newSentryRelease(version);
     const oldContent = replaceVersionInSentry(version);
