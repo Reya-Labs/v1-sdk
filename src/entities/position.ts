@@ -3,9 +3,6 @@ import JSBI from 'jsbi';
 import { DateTime } from 'luxon';
 import { BigNumber } from 'ethers';
 import AMM from './amm';
-import FCMSwap from './fcmSwap';
-import FCMUnwind from './fcmUnwind';
-import FCMSettlement from './fcmSettlement';
 import Burn from './burn';
 import Liquidation from './liquidation';
 import MarginUpdate from './marginUpdate';
@@ -21,7 +18,6 @@ import { sentryTracker } from '../utils/sentry';
 
 
 export type PositionConstructorArgs = {
-  source: string;
   id: string;
   createdTimestamp: JSBI;
   amm: AMM;
@@ -31,13 +27,6 @@ export type PositionConstructorArgs = {
   fixedTokenBalance: JSBI;
   variableTokenBalance: JSBI;
   isSettled: boolean;
-
-  // specific to FCM
-  marginInScaledYieldBearingTokens: JSBI;
-
-  fcmSwaps: Array<FCMSwap>;
-  fcmUnwinds: Array<FCMUnwind>;
-  fcmSettlements: Array<FCMSettlement>;
 
   // specific to ME
 
@@ -60,8 +49,6 @@ export type PositionConstructorArgs = {
 };
 
 class Position {
-  public readonly source: string;
-
   public readonly id: string;
 
   public readonly createdTimestamp: JSBI;
@@ -72,19 +59,11 @@ class Position {
 
   public readonly updatedTimestamp: JSBI;
 
-  public readonly marginInScaledYieldBearingTokens: JSBI;
-
   public readonly fixedTokenBalance: JSBI;
 
   public readonly variableTokenBalance: JSBI;
 
   public readonly isSettled: boolean;
-
-  public readonly fcmSwaps: Array<FCMSwap>;
-
-  public readonly fcmUnwinds: Array<FCMUnwind>;
-
-  public readonly fcmSettlements: Array<FCMSettlement>;
 
   public readonly tickLower: number;
 
@@ -115,19 +94,14 @@ class Position {
   public readonly sumOfWeightedFixedRate: JSBI;
 
   public constructor({
-    source,
     id,
     createdTimestamp,
     amm,
     owner,
     updatedTimestamp,
-    marginInScaledYieldBearingTokens,
     fixedTokenBalance,
     variableTokenBalance,
     isSettled,
-    fcmSwaps,
-    fcmUnwinds,
-    fcmSettlements,
     tickLower,
     tickUpper,
     liquidity,
@@ -143,20 +117,14 @@ class Position {
     totalNotionalTraded,
     sumOfWeightedFixedRate,
   }: PositionConstructorArgs) {
-    this.source = source;
     this.id = id;
     this.createdTimestamp = createdTimestamp;
     this.amm = amm;
     this.owner = owner;
     this.updatedTimestamp = updatedTimestamp;
-    this.marginInScaledYieldBearingTokens = marginInScaledYieldBearingTokens;
     this.fixedTokenBalance = fixedTokenBalance;
     this.variableTokenBalance = variableTokenBalance;
     this.isSettled = isSettled;
-
-    this.fcmSwaps = fcmSwaps;
-    this.fcmUnwinds = fcmUnwinds;
-    this.fcmSettlements = fcmSettlements;
 
     this.mints = mints;
     this.burns = burns;
@@ -208,13 +176,6 @@ class Position {
   }
 
   public get effectiveMargin(): number {
-    if (this.source.includes('FCM')) {
-      const result = this.amm.descale(
-        BigNumber.from(this.marginInScaledYieldBearingTokens.toString()),
-      );
-      return result;
-    }
-
     const result = this.amm.descale(BigNumber.from(this.margin.toString()));
     return result;
   }

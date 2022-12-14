@@ -7,8 +7,6 @@ import {
 import {
   BaseRateOracle__factory,
   ICToken__factory as cTokenFactory,
-  ICompoundRateOracle__factory,
-  IAaveRateOracle__factory,
   IAaveV2LendingPool__factory,
   IERC20Minimal__factory,
   ICToken,
