@@ -14,11 +14,11 @@ function getCommitHash() {
 
 function tsCompile() {
     try {
-        console.log(`Compiling code using tsc...`)
+        console.log(`Compiling typescript code...`)
         return execSync('rm -rf ./dist; tsc -p tsconfig.dist.json');
     } catch (e) {
-        console.error(e);
-        console.error('Cannot tsc compile!');
+        console.error(e.stdout?.toString());
+        console.error('Cannot compile typescript!');
         process.exit(1);
     }
 }
