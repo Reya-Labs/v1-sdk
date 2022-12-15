@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { CRITICAL_ERROR_MESSAGE } from '../src/utils/errors/constants';
 import { getReadableErrorMessage } from '../src/utils/errors/errorHandling';
 
-describe('Error handling', () => {
+describe('getReadableErrorMessage', () => {
   describe('Default Metamask - Infura errors', async () => {
     it('Custom error', async () => {
       const error = {
