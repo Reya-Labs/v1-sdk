@@ -12,26 +12,21 @@ import {
 import { isUndefined } from 'lodash';
 import { toBn } from 'evm-bn';
 
-import { getProtocolPrefix, getTokenInfo } from '../../services/getTokenInfo';
-import timestampWadToDateTime from '../../utils/timestampWadToDateTime';
+import { getTokenInfo } from '../../services/getTokenInfo';
 import { getGasBuffer, MaxUint256Bn, TresholdApprovalBn } from '../../constants';
 
-import { abi as VoltzVaultABI } from '../../ABIs/VoltzVault.json';
 import { abi as Erc20RootVaultABI } from '../../ABIs/Erc20RootVault.json';
 import { abi as Erc20RootVaultGovernanceABI } from '../../ABIs/Erc20RootVaultGovernance.json';
-import { abi as MarginEngineABI } from '../../ABIs/MarginEngine.json';
-import { abi as BaseRateOracleABI } from '../../ABIs/BaseRateOracle.json';
 import { abi as IERC20MinimalABI } from '../../ABIs/IERC20Minimal.json';
 import { abi as MellowDepositWrapperABI } from '../../ABIs/MellowDepositWrapper.json';
 import { sentryTracker } from '../../utils/sentry';
 import { MellowProductMetadata } from './config/types';
+import { closeOrPastMaturity } from './config';
 
 export type MellowLpVaultArgs = {
   id: string;
   ethWrapperAddress: string;
-  voltzVaultAddress: string;
   erc20RootVaultAddress: string;
-  erc20RootVaultGovernanceAddress: string;
   provider: providers.Provider;
   metadata: MellowProductMetadata & {
     underlyingPools: string[];
@@ -40,40 +35,33 @@ export type MellowLpVaultArgs = {
 
 class MellowLpVault {
   public readonly id: string;
-  public readonly voltzVaultAddress: string;
-  public readonly erc20RootVaultAddress: string;
-  public readonly erc20RootVaultGovernanceAddress: string;
   public readonly provider: providers.Provider;
-  public readonly ethWrapperAddress: string;
-
   metadata: MellowProductMetadata & {
     underlyingPools: string[];
   };
 
+  public readonly ethWrapperAddress: string;
+  public readonly erc20RootVaultAddress: string;
+
   public readOnlyContracts?: {
-    marginEngine: Contract;
     token: Contract;
-    rateOracle: Contract;
-    voltzVault: Contract;
-    erc20RootVault: Contract;
-    erc20RootVaultGovernance: Contract;
+    erc20RootVault: Contract[];
+    erc20RootVaultGovernance: Contract[];
   };
 
   public writeContracts?: {
     token: Contract;
-    erc20RootVault: Contract;
+    erc20RootVault: Contract[];
     ethWrapper: Contract;
   };
 
   public signer?: Signer;
-  public maturity?: string;
-  public protocolId?: number;
 
   public vaultCumulative?: number;
   public vaultCap?: number;
-  public vaultExpectedApy?: number;
 
-  public userDeposit = 0;
+  public userIndividualComittedDeposits: number[] = [];
+
   public userWalletBalance?: number;
 
   public userAddress?: string;
@@ -81,22 +69,26 @@ class MellowLpVault {
   public vaultInitialized = false;
   public userInitialized = false;
 
+  public vaultsCount = 1;
+
   public constructor({
     id,
     ethWrapperAddress,
     erc20RootVaultAddress,
-    erc20RootVaultGovernanceAddress,
-    voltzVaultAddress,
     provider,
     metadata,
   }: MellowLpVaultArgs) {
     this.id = id;
     this.ethWrapperAddress = ethWrapperAddress;
     this.erc20RootVaultAddress = erc20RootVaultAddress;
-    this.erc20RootVaultGovernanceAddress = erc20RootVaultGovernanceAddress;
-    this.voltzVaultAddress = voltzVaultAddress;
     this.provider = provider;
     this.metadata = metadata;
+
+    if (!(this.metadata.vaults.length === 1)) {
+      throw Error('This should be used for only one vault');
+    }
+
+    this.userIndividualComittedDeposits = [0];
   }
 
   descale = (amount: BigNumberish, decimals: number): number => {
@@ -117,51 +109,29 @@ class MellowLpVault {
       return;
     }
 
-    const voltzVaultContract = new ethers.Contract(
-      this.voltzVaultAddress,
-      VoltzVaultABI,
+    const erc20RootVaultContract = new ethers.Contract(
+      this.erc20RootVaultAddress,
+      Erc20RootVaultABI,
       this.provider,
     );
 
-    const marginEngineAddress = await voltzVaultContract.marginEngine();
-    const marginEngineContract = new ethers.Contract(
-      marginEngineAddress,
-      MarginEngineABI,
-      this.provider,
-    );
-
-    const tokenAddress = await marginEngineContract.underlyingToken();
+    const tokenAddress = (await erc20RootVaultContract.vaultTokens())[0];
     const tokenContract = new Contract(tokenAddress, IERC20MinimalABI, this.provider);
 
-    const rateOracleAddress = await marginEngineContract.rateOracle();
-    const rateOracleContract = new Contract(rateOracleAddress, BaseRateOracleABI, this.provider);
+    const erc20RootVaultGovernanceAddress = await erc20RootVaultContract.vaultGovernance();
+    const erc20RootVaultGovernanceContract = new ethers.Contract(
+      erc20RootVaultGovernanceAddress,
+      Erc20RootVaultGovernanceABI,
+      this.provider,
+    );
 
     this.readOnlyContracts = {
-      marginEngine: marginEngineContract,
       token: tokenContract,
-      rateOracle: rateOracleContract,
-      voltzVault: voltzVaultContract,
-      erc20RootVault: new ethers.Contract(
-        this.erc20RootVaultAddress,
-        Erc20RootVaultABI,
-        this.provider,
-      ),
-      erc20RootVaultGovernance: new ethers.Contract(
-        this.erc20RootVaultGovernanceAddress,
-        Erc20RootVaultGovernanceABI,
-        this.provider,
-      ),
+      erc20RootVault: [erc20RootVaultContract],
+      erc20RootVaultGovernance: [erc20RootVaultGovernanceContract],
     };
 
-    this.protocolId = await rateOracleContract.UNDERLYING_YIELD_BEARING_PROTOCOL_ID();
-
-    const maturityWad = await marginEngineContract.termEndTimestampWad();
-    const date = timestampWadToDateTime(maturityWad);
-
-    this.maturity = `${date.day} ${date.monthShort} ${date.year % 100}`;
-
     await this.refreshVaultCumulative();
-    await this.refreshVaultExpectedApy();
 
     this.vaultInitialized = true;
   };
@@ -189,10 +159,8 @@ class MellowLpVault {
         IERC20MinimalABI,
         this.signer,
       ),
-      erc20RootVault: new ethers.Contract(
-        this.erc20RootVaultAddress,
-        Erc20RootVaultABI,
-        this.signer,
+      erc20RootVault: this.readOnlyContracts.erc20RootVault.map(
+        (contract) => new ethers.Contract(contract.address, Erc20RootVaultABI, this.signer),
       ),
       ethWrapper: new ethers.Contract(this.ethWrapperAddress, MellowDepositWrapperABI, this.signer),
     };
@@ -223,14 +191,20 @@ class MellowLpVault {
     return getTokenInfo(this.readOnlyContracts.token.address).decimals;
   }
 
-  public get protocol(): string {
-    if (isUndefined(this.protocolId)) {
-      return '-';
-    }
+  public get depositable(): boolean {
+    const latestMaturity = Math.max(...this.metadata.vaults.map((v) => v.maturityTimestampMS));
+    return !this.metadata.deprecated && !closeOrPastMaturity(latestMaturity);
+  }
 
-    const prefix = getProtocolPrefix(this.protocolId);
+  public withdrawable(): boolean {
+    return (
+      this.metadata.vaults[0].withdrawable &&
+      Date.now().valueOf() > this.metadata.vaults[0].maturityTimestampMS
+    );
+  }
 
-    return `${prefix}${this.tokenName}`;
+  public get userDeposit(): number {
+    return this.userIndividualComittedDeposits.reduce((total, deposit) => total + deposit, 0);
   }
 
   refreshVaultCumulative = async (): Promise<void> => {
@@ -240,7 +214,7 @@ class MellowLpVault {
       return;
     }
 
-    const totalLpTokens = await this.readOnlyContracts.erc20RootVault.totalSupply();
+    const totalLpTokens = await this.readOnlyContracts.erc20RootVault[0].totalSupply();
 
     if (totalLpTokens.eq(0)) {
       this.vaultCumulative = 0;
@@ -248,10 +222,10 @@ class MellowLpVault {
       return;
     }
 
-    const tvl = await this.readOnlyContracts.erc20RootVault.tvl();
+    const tvl = await this.readOnlyContracts.erc20RootVault[0].tvl();
 
-    const nft = await this.readOnlyContracts.erc20RootVault.nft();
-    const strategyParams = await this.readOnlyContracts.erc20RootVaultGovernance.strategyParams(
+    const nft = await this.readOnlyContracts.erc20RootVault[0].nft();
+    const strategyParams = await this.readOnlyContracts.erc20RootVaultGovernance[0].strategyParams(
       nft,
     );
 
@@ -262,30 +236,26 @@ class MellowLpVault {
     );
   };
 
-  refreshVaultExpectedApy = async (): Promise<void> => {
-    this.vaultExpectedApy = 31.03;
-  };
-
   refreshUserDeposit = async (): Promise<void> => {
+    this.userIndividualComittedDeposits = [0];
     if (
       isUndefined(this.userAddress) ||
       isUndefined(this.readOnlyContracts) ||
       isUndefined(this.tokenDecimals)
     ) {
-      this.userDeposit = 0;
       return;
     }
 
-    const lpTokens = await this.readOnlyContracts.erc20RootVault.balanceOf(this.userAddress);
-    const totalLpTokens = await this.readOnlyContracts.erc20RootVault.totalSupply();
+    const lpTokens = await this.readOnlyContracts.erc20RootVault[0].balanceOf(this.userAddress);
+    const totalLpTokens = await this.readOnlyContracts.erc20RootVault[0].totalSupply();
 
-    const tvl = await this.readOnlyContracts.erc20RootVault.tvl();
+    const tvl = await this.readOnlyContracts.erc20RootVault[0].tvl();
 
     if (totalLpTokens.gt(0)) {
       const userFunds = lpTokens.mul(tvl[0][0]).div(totalLpTokens);
-      this.userDeposit = this.descale(userFunds, this.tokenDecimals);
+      this.userIndividualComittedDeposits[0] = this.descale(userFunds, this.tokenDecimals);
     } else {
-      this.userDeposit = 0;
+      this.userIndividualComittedDeposits[0] = 0;
     }
   };
 
@@ -322,7 +292,7 @@ class MellowLpVault {
 
     const tokenApproval = await this.readOnlyContracts.token.allowance(
       this.userAddress,
-      this.readOnlyContracts.erc20RootVault.address,
+      this.readOnlyContracts.erc20RootVault[0].address,
     );
 
     return tokenApproval.gte(TresholdApprovalBn);
@@ -334,12 +304,12 @@ class MellowLpVault {
     }
 
     const gasLimit = await this.writeContracts.token.estimateGas.approve(
-      this.readOnlyContracts.erc20RootVault.address,
+      this.readOnlyContracts.erc20RootVault[0].address,
       MaxUint256Bn,
     );
 
     const tx = await this.writeContracts.token.approve(
-      this.readOnlyContracts.erc20RootVault.address,
+      this.readOnlyContracts.erc20RootVault[0].address,
       MaxUint256Bn,
       {
         gasLimit: getGasBuffer(gasLimit),
@@ -378,13 +348,13 @@ class MellowLpVault {
     try {
       if (this.isETH) {
         this.writeContracts.ethWrapper.callStatic.deposit(
-          this.readOnlyContracts.erc20RootVault.address,
+          this.readOnlyContracts.erc20RootVault[0].address,
           minLPTokens,
           [],
           tempOverrides,
         );
       } else {
-        await this.writeContracts.erc20RootVault.callStatic.deposit(
+        await this.writeContracts.erc20RootVault[0].callStatic.deposit(
           [scaledAmount],
           minLPTokens,
           [],
@@ -399,14 +369,14 @@ class MellowLpVault {
 
     if (this.isETH) {
       const gasLimit = await this.writeContracts.ethWrapper.estimateGas.deposit(
-        this.readOnlyContracts.erc20RootVault.address,
+        this.readOnlyContracts.erc20RootVault[0].address,
         minLPTokens,
         [],
         tempOverrides,
       );
       tempOverrides.gasLimit = getGasBuffer(gasLimit);
     } else {
-      const gasLimit = await this.writeContracts.erc20RootVault.estimateGas.deposit(
+      const gasLimit = await this.writeContracts.erc20RootVault[0].estimateGas.deposit(
         [scaledAmount],
         minLPTokens,
         [],
@@ -416,12 +386,12 @@ class MellowLpVault {
 
     const tx = this.isETH
       ? await this.writeContracts.ethWrapper.deposit(
-          this.readOnlyContracts.erc20RootVault.address,
+          this.readOnlyContracts.erc20RootVault[0].address,
           minLPTokens,
           [],
           tempOverrides,
         )
-      : await this.writeContracts.erc20RootVault.deposit(
+      : await this.writeContracts.erc20RootVault[0].deposit(
           [scaledAmount],
           minLPTokens,
           [],
@@ -474,7 +444,7 @@ class MellowLpVault {
     }
 
     // Get the balance of LP tokens
-    const lpTokens = await this.readOnlyContracts.erc20RootVault.balanceOf(this.userAddress);
+    const lpTokens = await this.readOnlyContracts.erc20RootVault[0].balanceOf(this.userAddress);
 
     // Get the number of subvaults to input the correct vault options
     const subvaultsCount: number = (await this.readOnlyContracts.erc20RootVault[0].subvaultNfts())
@@ -491,10 +461,10 @@ class MellowLpVault {
 
     // Simulate the withdrawal
     try {
-      await this.writeContracts.erc20RootVault.callStatic.withdraw(
+      await this.writeContracts.erc20RootVault[0].callStatic.withdraw(
         this.userAddress,
         lpTokens,
-        minTokenAmounts,
+        [minTokenAmounts],
         vaultsOptions,
       );
     } catch (error) {
@@ -505,18 +475,18 @@ class MellowLpVault {
     }
 
     // Estimate the gas for this transaction
-    const gasLimit = await this.writeContracts.erc20RootVault.estimateGas.withdraw(
+    const gasLimit = await this.writeContracts.erc20RootVault[0].estimateGas.withdraw(
       this.userAddress,
       lpTokens,
-      minTokenAmounts,
+      [minTokenAmounts],
       vaultsOptions,
     );
 
     // Send the transaction
-    const tx = await this.writeContracts.erc20RootVault.withdraw(
+    const tx = await this.writeContracts.erc20RootVault[0].withdraw(
       this.userAddress,
       lpTokens,
-      minTokenAmounts,
+      [minTokenAmounts],
       vaultsOptions,
       {
         gasLimit: getGasBuffer(gasLimit),

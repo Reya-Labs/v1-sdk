@@ -20,9 +20,7 @@ export const getMellowLPVaults = ({
       const vault = new MellowLpVault({
         id: item.voltzVault,
         ethWrapperAddress: config.MELLOW_ETH_WRAPPER,
-        voltzVaultAddress: item.voltzVault,
         erc20RootVaultAddress: item.erc20RootVault,
-        erc20RootVaultGovernanceAddress: item.erc20RootVaultGovernance,
         provider: config.PROVIDER,
         metadata: {
           ...item.metadata,

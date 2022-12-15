@@ -85,19 +85,20 @@ describe('Mellow Router Test Suite', () => {
           show: true,
           soon: false,
           deprecated: false,
-          withdrawable: true,
           vaults: [
             {
               weight: 50,
               pools: ['Compound - ETH'],
               maturityTimestampMS: 1670427875000,
               estimatedHistoricApy: 0.0,
+              withdrawable: true,
             },
             {
               weight: 50,
               pools: ['Compound - ETH'],
               maturityTimestampMS: 1670427875000,
               estimatedHistoricApy: 0.0,
+              withdrawable: true,
             },
           ],
           underlyingPools: [],
@@ -352,6 +353,26 @@ describe('Mellow Router Test Suite', () => {
     it('Have we descaled properly?', async () => {
       const amount = BigNumber.from('1000000000000000000');
       expect(ethMellowLpRouter.descale(amount, 18)).to.be.eq(BigNumber.from('1'));
+    });
+
+    it('Token name', async () => {
+      expect(ethMellowLpRouter.tokenName).to.be.eq('ETH');
+    });
+
+    it('isETH check', async () => {
+      expect(ethMellowLpRouter.isETH).to.be.eq(true);
+    });
+
+    it('Token decimals', async () => {
+      expect(ethMellowLpRouter.tokenDecimals).to.be.eq(18);
+    });
+
+    it('Depositable', async () => {
+      expect(ethMellowLpRouter.depositable).to.be.eq(false);
+    });
+
+    it('Withdrawable', async () => {
+      expect(ethMellowLpRouter.withdrawable(0)).to.be.eq(true);
     });
 
     describe('ERC20 Deposits', async () => {
@@ -640,19 +661,20 @@ describe('Mellow Router Test Suite', () => {
           show: true,
           soon: false,
           deprecated: false,
-          withdrawable: true,
           vaults: [
             {
               weight: 50,
               pools: ['Compound - ETH'],
               maturityTimestampMS: 1670427875000,
               estimatedHistoricApy: 0.0,
+              withdrawable: true,
             },
             {
               weight: 50,
               pools: ['Compound - ETH'],
               maturityTimestampMS: 1670427875000,
               estimatedHistoricApy: 0.0,
+              withdrawable: true,
             },
           ],
           underlyingPools: [],
@@ -723,31 +745,34 @@ describe('Mellow Router Test Suite', () => {
           show: true,
           soon: false,
           deprecated: false,
-          withdrawable: true,
           vaults: [
             {
               weight: 25,
               pools: ['Compound - ETH'],
               maturityTimestampMS: 1670427875000,
               estimatedHistoricApy: 0.0,
+              withdrawable: true,
             },
             {
               weight: 25,
               pools: ['Compound - ETH'],
               maturityTimestampMS: 1670427875000,
               estimatedHistoricApy: 0.0,
+              withdrawable: true,
             },
             {
               weight: 25,
               pools: ['Compound - ETH'],
               maturityTimestampMS: 1670427875000,
               estimatedHistoricApy: 0.0,
+              withdrawable: true,
             },
             {
               weight: 25,
               pools: ['Compound - ETH'],
               maturityTimestampMS: 1670427875000,
               estimatedHistoricApy: 0.0,
+              withdrawable: true,
             },
           ],
           underlyingPools: [],
