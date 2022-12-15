@@ -1,6 +1,7 @@
 import { BigNumber, ethers, utils } from 'ethers';
 import { abi as FactoryABI } from '../../ABIs/Factory.json';
 import { sentryTracker } from '../sentry';
+import { CRITICAL_ERROR_MESSAGE } from './constants';
 import * as errorJson from './errorMapping.json';
 
 const iface = new ethers.utils.Interface(FactoryABI);
@@ -39,7 +40,7 @@ const getErrorData = (error: any): string => {
   console.error(`Unknown error type. ${error}`);
   sentryTracker.captureException(error);
   sentryTracker.captureMessage(`Unknown error type. ${error}`);
-  throw new Error('Unknown error type');
+  throw new Error(CRITICAL_ERROR_MESSAGE);
 };
 
 const getErrorSignature = (error: any): string => {
@@ -57,7 +58,7 @@ const getErrorSignature = (error: any): string => {
     console.error(`Failing to get error signature. ${error}`);
     sentryTracker.captureException(error);
     sentryTracker.captureMessage(`Failing to get error signature. ${error}`);
-    throw new Error('Phew, that was unexpected. Reach out to our support via Discord!');
+    throw new Error(CRITICAL_ERROR_MESSAGE);
   }
 };
 
@@ -68,21 +69,24 @@ const getReadableErrorMessageWithoutSentry = (error: any): string => {
     const reason = getErrorData(error);
 
     try {
-      const rawErrorMessage = utils.defaultAbiCoder.decode(['string'], reason)[0];
+      // Remove the error signature
+      const encodedMessage = reason.slice(0, 2).concat(reason.slice(10));
 
-      if (rawErrorMessage in Object.keys(errorJson)) {
+      const rawErrorMessage = utils.defaultAbiCoder.decode(['string'], encodedMessage)[0];
+
+      if (Object.keys(errorJson).some((e) => e === rawErrorMessage)) {
         return errorJson[rawErrorMessage as keyof typeof errorJson];
       }
     } catch (_) {}
 
-    return 'Phew, that was unexpected. Reach out to our support via Discord!';
+    return CRITICAL_ERROR_MESSAGE;
   }
 
   try {
     return errorJson[errSig as keyof typeof errorJson];
   } catch (_) {}
 
-  return 'Phew, that was unexpected. Reach out to our support via Discord!';
+  return CRITICAL_ERROR_MESSAGE;
 };
 
 export const getReadableErrorMessage = (error: any): string => {
