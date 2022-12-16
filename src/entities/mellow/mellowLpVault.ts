@@ -525,6 +525,10 @@ class MellowLpVault {
       throw new Error('Unsucessful withdraw confirmation.');
     }
   };
+
+  rollover = async (): Promise<ContractReceipt> => {
+    throw new Error('This is not supported.');
+  };
 }
 
 export default MellowLpVault;
