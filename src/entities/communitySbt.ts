@@ -132,11 +132,14 @@ export const NON_PROGRAMATIC_BADGES_VARIANT: Record<string, string> = {
     'senatorz' : '35'
 }
 
-export const REFERROR_BADGES_VARIANT: Record<string, string> = {
-    'referror' : '36',
-    'notionalInfluencer' : '37',
-    'whaleWhisperer' : '38'
-}
+export const REFERROR_BADGES_VARIANT: Record<number, Record<string, string>> = {
+    1: {
+      referror: '36',
+      notionalInfluencer: '37',
+      whaleWhisperer: '38',
+    },
+    2: {},
+  };
 
 
 
@@ -633,44 +636,48 @@ class SBT {
         if (!resp.data){
             return badgeResponseRecord;
         }
-
         const referees: string[] = resp.data;
+        const lowerCaseReferees = referees.reduce((pV, cV) => 
+            ([...pV, cV.toLowerCase()]), [] as Array<string>
+        );
+
+        const refereesQuery = `
+            query( $ids: [String], $season: BigInt) {
+                seasonUsers( where: {owner_in: $ids, seasonNumber: $season}) {
+                    id
+                    owner {
+                        id
+                    }
+                    totalWeightedNotionalTraded
+                }
+            }
+        `;
+
+        const client = new ApolloClient({
+            cache: new InMemoryCache(),
+            link: new HttpLink({ uri: this.badgesSubgraphUrl, fetch })
+        })
+        const data = await client.query<{
+            seasonUsers: {
+                totalWeightedNotionalTraded: string
+                owner: {id: string}
+            }[]
+        }>({
+            query: gql(refereesQuery),
+            variables: {
+                ids: lowerCaseReferees,
+                season: seasonId
+            },
+        });
+
+        if(!data?.data?.seasonUsers){
+            throw new Error("Unable to get referees from subgraph");
+        }
+
         let refereesWith100kNotionalTraded = 0;
         let refereesWith2mNotionalTraded = 0;
-        for (const referee of referees){
-            const badgeQuery = `
-                query( $id: String) {
-                    seasonUsers( where: {owner_contains: $id}) {
-                        id
-                        totalWeightedNotionalTraded
-                      
-                    }
-                }
-            `;
-            const client = new ApolloClient({
-                cache: new InMemoryCache(),
-                link: new HttpLink({ uri: this.badgesSubgraphUrl, fetch })
-            })
-            const id = `${referee.toLowerCase()}`
-            const data = await client.query<{
-                seasonUsers: {
-                    totalWeightedNotionalTraded: string
-                }[]
-            }>({
-                query: gql(badgeQuery),
-                variables: {
-                    id: id,
-                },
-            });
-
-            if(!data?.data?.seasonUsers){
-                continue;
-            }
-
-            let totalPointz = 0;
-            data.data.seasonUsers.forEach((user) => {
-                totalPointz = totalPointz + parseFloat(user.totalWeightedNotionalTraded);
-            });
+        for (const seasonUser of data.data.seasonUsers){
+            let totalPointz = parseFloat(seasonUser.totalWeightedNotionalTraded);
             if(totalPointz >= get100KRefereeBenchmark(this.badgesSubgraphUrl)) {
                 refereesWith100kNotionalTraded++;
                 if(totalPointz >= get2MRefereeBenchmark(this.badgesSubgraphUrl)){
@@ -680,15 +687,15 @@ class SBT {
         };
 
         if (refereesWith100kNotionalTraded >= 1) {
-            let badgeType = '36'; //referror
+            let badgeType = REFERROR_BADGES_VARIANT[seasonId]['referror']; 
             badgeResponseRecord[badgeType] = this.createReferroorBadgeRecord(badgeType, userId, seasonId);
             if (refereesWith100kNotionalTraded >= 10) {
-                badgeType = '37'; // Notional Influence
+                badgeType = REFERROR_BADGES_VARIANT[seasonId]['notionalInfluencer'];
                 badgeResponseRecord[badgeType] = this.createReferroorBadgeRecord(badgeType, userId, seasonId);
             }
         }
         if (refereesWith2mNotionalTraded >= 5) {
-            const badgeType = '38'; //whaleWhisperer
+            const badgeType = REFERROR_BADGES_VARIANT[seasonId]['whaleWhisperer'];
             badgeResponseRecord[badgeType] = this.createReferroorBadgeRecord(badgeType, userId, seasonId);
         }
         return badgeResponseRecord;
