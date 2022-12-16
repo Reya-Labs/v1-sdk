@@ -3,6 +3,7 @@ import { ApolloClient, gql, HttpLink, InMemoryCache } from '@apollo/client';
 import { SubgraphBadgeResponse } from "../../entities/communitySbt";
 import { toMillis } from "./helpers";
 import { sentryTracker } from "../sentry";
+import { getApolloClient } from "./getApolloClient";
 
 export async function getSubgraphBadges({
     userId,
@@ -35,10 +36,7 @@ export async function getSubgraphBadges({
                     }
                 }
             `;
-            const client = new ApolloClient({
-                cache: new InMemoryCache(),
-                link: new HttpLink({ uri: badgesSubgraphUrl, fetch })
-            })
+            const client = getApolloClient(badgesSubgraphUrl);
             const id = `${userId.toLowerCase()}#${seasonId}`
             const data = await client.query<{
                 seasonUser: {

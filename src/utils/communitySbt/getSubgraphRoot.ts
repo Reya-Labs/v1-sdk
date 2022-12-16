@@ -1,6 +1,7 @@
 import { ApolloClient, gql, HttpLink, InMemoryCache } from '@apollo/client';
 import fetch from 'cross-fetch';
 import { Bytes } from 'ethers';
+import { getApolloClient } from './getApolloClient';
 
 const rootsQuery = `
   query($timestamp: BigInt) {
@@ -25,10 +26,7 @@ export async function getRootFromSubgraph(
   timestamp: number,
   subgraphUrl: string,
 ): Promise<RootEntity | undefined> {
-  const client = new ApolloClient({
-    cache: new InMemoryCache(),
-    link: new HttpLink({ uri: subgraphUrl, fetch }),
-  });
+  const client = getApolloClient(subgraphUrl);
 
   const data = await client.query({
     query: gql(rootsQuery),

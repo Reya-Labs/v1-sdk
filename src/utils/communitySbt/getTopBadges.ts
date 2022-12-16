@@ -1,6 +1,7 @@
 import { ApolloClient, gql, HttpLink, InMemoryCache } from "@apollo/client";
 import { ethers } from "ethers";
 import { ONE_YEAR_IN_SECONDS } from "../../constants";
+import { getApolloClient } from "./getApolloClient";
 
 export type GetScoresArgs = {
     seasonStart: number;
@@ -95,10 +96,7 @@ export async function getScores({
         }
       `
 
-    const client = new ApolloClient({
-        cache: new InMemoryCache(),
-        link: new HttpLink({ uri: subgraphUrl, fetch })
-    })
+    const client = getApolloClient(subgraphUrl);
   
     const scores: Record<string, number> = {};
   
