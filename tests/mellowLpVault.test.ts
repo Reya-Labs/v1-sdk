@@ -208,7 +208,7 @@ describe('Mellow Router Test Suite', () => {
 
       await advanceTimeAndBlock(30 * 24 * 60 * 60, 1);
 
-      expect(ethMellowLpVault.userIndividualComittedDeposits).to.be.deep.eq([10]);
+      expect(ethMellowLpVault.userIndividualCommittedDeposits).to.be.deep.eq([10]);
       expect(ethMellowLpVault.userDeposit).to.be.eq(10);
 
       const initBalance: BigNumber = await wethContract.balanceOf(ethMellowLpVault.userAddress);
@@ -216,7 +216,7 @@ describe('Mellow Router Test Suite', () => {
       await ethMellowLpVault.withdraw();
 
       await ethMellowLpVault.refreshUserDeposit();
-      expect(ethMellowLpVault.userIndividualComittedDeposits).to.be.deep.eq([0]);
+      expect(ethMellowLpVault.userIndividualCommittedDeposits).to.be.deep.eq([0]);
       expect(ethMellowLpVault.userDeposit).to.be.eq(0);
 
       const finalBalance: BigNumber = await wethContract.balanceOf(ethMellowLpVault.userAddress);

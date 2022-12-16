@@ -19,7 +19,6 @@ import {
   // todo: not very elegant to use the mock as a factory
   ERC20Mock__factory as tokenFactory,
   BaseRateOracle__factory,
-  VAMM__factory,
   ICToken__factory,
   CompoundRateOracle,
   CompoundRateOracle__factory,
