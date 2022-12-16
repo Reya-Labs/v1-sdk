@@ -203,6 +203,11 @@ class MellowLpVault {
     );
   }
 
+  // eslint-disable-next-line class-methods-use-this
+  public rolloverable(): boolean {
+    return false;
+  }
+
   public get userDeposit(): number {
     return this.userIndividualCommittedDeposits.reduce((total, deposit) => total + deposit, 0);
   }

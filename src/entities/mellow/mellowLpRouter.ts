@@ -231,6 +231,10 @@ class MellowLpRouter {
     );
   }
 
+  public rolloverable(vaultIndex: number): boolean {
+    return this.withdrawable(vaultIndex);
+  }
+
   public get userComittedDeposit(): number {
     return this.userIndividualCommittedDeposits.reduce((total, deposit) => total + deposit, 0);
   }
