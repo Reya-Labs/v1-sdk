@@ -13,6 +13,7 @@ import { getScores, GetScoresArgs } from '../utils/communitySbt/getTopBadges';
 import { getSubgraphBadges } from '../utils/communitySbt/getSubgraphBadges';
 
 import { sentryTracker } from '../utils/sentry';
+import { getApolloClient } from '../utils/communitySbt/getApolloClient';
 
 export type SBTConstructorArgs = {
     id: string;
@@ -591,10 +592,7 @@ class SBT {
                 }
             }
         `;
-        const client = new ApolloClient({
-            cache: new InMemoryCache(),
-            link: new HttpLink({ uri: this.badgesSubgraphUrl, fetch })
-        })
+        const client = getApolloClient(this.badgesSubgraphUrl ?? "");
       
         const idBadge = `${userId.toLowerCase()}#${badgeType}#${seasonId}`;
         const badgeData = await client.query<{
@@ -666,10 +664,7 @@ class SBT {
             }
         `;
 
-        const client = new ApolloClient({
-            cache: new InMemoryCache(),
-            link: new HttpLink({ uri: this.badgesSubgraphUrl, fetch })
-        })
+        const client = getApolloClient(this.badgesSubgraphUrl ?? "")
         const data = await client.query<{
             seasonUsers: {
                 totalWeightedNotionalTraded: string
@@ -821,10 +816,7 @@ class SBT {
                 }
             }
         `;
-        const client = new ApolloClient({
-            cache: new InMemoryCache(),
-            link: new HttpLink({ uri: this.badgesSubgraphUrl, fetch })
-        })
+        const client = getApolloClient(this.badgesSubgraphUrl ?? "");
         const id = `${userAddress.toLowerCase()}#${season}`
         const data = await client.query<{
             badges: SubgraphBadgeResponse[]
