@@ -100,7 +100,6 @@ export type NonProgramaticBadgeResponse = {
     address: string;
     badge: string;
     awardedTimestamp: number;
-    mintedTimestamp: number;
 }
 
 export const NON_SUBGRAPH_BADGES_SEASONS: Record<number, string[]>  = {
@@ -126,11 +125,17 @@ export const TOP_BADGES_VARIANT: Record<string, string[]> = {
 }
 
 
-export const NON_PROGRAMATIC_BADGES_VARIANT: Record<string, string> = {
-    'diplomatz' : '33',
-    'governorz' : '34',
-    'senatorz' : '35'
-}
+export const NON_PROGRAMATIC_BADGES_VARIANT: Record<
+  number,
+  Record<string, string>
+> = {
+  1: {
+    diplomatz: '33',
+    governorz: '34',
+    senatorz: '35',
+  },
+  2: {},
+};
 
 export const REFERROR_BADGES_VARIANT: Record<number, Record<string, string>> = {
     1: {
@@ -396,7 +401,6 @@ class SBT {
             mapBadges.set(entry.id, entry);
         })
 
-        const network = (await this.provider.getNetwork()).name;
         const data = await axios.get(geLeavesIpfsUri(seasonId, this.badgesCids));
 
         const snasphots : Array<{
@@ -448,7 +452,12 @@ class SBT {
             let referroorBadges : Record<string, BadgeResponse> = {};
             let nonProgBadges : Record<string, BadgeResponse> = {};
             if (this.nonProgDbUrl) {
-                nonProgBadges = await this.getNonProgramaticBadges(userId);
+                nonProgBadges = await this.getNonProgramaticBadges(
+                    userId,
+                    seasonId,
+                    seasonStart,
+                    seasonEnd
+                );
             }
             
             if (this.referralsDbUrl && this.badgesSubgraphUrl) {
@@ -605,7 +614,12 @@ class SBT {
         return badge;
     }
 
-    public async getNonProgramaticBadges(userId: string) : Promise<Record<string, BadgeResponse>> {
+    public async getNonProgramaticBadges(
+        userId: string,
+        seasonId: number,
+        seasonStart: number,
+        seasonEnd: number
+    ) : Promise<Record<string, BadgeResponse>> {
         let badgeResponseRecord : Record<string, BadgeResponse> = {};
 
         const resp = await axios.get(`${this.nonProgDbUrl}/get-badges/${userId}`);
@@ -615,14 +629,13 @@ class SBT {
 
         const badges: NonProgramaticBadgeResponse[] = resp.data.badges;
         badges.forEach((entry) => {
-            const badgeType = NON_PROGRAMATIC_BADGES_VARIANT[entry.badge];
-            
-            if(badgeType) {
+            const badgeType = NON_PROGRAMATIC_BADGES_VARIANT[seasonId][entry.badge]; 
+            if(badgeType && entry.awardedTimestamp <= seasonEnd && entry.awardedTimestamp >= seasonStart) {
                 badgeResponseRecord[badgeType] = {
-                    id: `${userId}#${badgeType}#1`,
+                    id: `${userId}#${badgeType}#${seasonId}`,
                     badgeType: badgeType,
                     awardedTimestampMs: toMillis(entry.awardedTimestamp),
-                    mintedTimestampMs: toMillis(entry.mintedTimestamp),
+                    mintedTimestampMs: undefined,
                 } as BadgeResponse;
             }
         });
