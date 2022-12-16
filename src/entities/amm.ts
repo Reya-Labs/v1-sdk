@@ -16,8 +16,7 @@ import {
   Periphery__factory as peripheryFactory,
   MarginEngine__factory as marginEngineFactory,
   Factory__factory as factoryFactory,
-  // todo: not very elegant to use the mock as a factory
-  ERC20Mock__factory as tokenFactory,
+  IERC20Minimal__factory as tokenFactory,
   BaseRateOracle__factory,
   ICToken__factory,
   CompoundRateOracle,
