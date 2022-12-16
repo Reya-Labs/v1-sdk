@@ -60,7 +60,7 @@ class MellowLpVault {
   public vaultCumulative?: number;
   public vaultCap?: number;
 
-  public userIndividualComittedDeposits: number[] = [];
+  public userIndividualCommittedDeposits: number[] = [];
 
   public userWalletBalance?: number;
 
@@ -88,7 +88,7 @@ class MellowLpVault {
       throw Error('This should be used for only one vault');
     }
 
-    this.userIndividualComittedDeposits = [0];
+    this.userIndividualCommittedDeposits = [0];
   }
 
   descale = (amount: BigNumberish, decimals: number): number => {
@@ -204,7 +204,7 @@ class MellowLpVault {
   }
 
   public get userDeposit(): number {
-    return this.userIndividualComittedDeposits.reduce((total, deposit) => total + deposit, 0);
+    return this.userIndividualCommittedDeposits.reduce((total, deposit) => total + deposit, 0);
   }
 
   refreshVaultCumulative = async (): Promise<void> => {
@@ -237,7 +237,7 @@ class MellowLpVault {
   };
 
   refreshUserDeposit = async (): Promise<void> => {
-    this.userIndividualComittedDeposits = [0];
+    this.userIndividualCommittedDeposits = [0];
     if (
       isUndefined(this.userAddress) ||
       isUndefined(this.readOnlyContracts) ||
@@ -253,9 +253,9 @@ class MellowLpVault {
 
     if (totalLpTokens.gt(0)) {
       const userFunds = lpTokens.mul(tvl[0][0]).div(totalLpTokens);
-      this.userIndividualComittedDeposits[0] = this.descale(userFunds, this.tokenDecimals);
+      this.userIndividualCommittedDeposits[0] = this.descale(userFunds, this.tokenDecimals);
     } else {
-      this.userIndividualComittedDeposits[0] = 0;
+      this.userIndividualCommittedDeposits[0] = 0;
     }
   };
 
