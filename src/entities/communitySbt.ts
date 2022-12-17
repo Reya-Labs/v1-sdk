@@ -1,11 +1,10 @@
 import { BigNumber, Bytes, Signer, providers } from 'ethers';
-import { ApolloClient, gql, HttpLink, InMemoryCache } from '@apollo/client';
+import { gql } from '@apollo/client';
 import { CommunitySBT, CommunitySBT__factory } from '../typechain-sbt';
 import { createLeaves } from '../utils/communitySbt/getIpfsLeaves';
 import { getRootFromSubgraph } from '../utils/communitySbt/getSubgraphRoot';
 import { getProof } from '../utils/communitySbt/merkle-tree';
 import  axios from 'axios';
-import fetch from 'cross-fetch';
 import { MULTI_REDEEM_METHOD_ID, REDEEM_METHOD_ID } from '../constants';
 import { decodeBadgeType, decodeMultipleBadgeTypes, geckoEthToUsd, geLeavesIpfsUri, get100KRefereeBenchmark, get2MRefereeBenchmark, getEtherscanURL, getTopBadgeType, toMillis } from '../utils/communitySbt/helpers';
 import { DateTime } from 'luxon';
@@ -117,12 +116,22 @@ export const NON_SUBGRAPH_BADGES_SEASONS: Record<number, string[]>  = {
         '36',
         '37',
         '38'
+    ],
+    2: [
+        '49',
+        '52',
+        '54',
+        '55',
+        '56',
+        '57',
+        '58',
+        '59'
     ]
 }
 
 export const TOP_BADGES_VARIANT: Record<string, string[]> = {
-    'trader': ['15', '31'],
-    'liquidityProvider': ['12', '28']
+    'trader': ['15', '31', '52'],
+    'liquidityProvider': ['12', '28', '49']
 }
 
 
@@ -135,7 +144,11 @@ export const NON_PROGRAMATIC_BADGES_VARIANT: Record<
     governorz: '34',
     senatorz: '35',
   },
-  2: {},
+  2: {
+    diplomatz: '54',
+    governorz: '55',
+    senatorz: '56',
+  },
 };
 
 export const REFERROR_BADGES_VARIANT: Record<number, Record<string, string>> = {
@@ -144,7 +157,11 @@ export const REFERROR_BADGES_VARIANT: Record<number, Record<string, string>> = {
       notionalInfluencer: '37',
       whaleWhisperer: '38',
     },
-    2: {},
+    2: {
+        referror: '57',
+        notionalInfluencer: '58',
+        whaleWhisperer: '59',
+    },
   };
 
 
@@ -640,7 +657,7 @@ class SBT {
         return badgeResponseRecord;
     }
 
-    async getReferrorBadges(userId: string, seasonId: number) : Promise<Record<string, BadgeResponse>> {
+    public async getReferrorBadges(userId: string, seasonId: number) : Promise<Record<string, BadgeResponse>> {
         let badgeResponseRecord : Record<string, BadgeResponse> = {};
 
         const resp = await axios.get(`${this.referralsDbUrl}/referrals-by/${userId.toLowerCase()}`);
