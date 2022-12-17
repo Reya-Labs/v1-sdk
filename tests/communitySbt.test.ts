@@ -2,10 +2,11 @@ import axios from "axios";
 import { createMockClient, MockApolloClient } from "mock-apollo-client";
 import { jest } from "@jest/globals";
 import { getApolloClient } from "../src/utils/communitySbt/getApolloClient";
-import SBT from "../src/entities/communitySbt";
+import SBT, { NonProgramaticBadgeResponse } from "../src/entities/communitySbt";
 import { SubgraphBadgeResponse } from "../src/entities/communitySbt";
 import { ethers } from "hardhat";
 import { toMillis } from "../src/utils/communitySbt/helpers";
+import { getSubgraphBadges } from "../src/utils/communitySbt/getSubgraphBadges";
 
 type SeasonUser = {
   owner: {
@@ -108,6 +109,91 @@ describe("getSeasonBadges old season", () => {
     expect(badgesList[3].awardedTimestampMs).toBe(toMillis(ogSeasonStart+1))
     expect(badgesList[3].mintedTimestampMs).toBe(undefined)
   });
+
+  test("get subgraph badges", async () => {
+    const badges = [
+        createBadgeResponse(1, ogSeasonStart+1, ogSeasonEnd+1, "account1", 0),
+        createBadgeResponse(7, ogSeasonStart+1, 0, "account1", 0),
+        createBadgeResponse(12, 0, ogSeasonEnd+1, "account1", 0)
+    ] as SubgraphBadgeResponse[]
+    const seasonUser = createSeasonUserWithBadges(
+        "account1",
+        0,
+        badges
+    );
+    const mGraphQLResponse = { data: { seasonUser: seasonUser } };
+    const client = mockGetApolloClient(network);
+    client.query.mockResolvedValueOnce(mGraphQLResponse);
+
+    const badgesList = await getSubgraphBadges({
+        userId: "account1",
+        seasonId: 0,
+        seasonStart: ogSeasonStart,
+        seasonEnd: ogSeasonEnd,
+        badgesSubgraphUrl: "badges_subgraph"
+    });
+    expect(badgesList[2].badgeType).toBe("12")
+    expect(badgesList[2].awardedTimestampMs).toBe(toMillis(0))
+    expect(badgesList[2].mintedTimestampMs).toBe(toMillis(ogSeasonEnd+1))
+    expect(badgesList[0].badgeType).toBe("1")
+    expect(badgesList[0].awardedTimestampMs).toBe(toMillis(ogSeasonStart+1))
+    expect(badgesList[0].mintedTimestampMs).toBe(toMillis(ogSeasonEnd+1))
+    expect(badgesList[1].badgeType).toBe("7")
+    expect(badgesList[1].awardedTimestampMs).toBe(toMillis(ogSeasonStart+1))
+    expect(badgesList[1].mintedTimestampMs).toBe(undefined)
+  });
+
+  test("get community badges, check no out-of-season badges are parsed", async () => {
+    const data: Array<NonProgramaticBadgeResponse> = [];
+    data.push(createNonProgBadgeResponse("account1", "diplomatz", s2SeasonStart+1)) // 54
+    data.push(createNonProgBadgeResponse("account1", "governorz", s2SeasonStart+2)) // 55
+    data.push(createNonProgBadgeResponse("account1", "senatorz", s1SeasonEnd-2)) // 35
+
+    const mockedAxios = axios as jest.Mocked<typeof axios>;
+    mockedAxios.get
+      .mockResolvedValueOnce({
+        status: 200,
+        data: {badges: data},
+      });
+    const badgesList = await communitySbt.getNonProgramaticBadges(
+        "account1",
+        2,
+        s2SeasonStart,
+        s2SeasonEnd
+    );
+    expect(badgesList['55'].badgeType).toBe('55')
+    expect(badgesList['55'].awardedTimestampMs).toBe(toMillis(s2SeasonStart+2))
+    expect(badgesList['55'].mintedTimestampMs).toBe(undefined)
+    expect(badgesList['54'].badgeType).toBe('54')
+    expect(badgesList['54'].awardedTimestampMs).toBe(toMillis(s2SeasonStart+1))
+    expect(badgesList['54'].mintedTimestampMs).toBe(undefined)
+    expect(badgesList['35']).toBe(undefined)
+    expect(badgesList['56']).toBe(undefined)
+  });
+
+  test("get referrer badges", async () => {
+    const seasonUsers = createSeasonUsers(1,0,1);
+    const mGraphQLResponse = { data: { seasonUsers: seasonUsers } };
+    const client = mockGetApolloClient(network);
+    client.query.mockResolvedValueOnce(mGraphQLResponse);
+
+    const data: Array<String> = [
+        "under100k0",
+        "over2m0"
+    ];
+    const mockedAxios = axios as jest.Mocked<typeof axios>;
+    mockedAxios.get
+      .mockResolvedValueOnce({
+        status: 200,
+        data: data,
+      });
+    const badgesList = await communitySbt.getReferrorBadges("account1",1);
+
+    expect(badgesList['36'].badgeType).toBe('36')
+    expect(badgesList['36'].awardedTimestampMs).toBeDefined()
+    expect(badgesList['36'].mintedTimestampMs).toBe(undefined)
+    expect(Object.entries(badgesList).length).toBe(1)
+  });
 });
 
 function createSeasonUsers(
@@ -179,6 +265,18 @@ function createIpfsBadge(
         owner: owner,
         badgeType: badgeType,
         metadataURI: "randomUri",
+    }
+}
+
+function createNonProgBadgeResponse(
+    owner: string,
+    badgeName: string,
+    awardedTimestamp: number
+) : NonProgramaticBadgeResponse {
+    return {
+        address: owner,
+        badge: badgeName,
+        awardedTimestamp: awardedTimestamp,
     }
 }
   
