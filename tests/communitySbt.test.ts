@@ -39,7 +39,7 @@ const mockGetApolloClient = getApolloClient as jest.Mocked<
   (network: string) => any
 >;
 
-describe("getSeasonBadges old season", () => {
+describe("getSeasonBadges", () => {
   const ogSeasonStart = 1654037999;
   const ogSeasonEnd = 1664578799;
   const s1SeasonStart = 1664578800;
@@ -47,7 +47,7 @@ describe("getSeasonBadges old season", () => {
   const s2SeasonStart = 1672531200;
   const s2SeasonEnd = 1677628799;
   const seasonId = 1;
-  const network = "goerli";
+  const network = "mainnet";
   let communitySbt : SBT;
   beforeEach(() => {
     communitySbt = new SBT({
@@ -68,7 +68,7 @@ describe("getSeasonBadges old season", () => {
     const badges = [
         createBadgeResponse(1, ogSeasonStart+1, ogSeasonEnd+1, "account1", 0),
         createBadgeResponse(7, ogSeasonStart+1, 0, "account1", 0),
-        createBadgeResponse(12, 0, ogSeasonEnd+1, "account1", 0)
+        createBadgeResponse(12, 0, ogSeasonEnd+1, "account1", 0) // non prog, but minted
     ] as SubgraphBadgeResponse[]
     const seasonUser = createSeasonUserWithBadges(
         "account1",
@@ -171,6 +171,27 @@ describe("getSeasonBadges old season", () => {
     expect(badgesList['56']).toBe(undefined)
   });
 
+  test("get community badges, zero in season badges", async () => {
+    const data: Array<NonProgramaticBadgeResponse> = [];
+    data.push(createNonProgBadgeResponse("account1", "diplomatz", s2SeasonStart+1)) // 54
+    data.push(createNonProgBadgeResponse("account1", "governorz", s2SeasonStart+2)) // 55
+    data.push(createNonProgBadgeResponse("account1", "senatorz", s2SeasonEnd-2)) // 35
+
+    const mockedAxios = axios as jest.Mocked<typeof axios>;
+    mockedAxios.get
+      .mockResolvedValueOnce({
+        status: 200,
+        data: {badges: data},
+      });
+    const badgesList = await communitySbt.getNonProgramaticBadges(
+        "account1",
+        1,
+        s1SeasonStart,
+        s1SeasonEnd
+    );
+    expect(Object.keys(badgesList).length).toBe(0)
+  });
+
   test("get referrer badges", async () => {
     const seasonUsers = createSeasonUsers(1,0,1);
     const mGraphQLResponse = { data: { seasonUsers: seasonUsers } };
@@ -193,6 +214,202 @@ describe("getSeasonBadges old season", () => {
     expect(badgesList['36'].awardedTimestampMs).toBeDefined()
     expect(badgesList['36'].mintedTimestampMs).toBe(undefined)
     expect(Object.entries(badgesList).length).toBe(1)
+  });
+
+  test("check referror badge assigned and no whale influenecer", async () => {
+    const seasonUsers = createSeasonUsers(2, 1, 4);
+    const mGraphQLResponse = { data: { seasonUsers: seasonUsers } };
+    const client = mockGetApolloClient("goerli");
+    client.query.mockResolvedValueOnce(mGraphQLResponse);
+
+    const data: Array<String> = [
+        "over100k0",
+        "over2M1",
+        "over2M2",
+        "over2M3",
+        "over2M0",
+    ];
+    const mockedAxios = axios as jest.Mocked<typeof axios>;
+    mockedAxios.get
+      .mockResolvedValueOnce({
+        status: 200,
+        data: data,
+      })
+    const badgesList = await communitySbt.getReferrorBadges(
+        "account1", 1
+    );
+
+    expect(badgesList['36'].badgeType).toBe('36')
+    expect(badgesList['36'].awardedTimestampMs).toBeDefined()
+    expect(badgesList['36'].mintedTimestampMs).toBe(undefined)
+    expect(Object.entries(badgesList).length).toBe(1)
+  });
+
+  test("check whale whisperer but no notional influencer", async () => {
+    const seasonUsers = createSeasonUsers(1, 0, 9);
+    const mGraphQLResponse = { data: { seasonUsers: seasonUsers } };
+    const client = mockGetApolloClient("goerli");
+    client.query.mockResolvedValueOnce(mGraphQLResponse);
+
+    const data: Array<String> = [
+      "over2M0",
+      "over2M1",
+      "over2M2",
+      "over2M3",
+      "over2M4",
+      "over2M5",
+      "over2M6",
+      "over2M7",
+      "over2M8",
+      "under100k0",
+    ];
+    const mockedAxios = axios as jest.Mocked<typeof axios>;
+    mockedAxios.get
+      .mockResolvedValueOnce({
+        status: 200,
+        data: data,
+      })
+    const badgesList = await communitySbt.getReferrorBadges(
+        "account1",
+        1
+    );
+
+    expect(badgesList['36'].badgeType).toBe('36')
+    expect(badgesList['36'].awardedTimestampMs).toBeDefined()
+    expect(badgesList['36'].mintedTimestampMs).toBe(undefined)
+    expect(badgesList['38'].badgeType).toBe('38')
+    expect(badgesList['38'].awardedTimestampMs).toBeDefined()
+    expect(badgesList['38'].mintedTimestampMs).toBe(undefined)
+    expect(Object.entries(badgesList).length).toBe(2)
+  });
+
+  test("check notional influencer but no whale whisperer", async () => {
+    const seasonUsers = createSeasonUsers(0, 6, 4);
+    const mGraphQLResponse = { data: { seasonUsers: seasonUsers } };
+    const client = mockGetApolloClient("goerli");
+    client.query.mockResolvedValueOnce(mGraphQLResponse);
+
+    const data: Array<String> = [
+      "over2M0",
+      "over2M1",
+      "over2M2",
+      "over2M3",
+      "over100k0",
+      "over100k1",
+      "over100k2",
+      "over100k3",
+      "over100k4",
+      "over100k5",
+    ];
+    const mockedAxios = axios as jest.Mocked<typeof axios>;
+    mockedAxios.get
+      .mockResolvedValueOnce({
+        status: 200,
+        data: data,
+      })
+    
+    const badgesList = await communitySbt.getReferrorBadges(
+        "account1",
+        1
+    );
+
+    expect(badgesList['36'].badgeType).toBe('36')
+    expect(badgesList['36'].awardedTimestampMs).toBeDefined()
+    expect(badgesList['36'].mintedTimestampMs).toBe(undefined)
+    expect(badgesList['37'].badgeType).toBe('37')
+    expect(badgesList['37'].awardedTimestampMs).toBeDefined()
+    expect(badgesList['37'].mintedTimestampMs).toBe(undefined)
+    expect(Object.entries(badgesList).length).toBe(2)
+  });
+
+  test("check no badge", async () => {
+    const seasonUsers = createSeasonUsers(1, 0, 0);
+    const mGraphQLResponse = { data: { seasonUsers: seasonUsers } };
+    const client = mockGetApolloClient("goerli");
+    client.query.mockResolvedValueOnce(mGraphQLResponse);
+
+    const data : Array<string> = [];
+    const mockedAxios = axios as jest.Mocked<typeof axios>;
+    mockedAxios.get
+      .mockResolvedValueOnce({
+        status: 200,
+        data: data,
+      })
+    
+    const badgesList = await communitySbt.getReferrorBadges(
+        "account1",
+        1
+    );
+
+    expect(Object.entries(badgesList).length).toBe(0)
+  });
+
+  test("check referror with even if one referee didn't trade", async () => {
+    const seasonUsers = createSeasonUsers(0, 0, 1);
+    const mGraphQLResponse = { data: { seasonUsers: seasonUsers } };
+    const client = mockGetApolloClient("goerli");
+    client.query.mockResolvedValueOnce(mGraphQLResponse);
+
+    const data : Array<String> = ["didntTrade", "over2M0"];
+    const mockedAxios = axios as jest.Mocked<typeof axios>;
+    mockedAxios.get
+      .mockResolvedValueOnce({
+        status: 200,
+        data: data,
+      });
+    
+    const badgesList = await communitySbt.getReferrorBadges(
+        "account1",
+        1
+    );
+
+    expect(badgesList['36'].badgeType).toBe('36')
+    expect(badgesList['36'].awardedTimestampMs).toBeDefined()
+    expect(badgesList['36'].mintedTimestampMs).toBe(undefined)
+    expect(Object.entries(badgesList).length).toBe(1)
+  });
+
+  test("check all badges achieved", async () => {
+    const seasonUsers = createSeasonUsers(0, 5, 6);
+    const mGraphQLResponse = { data: { seasonUsers: seasonUsers } };
+    const client = mockGetApolloClient("goerli");
+    client.query.mockResolvedValueOnce(mGraphQLResponse);
+
+    const data : Array<String> = [
+      "over2M0",
+      "over2M1",
+      "over2M2",
+      "over2M3",
+      "over2M4",
+      "over100k0",
+      "over100k1",
+      "over100k2",
+      "over100k3",
+      "over100k4",
+      "over100k5",
+    ];
+    const mockedAxios = axios as jest.Mocked<typeof axios>;
+    mockedAxios.get
+      .mockResolvedValueOnce({
+        status: 200,
+        data: data,
+      });
+
+    const badgesList = await communitySbt.getReferrorBadges(
+        "account1",
+        1
+    );
+
+    expect(badgesList['36'].badgeType).toBe('36')
+    expect(badgesList['36'].awardedTimestampMs).toBeDefined()
+    expect(badgesList['36'].mintedTimestampMs).toBe(undefined)
+    expect(badgesList['37'].badgeType).toBe('37')
+    expect(badgesList['37'].awardedTimestampMs).toBeDefined()
+    expect(badgesList['37'].mintedTimestampMs).toBe(undefined)
+    expect(badgesList['38'].badgeType).toBe('38')
+    expect(badgesList['38'].awardedTimestampMs).toBeDefined()
+    expect(badgesList['38'].mintedTimestampMs).toBe(undefined)
+    expect(Object.entries(badgesList).length).toBe(3)
   });
 });
 
