@@ -1,3 +1,5 @@
+import { sentryTracker } from '../utils/sentry';
+
 export const getProtocolPrefix = (protocolId: number): string => {
   switch (protocolId) {
     case 1: {
@@ -81,5 +83,20 @@ export const getTokenInfo = (tokenAddress: string): { name: string; decimals: nu
     return { name: 'USDT', decimals: 6 };
   }
 
-  return { name: 'UNKNOWN', decimals: 18 };
+  // goerli
+  if (
+    tokenAddress.toLowerCase().includes('0x79C950C7446B234a6Ad53B908fBF342b01c4d446'.toLowerCase())
+  ) {
+    return { name: 'USDT', decimals: 6 };
+  }
+
+  // goerli
+  if (
+    tokenAddress.toLowerCase().includes('0xC2C527C0CACF457746Bd31B2a698Fe89de2b6d49'.toLowerCase())
+  ) {
+    return { name: 'USDT', decimals: 6 };
+  }
+
+  sentryTracker.captureMessage(`Token address ${tokenAddress} not supported.`);
+  throw new Error(`Token address ${tokenAddress} not supported.`);
 };

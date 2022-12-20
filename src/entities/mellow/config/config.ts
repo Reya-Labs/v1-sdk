@@ -214,6 +214,27 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
           ],
         },
       },
+      {
+        router: '0xB1EBCC0367c775D9447DFb0B55082aA694113ae0',
+        metadata: {
+          title: 'MELLOW - USDT',
+          token: 'USDT',
+          description:
+            'The Mellow LP Optimiser runs a permissionless strategy that takes deposits and generates optimised LP fees by providing liquidity on Voltz Protocol.',
+          show: true,
+          soon: false,
+          deprecated: false,
+          vaults: [
+            {
+              weight: 100,
+              pools: ['Compound - USDT'],
+              maturityTimestampMS: 1672500292000,
+              estimatedHistoricApy: 15,
+              withdrawable: false,
+            },
+          ],
+        },
+      },
     ],
   },
   default: {
