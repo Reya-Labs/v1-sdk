@@ -542,6 +542,9 @@ class SBT {
         })
 
         for (let rank = 0; rank < 5; rank++) {
+            if(!rankResult[rank]) {
+                return undefined;
+            }
             const entry = rankResult[rank];
             if (entry.address === userId) {
                 const badge = await this.constructTopBadge(
