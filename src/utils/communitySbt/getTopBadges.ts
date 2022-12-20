@@ -16,7 +16,7 @@ export type MintOrBurnAction = {
     transaction: {
         createdTimestamp: number;
     }
-    amount: number;
+    amount: string;
 }
 
 export type SwapAction = {
@@ -24,7 +24,7 @@ export type SwapAction = {
         createdTimestamp: number;
     }
     cumulativeFeeIncurred: number;
-    variableTokenDelta: number;
+    variableTokenDelta: string;
 }
 
 export enum ActionType {
@@ -112,7 +112,7 @@ export async function getScores({
 
       const wallets = data?.data?.wallets ?? [];
   
-      for (const wallet of  wallets) {
+      for (const wallet of wallets) {
         let score = 0;
   
         for (const position of wallet.positions) {
@@ -137,7 +137,7 @@ export async function getScores({
           if (isLP) {
             const burnArgs : UpdateScoreArgs  = {...args, actionType: ActionType.BURN, actions:  position.burns as MintOrBurnAction[]};
             score = updateScore(burnArgs);
-            const mintArgs : UpdateScoreArgs  = {...args, actionType: ActionType.MINT, actions:  position.mints as MintOrBurnAction[]};
+            const mintArgs : UpdateScoreArgs  = {...args, score: score, actionType: ActionType.MINT, actions:  position.mints as MintOrBurnAction[]};
             score = updateScore(mintArgs);
           } else {
             const swapArgs : UpdateScoreArgs  = {...args, actionType: ActionType.SWAP, actions:  position.swaps as SwapAction[]};
