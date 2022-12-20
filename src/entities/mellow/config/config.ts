@@ -163,11 +163,18 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
           deprecated: false,
           vaults: [
             {
-              weight: 100,
+              weight: 0,
               pools: ['Compound - ETH', 'Compound - ETH'],
               maturityTimestampMS: 1670427875000,
               estimatedHistoricApy: 10,
               withdrawable: true,
+            },
+            {
+              weight: 100,
+              pools: ['Compound - ETH'],
+              maturityTimestampMS: 1672500292000,
+              estimatedHistoricApy: 20,
+              withdrawable: false,
             },
           ],
         },
@@ -184,18 +191,25 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
           deprecated: false,
           vaults: [
             {
-              weight: 50,
+              weight: 0,
               pools: ['Compound - USDC', 'Compound - USDC'],
               maturityTimestampMS: 1670427875000,
               withdrawable: true,
               estimatedHistoricApy: 10,
             },
             {
-              weight: 50,
+              weight: 0,
               pools: ['Compound - USDC', 'Compound - USDC'],
               maturityTimestampMS: 1670427875000,
               estimatedHistoricApy: 30,
               withdrawable: true,
+            },
+            {
+              weight: 100,
+              pools: ['Compound - USDC'],
+              maturityTimestampMS: 1672500292000,
+              estimatedHistoricApy: 30,
+              withdrawable: false,
             },
           ],
         },
