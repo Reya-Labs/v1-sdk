@@ -665,6 +665,61 @@ class MellowLpRouter {
       throw new Error('Unsucessful rollover confirmation.');
     }
   };
+
+  registerForAutoRollover = async (registration: boolean): Promise<number> => {
+    if (
+      isUndefined(this.readOnlyContracts) ||
+      isUndefined(this.writeContracts) ||
+      isUndefined(this.userAddress)
+    ) {
+      throw new Error('Uninitialized contracts.');
+    }
+
+    try {
+      await this.writeContracts.mellowRouter.callStatic.registerForAutoRollover(registration);
+    } catch (err) {
+      console.error('Error during registration for auto-rollover', err);
+      throw new Error('Unsuccessful auto-rollover registration simulation');
+    }
+
+    const gasLimit = await this.writeContracts.mellowRouter.estimateGas.registerForAutoRollover(
+      registration,
+    );
+
+    const tx = await this.writeContracts.mellowRouter.registerForAutoRollover(registration, {
+      gasLimti: getGasBuffer(gasLimit),
+    });
+
+    try {
+      const receipt = await tx.wait();
+
+      try {
+        await this.refreshWalletBalance();
+      } catch (err) {
+        sentryTracker.captureException(err);
+        sentryTracker.captureMessage(
+          'Wallet user balance failed to refresh after auto-rollover registration',
+        );
+        console.error('Wallet user balance failed to refresh after auto-rollover registration');
+      }
+
+      try {
+        await this.refreshUserDeposit();
+      } catch (err) {
+        sentryTracker.captureException(err);
+        sentryTracker.captureMessage(
+          'User deposit failed to refresh after auto-rollover registration',
+        );
+        console.error('User deposit failed to refresh after auto-rollover registration');
+      }
+
+      return receipt;
+    } catch (err) {
+      sentryTracker.captureException(err);
+      sentryTracker.captureMessage('Unsucessful auto-rollover registration confirmation.');
+      throw new Error('Unsucessful auto-rollover registration confirmation.');
+    }
+  };
 }
 
 export default MellowLpRouter;
