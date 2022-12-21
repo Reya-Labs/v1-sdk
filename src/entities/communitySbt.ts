@@ -102,36 +102,9 @@ export type NonProgramaticBadgeResponse = {
     awardedTimestamp: number;
 }
 
-export const NON_SUBGRAPH_BADGES_SEASONS: Record<number, string[]>  = {
-    0: [
-        '15',
-        '12'
-    ],
-    1: [
-        '31',
-        '28',
-        '33',
-        '34',
-        '35',
-        '36',
-        '37',
-        '38'
-    ],
-    2: [
-        '49',
-        '52',
-        '54',
-        '55',
-        '56',
-        '57',
-        '58',
-        '59'
-    ]
-}
-
 export const TOP_BADGES_VARIANT: Record<string, string[]> = {
-    'trader': ['15', '31', '52'],
-    'liquidityProvider': ['12', '28', '49']
+    'trader': ['15', '31', '56'],
+    'liquidityProvider': ['12', '28', '53']
 }
 
 
@@ -145,9 +118,9 @@ export const NON_PROGRAMATIC_BADGES_VARIANT: Record<
     senatorz: '35',
   },
   2: {
-    diplomatz: '54',
-    governorz: '55',
-    senatorz: '56',
+    diplomatz: '57',
+    governorz: '58',
+    senatorz: '59',
   },
 };
 
@@ -158,12 +131,38 @@ export const REFERROR_BADGES_VARIANT: Record<number, Record<string, string>> = {
       whaleWhisperer: '38',
     },
     2: {
-        referror: '57',
-        notionalInfluencer: '58',
-        whaleWhisperer: '59',
+        referror: '60',
+        notionalInfluencer: '61',
+        whaleWhisperer: '62',
     },
-  };
+};
 
+export const NON_SUBGRAPH_BADGES_SEASONS: Record<number, string[]>  = {
+    0: [
+        TOP_BADGES_VARIANT['trader'][0],
+        TOP_BADGES_VARIANT['liquidityProvider'][0]
+    ],
+    1: [
+        TOP_BADGES_VARIANT['trader'][1],
+        TOP_BADGES_VARIANT['liquidityProvider'][1],
+        NON_PROGRAMATIC_BADGES_VARIANT[1]['diplomatz'],
+        NON_PROGRAMATIC_BADGES_VARIANT[1]['governorz'],
+        NON_PROGRAMATIC_BADGES_VARIANT[1]['senatorz'],
+        REFERROR_BADGES_VARIANT[1]['referror'],
+        REFERROR_BADGES_VARIANT[1]['notionalInfluencer'],
+        REFERROR_BADGES_VARIANT[1]['whaleWhisperer'],
+    ],
+    2: [
+        TOP_BADGES_VARIANT['trader'][2],
+        TOP_BADGES_VARIANT['liquidityProvider'][2],
+        NON_PROGRAMATIC_BADGES_VARIANT[2]['diplomatz'],
+        NON_PROGRAMATIC_BADGES_VARIANT[2]['governorz'],
+        NON_PROGRAMATIC_BADGES_VARIANT[2]['senatorz'],
+        REFERROR_BADGES_VARIANT[2]['referror'],
+        REFERROR_BADGES_VARIANT[2]['notionalInfluencer'],
+        REFERROR_BADGES_VARIANT[2]['whaleWhisperer'],
+    ]
+}
 
 
 class SBT {
