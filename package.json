@@ -18,7 +18,7 @@
     "prettier:fix": "prettier --write 'src/**/*.ts'",
     "eslint": "eslint 'src/**/*.ts'",
     "eslint:fix": "eslint --fix 'src/**/*.ts'",
-    "test": "npx hardhat test",
+    "test": "npx jest tests/jest/*.ts && npx hardhat test",
     "release": "semantic-release",
     "irs-setup": "ts-node scripts/setup.ts",
     "decode-error": "ts-node src/utils/errors/decodeError.ts"

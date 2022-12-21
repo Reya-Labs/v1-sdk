@@ -5,9 +5,9 @@ import { BigNumber, ethers, Wallet } from 'ethers';
 import { describe } from 'mocha';
 import { network, waffle } from 'hardhat';
 import { expect } from 'chai';
-import MellowLpVault from '../src/entities/mellow/mellowLpVault';
-import { abi as IERC20MinimalABI } from '../src/ABIs/IERC20Minimal.json';
-import { advanceTimeAndBlock } from './time';
+import MellowLpVault from '../../src/entities/mellow/mellowLpVault';
+import { abi as IERC20MinimalABI } from '../../src/ABIs/IERC20Minimal.json';
+import { advanceTimeAndBlock } from '../time';
 
 const { provider } = waffle;
 let ethMellowLpVault: MellowLpVault;

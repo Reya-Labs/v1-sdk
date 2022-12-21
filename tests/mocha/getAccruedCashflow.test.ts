@@ -3,8 +3,8 @@ import { BigNumber, BigNumberish } from 'ethers';
 import { toBn } from 'evm-bn';
 import { expect } from 'chai';
 import { before, describe, it } from 'mocha';
-import { getAccruedCashflow } from '../src/services/getAccruedCashflow';
-import { BaseRateOracle } from '../src/typechain';
+import { getAccruedCashflow } from '../../src/services/getAccruedCashflow';
+import { BaseRateOracle } from '../../src/typechain';
 
 class MockBaseRateOracle {
   public apy: BigNumber = toBn('0');

@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { Price } from '../src/entities/fractions/price';
+import { Price } from '../../src/entities/fractions/price';
 import {
   priceToClosestTick,
   tickToPrice,
@@ -7,7 +7,7 @@ import {
   tickToFixedRate,
   fixedRateToClosestTick,
   priceToFixedRate,
-} from '../src/utils/priceTickConversions';
+} from '../../src/utils/priceTickConversions';
 
 describe('priceTickConversions', () => {
   describe('#tickToPrice', () => {
