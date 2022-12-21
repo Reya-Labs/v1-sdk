@@ -687,7 +687,7 @@ class MellowLpRouter {
     );
 
     const tx = await this.writeContracts.mellowRouter.registerForAutoRollover(registration, {
-      gasLimti: getGasBuffer(gasLimit),
+      gasLimit: getGasBuffer(gasLimit),
     });
 
     try {
