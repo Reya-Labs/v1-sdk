@@ -399,13 +399,18 @@ class MellowLpRouter {
     }
   };
 
-  deposit = async (amount: number, weights: number[]): Promise<ContractReceipt> => {
+  deposit = async (amount: number, _weights: number[]): Promise<ContractReceipt> => {
     if (
       isUndefined(this.readOnlyContracts) ||
       isUndefined(this.writeContracts) ||
       isUndefined(this.userAddress)
     ) {
       throw new Error('Uninitialized contracts.');
+    }
+
+    const weights = _weights;
+    while (weights.length < this.vaultsCount) {
+      weights.push(0);
     }
 
     if (!this.validateWeights(weights)) {
@@ -552,13 +557,18 @@ class MellowLpRouter {
     }
   };
 
-  rollover = async (vaultIndex: number, weights: number[]): Promise<ContractReceipt> => {
+  rollover = async (vaultIndex: number, _weights: number[]): Promise<ContractReceipt> => {
     if (
       isUndefined(this.readOnlyContracts) ||
       isUndefined(this.writeContracts) ||
       isUndefined(this.userAddress)
     ) {
       throw new Error('Uninitialized contracts.');
+    }
+
+    const weights = _weights;
+    while (weights.length < this.vaultsCount) {
+      weights.push(0);
     }
 
     if (!this.validateWeights(weights)) {
