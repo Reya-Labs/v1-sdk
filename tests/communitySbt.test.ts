@@ -1,7 +1,7 @@
 import axios from "axios";
 import { jest } from "@jest/globals";
 import { getApolloClient } from "../src/utils/communitySbt/getApolloClient";
-import SBT, { NonProgramaticBadgeResponse } from "../src/entities/communitySbt";
+import SBT, { NonProgramaticBadgeResponse, NON_PROGRAMATIC_BADGES_VARIANT } from "../src/entities/communitySbt";
 import { SubgraphBadgeResponse } from "../src/entities/communitySbt";
 import { ethers } from "hardhat";
 import { toMillis } from "../src/utils/communitySbt/helpers";
@@ -160,8 +160,8 @@ describe("getSeasonBadges: general", () => {
 
   test("get community badges, check no out-of-season badges are parsed", async () => {
     const data: Array<NonProgramaticBadgeResponse> = [];
-    data.push(createNonProgBadgeResponse("account1", "diplomatz", s2SeasonStart+1)) // 54
-    data.push(createNonProgBadgeResponse("account1", "governorz", s2SeasonStart+2)) // 55
+    data.push(createNonProgBadgeResponse("account1", "diplomatz", s2SeasonStart+1)) // 57
+    data.push(createNonProgBadgeResponse("account1", "governorz", s2SeasonStart+2)) // 58
     data.push(createNonProgBadgeResponse("account1", "senatorz", s1SeasonEnd-2)) // 35
 
     const mockedAxios = axios as jest.Mocked<typeof axios>;
@@ -176,14 +176,14 @@ describe("getSeasonBadges: general", () => {
         s2SeasonStart,
         s2SeasonEnd
     );
-    expect(badgesList['55'].badgeType).toBe('55')
-    expect(badgesList['55'].awardedTimestampMs).toBe(toMillis(s2SeasonStart+2))
-    expect(badgesList['55'].mintedTimestampMs).toBe(undefined)
-    expect(badgesList['54'].badgeType).toBe('54')
-    expect(badgesList['54'].awardedTimestampMs).toBe(toMillis(s2SeasonStart+1))
-    expect(badgesList['54'].mintedTimestampMs).toBe(undefined)
+    expect(badgesList['58'].badgeType).toBe('58')
+    expect(badgesList['58'].awardedTimestampMs).toBe(toMillis(s2SeasonStart+2))
+    expect(badgesList['58'].mintedTimestampMs).toBe(undefined)
+    expect(badgesList['57'].badgeType).toBe('57')
+    expect(badgesList['57'].awardedTimestampMs).toBe(toMillis(s2SeasonStart+1))
+    expect(badgesList['57'].mintedTimestampMs).toBe(undefined)
     expect(badgesList['35']).toBe(undefined)
-    expect(badgesList['56']).toBe(undefined)
+    expect(badgesList['59']).toBe(undefined)
   });
 
   test("get community badges, zero in season badges", async () => {
