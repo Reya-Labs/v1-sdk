@@ -666,7 +666,7 @@ class MellowLpRouter {
     }
   };
 
-  registerForAutoRollover = async (registration: boolean): Promise<number> => {
+  registerForAutoRollover = async (registration: boolean): Promise<ContractReceipt> => {
     if (
       isUndefined(this.readOnlyContracts) ||
       isUndefined(this.writeContracts) ||
