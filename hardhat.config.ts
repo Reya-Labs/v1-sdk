@@ -29,7 +29,7 @@ const config = {
 
   paths: {
     sources: './contracts',
-    tests: './tests',
+    tests: './tests/mocha',
     cache: './cache',
     artifacts: './artifacts',
   },

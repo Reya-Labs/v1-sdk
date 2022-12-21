@@ -1,7 +1,7 @@
 import { expect } from 'chai';
-import { nearestUsableTick } from '../src/utils/nearestUsableTick';
-import { TickMath } from '../src/utils/tickMath';
-import { fail } from './utils';
+import { nearestUsableTick } from '../../src/utils/nearestUsableTick';
+import { TickMath } from '../../src/utils/tickMath';
+import { fail } from '../utils';
 
 describe('#nearestUsableTick', () => {
   it('throws if tickSpacing is 0', () => {

@@ -1,6 +1,6 @@
 import { expect } from 'chai';
-import { CRITICAL_ERROR_MESSAGE } from '../src/utils/errors/constants';
-import { getReadableErrorMessage } from '../src/utils/errors/errorHandling';
+import { CRITICAL_ERROR_MESSAGE } from '../../src/utils/errors/constants';
+import { getReadableErrorMessage } from '../../src/utils/errors/errorHandling';
 
 describe('getReadableErrorMessage', () => {
   describe('Default Metamask - Infura errors', async () => {
