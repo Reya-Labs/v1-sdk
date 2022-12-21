@@ -942,5 +942,56 @@ describe('Mellow Router Test Suite', () => {
       const finalBalance: BigNumber = await wethContract.balanceOf(ethMellowLpRouter.userAddress);
       expect(ethMellowLpRouter.descale(finalBalance.sub(midBalance), 18)).to.be.eq(0);
     });
+
+    it('Unregistered user opts INTO auto-rollover', async () => {
+      await ethMellowLpRouter.registerForAutoRollover(true);
+      expect(
+        await ethMellowLpRouter.readOnlyContracts?.mellowRouterContract.isRegisteredForAutoRollover(
+          userWallet.address,
+        ),
+      ).to.be.eq(true);
+    });
+
+    it('Unregistered user opts OUT of auto-rollover', async () => {
+      await expect(ethMellowLpRouter.registerForAutoRollover(false)).to.be.revertedWith(
+        'Double Registration FRB',
+      );
+    });
+
+    it('Registered user opts OUT of auto-rollover', async () => {
+      // 1. Register user for auto-rollover
+      await ethMellowLpRouter.registerForAutoRollover(true);
+      // 2. Deregister user for auto-rollover
+      await ethMellowLpRouter.registerForAutoRollover(false);
+      // 3. Check if user is registered for autorollover
+      expect(
+        await ethMellowLpRouter.readOnlyContracts?.mellowRouterContract.isRegisteredForAutoRollover(
+          userWallet.address,
+        ),
+      ).to.be.eq(true);
+    });
+
+    it('Registered user opts INTO auto-rollover again', async () => {
+      // 1. Register user for auto-rollover
+      await ethMellowLpRouter.registerForAutoRollover(true);
+      // 2. Register user for auto-rollover again
+      await expect(ethMellowLpRouter.registerForAutoRollover(true)).to.be.revertedWith(
+        'Double Registration FRB',
+      );
+    });
+
+    it('Check if getAutorolloverRegistrationFlag retrieves correct flag for registered user', async () => {
+      // 1. Register user for auto-rollover
+      await ethMellowLpRouter.registerForAutoRollover(true);
+      expect(await ethMellowLpRouter.getAutorolloverRegistrationFlag()).to.be.eq(true);
+      // 2. Un-register user for auto-rollover
+      await ethMellowLpRouter.registerForAutoRollover(false);
+      expect(await ethMellowLpRouter.getAutorolloverRegistrationFlag()).to.be.eq(false);
+    });
+
+    it('Calculate correct transaction fee in USD for autorollover registration', async () => {
+      // 1. Simulate registration within the autorolloverRegistrationFee function; TODO refine the result
+      expect(await ethMellowLpRouter.autorolloverRegistrationFee(true)).to.be.approximately(10, 5);
+    });
   });
 });
