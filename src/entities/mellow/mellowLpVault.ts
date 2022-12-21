@@ -203,6 +203,11 @@ class MellowLpVault {
     );
   }
 
+  // eslint-disable-next-line class-methods-use-this
+  public rolloverable(): boolean {
+    return false;
+  }
+
   public get userDeposit(): number {
     return this.userIndividualCommittedDeposits.reduce((total, deposit) => total + deposit, 0);
   }
@@ -519,6 +524,10 @@ class MellowLpVault {
       sentryTracker.captureMessage('Unsucessful withdrawal confirmation.');
       throw new Error('Unsucessful withdraw confirmation.');
     }
+  };
+
+  rollover = async (): Promise<ContractReceipt> => {
+    throw new Error('This is not supported.');
   };
 }
 
