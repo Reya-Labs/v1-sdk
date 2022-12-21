@@ -693,26 +693,6 @@ class MellowLpRouter {
     try {
       const receipt = await tx.wait();
 
-      try {
-        await this.refreshWalletBalance();
-      } catch (err) {
-        sentryTracker.captureException(err);
-        sentryTracker.captureMessage(
-          'Wallet user balance failed to refresh after auto-rollover registration',
-        );
-        console.error('Wallet user balance failed to refresh after auto-rollover registration');
-      }
-
-      try {
-        await this.refreshUserDeposit();
-      } catch (err) {
-        sentryTracker.captureException(err);
-        sentryTracker.captureMessage(
-          'User deposit failed to refresh after auto-rollover registration',
-        );
-        console.error('User deposit failed to refresh after auto-rollover registration');
-      }
-
       return receipt;
     } catch (err) {
       sentryTracker.captureException(err);
