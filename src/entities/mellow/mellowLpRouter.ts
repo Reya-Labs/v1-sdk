@@ -14,7 +14,6 @@ import {
 import { isUndefined } from 'lodash';
 import { toBn } from 'evm-bn';
 
-import axios from 'axios';
 import { getTokenInfo } from '../../services/getTokenInfo';
 
 import { getGasBuffer, MaxUint256Bn, TresholdApprovalBn } from '../../constants';
@@ -26,33 +25,6 @@ import { abi as MellowMultiVaultRouterABI } from '../../ABIs/MellowMultiVaultRou
 import { sentryTracker } from '../../utils/sentry';
 import { closeOrPastMaturity, MellowProductMetadata } from './config';
 import { convertGasUnitsToUSD } from '../../utils/mellowHelpers/convertGasUnitsToUSD';
-
-const geckoEthToUsd = async () => {
-  for (let attempt = 0; attempt < 5; attempt += attempt) {
-    try {
-      const data = await axios.get(
-        `https://pro-api.coingecko.com/api/v3/simple/price?x_cg_pro_api_key=${process.env.REACT_APP_COINGECKO_API_KEY}&ids=ethereum&vs_currencies=usd`,
-      );
-      return data.data.ethereum.usd;
-    } catch (error) {
-      console.log(error);
-    }
-  }
-  return 0;
-};
-
-const getGasPriceGwei = async () => {
-  for (let attempt = 0; attempt < 5; attempt += attempt) {
-    try {
-      const data = await axios.get(`https://ethgasstation.info/api/ethgasAPI.json?`);
-      const averageGasPrice = data.data.average / 10;
-      return averageGasPrice;
-    } catch (error) {
-      console.log(error);
-    }
-  }
-  return 0;
-};
 
 export type MellowLpRouterArgs = {
   id: string;
@@ -733,16 +705,14 @@ class MellowLpRouter {
   };
 
   autorolloverRegistrationFee = async (registration: boolean): Promise<string> => {
-    if (
-      isUndefined(this.readOnlyContracts) ||
-      isUndefined(this.writeContracts) ||
-      isUndefined(this.userAddress)
-    ) {
+    if (isUndefined(this.readOnlyContracts) || isUndefined(this.userAddress)) {
       throw new Error('Uninitialized contracts.');
     }
 
     try {
-      await this.writeContracts.mellowRouter.callStatic.registerForAutoRollover(registration);
+      await this.readOnlyContracts.mellowRouterContract.callStatic.registerForAutoRollover(
+        registration,
+      );
     } catch (err) {
       sentryTracker.captureException(err);
       sentryTracker.captureMessage('Unsuccessful auto-rollover registration simulation');
@@ -752,27 +722,25 @@ class MellowLpRouter {
 
     // returns gas estimate in gas units
     const gasUnitsEstimate =
-      await this.writeContracts.mellowRouter.estimateGas.registerForAutoRollover(registration);
+      await this.readOnlyContracts.mellowRouterContract.estimateGas.registerForAutoRollover(
+        registration,
+      );
 
     // convert gas estimate from gas units into usd
-    const ethToUSDPrice = await geckoEthToUsd();
-    const gasPriceGwei = await getGasPriceGwei();
-    const gasPriceUSD = convertGasUnitsToUSD(gasUnitsEstimate, ethToUSDPrice, gasPriceGwei);
+    const gasPriceUSD = convertGasUnitsToUSD(gasUnitsEstimate);
     return gasPriceUSD;
   };
 
-  getAutorolloverRegistrationFlag = async (userAddress: string): Promise<boolean> => {
-    if (
-      isUndefined(this.readOnlyContracts) ||
-      isUndefined(this.writeContracts) ||
-      isUndefined(this.userAddress)
-    ) {
+  getAutorolloverRegistrationFlag = async (): Promise<boolean> => {
+    if (isUndefined(this.readOnlyContracts) || isUndefined(this.userAddress)) {
       throw new Error('Uninitialized contracts.');
     }
 
     try {
       const isWalletAutorolloverRegistered =
-        await this.readOnlyContracts.mellowRouterContract.isRegisteredForAutoRollover(userAddress);
+        await this.readOnlyContracts.mellowRouterContract.isRegisteredForAutoRollover(
+          this.userAddress,
+        );
       return isWalletAutorolloverRegistered;
     } catch (err) {
       sentryTracker.captureException(err);
