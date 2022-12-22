@@ -66,8 +66,7 @@ class MellowLpRouter {
   public vaultCap?: number;
 
   public userIndividualCommittedDeposits: number[] = [];
-  public userPendingDeposit = 0;
-  public userDeposit = 0;
+  public userIndividualPendingDeposit: number[] = [];
 
   public userWalletBalance?: number;
 
@@ -157,9 +156,8 @@ class MellowLpRouter {
 
     await this.refreshVaultCumulative();
 
-    this.userIndividualCommittedDeposits = new Array(
-      this.readOnlyContracts.erc20RootVault.length,
-    ).fill(0x0);
+    this.userIndividualCommittedDeposits = new Array(this.vaultsCount).fill(0x0);
+    this.userIndividualPendingDeposit = new Array(this.vaultsCount).fill(0x0);
 
     this.vaultInitialized = true;
   };
@@ -239,6 +237,26 @@ class MellowLpRouter {
     return this.userIndividualCommittedDeposits.reduce((total, deposit) => total + deposit, 0);
   }
 
+  public get userPendingDeposit(): number {
+    return this.userIndividualPendingDeposit.reduce((total, deposit) => total + deposit, 0);
+  }
+
+  public get userIndividualDeposit(): number[] {
+    if (
+      !(this.userIndividualPendingDeposit.length === this.userIndividualCommittedDeposits.length)
+    ) {
+      return [];
+    }
+
+    return this.userIndividualPendingDeposit.map(
+      (pendingDeposit, index) => pendingDeposit + this.userIndividualCommittedDeposits[index],
+    );
+  }
+
+  public get userDeposit(): number {
+    return this.userIndividualDeposit.reduce((total, deposit) => total + deposit, 0);
+  }
+
   refreshVaultCumulative = async (): Promise<void> => {
     this.vaultCumulative = 0;
     this.vaultCap = 0;
@@ -299,7 +317,8 @@ class MellowLpRouter {
   };
 
   refreshUserPendingDeposit = async (): Promise<void> => {
-    this.userPendingDeposit = 0;
+    this.userIndividualPendingDeposit = this.userIndividualPendingDeposit.map(() => 0);
+
     if (
       isUndefined(this.userAddress) ||
       isUndefined(this.readOnlyContracts) ||
@@ -308,7 +327,7 @@ class MellowLpRouter {
       return;
     }
 
-    for (let i = 0; i < this.readOnlyContracts.erc20RootVault.length; i += 1) {
+    for (let i = 0; i < this.vaultsCount; i += 1) {
       const batchedDeposits: BatchedDeposit[] =
         await this.readOnlyContracts.mellowRouterContract.getBatchedDeposits(i);
 
@@ -322,14 +341,13 @@ class MellowLpRouter {
       );
 
       const userPendingDeposit = this.descale(userPendingFunds, this.tokenDecimals);
-      this.userPendingDeposit += userPendingDeposit;
+      this.userIndividualPendingDeposit[i] += userPendingDeposit;
     }
   };
 
   refreshUserDeposit = async (): Promise<void> => {
     await this.refreshUserComittedDeposit();
     await this.refreshUserPendingDeposit();
-    this.userDeposit = this.userComittedDeposit + this.userPendingDeposit;
   };
 
   refreshWalletBalance = async (): Promise<void> => {
