@@ -193,9 +193,13 @@ class MellowLpVault {
     return getTokenInfo(this.readOnlyContracts.token.address).decimals;
   }
 
-  public get depositable(): boolean {
+  public get expired(): boolean {
     const latestMaturity = Math.max(...this.metadata.vaults.map((v) => v.maturityTimestampMS));
-    return !this.metadata.deprecated && !closeOrPastMaturity(latestMaturity);
+    return closeOrPastMaturity(latestMaturity);
+  }
+
+  public get depositable(): boolean {
+    return !this.metadata.deprecated && !this.expired;
   }
 
   public withdrawable(): boolean {
