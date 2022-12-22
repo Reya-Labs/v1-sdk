@@ -1017,9 +1017,7 @@ describe('Mellow Router Test Suite', () => {
       );
       // 2. Un-register user for auto-rollover
       await ethMellowLpRouter.registerForAutoRollover(false);
-      expect(await ethMellowLpRouter.getAutorolloverRegistrationFlag(userWallet.address)).to.be.eq(
-        false,
-      );
+      expect(await ethMellowLpRouter.getAutorolloverRegistrationFlag()).to.be.eq(false);
     });
 
     it('Calculate correct transaction fee in USD for autorollover registration', async () => {
