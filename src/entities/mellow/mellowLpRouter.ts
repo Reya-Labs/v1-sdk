@@ -241,7 +241,7 @@ class MellowLpRouter {
     return this.userIndividualPendingDeposit.reduce((total, deposit) => total + deposit, 0);
   }
 
-  public get userIndividualDeposit(): number[] {
+  public get userIndividualDeposits(): number[] {
     if (
       !(this.userIndividualPendingDeposit.length === this.userIndividualCommittedDeposits.length)
     ) {
@@ -254,7 +254,7 @@ class MellowLpRouter {
   }
 
   public get userDeposit(): number {
-    return this.userIndividualDeposit.reduce((total, deposit) => total + deposit, 0);
+    return this.userIndividualDeposits.reduce((total, deposit) => total + deposit, 0);
   }
 
   refreshVaultCumulative = async (): Promise<void> => {

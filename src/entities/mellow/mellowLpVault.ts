@@ -61,6 +61,7 @@ class MellowLpVault {
   public vaultCap?: number;
 
   public userIndividualCommittedDeposits: number[] = [];
+  public userIndividualPendingDeposit: number[] = [];
 
   public userWalletBalance?: number;
 
@@ -89,6 +90,7 @@ class MellowLpVault {
     }
 
     this.userIndividualCommittedDeposits = [0];
+    this.userIndividualPendingDeposit = [0];
   }
 
   descale = (amount: BigNumberish, decimals: number): number => {
@@ -208,8 +210,28 @@ class MellowLpVault {
     return false;
   }
 
-  public get userDeposit(): number {
+  public get userComittedDeposit(): number {
     return this.userIndividualCommittedDeposits.reduce((total, deposit) => total + deposit, 0);
+  }
+
+  public get userPendingDeposit(): number {
+    return this.userIndividualPendingDeposit.reduce((total, deposit) => total + deposit, 0);
+  }
+
+  public get userIndividualDeposits(): number[] {
+    if (
+      !(this.userIndividualPendingDeposit.length === this.userIndividualCommittedDeposits.length)
+    ) {
+      return [];
+    }
+
+    return this.userIndividualPendingDeposit.map(
+      (pendingDeposit, index) => pendingDeposit + this.userIndividualCommittedDeposits[index],
+    );
+  }
+
+  public get userDeposit(): number {
+    return this.userIndividualDeposits.reduce((total, deposit) => total + deposit, 0);
   }
 
   refreshVaultCumulative = async (): Promise<void> => {

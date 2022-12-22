@@ -24,10 +24,13 @@ export const getMellowLPVaults = ({
         provider: config.PROVIDER,
         metadata: {
           ...item.metadata,
-          underlyingPools: item.metadata.vaults.reduce(
-            (allPools, currentVault) => [...allPools, ...currentVault.pools],
-            [] as string[],
-          ),
+          underlyingPools: item.metadata.vaults.reduce((allPools, currentVault) => {
+            if (currentVault.weight > 0) {
+              const appendingPools = currentVault.pools.filter((p) => !allPools.includes(p));
+              return [...allPools, ...appendingPools];
+            }
+            return allPools;
+          }, [] as string[]),
         },
       });
 
@@ -43,10 +46,13 @@ export const getMellowLPVaults = ({
         provider: config.PROVIDER,
         metadata: {
           ...item.metadata,
-          underlyingPools: item.metadata.vaults.reduce(
-            (allPools, currentVault) => [...allPools, ...currentVault.pools],
-            [] as string[],
-          ),
+          underlyingPools: item.metadata.vaults.reduce((allPools, currentVault) => {
+            if (currentVault.weight > 0) {
+              const appendingPools = currentVault.pools.filter((p) => !allPools.includes(p));
+              return [...allPools, ...appendingPools];
+            }
+            return allPools;
+          }, [] as string[]),
         },
       });
 
