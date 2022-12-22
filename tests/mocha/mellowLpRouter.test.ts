@@ -1008,5 +1008,23 @@ describe('Mellow Router Test Suite', () => {
         'Double Registration FRB',
       );
     });
+
+    it('Check if getAutorolloverRegistrationFlag retrieves correct flag for registered user', async () => {
+      // 1. Register user for auto-rollover
+      await ethMellowLpRouter.registerForAutoRollover(true);
+      expect(await ethMellowLpRouter.getAutorolloverRegistrationFlag(userWallet.address)).to.be.eq(
+        true,
+      );
+      // 2. Un-register user for auto-rollover
+      await ethMellowLpRouter.registerForAutoRollover(false);
+      expect(await ethMellowLpRouter.getAutorolloverRegistrationFlag(userWallet.address)).to.be.eq(
+        false,
+      );
+    });
+
+    it('Calculate correct transaction fee in USD for autorollover registration', async () => {
+      // 1. Simulate registration within the autorolloverRegistrationFee function; TODO refine the result
+      expect(await ethMellowLpRouter.autorolloverRegistrationFee(true)).to.be.approximately(10, 5);
+    });
   });
 });
