@@ -14,6 +14,7 @@ import {
 import { isUndefined } from 'lodash';
 import { toBn } from 'evm-bn';
 
+import axios from 'axios';
 import { getTokenInfo } from '../../services/getTokenInfo';
 
 import { getGasBuffer, MaxUint256Bn, TresholdApprovalBn } from '../../constants';
@@ -24,6 +25,34 @@ import { abi as IERC20MinimalABI } from '../../ABIs/IERC20Minimal.json';
 import { abi as MellowMultiVaultRouterABI } from '../../ABIs/MellowMultiVaultRouterABI.json';
 import { sentryTracker } from '../../utils/sentry';
 import { closeOrPastMaturity, MellowProductMetadata } from './config';
+import { convertGasUnitsToUSD } from '../../utils/mellowHelpers/convertGasUnitsToUSD';
+
+const geckoEthToUsd = async () => {
+  for (let attempt = 0; attempt < 5; attempt += attempt) {
+    try {
+      const data = await axios.get(
+        `https://pro-api.coingecko.com/api/v3/simple/price?x_cg_pro_api_key=${process.env.REACT_APP_COINGECKO_API_KEY}&ids=ethereum&vs_currencies=usd`,
+      );
+      return data.data.ethereum.usd;
+    } catch (error) {
+      console.log(error);
+    }
+  }
+  return 0;
+};
+
+const getGasPriceGwei = async () => {
+  for (let attempt = 0; attempt < 5; attempt += attempt) {
+    try {
+      const data = await axios.get(`https://ethgasstation.info/api/ethgasAPI.json?`);
+      const averageGasPrice = data.data.average / 10;
+      return averageGasPrice;
+    } catch (error) {
+      console.log(error);
+    }
+  }
+  return 0;
+};
 
 export type MellowLpRouterArgs = {
   id: string;
@@ -678,6 +707,8 @@ class MellowLpRouter {
     try {
       await this.writeContracts.mellowRouter.callStatic.registerForAutoRollover(registration);
     } catch (err) {
+      sentryTracker.captureException(err);
+      sentryTracker.captureMessage('Unsuccessful auto-rollover registration simulation');
       console.error('Error during registration for auto-rollover', err);
       throw new Error('Unsuccessful auto-rollover registration simulation');
     }
@@ -698,6 +729,58 @@ class MellowLpRouter {
       sentryTracker.captureException(err);
       sentryTracker.captureMessage('Unsucessful auto-rollover registration confirmation.');
       throw new Error('Unsucessful auto-rollover registration confirmation.');
+    }
+  };
+
+  autorolloverRegistrationFee = async (registration: boolean): Promise<string> => {
+    if (
+      isUndefined(this.readOnlyContracts) ||
+      isUndefined(this.writeContracts) ||
+      isUndefined(this.userAddress)
+    ) {
+      throw new Error('Uninitialized contracts.');
+    }
+
+    try {
+      await this.writeContracts.mellowRouter.callStatic.registerForAutoRollover(registration);
+    } catch (err) {
+      sentryTracker.captureException(err);
+      sentryTracker.captureMessage('Unsuccessful auto-rollover registration simulation');
+      console.error('Error during registration for auto-rollover', err);
+      throw new Error('Unsuccessful auto-rollover registration simulation');
+    }
+
+    // returns gas estimate in gas units
+    const gasUnitsEstimate =
+      await this.writeContracts.mellowRouter.estimateGas.registerForAutoRollover(registration);
+
+    // convert gas estimate from gas units into usd
+    const ethToUSDPrice = await geckoEthToUsd();
+    const gasPriceGwei = await getGasPriceGwei();
+    const gasPriceUSD = convertGasUnitsToUSD(gasUnitsEstimate, ethToUSDPrice, gasPriceGwei);
+    return gasPriceUSD;
+  };
+
+  getAutorolloverRegistrationFlag = async (userAddress: string): Promise<boolean> => {
+    if (
+      isUndefined(this.readOnlyContracts) ||
+      isUndefined(this.writeContracts) ||
+      isUndefined(this.userAddress)
+    ) {
+      throw new Error('Uninitialized contracts.');
+    }
+
+    try {
+      const isWalletAutorolloverRegistered =
+        await this.readOnlyContracts.mellowRouterContract.isRegisteredForAutoRollover(userAddress);
+      return isWalletAutorolloverRegistered;
+    } catch (err) {
+      sentryTracker.captureException(err);
+      sentryTracker.captureMessage(
+        'Unsuccessful auto-rollover registration verificaiton simulation',
+      );
+      console.error('Error during auto-rollover registration verificaiton simulation', err);
+      throw new Error('Unsuccessful auto-rollover registration verificaiton simulation');
     }
   };
 }
