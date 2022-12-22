@@ -15,7 +15,7 @@ export async function convertGasUnitsToUSD(gasUnits: BigNumber): Promise<string>
       } catch (error) {
         sentryTracker.captureException(error);
         sentryTracker.captureMessage('Unsuccesful call to retrieve ETH/USD price from Coingecko');
-        console.log(error);
+        console.error(error);
       }
     }
     return 0;
@@ -32,7 +32,7 @@ export async function convertGasUnitsToUSD(gasUnits: BigNumber): Promise<string>
         sentryTracker.captureMessage(
           'Unsuccesful call to retrieve gas price (gwei) price from ETH Gas Station',
         );
-        console.log(error);
+        console.error(error);
       }
     }
     return 0;
