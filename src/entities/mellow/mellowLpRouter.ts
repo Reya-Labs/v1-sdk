@@ -668,11 +668,7 @@ class MellowLpRouter {
   };
 
   registerForAutoRollover = async (registration: boolean): Promise<ContractReceipt> => {
-    if (
-      isUndefined(this.readOnlyContracts) ||
-      isUndefined(this.writeContracts) ||
-      isUndefined(this.userAddress)
-    ) {
+    if (isUndefined(this.writeContracts) || isUndefined(this.userAddress)) {
       throw new Error('Uninitialized contracts.');
     }
 
@@ -705,14 +701,12 @@ class MellowLpRouter {
   };
 
   autorolloverRegistrationFee = async (registration: boolean): Promise<string> => {
-    if (isUndefined(this.readOnlyContracts) || isUndefined(this.userAddress)) {
+    if (isUndefined(this.writeContracts) || isUndefined(this.userAddress)) {
       throw new Error('Uninitialized contracts.');
     }
 
     try {
-      await this.readOnlyContracts.mellowRouterContract.callStatic.registerForAutoRollover(
-        registration,
-      );
+      await this.writeContracts?.mellowRouter.callStatic.registerForAutoRollover(registration);
     } catch (err) {
       sentryTracker.captureException(err);
       sentryTracker.captureMessage('Unsuccessful auto-rollover registration simulation');
@@ -722,9 +716,7 @@ class MellowLpRouter {
 
     // returns gas estimate in gas units
     const gasUnitsEstimate =
-      await this.readOnlyContracts.mellowRouterContract.estimateGas.registerForAutoRollover(
-        registration,
-      );
+      await this.writeContracts.mellowRouter.estimateGas.registerForAutoRollover(registration);
 
     // convert gas estimate from gas units into usd
     const gasPriceUSD = convertGasUnitsToUSD(gasUnitsEstimate);
