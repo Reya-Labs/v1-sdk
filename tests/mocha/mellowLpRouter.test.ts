@@ -13,6 +13,9 @@ import { abi as WethABI } from '../../src/ABIs/WethABI.json';
 import { abi as IERC20MinimalABI } from '../../src/ABIs/IERC20Minimal.json';
 import { withSigner } from '../utils';
 import { advanceTimeAndBlock } from '../time';
+import { convertGasUnitsToUSD } from '../../src/utils/mellowHelpers/convertGasUnitsToUSD';
+import { geckoEthToUsd } from '../../src/utils/mellowHelpers/geckoEthToUsd';
+import { getGasPriceGwei } from '../../src/utils/mellowHelpers/getGasPriceGwei';
 
 const { provider } = waffle;
 let ethMellowLpRouter: MellowLpRouter;
@@ -954,13 +957,7 @@ describe('Mellow Router Test Suite', () => {
 
     it('Unregistered user opts OUT of auto-rollover', async () => {
       await expect(ethMellowLpRouter.registerForAutoRollover(false)).to.be.revertedWith(
-        'Double Registration FRB',
-      );
-    });
-
-    it('Unregistered user opts OUT of auto-rollover', async () => {
-      await expect(ethMellowLpRouter.registerForAutoRollover(false)).to.be.revertedWith(
-        'Double Registration FRB',
+        'Already registered',
       );
     });
 
@@ -982,7 +979,7 @@ describe('Mellow Router Test Suite', () => {
       await ethMellowLpRouter.registerForAutoRollover(true);
       // 2. Register user for auto-rollover again
       await expect(ethMellowLpRouter.registerForAutoRollover(true)).to.be.revertedWith(
-        'Double Registration FRB',
+        'Already registered',
       );
     });
 
@@ -997,32 +994,17 @@ describe('Mellow Router Test Suite', () => {
 
     it('Calculate correct transaction fee in USD for autorollover registration', async () => {
       // 1. Simulate registration within the autorolloverRegistrationFee function; TODO refine the result
-      expect(await ethMellowLpRouter.autorolloverRegistrationFee(true)).to.be.approximately(10, 5);
+      expect(await ethMellowLpRouter.gasRegisterForAutoRollover(true)).to.be.approximately(10, 5);
     });
 
-    it('Registered user opts INTO auto-rollover again', async () => {
-      // 1. Register user for auto-rollover
-      await ethMellowLpRouter.registerForAutoRollover(true);
-      // 2. Register user for auto-rollover again
-      await expect(ethMellowLpRouter.registerForAutoRollover(true)).to.be.revertedWith(
-        'Double Registration FRB',
+    it('Gas Units to USD conversion function', async () => {
+      const ethUsdPrice = await geckoEthToUsd();
+      const gasPriceGwei = await getGasPriceGwei();
+
+      expect(await convertGasUnitsToUSD(BigNumber.from('100000'))).to.be.approximately(
+        0.00001 * ethUsdPrice * gasPriceGwei,
+        0.1,
       );
-    });
-
-    it('Check if getAutorolloverRegistrationFlag retrieves correct flag for registered user', async () => {
-      // 1. Register user for auto-rollover
-      await ethMellowLpRouter.registerForAutoRollover(true);
-      expect(await ethMellowLpRouter.getAutorolloverRegistrationFlag(userWallet.address)).to.be.eq(
-        true,
-      );
-      // 2. Un-register user for auto-rollover
-      await ethMellowLpRouter.registerForAutoRollover(false);
-      expect(await ethMellowLpRouter.getAutorolloverRegistrationFlag()).to.be.eq(false);
-    });
-
-    it('Calculate correct transaction fee in USD for autorollover registration', async () => {
-      // 1. Simulate registration within the autorolloverRegistrationFee function; TODO refine the result
-      expect(await ethMellowLpRouter.autorolloverRegistrationFee(true)).to.be.approximately(10, 5);
     });
   });
 });
