@@ -11,6 +11,7 @@ import {
   Swap,
   Token,
 } from '../../src/entities';
+import { advanceTimeAndBlock } from '../time';
 
 const { provider } = waffle;
 const DELTA = 0.0001;
@@ -31,15 +32,9 @@ describe('amm:getPositionInfo', () => {
     });
   };
 
-  const setTime = (timestamp: number) => {
-    Date.now = () => new Date(timestamp).valueOf();
-  };
-
   beforeEach('Set timers', async () => {
     const block = 16247070;
     await resetNetwork(block);
-    const { timestamp } = await provider.getBlock(block);
-    setTime(timestamp * 1000);
   });
 
   describe('Stable coin positions', () => {
@@ -545,8 +540,7 @@ describe('amm:getPositionInfo', () => {
       });
 
       it('After maturity, un-settled position', async () => {
-        // Set time to 1st April 2023
-        setTime(1680339600000);
+        await advanceTimeAndBlock(4 * 31 * 24 * 60 * 60, 1);
 
         const amm = new AMM({
           id: '0xcd47347a8c4f40e6877425080d22f4c3115b60a5',
@@ -674,11 +668,11 @@ describe('amm:getPositionInfo', () => {
         expect(positionInfo.fees).to.be.closeTo(0, DELTA);
         expect(positionInfo.feesInUSD).to.be.closeTo(0, DELTA);
 
-        expect(positionInfo.accruedCashflow).to.closeTo(-5.90239, DELTA);
-        expect(positionInfo.accruedCashflowInUSD).to.closeTo(-5.90239, DELTA);
+        expect(positionInfo.accruedCashflow).to.closeTo(-5.91618, DELTA);
+        expect(positionInfo.accruedCashflowInUSD).to.closeTo(-5.91618, DELTA);
 
-        expect(positionInfo.settlementCashflow).to.closeTo(-5.90239, DELTA);
-        expect(positionInfo.settlementCashflowInUSD).to.closeTo(-5.90239, DELTA);
+        expect(positionInfo.settlementCashflow).to.closeTo(-5.91618, DELTA);
+        expect(positionInfo.settlementCashflowInUSD).to.closeTo(-5.91618, DELTA);
 
         expect(positionInfo.liquidationThreshold).to.closeTo(0, DELTA);
         expect(positionInfo.safetyThreshold).to.closeTo(0, DELTA);

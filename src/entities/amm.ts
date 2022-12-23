@@ -1921,8 +1921,12 @@ class AMM {
     // Build the contracts
     const rateOracleContract = BaseRateOracle__factory.connect(this.rateOracle.id, this.provider);
 
+    // Get last block timestamp
+    const block = await this.provider.getBlock("latest");
+    const currentTime = block.timestamp - 15;
+
     // Get before maturity
-    const beforeMaturity = Date.now().valueOf() < this.endDateTime.toMillis();
+    const beforeMaturity = currentTime < this.endDateTime.toSeconds();
 
     // Get the margin engine contract
     const marginEngineContract = marginEngineFactory.connect(
@@ -1967,7 +1971,7 @@ class AMM {
           const accruedCashflowInfo = await getAccruedCashflow({
             swaps: transformSwaps(position.swaps, this.underlyingToken.decimals),
             rateOracle: rateOracleContract,
-            currentTime: Date.now().valueOf() / 1000,
+            currentTime,
             endTime: this.endDateTime.toSeconds(),
           });
           accruedCashflow = accruedCashflowInfo.accruedCashflow;
