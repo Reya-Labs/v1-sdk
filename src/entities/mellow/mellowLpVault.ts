@@ -565,7 +565,7 @@ class MellowLpVault {
   };
 
   getAutorolloverRegistrationFlag = async (): Promise<boolean> => {
-    throw new Error('This is not supported');
+    return false;
   };
 }
 
