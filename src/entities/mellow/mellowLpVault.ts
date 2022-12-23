@@ -555,6 +555,18 @@ class MellowLpVault {
   rollover = async (): Promise<ContractReceipt> => {
     throw new Error('This is not supported.');
   };
+
+  registerForAutoRollover = async (): Promise<ContractReceipt> => {
+    throw new Error('This is not supported');
+  };
+
+  gasRegisterForAutoRollover = async (): Promise<number> => {
+    return 0;
+  };
+
+  getAutorolloverRegistrationFlag = async (): Promise<boolean> => {
+    return false;
+  };
 }
 
 export default MellowLpVault;
