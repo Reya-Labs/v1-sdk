@@ -233,6 +233,13 @@ export type AMMSettlePositionArgs = {
   fixedHigh: number;
 };
 
+export enum HealthFactorStatus {
+  NOT_FOUND = 0,
+  DANGER = 1,
+  WARNING = 2,
+  HEALTHY = 3,  
+};
+
 // dynamic information about position
 
 export type PositionInfo = {
@@ -266,8 +273,8 @@ export type PositionInfo = {
   beforeMaturity: boolean;
 
   fixedApr: number;
-  healthFactor: 0 | 1 | 2 | 3;
-  fixedRateHealthFactor: 0 | 1 | 2 | 3;
+  healthFactor: HealthFactorStatus;
+  fixedRateHealthFactor: HealthFactorStatus;
 }
 
 export type ClosestTickAndFixedRate = {
@@ -1995,8 +2002,8 @@ class AMM {
 
     let liquidationThreshold = 0;
     let safetyThreshold = 0;
-    let healthFactor: 0 | 1 | 2 | 3 = 0;
-    let fixedRateHealthFactor: 0 | 1 | 2 | 3 = 0;
+    let healthFactor = HealthFactorStatus.NOT_FOUND;
+    let fixedRateHealthFactor = HealthFactorStatus.NOT_FOUND;
 
     if (beforeMaturity) {
       // Get liquidation threshold
@@ -2027,7 +2034,17 @@ class AMM {
       }
 
       // Get health factor
-      healthFactor = (margin < liquidationThreshold) ? 1 : (margin < safetyThreshold ? 2 : 3);
+      if (margin < liquidationThreshold) {
+        healthFactor = HealthFactorStatus.DANGER;
+      }
+      else {
+        if (margin < safetyThreshold) {
+          healthFactor = HealthFactorStatus.WARNING;
+        }
+        else {
+          healthFactor = HealthFactorStatus.HEALTHY;
+        }
+      }
 
       // Get range health factor for LPs
       fixedRateHealthFactor = getRangeHealthFactor(
