@@ -44,6 +44,7 @@ import axios from 'axios';
 import { getProtocolPrefix } from '../services/getTokenInfo';
 
 import { sentryTracker } from '../utils/sentry';
+import { getRangeHealthFactor } from '../utils/rangeHealthFactor';
 
 var geckoEthToUsd = async () => {
   for (let attempt = 0; attempt < 5; attempt++) {
@@ -236,21 +237,32 @@ export type AMMSettlePositionArgs = {
 // dynamic information about position
 
 export type PositionInfo = {
+  notional: number;
   notionalInUSD: number;
-  marginInUSD: number;
+
   margin: number;
-  fees?: number;
-  settlementCashflow?: number;
-  liquidationThreshold?: number;
-  safetyThreshold?: number;
-  accruedCashflowInUSD: number;
+  marginInUSD: number;
+
+  fees: number;
+  feesInUSD: number;
+  
+  settlementCashflow: number;
+  settlementCashflowInUSD: number;
+
+  liquidationThreshold: number;
+  safetyThreshold: number;
+
   accruedCashflow: number;
-  variableRateSinceLastSwap?: number;
-  fixedRateSinceLastSwap?: number;
+  accruedCashflowInUSD: number;
+
+  variableRateSinceLastSwap: number;
+  fixedRateSinceLastSwap: number;
+
   beforeMaturity: boolean;
-  fixedApr?: number;
-  healthFactor?: number;
-  fixedRateHealthFactor?: number;
+
+  fixedApr: number;
+  healthFactor: number;
+  fixedRateHealthFactor: 1 | 2 | 3;
 }
 
 export type ClosestTickAndFixedRate = {
@@ -1883,88 +1895,22 @@ class AMM {
       throw new Error('Blockchain not connected');
     }
 
+    // Get the underlying token price in USD
     let usdExchangeRate = 1;
     if (this.isETH) {
       usdExchangeRate = await geckoEthToUsd();
     }
 
-    let results: PositionInfo = {
-      notionalInUSD: 0,
-      marginInUSD: 0,
-      margin: 0,
-      accruedCashflowInUSD: 0,
-      accruedCashflow: 0,
-      beforeMaturity: false
-    };
-
+    // Build the contracts
     const rateOracleContract = BaseRateOracle__factory.connect(this.rateOracle.id, this.provider);
 
+    // Get the signer address
     const signerAddress = await this.signer.getAddress();
-    const lastBlock = await this.provider.getBlockNumber();
-    const lastBlockTimestamp = BigNumber.from((await this.provider.getBlock(lastBlock - 1)).timestamp);
 
-    const beforeMaturity = (lastBlockTimestamp.mul(BigNumber.from(10).pow(18))).lt(BigNumber.from(this.termEndTimestamp.toString()));
-    results.beforeMaturity = beforeMaturity;
+    // Get before maturity
+    const beforeMaturity = Date.now().valueOf() > this.endDateTime.toMillis();
 
-    // fixed apr
-    if (beforeMaturity) {
-      results.fixedApr = await this.getFixedApr();
-    }
-
-    // fixed apr
-    if (!beforeMaturity && !position.isSettled) {
-      results.settlementCashflow = await position.getSettlementCashflow();
-    }
-
-    // variable apy and accrued cashflow
-
-    if (position.swaps.length > 0) {
-      if (beforeMaturity) {
-        try {
-          results.variableRateSinceLastSwap = await this.getInstantApy() * 100;
-
-          const accruedCashflowInfo = await getAccruedCashflow({
-            swaps: transformSwaps(position.swaps, this.underlyingToken.decimals),
-            rateOracle: rateOracleContract,
-            currentTime: Number(lastBlockTimestamp.toString()),
-            endTime: Number(utils.formatUnits(this.termEndTimestamp.toString(), 18)),
-          });
-
-          results.accruedCashflow = accruedCashflowInfo.accruedCashflow;
-
-          results.fixedRateSinceLastSwap = accruedCashflowInfo.avgFixedRate;
-
-          results.accruedCashflowInUSD = results.accruedCashflow * usdExchangeRate;
-
-        } catch (error) {
-          sentryTracker.captureException(error);
-        }
-      }
-      else {
-        if (!position.isSettled) {
-          try {
-            const accruedCashflowInfo = await getAccruedCashflow({
-              swaps: transformSwaps(position.swaps, this.underlyingToken.decimals),
-              rateOracle: rateOracleContract,
-              currentTime: Number(utils.formatUnits(this.termEndTimestamp.toString(), 18)),
-              endTime: Number(utils.formatUnits(this.termEndTimestamp.toString(), 18)),
-            });
-
-            results.accruedCashflow = accruedCashflowInfo.accruedCashflow;
-
-            results.accruedCashflowInUSD = accruedCashflowInfo.accruedCashflow * usdExchangeRate;
-
-          } catch (error) {
-            sentryTracker.captureException(error);
-          }
-        }
-      }
-    }
-
-    // margin and fees information
-    const tickLower = position.tickLower;
-    const tickUpper = position.tickUpper;
-
+    // Get the position information from the margin engine
     const marginEngineContract = marginEngineFactory.connect(
       this.marginEngineAddress,
       this.signer,
@@ -1972,72 +1918,137 @@ class AMM {
 
     const rawPositionInfo = await marginEngineContract.callStatic.getPosition(
       signerAddress,
-      tickLower,
-      tickUpper,
+      position.tickLower,
+      position.tickUpper,
     );
-    results.margin = this.descale(rawPositionInfo.margin);
 
-    const marginInUnderlyingToken = results.margin;
+    // Get fixed APR of the pool
+    const fixedApr = await this.getFixedApr();
 
-    results.marginInUSD = marginInUnderlyingToken * usdExchangeRate;
-    results.fees = this.descale(rawPositionInfo.accumulatedFees);
+    // Get settlement cashflow
+    let settlementCashflow = 0;
+    if (!beforeMaturity && !rawPositionInfo.isSettled) {
+      const variableFactorWad = await rateOracleContract.callStatic.variableFactor(
+        this.termStartTimestamp.toString(), 
+        this.termEndTimestamp.toString(),
+      );
+
+      const fixedFactor = (this.endDateTime.toMillis() - this.startDateTime.toMillis()) / ONE_YEAR_IN_SECONDS / 1000;
+      const variableFactor = Number(ethers.utils.formatEther(variableFactorWad));
+      const fixedTokens = this.descale(rawPositionInfo.fixedTokenBalance);
+      const variableTokens = this.descale(rawPositionInfo.variableTokenBalance);
+
+      settlementCashflow = fixedTokens * fixedFactor * 0.01 + variableTokens * variableFactor;
+    }
+
+    // Get variable APY and accrued cashflow
+    let variableRateSinceLastSwap = 0;
+    let fixedRateSinceLastSwap = 0;
+    let accruedCashflow = 0;
+
+    if (position.swaps.length > 0) {
+      if (beforeMaturity) {
+        try {
+          variableRateSinceLastSwap = await this.getInstantApy() * 100;
+
+          const accruedCashflowInfo = await getAccruedCashflow({
+            swaps: transformSwaps(position.swaps, this.underlyingToken.decimals),
+            rateOracle: rateOracleContract,
+            currentTime: Date.now().valueOf() / 1000,
+            endTime: this.endDateTime.toSeconds(),
+          });
+
+          accruedCashflow = accruedCashflowInfo.accruedCashflow;
+          fixedRateSinceLastSwap = accruedCashflowInfo.avgFixedRate;
+        } catch (error) {
+          sentryTracker.captureException(error);
+        }
+      }
+      else {
+        if (!position.isSettled) {
+          accruedCashflow = settlementCashflow;
+        }
+      }
+    }
+
+    // Get margin and fees
+
+    const margin = this.descale(rawPositionInfo.margin);
+    const fees = this.descale(rawPositionInfo.accumulatedFees);
+
+    // Get health factor
+
+    let liquidationThreshold = 0;
+    let safetyThreshold = 0;
+    let healthFactor = 0;
 
     if (beforeMaturity) {
       try {
-        const liquidationThreshold = await marginEngineContract.callStatic.getPositionMarginRequirement(
+        const scaledLiqT = await marginEngineContract.callStatic.getPositionMarginRequirement(
           signerAddress,
-          tickLower,
-          tickUpper,
+          position.tickLower,
+          position.tickUpper,
           true
         );
-        results.liquidationThreshold = this.descale(liquidationThreshold);
+        liquidationThreshold = this.descale(scaledLiqT);
       } catch (error) {
         sentryTracker.captureException(error);
       }
 
       try {
-        const safetyThreshold = await marginEngineContract.callStatic.getPositionMarginRequirement(
+        const scaledSafeT = await marginEngineContract.callStatic.getPositionMarginRequirement(
           signerAddress,
-          tickLower,
-          tickUpper,
+          position.tickLower,
+          position.tickUpper,
           false
         );
-        results.safetyThreshold = this.descale(safetyThreshold);
+        safetyThreshold = this.descale(scaledSafeT);
       }
       catch (error) {
         sentryTracker.captureException(error);
       }
 
-      if (!isUndefined(results.liquidationThreshold) && !isUndefined(results.safetyThreshold)) {
-        results.healthFactor = (results.margin < results.liquidationThreshold) ? 1 : (results.margin < results.safetyThreshold ? 2 : 3);
-      }
+      healthFactor = (margin < liquidationThreshold) ? 1 : (margin < safetyThreshold ? 2 : 3);
     }
 
+    const notional = (position.positionType === 3) 
+      ? position.getNotionalFromLiquidity(JSBI.BigInt(rawPositionInfo._liquidity.toString()))
+      : Math.abs(this.descale(rawPositionInfo.variableTokenBalance));
 
-    const notionalInUnderlyingToken =
-      (position.positionType === 3)
-        ? Math.abs(position.notional) // LP
-        : Math.abs(position.effectiveVariableTokenBalance); // FT, VT
+    const fixedRateHealthFactor = getRangeHealthFactor(
+      position.fixedRateLower.toNumber(),
+      position.fixedRateUpper.toNumber(),
+      fixedApr
+    )
 
-    results.notionalInUSD = notionalInUnderlyingToken * usdExchangeRate;
+    return {
+      notional,
+      notionalInUSD: notional * usdExchangeRate,
 
-    const fixedApr = await this.getFixedApr();
-    if (position.fixedRateLower.toNumber() < fixedApr
-      && fixedApr < position.fixedRateUpper.toNumber()) {
+      margin: margin - fees,
+      marginInUSD: (margin - fees) * usdExchangeRate,
 
-      if (
-        (0.15 * position.fixedRateUpper.toNumber() + 0.85 * position.fixedRateLower.toNumber()) > fixedApr
-        || fixedApr > (0.85 * position.fixedRateUpper.toNumber() + 0.15 * position.fixedRateLower.toNumber())
-      ) {
-        results.fixedRateHealthFactor = 2 // yellow
-      } else {
-        results.fixedRateHealthFactor = 3 // green
-      }
-    } else {
-      results.fixedRateHealthFactor = 1 // red
-    }
+      fees,
+      feesInUSD: fees * usdExchangeRate,
 
-    return results;
+      accruedCashflow: accruedCashflow,
+      accruedCashflowInUSD: accruedCashflow * usdExchangeRate,
+
+      settlementCashflow: settlementCashflow,
+      settlementCashflowInUSD: settlementCashflow * usdExchangeRate,
+
+      liquidationThreshold,
+      safetyThreshold,
+
+      variableRateSinceLastSwap,
+      fixedRateSinceLastSwap,
+
+      fixedApr,
+      healthFactor,
+      fixedRateHealthFactor,
+      
+      beforeMaturity,
+    };
   }
 
   // tick functionalities
