@@ -3,7 +3,9 @@ import { geckoEthToUsd } from './geckoEthToUsd';
 import { getGasPriceGwei } from './getGasPriceGwei';
 
 export async function convertGasUnitsToUSD(gasUnits: BigNumber): Promise<number> {
-  const gasPriceGwei = await getGasPriceGwei();
+  const gasPriceGweiRaw = await getGasPriceGwei();
+  const gasPriceGwei = gasPriceGweiRaw.toFixed();
+
   const ethToUSDPrice = await geckoEthToUsd();
   const ethToUSDPriceScaled = ethToUSDPrice * 100;
 
