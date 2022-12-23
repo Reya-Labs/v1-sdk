@@ -9,13 +9,10 @@ import MarginUpdate from './marginUpdate';
 import Mint from './mint';
 import Settlement from './settlement';
 import Swap from './swap';
-import { ONE_YEAR_IN_SECONDS, Q96 } from '../constants';
+import { Q96 } from '../constants';
 import { tickToPrice, tickToFixedRate } from '../utils/priceTickConversions';
 import { TickMath } from '../utils/tickMath';
 import { Price } from './fractions/price';
-import { BaseRateOracle__factory, MarginEngine__factory } from '../typechain';
-import { sentryTracker } from '../utils/sentry';
-
 
 export type PositionConstructorArgs = {
   id: string;
@@ -24,7 +21,6 @@ export type PositionConstructorArgs = {
   owner: string;
   updatedTimestamp: JSBI;
 
-  fixedTokenBalance: JSBI;
   variableTokenBalance: JSBI;
   isSettled: boolean;
 
@@ -32,9 +28,6 @@ export type PositionConstructorArgs = {
 
   tickLower: number;
   tickUpper: number;
-  liquidity: JSBI;
-  margin: JSBI;
-  accumulatedFees: JSBI;
   positionType: number;
 
   totalNotionalTraded: JSBI;
@@ -59,8 +52,6 @@ class Position {
 
   public readonly updatedTimestamp: JSBI;
 
-  public readonly fixedTokenBalance: JSBI;
-
   public readonly variableTokenBalance: JSBI;
 
   public readonly isSettled: boolean;
@@ -68,12 +59,6 @@ class Position {
   public readonly tickLower: number;
 
   public readonly tickUpper: number;
-
-  public readonly liquidity: JSBI;
-
-  public readonly margin: JSBI;
-
-  public readonly accumulatedFees: JSBI;
 
   public readonly positionType: number;
 
@@ -99,14 +84,10 @@ class Position {
     amm,
     owner,
     updatedTimestamp,
-    fixedTokenBalance,
     variableTokenBalance,
     isSettled,
     tickLower,
     tickUpper,
-    liquidity,
-    margin,
-    accumulatedFees,
     positionType,
     mints,
     burns,
@@ -122,7 +103,6 @@ class Position {
     this.amm = amm;
     this.owner = owner;
     this.updatedTimestamp = updatedTimestamp;
-    this.fixedTokenBalance = fixedTokenBalance;
     this.variableTokenBalance = variableTokenBalance;
     this.isSettled = isSettled;
 
@@ -133,11 +113,8 @@ class Position {
     this.settlements = settlements;
     this.swaps = swaps;
 
-    this.margin = margin;
-    this.liquidity = liquidity;
     this.tickLower = tickLower;
     this.tickUpper = tickUpper;
-    this.accumulatedFees = accumulatedFees;
     this.positionType = positionType;
 
     this.totalNotionalTraded = totalNotionalTraded;
@@ -160,10 +137,6 @@ class Position {
     return tickToFixedRate(this.tickLower);
   }
 
-  public get notional(): number {
-    return this.getNotionalFromLiquidity(this.liquidity);
-  }
-
   public getNotionalFromLiquidity(liquidity: JSBI): number {
     const sqrtPriceLowerX96 = new Price(Q96, TickMath.getSqrtRatioAtTick(this.tickLower));
     const sqrtPriceUpperX96 = new Price(Q96, TickMath.getSqrtRatioAtTick(this.tickUpper));
@@ -173,26 +146,6 @@ class Position {
       .multiply(liquidity)
       .divide(Price.fromNumber(10 ** this.amm.underlyingToken.decimals))
       .toNumber();
-  }
-
-  public get effectiveMargin(): number {
-    const result = this.amm.descale(BigNumber.from(this.margin.toString()));
-    return result;
-  }
-
-  public get effectiveFixedTokenBalance(): number {
-    const result = this.amm.descale(BigNumber.from(this.fixedTokenBalance.toString()));
-    return result;
-  }
-
-  public get effectiveVariableTokenBalance(): number {
-    const result = this.amm.descale(BigNumber.from(this.variableTokenBalance.toString()));
-    return result;
-  }
-
-  public get effectiveAccumulatedFees(): number {
-    const result = this.amm.descale(BigNumber.from(this.accumulatedFees.toString()));
-    return result;
   }
 
   public get createdDateTime(): DateTime {
@@ -214,46 +167,6 @@ class Position {
       1000;
     return Math.abs(averageFixedRate);
   }
-
-  // get settlement rate of particular position
-  public async getSettlementCashflow(): Promise<number | undefined> {
-
-    const start = BigNumber.from(this.amm.termStartTimestamp.toString());
-    const end = BigNumber.from(this.amm.termEndTimestamp.toString());
-
-    if (this.amm.provider && this.amm.signer) {
-      try {
-
-        const marginEngineContract = MarginEngine__factory.connect(this.amm.marginEngineAddress, this.amm.signer);
-
-        const signerAddress = await this.amm.signer.getAddress()
-
-        const position = await marginEngineContract.callStatic.getPosition(signerAddress, this.tickLower, this.tickUpper);
-
-        const rateOracleContract = BaseRateOracle__factory.connect(this.amm.rateOracle.id, this.amm.signer);
-        const variableFactorToMaturityWad = await rateOracleContract.callStatic.variableFactor(
-          start, 
-          end
-        );
-
-        const fixedFactor = end.sub(start).div(ONE_YEAR_IN_SECONDS);
-
-        const fixedCashflow = position.fixedTokenBalance.mul(fixedFactor).div(BigNumber.from(100)).div(BigNumber.from(10).pow(18));
-        const variableCashflow = position.variableTokenBalance.mul(variableFactorToMaturityWad).div(BigNumber.from(10).pow(18));
-  
-        const cashFlow = fixedCashflow.add(variableCashflow);
-  
-        return this.amm.descale(cashFlow);
-
-      } catch (error) {
-        sentryTracker.captureException(error);
-        return undefined;
-      }
-    }
-
-    return undefined;
-    
-  };
 }
 
 export default Position;
