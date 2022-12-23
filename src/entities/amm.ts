@@ -36,7 +36,6 @@ import { Price } from './fractions/price';
 import { TokenAmount } from './fractions/tokenAmount';
 import { decodeInfoPostMint, decodeInfoPostSwap, getReadableErrorMessage } from '../utils/errors/errorHandling';
 import Position from './position';
-import { isUndefined } from 'lodash';
 import { getExpectedApy } from '../services/getExpectedApy';
 import { getAccruedCashflow, transformSwaps } from '../services/getAccruedCashflow';
 
@@ -62,19 +61,19 @@ export type AMMConstructorArgs = {
   id: string;
   signer: Signer | null;
   provider?: providers.Provider;
+
   factoryAddress: string;
   marginEngineAddress: string;
   rateOracle: RateOracle;
-  updatedTimestamp: JSBI;
+  underlyingToken: Token;
+
   termStartTimestamp: JSBI;
   termEndTimestamp: JSBI;
-  underlyingToken: Token;
-  tick: number;
+
   tickSpacing: number;
-  txCount: number;
-  totalNotionalTraded: JSBI;
-  totalLiquidity: JSBI;
-  wethAddress?: string;
+  wethAddress: string;
+
+  ethPrice?: () => Promise<number>;
 };
 
 // swap
@@ -237,6 +236,12 @@ export type AMMSettlePositionArgs = {
 // dynamic information about position
 
 export type PositionInfo = {
+  fixedTokenBalance: number;
+  variableTokenBalance: number;
+
+  liquidity: number;
+  liquidityInUSD: number;
+
   notional: number;
   notionalInUSD: number;
 
@@ -261,8 +266,8 @@ export type PositionInfo = {
   beforeMaturity: boolean;
 
   fixedApr: number;
-  healthFactor: number;
-  fixedRateHealthFactor: 1 | 2 | 3;
+  healthFactor: 0 | 1 | 2 | 3;
+  fixedRateHealthFactor: 0 | 1 | 2 | 3;
 }
 
 export type ClosestTickAndFixedRate = {
@@ -277,17 +282,13 @@ class AMM {
   public readonly factoryAddress: string;
   public readonly marginEngineAddress: string;
   public readonly rateOracle: RateOracle;
-  public readonly updatedTimestamp: JSBI;
   public readonly termStartTimestamp: JSBI;
   public readonly termEndTimestamp: JSBI;
   public readonly underlyingToken: Token;
   public readonly tickSpacing: number;
-  public readonly tick: number;
-  public readonly txCount: number;
-  public readonly totalNotionalTraded: JSBI;
-  public readonly totalLiquidity: JSBI;
   public readonly isETH: boolean;
-  public readonly wethAddress?: string;
+  public readonly wethAddress: string;
+  public readonly ethPrice: () => Promise<number>;
 
   public constructor({
     id,
@@ -296,16 +297,12 @@ class AMM {
     factoryAddress,
     marginEngineAddress,
     rateOracle,
-    updatedTimestamp,
     termStartTimestamp,
     termEndTimestamp,
     underlyingToken,
-    tick,
     tickSpacing,
-    txCount,
-    totalNotionalTraded,
-    totalLiquidity,
-    wethAddress
+    wethAddress,
+    ethPrice
   }: AMMConstructorArgs) {
     this.id = id;
     this.signer = signer;
@@ -313,26 +310,13 @@ class AMM {
     this.factoryAddress = factoryAddress;
     this.marginEngineAddress = marginEngineAddress;
     this.rateOracle = rateOracle;
-    this.updatedTimestamp = updatedTimestamp;
     this.termStartTimestamp = termStartTimestamp;
     this.termEndTimestamp = termEndTimestamp;
     this.underlyingToken = underlyingToken;
     this.tickSpacing = tickSpacing;
-    this.tick = tick;
-    this.txCount = txCount;
-    this.totalNotionalTraded = totalNotionalTraded;
-    this.totalLiquidity = totalLiquidity;
-
-    if (this.underlyingToken.name === "ETH") {
-      this.isETH = true;
-      if (typeof this.wethAddress !== 'undefined') {
-        throw new Error("No WETH address");
-      }
-      this.wethAddress = wethAddress;
-    }
-    else {
-      this.isETH = false;
-    }
+    this.wethAddress = wethAddress;
+    this.isETH = (this.underlyingToken.name === "ETH");
+    this.ethPrice = ethPrice || geckoEthToUsd;
   }
 
   // expected apy
@@ -1782,7 +1766,7 @@ class AMM {
     let isApproved;
     let tokenAddress = this.underlyingToken.id;
 
-    if (this.isETH && this.wethAddress) {
+    if (this.isETH) {
       isApproved = await this.isWethTokenApprovedForPeriphery();
       tokenAddress = this.wethAddress;
     } else {
@@ -1887,47 +1871,80 @@ class AMM {
   }
 
   public async getPositionInformation(position: Position): Promise<PositionInfo> {
-    if (!this.signer) {
-      throw new Error('Wallet not connected');
-    }
-
     if (!this.provider) {
       throw new Error('Blockchain not connected');
+    }
+
+    if (position.isSettled) {
+      return {
+        fixedTokenBalance: 0,
+        variableTokenBalance: 0,
+  
+        liquidity: 0,
+        liquidityInUSD: 0,
+  
+        notional: 0,
+        notionalInUSD: 0,
+  
+        margin: 0,
+        marginInUSD: 0,
+  
+        fees: 0,
+        feesInUSD: 0,
+  
+        accruedCashflow: 0,
+        accruedCashflowInUSD: 0,
+  
+        settlementCashflow: 0,
+        settlementCashflowInUSD: 0,
+  
+        liquidationThreshold: 0,
+        safetyThreshold: 0,
+  
+        variableRateSinceLastSwap: 0,
+        fixedRateSinceLastSwap: 0,
+  
+        fixedApr: 0,
+        healthFactor: 0,
+        fixedRateHealthFactor: 0,
+        
+        beforeMaturity: false,
+      };
     }
 
     // Get the underlying token price in USD
     let usdExchangeRate = 1;
     if (this.isETH) {
-      usdExchangeRate = await geckoEthToUsd();
+      usdExchangeRate = await this.ethPrice();
     }
 
     // Build the contracts
     const rateOracleContract = BaseRateOracle__factory.connect(this.rateOracle.id, this.provider);
 
-    // Get the signer address
-    const signerAddress = await this.signer.getAddress();
-
     // Get before maturity
-    const beforeMaturity = Date.now().valueOf() > this.endDateTime.toMillis();
+    const beforeMaturity = Date.now().valueOf() < this.endDateTime.toMillis();
 
-    // Get the position information from the margin engine
+    // Get the margin engine contract
     const marginEngineContract = marginEngineFactory.connect(
       this.marginEngineAddress,
-      this.signer,
-    );
-
-    const rawPositionInfo = await marginEngineContract.callStatic.getPosition(
-      signerAddress,
-      position.tickLower,
-      position.tickUpper,
+      this.provider,
     );
 
     // Get fixed APR of the pool
     const fixedApr = await this.getFixedApr();
 
+    // Get the position information from the margin engine
+    const freshPositionInfo = await position.getFreshInfo();
+
+    // Descale position information
+    const margin = this.descale(freshPositionInfo.margin);
+    const fees = this.descale(freshPositionInfo.accumulatedFees);
+    const fixedTokenBalance = this.descale(freshPositionInfo.fixedTokenBalance);
+    const variableTokenBalance = this.descale(freshPositionInfo.variableTokenBalance);
+
     // Get settlement cashflow
     let settlementCashflow = 0;
-    if (!beforeMaturity && !rawPositionInfo.isSettled) {
+    if (!beforeMaturity && !freshPositionInfo.isSettled) {
       const variableFactorWad = await rateOracleContract.callStatic.variableFactor(
         this.termStartTimestamp.toString(), 
         this.termEndTimestamp.toString(),
@@ -1935,10 +1952,8 @@ class AMM {
 
       const fixedFactor = (this.endDateTime.toMillis() - this.startDateTime.toMillis()) / ONE_YEAR_IN_SECONDS / 1000;
       const variableFactor = Number(ethers.utils.formatEther(variableFactorWad));
-      const fixedTokens = this.descale(rawPositionInfo.fixedTokenBalance);
-      const variableTokens = this.descale(rawPositionInfo.variableTokenBalance);
 
-      settlementCashflow = fixedTokens * fixedFactor * 0.01 + variableTokens * variableFactor;
+      settlementCashflow = fixedTokenBalance * fixedFactor * 0.01 + variableTokenBalance * variableFactor;
     }
 
     // Get variable APY and accrued cashflow
@@ -1949,17 +1964,17 @@ class AMM {
     if (position.swaps.length > 0) {
       if (beforeMaturity) {
         try {
-          variableRateSinceLastSwap = await this.getInstantApy() * 100;
-
           const accruedCashflowInfo = await getAccruedCashflow({
             swaps: transformSwaps(position.swaps, this.underlyingToken.decimals),
             rateOracle: rateOracleContract,
             currentTime: Date.now().valueOf() / 1000,
             endTime: this.endDateTime.toSeconds(),
           });
-
           accruedCashflow = accruedCashflowInfo.accruedCashflow;
+
           fixedRateSinceLastSwap = accruedCashflowInfo.avgFixedRate;
+          variableRateSinceLastSwap = await this.getInstantApy() * 100;
+
         } catch (error) {
           sentryTracker.captureException(error);
         }
@@ -1971,21 +1986,18 @@ class AMM {
       }
     }
 
-    // Get margin and fees
-
-    const margin = this.descale(rawPositionInfo.margin);
-    const fees = this.descale(rawPositionInfo.accumulatedFees);
-
-    // Get health factor
+    // Get health factors
 
     let liquidationThreshold = 0;
     let safetyThreshold = 0;
-    let healthFactor = 0;
+    let healthFactor: 0 | 1 | 2 | 3 = 0;
+    let fixedRateHealthFactor: 0 | 1 | 2 | 3 = 0;
 
     if (beforeMaturity) {
+      // Get liquidation threshold
       try {
         const scaledLiqT = await marginEngineContract.callStatic.getPositionMarginRequirement(
-          signerAddress,
+          position.owner,
           position.tickLower,
           position.tickUpper,
           true
@@ -1995,9 +2007,10 @@ class AMM {
         sentryTracker.captureException(error);
       }
 
+      // Get safety threshold
       try {
         const scaledSafeT = await marginEngineContract.callStatic.getPositionMarginRequirement(
-          signerAddress,
+          position.owner,
           position.tickLower,
           position.tickUpper,
           false
@@ -2008,20 +2021,31 @@ class AMM {
         sentryTracker.captureException(error);
       }
 
+      // Get health factor
       healthFactor = (margin < liquidationThreshold) ? 1 : (margin < safetyThreshold ? 2 : 3);
+
+      // Get range health factor for LPs
+      fixedRateHealthFactor = getRangeHealthFactor(
+        position.fixedRateLower.toNumber(),
+        position.fixedRateUpper.toNumber(),
+        fixedApr
+      )
     }
 
-    const notional = (position.positionType === 3) 
-      ? position.getNotionalFromLiquidity(JSBI.BigInt(rawPositionInfo._liquidity.toString()))
-      : Math.abs(this.descale(rawPositionInfo.variableTokenBalance));
+    // Get liquidity 
+    const liquidity = position.getNotionalFromLiquidity(JSBI.BigInt(freshPositionInfo._liquidity.toString()));
 
-    const fixedRateHealthFactor = getRangeHealthFactor(
-      position.fixedRateLower.toNumber(),
-      position.fixedRateUpper.toNumber(),
-      fixedApr
-    )
+    // Get notional (LPs - liquidity, Traders - absolute variable tokens)
+    const notional = (position.positionType === 3) ? liquidity : Math.abs(variableTokenBalance);
 
+    // Build result and return
     return {
+      fixedTokenBalance,
+      variableTokenBalance,
+
+      liquidity,
+      liquidityInUSD: liquidity * usdExchangeRate,
+
       notional,
       notionalInUSD: notional * usdExchangeRate,
 

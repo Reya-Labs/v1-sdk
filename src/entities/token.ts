@@ -5,8 +5,8 @@ export type TokenConstructorArgs = {
 };
 
 class Token {
-  public readonly id?: string;
-  public readonly name?: string;
+  public readonly id: string;
+  public readonly name: string;
   public readonly decimals: number; // decimals used to represent token amounts
 
   public constructor({ id, name, decimals }: TokenConstructorArgs) {
