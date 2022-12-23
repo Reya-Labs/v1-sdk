@@ -1,7 +1,6 @@
 import JSBI from 'jsbi';
 
 import { DateTime } from 'luxon';
-import { BigNumber } from 'ethers';
 import AMM from './amm';
 import Burn from './burn';
 import Liquidation from './liquidation';
@@ -14,24 +13,21 @@ import { tickToPrice, tickToFixedRate } from '../utils/priceTickConversions';
 import { TickMath } from '../utils/tickMath';
 import { Price } from './fractions/price';
 
+import { MarginEngine__factory as marginEngineFactory } from '../typechain';
+
 export type PositionConstructorArgs = {
   id: string;
-  createdTimestamp: JSBI;
+
   amm: AMM;
   owner: string;
-  updatedTimestamp: JSBI;
-
-  variableTokenBalance: JSBI;
-  isSettled: boolean;
-
-  // specific to ME
-
   tickLower: number;
   tickUpper: number;
-  positionType: number;
 
-  totalNotionalTraded: JSBI;
-  sumOfWeightedFixedRate: JSBI;
+  createdTimestamp: JSBI;
+  updatedTimestamp: JSBI;
+
+  positionType: number;
+  isSettled: boolean;
 
   mints: Array<Mint>;
   burns: Array<Burn>;
@@ -51,8 +47,6 @@ class Position {
   public readonly owner: string;
 
   public readonly updatedTimestamp: JSBI;
-
-  public readonly variableTokenBalance: JSBI;
 
   public readonly isSettled: boolean;
 
@@ -74,17 +68,12 @@ class Position {
 
   public readonly settlements: Array<Settlement>;
 
-  public readonly totalNotionalTraded: JSBI;
-
-  public readonly sumOfWeightedFixedRate: JSBI;
-
   public constructor({
     id,
     createdTimestamp,
     amm,
     owner,
     updatedTimestamp,
-    variableTokenBalance,
     isSettled,
     tickLower,
     tickUpper,
@@ -95,15 +84,12 @@ class Position {
     marginUpdates,
     liquidations,
     settlements,
-    totalNotionalTraded,
-    sumOfWeightedFixedRate,
   }: PositionConstructorArgs) {
     this.id = id;
     this.createdTimestamp = createdTimestamp;
     this.amm = amm;
     this.owner = owner;
     this.updatedTimestamp = updatedTimestamp;
-    this.variableTokenBalance = variableTokenBalance;
     this.isSettled = isSettled;
 
     this.mints = mints;
@@ -116,9 +102,6 @@ class Position {
     this.tickLower = tickLower;
     this.tickUpper = tickUpper;
     this.positionType = positionType;
-
-    this.totalNotionalTraded = totalNotionalTraded;
-    this.sumOfWeightedFixedRate = sumOfWeightedFixedRate;
   }
 
   public get priceLower(): Price {
@@ -156,16 +139,15 @@ class Position {
     return DateTime.fromMillis(JSBI.toNumber(this.updatedTimestamp));
   }
 
-  public get averageFixedRate(): number | undefined {
-    const sumOfWeightedFixedRateBn = BigNumber.from(this.sumOfWeightedFixedRate.toString());
-    const totalNotionalTradedBn = BigNumber.from(this.totalNotionalTraded.toString());
-    if (totalNotionalTradedBn.eq(BigNumber.from(0))) {
-      return undefined;
+  public async getFreshInfo() {
+    if (!this.amm.provider) {
+      throw new Error('Blockchain not connected');
     }
-    const averageFixedRate =
-      sumOfWeightedFixedRateBn.mul(BigNumber.from(1000)).div(totalNotionalTradedBn).toNumber() /
-      1000;
-    return Math.abs(averageFixedRate);
+
+    const marginEngineContract = marginEngineFactory.connect(this.amm.marginEngineAddress, this.amm.provider);
+    const freshInfo = await marginEngineContract.callStatic.getPosition(this.owner, this.tickLower, this.tickUpper);
+
+    return freshInfo;
   }
 }
 
