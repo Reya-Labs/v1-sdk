@@ -1923,7 +1923,7 @@ class AMM {
 
     // Get last block timestamp
     const block = await this.provider.getBlock("latest");
-    const currentTime = block.timestamp - 15;
+    const currentTime = block.timestamp - 30;
 
     // Get before maturity
     const beforeMaturity = currentTime < this.endDateTime.toSeconds();
@@ -1980,6 +1980,7 @@ class AMM {
           variableRateSinceLastSwap = await this.getInstantApy() * 100;
 
         } catch (error) {
+          console.error("What?", error);
           sentryTracker.captureException(error);
         }
       }
