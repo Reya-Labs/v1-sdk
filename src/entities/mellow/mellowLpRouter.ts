@@ -543,65 +543,65 @@ class MellowLpRouter {
         );
         throw new Error('Unsuccessful depositAndRegisterForAutoRollover confirmation.');
       }
-    }
-
-    try {
-      if (this.isETH) {
-        this.writeContracts.mellowRouter.callStatic.depositEth(weights, tempOverrides);
-      } else {
-        await this.writeContracts.mellowRouter.callStatic.depositErc20(scaledAmount, weights);
-      }
-    } catch (error) {
-      console.error('Error when simulating deposit.', error);
-      sentryTracker.captureException(error);
-      sentryTracker.captureMessage('Unsuccessful deposit simulation.');
-      throw new Error('Unsuccessful deposit simulation.');
-    }
-
-    if (this.isETH) {
-      const gasLimit = await this.writeContracts.mellowRouter.estimateGas.depositEth(
-        weights,
-        tempOverrides,
-      );
-      tempOverrides.gasLimit = getGasBuffer(gasLimit);
     } else {
-      const gasLimit = await this.writeContracts.mellowRouter.estimateGas.depositErc20(
-        scaledAmount,
-        weights,
-        tempOverrides,
-      );
-      tempOverrides.gasLimit = getGasBuffer(gasLimit);
-    }
-
-    const tx = this.isETH
-      ? await this.writeContracts.mellowRouter.depositEth(weights, tempOverrides)
-      : await this.writeContracts.mellowRouter.depositErc20(scaledAmount, weights, tempOverrides);
-
-    try {
-      const receipt = await tx.wait();
-
       try {
-        await this.refreshUserDeposit();
+        if (this.isETH) {
+          this.writeContracts.mellowRouter.callStatic.depositEth(weights, tempOverrides);
+        } else {
+          await this.writeContracts.mellowRouter.callStatic.depositErc20(scaledAmount, weights);
+        }
       } catch (error) {
+        console.error('Error when simulating deposit.', error);
         sentryTracker.captureException(error);
-        sentryTracker.captureMessage('User deposit failed to refresh after deposit');
-        console.error('User deposit failed to refresh after deposit.', error);
+        sentryTracker.captureMessage('Unsuccessful deposit simulation.');
+        throw new Error('Unsuccessful deposit simulation.');
       }
 
-      try {
-        await this.refreshWalletBalance();
-      } catch (error) {
-        sentryTracker.captureException(error);
-        sentryTracker.captureMessage('Wallet user balance failed to refresh after deposit');
-        console.error('Wallet user balance failed to refresh after deposit.', error);
+      if (this.isETH) {
+        const gasLimit = await this.writeContracts.mellowRouter.estimateGas.depositEth(
+          weights,
+          tempOverrides,
+        );
+        tempOverrides.gasLimit = getGasBuffer(gasLimit);
+      } else {
+        const gasLimit = await this.writeContracts.mellowRouter.estimateGas.depositErc20(
+          scaledAmount,
+          weights,
+          tempOverrides,
+        );
+        tempOverrides.gasLimit = getGasBuffer(gasLimit);
       }
 
-      return receipt;
-    } catch (error) {
-      console.error('Unsuccessful deposit confirmation.', error);
-      sentryTracker.captureException(error);
-      sentryTracker.captureMessage('Unsuccessful deposit confirmation.');
-      throw new Error('Unsuccessful deposit confirmation.');
+      const tx = this.isETH
+        ? await this.writeContracts.mellowRouter.depositEth(weights, tempOverrides)
+        : await this.writeContracts.mellowRouter.depositErc20(scaledAmount, weights, tempOverrides);
+
+      try {
+        const receipt = await tx.wait();
+
+        try {
+          await this.refreshUserDeposit();
+        } catch (error) {
+          sentryTracker.captureException(error);
+          sentryTracker.captureMessage('User deposit failed to refresh after deposit');
+          console.error('User deposit failed to refresh after deposit.', error);
+        }
+
+        try {
+          await this.refreshWalletBalance();
+        } catch (error) {
+          sentryTracker.captureException(error);
+          sentryTracker.captureMessage('Wallet user balance failed to refresh after deposit');
+          console.error('Wallet user balance failed to refresh after deposit.', error);
+        }
+
+        return receipt;
+      } catch (error) {
+        console.error('Unsuccessful deposit confirmation.', error);
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage('Unsuccessful deposit confirmation.');
+        throw new Error('Unsuccessful deposit confirmation.');
+      }
     }
   };
 
