@@ -422,7 +422,11 @@ class MellowLpRouter {
     }
   };
 
-  deposit = async (amount: number, _weights: number[]): Promise<ContractReceipt> => {
+  deposit = async (
+    amount: number,
+    _weights: number[],
+    registration?: boolean | undefined,
+  ): Promise<ContractReceipt> => {
     if (
       isUndefined(this.readOnlyContracts) ||
       isUndefined(this.writeContracts) ||
@@ -445,6 +449,100 @@ class MellowLpRouter {
 
     if (this.isETH) {
       tempOverrides.value = scaledAmount;
+    }
+
+    if (registration !== undefined) {
+      try {
+        if (this.isETH) {
+          this.writeContracts.mellowRouter.callStatic.depositEthAndRegisterForAutoRollover(
+            weights,
+            registration,
+            tempOverrides,
+          );
+        } else {
+          await this.writeContracts.mellowRouter.callStatic.depositErc20AndRegisterForAutoRollover(
+            scaledAmount,
+            weights,
+            registration,
+          );
+        }
+      } catch (error) {
+        console.error('Error when simulating depositAndRegisterForAutoRollover.', error);
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage('Unsuccessful depositAndRegisterForAutoRollover simulation.');
+        throw new Error('Unsuccessful depositAndRegisterForAutoRollover simulation.');
+      }
+
+      if (this.isETH) {
+        const gasLimit =
+          await this.writeContracts.mellowRouter.estimateGas.depositEthAndRegisterForAutoRollover(
+            weights,
+            registration,
+            tempOverrides,
+          );
+        tempOverrides.gasLimit = getGasBuffer(gasLimit);
+      } else {
+        const gasLimit =
+          await this.writeContracts.mellowRouter.estimateGas.depositErc20AndRegisterForAutoRollover(
+            scaledAmount,
+            weights,
+            registration,
+            tempOverrides,
+          );
+        tempOverrides.gasLimit = getGasBuffer(gasLimit);
+      }
+
+      const tx = this.isETH
+        ? await this.writeContracts.mellowRouter.depositEthAndRegisterForAutoRollover(
+            weights,
+            registration,
+            tempOverrides,
+          )
+        : await this.writeContracts.mellowRouter.depositErc20AndRegisterForAutoRollover(
+            scaledAmount,
+            weights,
+            registration,
+            tempOverrides,
+          );
+
+      try {
+        const receipt = await tx.wait();
+
+        try {
+          await this.refreshUserDeposit();
+        } catch (error) {
+          sentryTracker.captureException(error);
+          sentryTracker.captureMessage(
+            'User deposit failed to refresh after depositAndRegisterForAutoRollover',
+          );
+          console.error(
+            'User deposit failed to refresh after depositAndRegisterForAutoRollover.',
+            error,
+          );
+        }
+
+        try {
+          await this.refreshWalletBalance();
+        } catch (error) {
+          sentryTracker.captureException(error);
+          sentryTracker.captureMessage(
+            'Wallet user balance failed to refresh after depositAndRegisterForAutoRollover',
+          );
+          console.error(
+            'Wallet user balance failed to refresh after depositAndRegisterForAutoRollover.',
+            error,
+          );
+        }
+
+        return receipt;
+      } catch (error) {
+        console.error('Unsuccessful depositAndRegisterForAutoRollover confirmation.', error);
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage(
+          'Unsuccessful depositAndRegisterForAutoRollover confirmation.',
+        );
+        throw new Error('Unsuccessful depositAndRegisterForAutoRollover confirmation.');
+      }
     }
 
     try {
