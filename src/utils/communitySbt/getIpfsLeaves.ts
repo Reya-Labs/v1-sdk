@@ -1,13 +1,17 @@
 import axios from 'axios';
 import { LeafInfo } from '../../entities/communitySbt';
-import { geLeavesIpfsUri } from './helpers';
+import { getLeavesIpfsUri } from './helpers';
 
 export async function createLeaves(
     seasonId: number,
     leavesCids: Array<string>
 ): Promise<Array<LeafInfo>> {
 
-    const data = await axios.get(geLeavesIpfsUri(seasonId, leavesCids));
+    const data = await axios.get(getLeavesIpfsUri(seasonId, leavesCids), {
+        headers: {
+            'Accept': '*/*'
+        }
+    });
 
     const snaphots : Array<{
             owner: string
