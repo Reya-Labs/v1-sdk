@@ -18,7 +18,8 @@ export type SBTConstructorArgs = {
     id: string;
     signer: Signer| null;
     coingeckoKey?: string;
-    badgesSubgraphUrl?: string;
+    currentBadgesSubgraphUrl?: string;
+    nextBadgesSubgraphUrl?: string;
     nonProgDbUrl?: string;
     referralsDbUrl?: string;
     subgraphUrl?: string;
@@ -171,7 +172,8 @@ class SBT {
   public readonly signer: Signer | null;
   public readonly provider: providers.Provider | undefined;
   public readonly coingeckoKey?: string;
-  public readonly badgesSubgraphUrl?: string;
+  public readonly currentBadgesSubgraphUrl?: string;
+  public readonly nextBadgesSubgraphUrl?: string;
   public readonly nonProgDbUrl?: string;
   public readonly referralsDbUrl?: string;
   public readonly subgraphUrl?: string;
@@ -190,7 +192,8 @@ class SBT {
     id,
     signer,
     coingeckoKey,
-    badgesSubgraphUrl,
+    currentBadgesSubgraphUrl,
+    nextBadgesSubgraphUrl,
     nonProgDbUrl,
     referralsDbUrl,
     subgraphUrl,
@@ -202,7 +205,8 @@ class SBT {
     this.signer = signer;
 
     this.coingeckoKey = coingeckoKey;
-    this.badgesSubgraphUrl = badgesSubgraphUrl;
+    this.currentBadgesSubgraphUrl = currentBadgesSubgraphUrl;
+    this.nextBadgesSubgraphUrl = nextBadgesSubgraphUrl;
     this.nonProgDbUrl = nonProgDbUrl;
     this.referralsDbUrl = referralsDbUrl;
     this.subgraphUrl = subgraphUrl
@@ -238,8 +242,15 @@ class SBT {
         throw new Error('Cannot connect to community SBT contract');
     }
 
+    const selectedBadgesSubgraphUrl = getSelectedSeasonBadgesUrl(
+        seasonId,
+        this.badgesCids,
+        this.currentBadgesSubgraphUrl,
+        this.nextBadgesSubgraphUrl
+    );
+
     try {
-        if (!this.badgesSubgraphUrl 
+        if (!selectedBadgesSubgraphUrl 
             || !this.coingeckoKey 
             || !this.subgraphUrl 
             || !this.provider
@@ -250,7 +261,7 @@ class SBT {
 
         const awardedTimestampSec = Math.floor(awardedTimestamp/1000);
         // create merkle tree from subgraph derived leaves and get the root
-        const rootEntity = await getRootFromSubgraph(awardedTimestampSec, this.badgesSubgraphUrl);
+        const rootEntity = await getRootFromSubgraph(awardedTimestampSec, selectedBadgesSubgraphUrl);
         if(!rootEntity) {
             throw new Error('No root found')
         }
@@ -304,17 +315,22 @@ class SBT {
             roots: []
         }
 
-        const network = (await this.provider.getNetwork()).name;
+        const selectedBadgesSubgraphUrl = getSelectedSeasonBadgesUrl(
+            seasonId,
+            this.badgesCids,
+            this.currentBadgesSubgraphUrl,
+            this.nextBadgesSubgraphUrl
+        );
 
         const claimedBadgeTypes: number[] = [];
         for (const badge of badges) {
-            if (!this.badgesSubgraphUrl || !this.coingeckoKey || !this.subgraphUrl) {
+            if (!selectedBadgesSubgraphUrl || !this.coingeckoKey || !this.subgraphUrl) {
                 break;
             }
 
             const awardedTimestampSec = Math.floor(badge.awardedTimestamp/1000);
             // create merkle tree from subgraph derived leaves and get the root
-            const rootEntity = await getRootFromSubgraph(awardedTimestampSec, this.badgesSubgraphUrl);
+            const rootEntity = await getRootFromSubgraph(awardedTimestampSec, selectedBadgesSubgraphUrl);
             if(!rootEntity) {
                 continue;
             }
@@ -359,22 +375,28 @@ class SBT {
       }): Promise<BadgeResponse[]> {
 
         try{
-            // past season
-            if (seasonEnd < DateTime.now().toSeconds()) {
+            const selectedBadgesSubgraphUrl = getSelectedSeasonBadgesUrl(
+                seasonId,
+                this.badgesCids,
+                this.currentBadgesSubgraphUrl,
+                this.nextBadgesSubgraphUrl
+            );
+            if(seasonEnd < DateTime.now().toSeconds() && this.badgesCids && this.badgesCids[seasonId]) {
                 const badges = await this.getOldSeasonBadges({
                     userId,
                     seasonId,
                     seasonStart,
                     seasonEnd,
+                    selectedBadgesSubgraphUrl: selectedBadgesSubgraphUrl
                 })
                 return badges;
             }
-
             const badges = await this.computeSeasonBadges({
                 userId,
                 seasonId,
                 seasonStart,
                 seasonEnd,
+                selectedBadgesSubgraphUrl: selectedBadgesSubgraphUrl
             });
             return badges;
 
@@ -391,11 +413,13 @@ class SBT {
         seasonId,
         seasonStart,
         seasonEnd,
+        selectedBadgesSubgraphUrl
     }: {
         userId: string;
         seasonId: number;
         seasonStart: number,
         seasonEnd: number,
+        selectedBadgesSubgraphUrl?: string
     }): Promise<BadgeResponse[]> {
 
         if (!this.provider 
@@ -411,7 +435,7 @@ class SBT {
             seasonId,
             seasonStart,
             seasonEnd,
-            badgesSubgraphUrl: this.badgesSubgraphUrl
+            badgesSubgraphUrl: selectedBadgesSubgraphUrl
         });
         const mapBadges = new Map<string, BadgeResponse>();
         badgesResponse.forEach((entry) => {
@@ -453,11 +477,13 @@ class SBT {
         seasonId,
         seasonStart,
         seasonEnd,
+        selectedBadgesSubgraphUrl
       }: {
         userId: string;
         seasonId: number;
         seasonStart: number,
         seasonEnd: number,
+        selectedBadgesSubgraphUrl?: string
       }): Promise<BadgeResponse[]> {
         try {
             //programmatic badges
@@ -466,7 +492,7 @@ class SBT {
                 seasonId,
                 seasonStart,
                 seasonEnd,
-                badgesSubgraphUrl: this.badgesSubgraphUrl
+                badgesSubgraphUrl: selectedBadgesSubgraphUrl
             });
 
             // referrer badges & non-programatic badges
@@ -481,10 +507,11 @@ class SBT {
                 );
             }
             
-            if (this.referralsDbUrl && this.badgesSubgraphUrl) {
+            if (this.referralsDbUrl && selectedBadgesSubgraphUrl) {
                 referroorBadges = await this.getReferrorBadges(
                     userId,
-                    seasonId
+                    seasonId,
+                    selectedBadgesSubgraphUrl
                 );
             }
 
@@ -500,10 +527,10 @@ class SBT {
             }
 
             // top LP & trader badges
-            if (this.badgesSubgraphUrl && this.subgraphUrl && this.coingeckoKey &&
+            if (selectedBadgesSubgraphUrl && this.subgraphUrl && this.coingeckoKey &&
                 DateTime.now().toSeconds() > seasonEnd) {
-                const topLpBadge =  await this.getTopBadge(userId, seasonId, false, seasonStart, seasonEnd);
-                const topTraderBadge =  await this.getTopBadge(userId, seasonId, true, seasonStart, seasonEnd);
+                const topLpBadge =  await this.getTopBadge(userId, seasonId, false, seasonStart, seasonEnd, selectedBadgesSubgraphUrl);
+                const topTraderBadge =  await this.getTopBadge(userId, seasonId, true, seasonStart, seasonEnd, selectedBadgesSubgraphUrl);
                 if (topLpBadge) badgesResponse.push(topLpBadge);
                 if (topTraderBadge) badgesResponse.push(topTraderBadge);
             }
@@ -526,11 +553,12 @@ class SBT {
         isLP: boolean,
         seasonStart: number,
         seasonEnd: number,
+        selectedBadgesSubgraphUrl?: string
     ): Promise<BadgeResponse | undefined> {
         const badgeType = getTopBadgeType(seasonId, !isLP);
         if (!badgeType) return undefined;
 
-        if (!this.badgesSubgraphUrl || !this.coingeckoKey || !this.ignoredWalletIds) {
+        if (!selectedBadgesSubgraphUrl || !this.coingeckoKey || !this.ignoredWalletIds) {
             return undefined;
         }
 
@@ -554,7 +582,8 @@ class SBT {
                     userId,
                     seasonId,
                     seasonEnd,
-                    badgeType
+                    badgeType,
+                    selectedBadgesSubgraphUrl
                 );
                 return badge;
             }
@@ -606,6 +635,7 @@ class SBT {
         seasonId: number,
         seasonEnd: number,
         badgeType: string,
+        selectedBadgesSubgraphUrl?: string
     ) : Promise<BadgeResponse> {
         const badgeQuery = `
             query( $id: String) {
@@ -615,7 +645,7 @@ class SBT {
                 }
             }
         `;
-        const client = getApolloClient(this.badgesSubgraphUrl ?? "");
+        const client = getApolloClient(selectedBadgesSubgraphUrl ?? "");
       
         const idBadge = `${userId.toLowerCase()}#${badgeType}#${seasonId}`;
         const badgeData = await client.query<{
@@ -663,7 +693,11 @@ class SBT {
         return badgeResponseRecord;
     }
 
-    public async getReferrorBadges(userId: string, seasonId: number) : Promise<Record<string, BadgeResponse>> {
+    public async getReferrorBadges(
+        userId: string, 
+        seasonId: number,
+        selectedBadgesSubgraphUrl: string
+    ) : Promise<Record<string, BadgeResponse>> {
         let badgeResponseRecord : Record<string, BadgeResponse> = {};
 
         const resp = await axios.get(`${this.referralsDbUrl}/referrals-by/${userId.toLowerCase()}`);
@@ -687,7 +721,7 @@ class SBT {
             }
         `;
 
-        const client = getApolloClient(this.badgesSubgraphUrl ?? "")
+        const client = getApolloClient(selectedBadgesSubgraphUrl ?? "")
         const data = await client.query<{
             seasonUsers: {
                 totalWeightedNotionalTraded: string
@@ -709,9 +743,9 @@ class SBT {
         let refereesWith2mNotionalTraded = 0;
         for (const seasonUser of data.data.seasonUsers){
             let totalPointz = parseFloat(seasonUser.totalWeightedNotionalTraded);
-            if(totalPointz >= get100KRefereeBenchmark(this.badgesSubgraphUrl)) {
+            if(totalPointz >= get100KRefereeBenchmark(selectedBadgesSubgraphUrl)) {
                 refereesWith100kNotionalTraded++;
-                if(totalPointz >= get2MRefereeBenchmark(this.badgesSubgraphUrl)){
+                if(totalPointz >= get2MRefereeBenchmark(selectedBadgesSubgraphUrl)){
                     refereesWith2mNotionalTraded++;
                 }
             }
@@ -800,7 +834,13 @@ class SBT {
         }
 
         // badges claiming status in subgraph - includes all bades earned by user in given season
-        const subgraphClaimedBadges = await this.claimedBadgesInSubgraph(userAddress, args.season);
+        const selectedBadgesSubgraphUrl = getSelectedSeasonBadgesUrl(
+            args.season,
+            this.badgesCids,
+            this.currentBadgesSubgraphUrl,
+            this.nextBadgesSubgraphUrl
+        );
+        const subgraphClaimedBadges = await this.claimedBadgesInSubgraph(userAddress, args.season, selectedBadgesSubgraphUrl);
 
         // final claiming status verdict
         const badgeStatuses = subgraphClaimedBadges.map((badge) => {
@@ -828,7 +868,11 @@ class SBT {
         
     }
 
-    async claimedBadgesInSubgraph(userAddress: string, season: number): Promise<Array<BadgeWithStatus>> {
+    async claimedBadgesInSubgraph(
+        userAddress: string,
+        season: number,
+        selectedBadgesSubgraphUrl?: string
+    ): Promise<Array<BadgeWithStatus>> {
         const badgeQuery = `
             query( $id: String) {
                 badges(first: 50, where: {seasonUser_contains: $id}) {
@@ -839,7 +883,7 @@ class SBT {
                 }
             }
         `;
-        const client = getApolloClient(this.badgesSubgraphUrl ?? "");
+        const client = getApolloClient(selectedBadgesSubgraphUrl ?? "");
         const id = `${userAddress.toLowerCase()}#${season}`
         const data = await client.query<{
             badges: SubgraphBadgeResponse[]
