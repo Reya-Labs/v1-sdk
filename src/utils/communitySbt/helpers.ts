@@ -94,3 +94,19 @@ export function getLeavesIpfsUri(seasonId: number, cidsRecord: Array<string>) : 
     }
     return `https://gateway.pinata.cloud/ipfs/${cidsRecord[seasonId]}`;
 }
+
+export function getSelectedSeasonBadgesUrl(
+    seasonId: number,
+    badgesCids?: string[],
+    currentUrl?: string,
+    nextUrl?: string
+) : string {
+    let selectedBadgesSubgraphUrl = currentUrl;
+    if (badgesCids && badgesCids?.length < seasonId) { 
+        selectedBadgesSubgraphUrl = nextUrl
+    }
+    if (!selectedBadgesSubgraphUrl || !badgesCids) {
+        throw new Error(`Unable to find badges subgraph URL`);
+    }
+    return selectedBadgesSubgraphUrl;
+}
