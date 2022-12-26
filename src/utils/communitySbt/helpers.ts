@@ -88,7 +88,7 @@ export async function geckoEthToUsd(apiKey: string) : Promise<number> {
     return 0;
 };
 
-export function geLeavesIpfsUri(seasonId: number, cidsRecord: Array<string>) : string {
+export function getLeavesIpfsUri(seasonId: number, cidsRecord: Array<string>) : string {
     if (!cidsRecord[seasonId]) {
         throw new Error(`No IPFS CID found for season ${seasonId}`);
     }

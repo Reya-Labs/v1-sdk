@@ -6,7 +6,7 @@ import { getRootFromSubgraph } from '../utils/communitySbt/getSubgraphRoot';
 import { getProof } from '../utils/communitySbt/merkle-tree';
 import  axios from 'axios';
 import { MULTI_REDEEM_METHOD_ID, REDEEM_METHOD_ID } from '../constants';
-import { decodeBadgeType, decodeMultipleBadgeTypes, geckoEthToUsd, geLeavesIpfsUri, get100KRefereeBenchmark, get2MRefereeBenchmark, getEtherscanURL, getTopBadgeType, toMillis } from '../utils/communitySbt/helpers';
+import { decodeBadgeType, decodeMultipleBadgeTypes, geckoEthToUsd, get100KRefereeBenchmark, get2MRefereeBenchmark, getEtherscanURL, getLeavesIpfsUri, getTopBadgeType, toMillis } from '../utils/communitySbt/helpers';
 import { DateTime } from 'luxon';
 import { getScores, GetScoresArgs } from '../utils/communitySbt/getTopBadges';
 import { getSubgraphBadges } from '../utils/communitySbt/getSubgraphBadges';
@@ -418,7 +418,11 @@ class SBT {
             mapBadges.set(entry.id, entry);
         })
 
-        const data = await axios.get(geLeavesIpfsUri(seasonId, this.badgesCids));
+        const data = await axios.get(getLeavesIpfsUri(seasonId, this.badgesCids), {
+            headers: {
+                'Accept': '*/*'
+            }
+        });
 
         const snasphots : Array<{
                 owner: string
