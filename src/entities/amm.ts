@@ -1784,10 +1784,7 @@ class AMM {
   // token approval for periphery
   public async isTokenApprovedForPeriphery(
     tokenAddress: string | undefined,
-    approvalAmount?: number, // Unscaled, e.g. dollars not wei
   ): Promise<boolean | void> {
-    const scaledAmount = approvalAmount && this.scale(approvalAmount);
-
     if (!tokenAddress) {
       throw new Error('No underlying token');
     }
@@ -1803,11 +1800,7 @@ class AMM {
     const peripheryAddress = await factoryContract.periphery();
     const allowance = await token.allowance(signerAddress, peripheryAddress);
 
-    if (scaledAmount === undefined) {
-      return allowance.gte(TresholdApprovalBn);
-    } else {
-      return allowance.gte(scaledAmount);
-    }
+    return allowance.gte(TresholdApprovalBn);
   }
 
   public async approveUnderlyingTokenForPeriphery(): Promise<ContractReceipt | void> {
@@ -1840,18 +1833,7 @@ class AMM {
     const factoryContract = factoryFactory.connect(this.factoryAddress, this.signer);
     const peripheryAddress = await factoryContract.periphery();
 
-    let estimatedGas;
-    try {
-      estimatedGas = await token.estimateGas.approve(peripheryAddress, MaxUint256Bn);
-    } catch (error) {
-      sentryTracker.captureException(error);
-      sentryTracker.captureMessage(
-        `Could not increase periphery allowance (${tokenAddress}, ${await this.signer.getAddress()}, ${MaxUint256Bn.toString()})`,
-      );
-      throw new Error(
-        `Unable to approve. If your existing allowance is non-zero but lower than needed, some tokens like USDT require you to call approve("${peripheryAddress}", 0) before you can increase the allowance.`,
-      );
-    }
+    const estimatedGas = await token.estimateGas.approve(peripheryAddress, MaxUint256Bn);
 
     const approvalTransaction = await token
       .approve(peripheryAddress, MaxUint256Bn, {
