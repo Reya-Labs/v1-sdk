@@ -20,6 +20,12 @@ const getErrorData = (error: any): string => {
   } catch (_) {}
 
   try {
+    if (typeof error.data.data.data === 'string') {
+      return error.data.data.data;
+    }
+  } catch (_) {}
+
+  try {
     if (typeof error.data.data === 'string') {
       return error.data.data;
     }

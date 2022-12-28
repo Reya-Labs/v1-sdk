@@ -1785,7 +1785,12 @@ class AMM {
   public async isTokenApprovedForPeriphery(
     tokenAddress: string | undefined,
     approvalAmount?: number, // Unscaled, e.g. dollars not wei
-  ): Promise<boolean | void> {
+  ): Promise<boolean> {
+
+    if (this.isETH) {
+      return true;
+    }
+
     const scaledAmount = approvalAmount && this.scale(approvalAmount);
 
     if (!tokenAddress) {
@@ -1819,17 +1824,8 @@ class AMM {
       throw new Error('Wallet not connected');
     }
 
-    let isApproved;
     let tokenAddress = this.underlyingToken.id;
-
-    if (this.isETH && this.wethAddress) {
-      tokenAddress = this.wethAddress;
-    } else if (this.isETH) {
-      // No approval required for ETH (not WETH) collateral
-      isApproved = true;
-    }
-
-    isApproved = await this.isTokenApprovedForPeriphery(tokenAddress);
+    let isApproved = await this.isTokenApprovedForPeriphery(tokenAddress);
 
     if (isApproved) {
       return;
