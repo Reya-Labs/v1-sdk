@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-
+// Run with: npx jest tests/jest/communitySbt.test.ts
 import axios from 'axios';
 import { jest } from '@jest/globals';
 import { ethers } from 'hardhat';
@@ -8,7 +8,7 @@ import SBT, {
   NonProgramaticBadgeResponse,
   SubgraphBadgeResponse,
 } from '../../src/entities/communitySbt';
-import { toMillis } from '../../src/utils/communitySbt/helpers';
+import { getSelectedSeasonBadgesUrl, toMillis } from '../../src/utils/communitySbt/helpers';
 import { getSubgraphBadges } from '../../src/utils/communitySbt/getSubgraphBadges';
 import { getScores } from '../../src/utils/communitySbt/getTopBadges';
 import {
@@ -47,7 +47,8 @@ describe('getSeasonBadges: general', () => {
       id: 'testId',
       signer: ethers.provider.getSigner(),
       coingeckoKey: 'coingecko_api',
-      badgesSubgraphUrl: 'badges_subgraph',
+      currentBadgesSubgraphUrl: 'current_badges_subgraph',
+      nextBadgesSubgraphUrl: 'next_badges_subgraph',
       nonProgDbUrl: 'non=prog-db',
       referralsDbUrl: 'referralsDbUrl',
       subgraphUrl: 'subgraphUrl',
@@ -186,7 +187,7 @@ describe('getSeasonBadges: general', () => {
       status: 200,
       data,
     });
-    const badgesList = await communitySbt.getReferrorBadges('account1', 1);
+    const badgesList = await communitySbt.getReferrorBadges('account1', 1, "current_badges_subgraph");
 
     expect(badgesList['36'].badgeType).toBe('36');
     expect(badgesList['36'].awardedTimestampMs).toBeDefined();
@@ -252,22 +253,22 @@ describe('getSeasonBadges: general', () => {
       data: { ethereum: { usd: 1400 } },
     });
 
-    let badge = await communitySbt.getTopBadge('wallet1', 1, true, s1SeasonStart, s1SeasonEnd);
+    let badge = await communitySbt.getTopBadge('wallet1', 1, true, s1SeasonStart, s1SeasonEnd, 'current_badges_subgraph');
     expect(badge?.badgeType).toBe('28');
     client.query.mockResolvedValueOnce(mGraphQLResponse);
-    badge = await communitySbt.getTopBadge('wallet2', 1, true, s1SeasonStart, s1SeasonEnd);
+    badge = await communitySbt.getTopBadge('wallet2', 1, true, s1SeasonStart, s1SeasonEnd, 'current_badges_subgraph');
     expect(badge?.badgeType).toBe('28');
     client.query.mockResolvedValueOnce(mGraphQLResponse);
-    badge = await communitySbt.getTopBadge('wallet3', 1, true, s1SeasonStart, s1SeasonEnd);
+    badge = await communitySbt.getTopBadge('wallet3', 1, true, s1SeasonStart, s1SeasonEnd, 'current_badges_subgraph');
     expect(badge?.badgeType).toBe('28');
     client.query.mockResolvedValueOnce(mGraphQLResponse);
-    badge = await communitySbt.getTopBadge('wallet4', 1, true, s1SeasonStart, s1SeasonEnd);
+    badge = await communitySbt.getTopBadge('wallet4', 1, true, s1SeasonStart, s1SeasonEnd, 'current_badges_subgraph');
     expect(badge).toBe(undefined);
     client.query.mockResolvedValueOnce(mGraphQLResponse);
-    badge = await communitySbt.getTopBadge('wallet5', 1, true, s1SeasonStart, s1SeasonEnd);
+    badge = await communitySbt.getTopBadge('wallet5', 1, true, s1SeasonStart, s1SeasonEnd, 'current_badges_subgraph');
     expect(badge?.badgeType).toBe('28');
     client.query.mockResolvedValueOnce(mGraphQLResponse);
-    badge = await communitySbt.getTopBadge('wallet6', 1, true, s1SeasonStart, s1SeasonEnd);
+    badge = await communitySbt.getTopBadge('wallet6', 1, true, s1SeasonStart, s1SeasonEnd, 'current_badges_subgraph');
     expect(badge?.badgeType).toBe('28');
   });
 
@@ -329,22 +330,22 @@ describe('getSeasonBadges: general', () => {
       data: { ethereum: { usd: 1400 } },
     });
 
-    let badge = await communitySbt.getTopBadge('wallet1', 1, false, s1SeasonStart, s1SeasonEnd);
+    let badge = await communitySbt.getTopBadge('wallet1', 1, false, s1SeasonStart, s1SeasonEnd, 'current_badges_subgraph');
     expect(badge?.badgeType).toBe('31');
     client.query.mockResolvedValueOnce(mGraphQLResponse);
-    badge = await communitySbt.getTopBadge('wallet2', 1, false, s1SeasonStart, s1SeasonEnd);
+    badge = await communitySbt.getTopBadge('wallet2', 1, false, s1SeasonStart, s1SeasonEnd, 'current_badges_subgraph');
     expect(badge).toBe(undefined);
     client.query.mockResolvedValueOnce(mGraphQLResponse);
-    badge = await communitySbt.getTopBadge('wallet3', 1, false, s1SeasonStart, s1SeasonEnd);
+    badge = await communitySbt.getTopBadge('wallet3', 1, false, s1SeasonStart, s1SeasonEnd, 'current_badges_subgraph');
     expect(badge?.badgeType).toBe('31');
     client.query.mockResolvedValueOnce(mGraphQLResponse);
-    badge = await communitySbt.getTopBadge('wallet4', 1, false, s1SeasonStart, s1SeasonEnd);
+    badge = await communitySbt.getTopBadge('wallet4', 1, false, s1SeasonStart, s1SeasonEnd, 'current_badges_subgraph');
     expect(badge?.badgeType).toBe('31');
     client.query.mockResolvedValueOnce(mGraphQLResponse);
-    badge = await communitySbt.getTopBadge('wallet5', 1, false, s1SeasonStart, s1SeasonEnd);
+    badge = await communitySbt.getTopBadge('wallet5', 1, false, s1SeasonStart, s1SeasonEnd, 'current_badges_subgraph');
     expect(badge?.badgeType).toBe('31');
     client.query.mockResolvedValueOnce(mGraphQLResponse);
-    badge = await communitySbt.getTopBadge('wallet6', 1, false, s1SeasonStart, s1SeasonEnd);
+    badge = await communitySbt.getTopBadge('wallet6', 1, false, s1SeasonStart, s1SeasonEnd, 'current_badges_subgraph');
     expect(badge?.badgeType).toBe('31');
   });
 
@@ -382,10 +383,10 @@ describe('getSeasonBadges: general', () => {
       data: { ethereum: { usd: 1400 } },
     });
 
-    let badge = await communitySbt.getTopBadge('wallet1', 1, false, s1SeasonStart, s1SeasonEnd);
+    let badge = await communitySbt.getTopBadge('wallet1', 1, false, s1SeasonStart, s1SeasonEnd, 'current_badges_subgraph');
     expect(badge?.badgeType).toBe('31');
     client.query.mockResolvedValueOnce(mGraphQLResponse);
-    badge = await communitySbt.getTopBadge('wallet2', 1, false, s1SeasonStart, s1SeasonEnd);
+    badge = await communitySbt.getTopBadge('wallet2', 1, false, s1SeasonStart, s1SeasonEnd, 'current_badges_subgraph');
     expect(badge?.badgeType).toBe('31');
   });
 });
@@ -764,7 +765,8 @@ describe('getReferrorBadges', () => {
       id: 'testId',
       signer: ethers.provider.getSigner(),
       coingeckoKey: 'coingecko_api',
-      badgesSubgraphUrl: 'badges_subgraph',
+      currentBadgesSubgraphUrl: 'current_badges_subgraph',
+      nextBadgesSubgraphUrl: 'next_badges_subgraph',
       nonProgDbUrl: 'non=prog-db',
       referralsDbUrl: 'referralsDbUrl',
       subgraphUrl: 'subgraphUrl',
@@ -786,7 +788,7 @@ describe('getReferrorBadges', () => {
       status: 200,
       data,
     });
-    const badgesList = await communitySbt.getReferrorBadges('account1', 1);
+    const badgesList = await communitySbt.getReferrorBadges('account1', 1, "current_badges_subgraph");
 
     expect(badgesList['36'].badgeType).toBe('36');
     expect(badgesList['36'].awardedTimestampMs).toBeDefined();
@@ -817,7 +819,7 @@ describe('getReferrorBadges', () => {
       status: 200,
       data,
     });
-    const badgesList = await communitySbt.getReferrorBadges('account1', 1);
+    const badgesList = await communitySbt.getReferrorBadges('account1', 1, "current_badges_subgraph");
 
     expect(badgesList['36'].badgeType).toBe('36');
     expect(badgesList['36'].awardedTimestampMs).toBeDefined();
@@ -852,7 +854,7 @@ describe('getReferrorBadges', () => {
       data,
     });
 
-    const badgesList = await communitySbt.getReferrorBadges('account1', 1);
+    const badgesList = await communitySbt.getReferrorBadges('account1', 1, "current_badges_subgraph");
 
     expect(badgesList['36'].badgeType).toBe('36');
     expect(badgesList['36'].awardedTimestampMs).toBeDefined();
@@ -876,7 +878,7 @@ describe('getReferrorBadges', () => {
       data,
     });
 
-    const badgesList = await communitySbt.getReferrorBadges('account1', 1);
+    const badgesList = await communitySbt.getReferrorBadges('account1', 1, "current_badges_subgraph");
 
     expect(Object.entries(badgesList).length).toBe(0);
   });
@@ -894,7 +896,7 @@ describe('getReferrorBadges', () => {
       data,
     });
 
-    const badgesList = await communitySbt.getReferrorBadges('account1', 1);
+    const badgesList = await communitySbt.getReferrorBadges('account1', 1, "current_badges_subgraph");
 
     expect(badgesList['36'].badgeType).toBe('36');
     expect(badgesList['36'].awardedTimestampMs).toBeDefined();
@@ -927,7 +929,7 @@ describe('getReferrorBadges', () => {
       data,
     });
 
-    const badgesList = await communitySbt.getReferrorBadges('account1', 1);
+    const badgesList = await communitySbt.getReferrorBadges('account1', 1, "current_badges_subgraph");
 
     expect(badgesList['36'].badgeType).toBe('36');
     expect(badgesList['36'].awardedTimestampMs).toBeDefined();
@@ -940,4 +942,93 @@ describe('getReferrorBadges', () => {
     expect(badgesList['38'].mintedTimestampMs).toBe(undefined);
     expect(Object.entries(badgesList).length).toBe(3);
   });
+});
+
+describe('end of season automation', () => {
+  const ogSeasonStart = 1654037999;
+  const ogSeasonEnd = 1664578799;
+  const s1SeasonStart = 1664578800;
+  const s1SeasonEnd = 1672141480;
+  const s2SeasonStart = 1672141481;
+  const s2SeasonEnd = 1677628799;
+  const network = 'mainnet';
+  let communitySbt: SBT;
+  beforeEach(() => {
+    communitySbt = new SBT({
+      id: 'testId',
+      signer: ethers.provider.getSigner(),
+      coingeckoKey: 'coingecko_api',
+      currentBadgesSubgraphUrl: 'current_badges_subgraph',
+      nextBadgesSubgraphUrl: 'next_badges_subgraph',
+      nonProgDbUrl: 'non=prog-db',
+      referralsDbUrl: 'referralsDbUrl',
+      subgraphUrl: 'subgraphUrl',
+      ignoredWalletIds: {},
+      badgesCids: ['badgesCids'],
+      leavesCids: ['leavesCids'],
+    });
+  });
+
+  test('getSelectedSeasonBadgesUrl current', async () => {
+    const selectedSubgraph = getSelectedSeasonBadgesUrl(2, ["a","b"], 'current_badges_subgraph', 'next_badges_subgraph');
+    expect(selectedSubgraph).toBe('current_badges_subgraph');
+  });
+
+  test('getSelectedSeasonBadgesUrl no CID lag, next season', async () => {
+    const selectedSubgraph = getSelectedSeasonBadgesUrl(2, ["a"], 'current_badges_subgraph', 'next_badges_subgraph');
+    expect(selectedSubgraph).toBe('next_badges_subgraph');
+  });
+
+  test('getSelectedSeasonBadgesUrl no CID lag, previous season', async () => {
+    const selectedSubgraph = getSelectedSeasonBadgesUrl(1, ["a"], 'current_badges_subgraph', 'next_badges_subgraph');
+    expect(selectedSubgraph).toBe('current_badges_subgraph');
+  });
+
+  test('get badges from ipfs', async () => {
+    const badges = [] as SubgraphBadgeResponse[];
+    const seasonUser = createSeasonUserWithBadges('account1', 0, badges);
+    const mGraphQLResponse = { data: { seasonUser } };
+    const client = mockGetApolloClient(network);
+    client.query.mockResolvedValueOnce(mGraphQLResponse);
+
+    const data: Array<IpfsBadge> = [];
+    data.push(createIpfsBadge('account1', 8)); // non prog, not minted
+    const mockedAxios = axios as jest.Mocked<typeof axios>;
+    mockedAxios.get.mockResolvedValueOnce({
+      status: 200,
+      data: { snapshot: data },
+    });
+    const badgesList = await communitySbt.getSeasonBadges({
+      userId: 'account1',
+      seasonId: 0,
+      seasonStart: ogSeasonStart,
+      seasonEnd: ogSeasonEnd,
+    });
+    expect(badgesList[0].badgeType).toBe('8');
+    expect(badgesList[0].awardedTimestampMs).toBe(toMillis(ogSeasonEnd));
+  });
+
+  test('do not get badges from ipfs even if season ended', async () => {
+    const badges = [] as SubgraphBadgeResponse[];
+    const seasonUser = createSeasonUserWithBadges('account1', 1, badges);
+    const mGraphQLResponse = { data: { seasonUser } };
+    const client = mockGetApolloClient(network);
+    client.query.mockResolvedValueOnce(mGraphQLResponse);
+
+    const data: Array<IpfsBadge> = [];
+    data.push(createIpfsBadge('account1', 8)); // non prog, not minted
+    const mockedAxios = axios as jest.Mocked<typeof axios>;
+    mockedAxios.get.mockResolvedValueOnce({
+      status: 200,
+      data: { snapshot: data },
+    });
+    const badgesList = await communitySbt.getSeasonBadges({
+      userId: 'account1',
+      seasonId: 1,
+      seasonStart: s1SeasonStart,
+      seasonEnd: s1SeasonEnd,
+    });
+    expect(badgesList.length).toBe(0);
+  });
+
 });
