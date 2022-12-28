@@ -34,11 +34,7 @@ import { nearestUsableTick } from '../utils/nearestUsableTick';
 import Token from './token';
 import { Price } from './fractions/price';
 import { TokenAmount } from './fractions/tokenAmount';
-import {
-  decodeInfoPostMint,
-  decodeInfoPostSwap,
-  getReadableErrorMessage,
-} from '../utils/errors/errorHandling';
+import { decodeInfoPostMint, decodeInfoPostSwap, getReadableErrorMessage } from '../utils/errors/errorHandling';
 import Position from './position';
 import { getExpectedApy } from '../services/getExpectedApy';
 import { getAccruedCashflow, transformSwaps } from '../services/getAccruedCashflow';
@@ -52,16 +48,14 @@ import { getRangeHealthFactor } from '../utils/rangeHealthFactor';
 var geckoEthToUsd = async () => {
   for (let attempt = 0; attempt < 5; attempt++) {
     try {
-      let data = await axios.get(
-        'https://pro-api.coingecko.com/api/v3/simple/price?x_cg_pro_api_key=' +
-          process.env.REACT_APP_COINGECKO_API_KEY +
-          '&ids=ethereum&vs_currencies=usd',
-      );
+      let data = await axios.get('https://pro-api.coingecko.com/api/v3/simple/price?x_cg_pro_api_key=' + process.env.REACT_APP_COINGECKO_API_KEY + '&ids=ethereum&vs_currencies=usd');
       return data.data.ethereum.usd;
-    } catch (error) {}
+    } catch (error) {
+    }
   }
   return 0;
 };
+
 
 export type AMMConstructorArgs = {
   id: string;
@@ -136,12 +130,12 @@ export type ExpectedApyArgs = {
   fixedTokenDeltaUnbalanced: number;
   availableNotional: number;
   predictedVariableApy: number;
-};
+}
 
 export type ExpectedApyInfo = {
   expectedApy: number;
   expectedCashflow: number;
-};
+}
 
 // rollover with swap
 
@@ -183,7 +177,7 @@ export type AMMGetInfoPostMintArgs = {
   fixedLow: number;
   fixedHigh: number;
   notional: number;
-};
+}
 
 //rollover with swap
 
@@ -208,7 +202,7 @@ export type AMMGetInfoPostRolloverWithMintArgs = {
   newMarginEngine: string;
   oldFixedLow: number;
   oldFixedHigh: number;
-};
+}
 
 // burn
 
@@ -243,8 +237,8 @@ export enum HealthFactorStatus {
   NOT_FOUND = 0,
   DANGER = 1,
   WARNING = 2,
-  HEALTHY = 3,
-}
+  HEALTHY = 3,  
+};
 
 // dynamic information about position
 
@@ -263,7 +257,7 @@ export type PositionInfo = {
 
   fees: number;
   feesInUSD: number;
-
+  
   settlementCashflow: number;
   settlementCashflowInUSD: number;
 
@@ -281,7 +275,7 @@ export type PositionInfo = {
   fixedApr: number;
   healthFactor: HealthFactorStatus;
   fixedRateHealthFactor: HealthFactorStatus;
-};
+}
 
 export type ClosestTickAndFixedRate = {
   closestUsableTick: number;
@@ -315,7 +309,7 @@ class AMM {
     underlyingToken,
     tickSpacing,
     wethAddress,
-    ethPrice,
+    ethPrice
   }: AMMConstructorArgs) {
     this.id = id;
     this.signer = signer;
@@ -328,29 +322,28 @@ class AMM {
     this.underlyingToken = underlyingToken;
     this.tickSpacing = tickSpacing;
     this.wethAddress = wethAddress;
-    this.isETH = this.underlyingToken.name === 'ETH';
+    this.isETH = (this.underlyingToken.name === "ETH");
     this.ethPrice = ethPrice || geckoEthToUsd;
   }
 
   // expected apy
   expectedApy = async (ft: BigNumber, vt: BigNumber, margin: number, rate: number) => {
-    const now = Math.round(new Date().getTime() / 1000);
+    const now = Math.round((new Date()).getTime() / 1000);
 
-    const end =
-      BigNumber.from(this.termEndTimestamp.toString()).div(BigNumber.from(10).pow(12)).toNumber() /
-      1000000;
+    const end = BigNumber.from(this.termEndTimestamp.toString())
+      .div(BigNumber.from(10).pow(12))
+      .toNumber() / 1000000;
 
     let scaledFt = 0;
     let scaledVt = 0;
 
     if (this.underlyingToken.decimals <= 6) {
-      scaledFt = ft.toNumber() / 10 ** this.underlyingToken.decimals;
-      scaledVt = vt.toNumber() / 10 ** this.underlyingToken.decimals;
-    } else {
-      scaledFt =
-        ft.div(BigNumber.from(10).pow(this.underlyingToken.decimals - 6)).toNumber() / 1000000;
-      scaledVt =
-        vt.div(BigNumber.from(10).pow(this.underlyingToken.decimals - 6)).toNumber() / 1000000;
+      scaledFt = ft.toNumber() / (10 ** this.underlyingToken.decimals);
+      scaledVt = vt.toNumber() / (10 ** this.underlyingToken.decimals);
+    }
+    else {
+      scaledFt = ft.div(BigNumber.from(10).pow(this.underlyingToken.decimals - 6)).toNumber() / 1000000;
+      scaledVt = vt.div(BigNumber.from(10).pow(this.underlyingToken.decimals - 6)).toNumber() / 1000000;
     }
 
     const [pnl, ecs] = getExpectedApy(now, end, scaledFt, scaledVt, margin, rate);
@@ -410,7 +403,7 @@ class AMM {
       return;
     }
 
-    const effectiveOwner = !owner ? await this.signer.getAddress() : owner;
+    const effectiveOwner = (!owner) ? await this.signer.getAddress() : owner;
 
     const { closestUsableTick: oldTickUpper } = this.closestTickAndFixedRate(oldFixedLow);
     const { closestUsableTick: oldTickLower } = this.closestTickAndFixedRate(oldFixedHigh);
@@ -436,7 +429,7 @@ class AMM {
     const scaledNotional = this.scale(notional);
 
     let swapPeripheryParams: SwapPeripheryParams;
-    let tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
+    let tempOverrides: { value?: BigNumber, gasLimit?: BigNumber } = {};
 
     if (this.isETH && marginEth) {
       tempOverrides.value = ethers.utils.parseEther(marginEth.toFixed(18).toString());
@@ -454,58 +447,53 @@ class AMM {
       marginDelta: scaledMarginDelta,
     };
 
-    await peripheryContract.callStatic
-      .rolloverWithSwap(
-        this.marginEngineAddress,
-        effectiveOwner,
-        oldTickLower,
-        oldTickUpper,
-        swapPeripheryParams,
-        tempOverrides,
-      )
-      .catch(async (error: any) => {
-        const errorMessage = getReadableErrorMessage(error);
-        throw new Error(errorMessage);
-      });
+    await peripheryContract.callStatic.rolloverWithSwap(
+      this.marginEngineAddress,
+      effectiveOwner,
+      oldTickLower,
+      oldTickUpper,
+      swapPeripheryParams,
+      tempOverrides
+    ).catch(async (error: any) => {
+      const errorMessage = getReadableErrorMessage(error);
+      throw new Error(errorMessage);
+    })
 
-    const estimatedGas = await peripheryContract.estimateGas
-      .rolloverWithSwap(
-        this.marginEngineAddress,
-        effectiveOwner,
-        oldTickLower,
-        oldTickUpper,
-        swapPeripheryParams,
-        tempOverrides,
-      )
-      .catch((error) => {
-        const errorMessage = getReadableErrorMessage(error);
-        throw new Error(errorMessage);
-      });
+    const estimatedGas = await peripheryContract.estimateGas.rolloverWithSwap(
+      this.marginEngineAddress,
+      effectiveOwner,
+      oldTickLower,
+      oldTickUpper,
+      swapPeripheryParams,
+      tempOverrides
+    ).catch((error) => {
+      const errorMessage = getReadableErrorMessage(error);
+      throw new Error(errorMessage);
+    });
 
     tempOverrides.gasLimit = getGasBuffer(estimatedGas);
 
-    const swapTransaction = await peripheryContract
-      .rolloverWithSwap(
-        this.marginEngineAddress,
-        effectiveOwner,
-        oldTickLower,
-        oldTickUpper,
-        swapPeripheryParams,
-        tempOverrides,
-      )
-      .catch((error) => {
-        sentryTracker.captureException(error);
-        sentryTracker.captureMessage('Transaction Confirmation Error');
-        throw new Error('Transaction Confirmation Error');
-      });
+    const swapTransaction = await peripheryContract.rolloverWithSwap(
+      this.marginEngineAddress,
+      effectiveOwner,
+      oldTickLower,
+      oldTickUpper,
+      swapPeripheryParams,
+      tempOverrides
+    ).catch((error) => {
+      sentryTracker.captureException(error);
+      sentryTracker.captureMessage("Transaction Confirmation Error");
+      throw new Error("Transaction Confirmation Error");
+    });
 
     try {
       const receipt = await swapTransaction.wait();
       return receipt;
-    } catch (error) {
+    }
+    catch (error) {
       sentryTracker.captureException(error);
-      sentryTracker.captureMessage('Transaction Confirmation Error');
-      throw new Error('Transaction Confirmation Error');
+      sentryTracker.captureMessage("Transaction Confirmation Error");
+      throw new Error("Transaction Confirmation Error");
     }
   }
 
@@ -559,7 +547,7 @@ class AMM {
       return;
     }
 
-    const effectiveOwner = !owner ? await this.signer.getAddress() : owner;
+    const effectiveOwner = (!owner) ? await this.signer.getAddress() : owner;
 
     const { closestUsableTick: oldTickUpper } = this.closestTickAndFixedRate(oldFixedLow);
     const { closestUsableTick: oldTickLower } = this.closestTickAndFixedRate(oldFixedHigh);
@@ -573,7 +561,7 @@ class AMM {
     const _notional = this.scale(notional);
 
     let mintOrBurnParams: MintOrBurnParams;
-    let tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
+    let tempOverrides: { value?: BigNumber, gasLimit?: BigNumber } = {};
 
     if (this.isETH && marginEth) {
       tempOverrides.value = ethers.utils.parseEther(marginEth.toFixed(18).toString());
@@ -590,58 +578,54 @@ class AMM {
       marginDelta: scaledMarginDelta,
     };
 
-    await peripheryContract.callStatic
-      .rolloverWithMint(
-        this.marginEngineAddress,
-        effectiveOwner,
-        oldTickLower,
-        oldTickUpper,
-        mintOrBurnParams,
-        tempOverrides,
-      )
-      .catch((error) => {
-        const errorMessage = getReadableErrorMessage(error);
-        throw new Error(errorMessage);
-      });
 
-    const estimatedGas = await peripheryContract.estimateGas
-      .rolloverWithMint(
-        this.marginEngineAddress,
-        effectiveOwner,
-        oldTickLower,
-        oldTickUpper,
-        mintOrBurnParams,
-        tempOverrides,
-      )
-      .catch((error) => {
-        const errorMessage = getReadableErrorMessage(error);
-        throw new Error(errorMessage);
-      });
+    await peripheryContract.callStatic.rolloverWithMint(
+      this.marginEngineAddress,
+      effectiveOwner,
+      oldTickLower,
+      oldTickUpper,
+      mintOrBurnParams,
+      tempOverrides
+    ).catch((error) => {
+      const errorMessage = getReadableErrorMessage(error);
+      throw new Error(errorMessage);
+    });
+
+    const estimatedGas = await peripheryContract.estimateGas.rolloverWithMint(
+      this.marginEngineAddress,
+      effectiveOwner,
+      oldTickLower,
+      oldTickUpper,
+      mintOrBurnParams,
+      tempOverrides
+    ).catch((error) => {
+      const errorMessage = getReadableErrorMessage(error);
+      throw new Error(errorMessage);
+    });
 
     tempOverrides.gasLimit = getGasBuffer(estimatedGas);
 
-    const mintTransaction = await peripheryContract
-      .rolloverWithMint(
-        this.marginEngineAddress,
-        effectiveOwner,
-        oldTickLower,
-        oldTickUpper,
-        mintOrBurnParams,
-        tempOverrides,
-      )
-      .catch((error) => {
-        sentryTracker.captureException(error);
-        sentryTracker.captureMessage('Transaction Confirmation Error');
-        throw new Error('Transaction Confirmation Error');
-      });
+    const mintTransaction = await peripheryContract.rolloverWithMint(
+      this.marginEngineAddress,
+      effectiveOwner,
+      oldTickLower,
+      oldTickUpper,
+      mintOrBurnParams,
+      tempOverrides
+    ).catch((error) => {
+      sentryTracker.captureException(error);
+      sentryTracker.captureMessage("Transaction Confirmation Error");
+      throw new Error("Transaction Confirmation Error");
+    });
 
     try {
       const receipt = await mintTransaction.wait();
       return receipt;
-    } catch (error) {
+    }
+    catch (error) {
       sentryTracker.captureException(error);
-      sentryTracker.captureMessage('Transaction Confirmation Error');
-      throw new Error('Transaction Confirmation Error');
+      sentryTracker.captureMessage("Transaction Confirmation Error");
+      throw new Error("Transaction Confirmation Error");
     }
   }
 
@@ -756,10 +740,7 @@ class AMM {
         ? scaledMarginRequirement - scaledCurrentMargin
         : 0;
 
-    const averageFixedRate = availableNotional.eq(BigNumber.from(0))
-      ? 0
-      : fixedTokenDeltaUnbalanced.mul(BigNumber.from(1000)).div(availableNotional).toNumber() /
-        1000;
+    const averageFixedRate = (availableNotional.eq(BigNumber.from(0))) ? 0 : fixedTokenDeltaUnbalanced.mul(BigNumber.from(1000)).div(availableNotional).toNumber() / 1000;
 
     let maxAvailableNotional = BigNumber.from(0);
     const swapPeripheryParamsLargeSwap = {
@@ -784,16 +765,14 @@ class AMM {
 
     const result: InfoPostSwap = {
       marginRequirement: additionalMargin,
-      availableNotional:
-        scaledAvailableNotional < 0 ? -scaledAvailableNotional : scaledAvailableNotional,
+      availableNotional: scaledAvailableNotional < 0 ? -scaledAvailableNotional : scaledAvailableNotional,
       fee: scaledFee < 0 ? -scaledFee : scaledFee,
       slippage: fixedRateDeltaRaw < 0 ? -fixedRateDeltaRaw : fixedRateDeltaRaw,
       averageFixedRate: averageFixedRate < 0 ? -averageFixedRate : averageFixedRate,
       fixedTokenDeltaBalance: this.descale(fixedTokenDelta),
       variableTokenDeltaBalance: this.descale(availableNotional),
       fixedTokenDeltaUnbalanced: this.descale(fixedTokenDeltaUnbalanced),
-      maxAvailableNotional:
-        scaledMaxAvailableNotional < 0 ? -scaledMaxAvailableNotional : scaledMaxAvailableNotional,
+      maxAvailableNotional: scaledMaxAvailableNotional < 0 ? -scaledMaxAvailableNotional : scaledMaxAvailableNotional,
     };
 
     return result;
@@ -806,7 +785,7 @@ class AMM {
     fixedHigh,
     fixedTokenDeltaUnbalanced,
     availableNotional,
-    predictedVariableApy,
+    predictedVariableApy
   }: ExpectedApyArgs): Promise<ExpectedApyInfo> {
     if (!this.signer) {
       throw new Error('Wallet not connected');
@@ -841,9 +820,7 @@ class AMM {
     const rateOracleContract = BaseRateOracle__factory.connect(this.rateOracle.id, this.provider);
 
     const lastBlock = await this.provider.getBlockNumber();
-    const lastBlockTimestamp = BigNumber.from(
-      (await this.provider.getBlock(lastBlock - 1)).timestamp,
-    );
+    const lastBlockTimestamp = BigNumber.from((await this.provider.getBlock(lastBlock - 1)).timestamp);
 
     const scaledCurrentMargin = this.descale(currentMargin);
 
@@ -879,13 +856,13 @@ class AMM {
       positionUft.add(this.scale(fixedTokenDeltaUnbalanced)),
       positionVt.add(this.scale(availableNotional)),
       margin + positionMargin + accruedCashflow,
-      predictedVariableApy,
+      predictedVariableApy
     );
 
     const result: ExpectedApyInfo = {
       expectedApy: expectedApy,
-      expectedCashflow: expectedCashflow,
-    };
+      expectedCashflow: expectedCashflow
+    }
 
     return result;
   }
@@ -898,7 +875,7 @@ class AMM {
     fixedLow,
     fixedHigh,
     validationOnly,
-    fullyCollateralisedVTSwap,
+    fullyCollateralisedVTSwap
   }: AMMSwapArgs): Promise<ContractReceipt | void> {
     if (!this.provider) {
       throw new Error('Blockchain not connected');
@@ -954,7 +931,7 @@ class AMM {
     const scaledNotional = this.scale(notional);
 
     let swapPeripheryParams: SwapPeripheryParams;
-    let tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
+    let tempOverrides: { value?: BigNumber, gasLimit?: BigNumber } = {};
 
     if (this.isETH) {
       swapPeripheryParams = {
@@ -968,7 +945,8 @@ class AMM {
       };
 
       tempOverrides.value = ethers.utils.parseEther(margin.toFixed(18).toString());
-    } else {
+    }
+    else {
       const scaledMarginDelta = this.scale(margin);
 
       swapPeripheryParams = {
@@ -984,82 +962,59 @@ class AMM {
 
     let swapTransaction;
     if (fullyCollateralisedVTSwap === undefined || fullyCollateralisedVTSwap === false) {
-      await peripheryContract.callStatic
-        .swap(swapPeripheryParams, tempOverrides)
-        .catch(async (error: any) => {
-          let result = decodeInfoPostSwap(error);
-          const errorMessage = getReadableErrorMessage(error);
-          throw new Error(errorMessage);
-        });
+      await peripheryContract.callStatic.swap(swapPeripheryParams, tempOverrides).catch(async (error: any) => {
+        let result = decodeInfoPostSwap(error);
+        const errorMessage = getReadableErrorMessage(error);
+        throw new Error(errorMessage);
+      });
 
-      const estimatedGas = await peripheryContract.estimateGas
-        .swap(swapPeripheryParams, tempOverrides)
-        .catch((error) => {
-          const errorMessage = getReadableErrorMessage(error);
-          throw new Error(errorMessage);
-        });
+      const estimatedGas = await peripheryContract.estimateGas.swap(swapPeripheryParams, tempOverrides).catch((error) => {
+        const errorMessage = getReadableErrorMessage(error);
+        throw new Error(errorMessage);
+      });
 
       tempOverrides.gasLimit = getGasBuffer(estimatedGas);
 
-      swapTransaction = await peripheryContract
-        .swap(swapPeripheryParams, tempOverrides)
-        .catch((error) => {
-          sentryTracker.captureException(error);
-          sentryTracker.captureMessage('Transaction Confirmation Error');
-          throw new Error('Transaction Confirmation Error');
-        });
+      swapTransaction = await peripheryContract.swap(swapPeripheryParams, tempOverrides).catch((error) => {
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage("Transaction Confirmation Error");
+        throw new Error("Transaction Confirmation Error");
+      });
     } else {
       const rateOracleContract = BaseRateOracle__factory.connect(this.rateOracle.id, this.provider);
       const variableFactorFromStartToNowWad = await rateOracleContract.callStatic.variableFactor(
         BigNumber.from(this.termStartTimestamp.toString()),
-        BigNumber.from(this.termEndTimestamp.toString()),
+        BigNumber.from(this.termEndTimestamp.toString())
       );
 
-      await peripheryContract.callStatic
-        .fullyCollateralisedVTSwap(
-          swapPeripheryParams,
-          variableFactorFromStartToNowWad,
-          tempOverrides,
-        )
-        .catch(async (error: any) => {
-          let result = decodeInfoPostSwap(error);
-          const errorMessage = getReadableErrorMessage(error);
-          throw new Error(errorMessage);
-        });
+      await peripheryContract.callStatic.fullyCollateralisedVTSwap(swapPeripheryParams, variableFactorFromStartToNowWad, tempOverrides).catch(async (error: any) => {
+        let result = decodeInfoPostSwap(error);
+        const errorMessage = getReadableErrorMessage(error);
+        throw new Error(errorMessage);
+      });
 
-      const estimatedGas = await peripheryContract.estimateGas
-        .fullyCollateralisedVTSwap(
-          swapPeripheryParams,
-          variableFactorFromStartToNowWad,
-          tempOverrides,
-        )
-        .catch((error) => {
-          const errorMessage = getReadableErrorMessage(error);
-          throw new Error(errorMessage);
-        });
+      const estimatedGas = await peripheryContract.estimateGas.fullyCollateralisedVTSwap(swapPeripheryParams, variableFactorFromStartToNowWad, tempOverrides).catch((error) => {
+        const errorMessage = getReadableErrorMessage(error);
+        throw new Error(errorMessage);
+      });
 
       tempOverrides.gasLimit = getGasBuffer(estimatedGas);
 
-      swapTransaction = await peripheryContract
-        .fullyCollateralisedVTSwap(
-          swapPeripheryParams,
-          variableFactorFromStartToNowWad,
-          tempOverrides,
-        )
-        .catch((error) => {
-          sentryTracker.captureException(error);
-          sentryTracker.captureMessage('Transaction Confirmation Error');
-          throw new Error('Transaction Confirmation Error');
-        });
+      swapTransaction = await peripheryContract.fullyCollateralisedVTSwap(swapPeripheryParams, variableFactorFromStartToNowWad, tempOverrides).catch((error) => {
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage("Transaction Confirmation Error");
+        throw new Error("Transaction Confirmation Error");
+      });
     }
 
     try {
       const receipt = await swapTransaction.wait();
       return receipt;
-    } catch (error) {
+    }
+    catch (error) {
       sentryTracker.captureException(error);
-      sentryTracker.captureMessage('Transaction Confirmation Error');
-      throw new Error('Transaction Confirmation Error');
+      sentryTracker.captureMessage("Transaction Confirmation Error");
+      throw new Error("Transaction Confirmation Error");
     }
   }
 
@@ -1130,7 +1085,7 @@ class AMM {
     const scaledNotional = this.scale(notional);
 
     let swapPeripheryParams: SwapPeripheryParams;
-    let tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
+    let tempOverrides: { value?: BigNumber, gasLimit?: BigNumber } = {};
 
     if (this.isETH && marginEth) {
       tempOverrides.value = ethers.utils.parseEther(marginEth.toFixed(18).toString());
@@ -1148,41 +1103,35 @@ class AMM {
       marginDelta: scaledMarginDelta,
     };
 
-    await peripheryContract.callStatic
-      .swap(swapPeripheryParams, tempOverrides)
-      .catch(async (error: any) => {
-        const errorMessage = getReadableErrorMessage(error);
-        throw new Error(errorMessage);
-      });
+    await peripheryContract.callStatic.swap(swapPeripheryParams, tempOverrides).catch(async (error: any) => {
+      const errorMessage = getReadableErrorMessage(error);
+      throw new Error(errorMessage);
+    });
 
-    const estimatedGas = await peripheryContract.estimateGas
-      .swap(swapPeripheryParams, tempOverrides)
-      .catch((error) => {
-        const errorMessage = getReadableErrorMessage(error);
-        throw new Error(errorMessage);
-      });
+    const estimatedGas = await peripheryContract.estimateGas.swap(swapPeripheryParams, tempOverrides).catch((error) => {
+      const errorMessage = getReadableErrorMessage(error);
+      throw new Error(errorMessage);
+    });
 
     tempOverrides.gasLimit = getGasBuffer(estimatedGas);
 
-    const swapTransaction = await peripheryContract
-      .swap(swapPeripheryParams, tempOverrides)
-      .catch((error) => {
-        const errorMessage = getReadableErrorMessage(error);
-        throw new Error(errorMessage);
-      })
-      .catch((error) => {
-        sentryTracker.captureException(error);
-        sentryTracker.captureMessage('Transaction Confirmation Error');
-        throw new Error('Transaction Confirmation Error');
-      });
+    const swapTransaction = await peripheryContract.swap(swapPeripheryParams, tempOverrides).catch((error) => {
+      const errorMessage = getReadableErrorMessage(error);
+      throw new Error(errorMessage);
+    }).catch((error) => {
+      sentryTracker.captureException(error);
+      sentryTracker.captureMessage("Transaction Confirmation Error");
+      throw new Error("Transaction Confirmation Error");
+    });
 
     try {
       const receipt = await swapTransaction.wait();
       return receipt;
-    } catch (error) {
+    }
+    catch (error) {
       sentryTracker.captureException(error);
-      sentryTracker.captureMessage('Transaction Confirmation Error');
-      throw new Error('Transaction Confirmation Error');
+      sentryTracker.captureMessage("Transaction Confirmation Error");
+      throw new Error("Transaction Confirmation Error");
     }
   }
 
@@ -1306,7 +1255,7 @@ class AMM {
     const _notional = this.scale(notional);
 
     let mintOrBurnParams: MintOrBurnParams;
-    let tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
+    let tempOverrides: { value?: BigNumber, gasLimit?: BigNumber } = {};
 
     if (this.isETH) {
       mintOrBurnParams = {
@@ -1319,7 +1268,8 @@ class AMM {
       };
 
       tempOverrides.value = ethers.utils.parseEther(margin.toFixed(18).toString());
-    } else {
+    }
+    else {
       const scaledMarginDelta = this.scale(margin);
 
       mintOrBurnParams = {
@@ -1332,37 +1282,32 @@ class AMM {
       };
     }
 
-    await peripheryContract.callStatic
-      .mintOrBurn(mintOrBurnParams, tempOverrides)
-      .catch((error) => {
-        const errorMessage = getReadableErrorMessage(error);
-        throw new Error(errorMessage);
-      });
+    await peripheryContract.callStatic.mintOrBurn(mintOrBurnParams, tempOverrides).catch((error) => {
+      const errorMessage = getReadableErrorMessage(error);
+      throw new Error(errorMessage);
+    });
 
-    const estimatedGas = await peripheryContract.estimateGas
-      .mintOrBurn(mintOrBurnParams, tempOverrides)
-      .catch((error) => {
-        const errorMessage = getReadableErrorMessage(error);
-        throw new Error(errorMessage);
-      });
+    const estimatedGas = await peripheryContract.estimateGas.mintOrBurn(mintOrBurnParams, tempOverrides).catch((error) => {
+      const errorMessage = getReadableErrorMessage(error);
+      throw new Error(errorMessage);
+    });
 
     tempOverrides.gasLimit = getGasBuffer(estimatedGas);
 
-    const mintTransaction = await peripheryContract
-      .mintOrBurn(mintOrBurnParams, tempOverrides)
-      .catch((error) => {
-        sentryTracker.captureException(error);
-        sentryTracker.captureMessage('Transaction Confirmation Error');
-        throw new Error('Transaction Confirmation Error');
-      });
+    const mintTransaction = await peripheryContract.mintOrBurn(mintOrBurnParams, tempOverrides).catch((error) => {
+      sentryTracker.captureException(error);
+      sentryTracker.captureMessage("Transaction Confirmation Error");
+      throw new Error("Transaction Confirmation Error");
+    });
 
     try {
       const receipt = await mintTransaction.wait();
       return receipt;
-    } catch (error) {
+    }
+    catch (error) {
       sentryTracker.captureException(error);
-      sentryTracker.captureMessage('Transaction Confirmation Error');
-      throw new Error('Transaction Confirmation Error');
+      sentryTracker.captureMessage("Transaction Confirmation Error");
+      throw new Error("Transaction Confirmation Error");
     }
   }
 
@@ -1419,7 +1364,7 @@ class AMM {
     const _notional = this.scale(notional);
 
     let mintOrBurnParams: MintOrBurnParams;
-    let tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
+    let tempOverrides: { value?: BigNumber, gasLimit?: BigNumber } = {};
 
     if (this.isETH && marginEth) {
       tempOverrides.value = ethers.utils.parseEther(marginEth.toFixed(18).toString());
@@ -1436,37 +1381,33 @@ class AMM {
       marginDelta: scaledMarginDelta,
     };
 
-    await peripheryContract.callStatic
-      .mintOrBurn(mintOrBurnParams, tempOverrides)
-      .catch((error) => {
-        const errorMessage = getReadableErrorMessage(error);
-        throw new Error(errorMessage);
-      });
 
-    const estimatedGas = await peripheryContract.estimateGas
-      .mintOrBurn(mintOrBurnParams, tempOverrides)
-      .catch((error) => {
-        const errorMessage = getReadableErrorMessage(error);
-        throw new Error(errorMessage);
-      });
+    await peripheryContract.callStatic.mintOrBurn(mintOrBurnParams, tempOverrides).catch((error) => {
+      const errorMessage = getReadableErrorMessage(error);
+      throw new Error(errorMessage);
+    });
+
+    const estimatedGas = await peripheryContract.estimateGas.mintOrBurn(mintOrBurnParams, tempOverrides).catch((error) => {
+      const errorMessage = getReadableErrorMessage(error);
+      throw new Error(errorMessage);
+    });
 
     tempOverrides.gasLimit = getGasBuffer(estimatedGas);
 
-    const mintTransaction = await peripheryContract
-      .mintOrBurn(mintOrBurnParams, tempOverrides)
-      .catch((error) => {
-        sentryTracker.captureException(error);
-        sentryTracker.captureMessage('Transaction Confirmation Error');
-        throw new Error('Transaction Confirmation Error');
-      });
+    const mintTransaction = await peripheryContract.mintOrBurn(mintOrBurnParams, tempOverrides).catch((error) => {
+      sentryTracker.captureException(error);
+      sentryTracker.captureMessage("Transaction Confirmation Error");
+      throw new Error("Transaction Confirmation Error");
+    });
 
     try {
       const receipt = await mintTransaction.wait();
       return receipt;
-    } catch (error) {
+    }
+    catch (error) {
       sentryTracker.captureException(error);
-      sentryTracker.captureMessage('Transaction Confirmation Error');
-      throw new Error('Transaction Confirmation Error');
+      sentryTracker.captureMessage("Transaction Confirmation Error");
+      throw new Error("Transaction Confirmation Error");
     }
   }
 
@@ -1528,23 +1469,22 @@ class AMM {
 
     const estimatedGas = await peripheryContract.estimateGas.mintOrBurn(mintOrBurnParams);
 
-    const burnTransaction = await peripheryContract
-      .mintOrBurn(mintOrBurnParams, {
-        gasLimit: getGasBuffer(estimatedGas),
-      })
-      .catch((error) => {
-        sentryTracker.captureException(error);
-        sentryTracker.captureMessage('Transaction Confirmation Error');
-        throw new Error('Transaction Confirmation Error');
-      });
+    const burnTransaction = await peripheryContract.mintOrBurn(mintOrBurnParams, {
+      gasLimit: getGasBuffer(estimatedGas)
+    }).catch((error) => {
+      sentryTracker.captureException(error);
+      sentryTracker.captureMessage("Transaction Confirmation Error");
+      throw new Error("Transaction Confirmation Error");
+    });
 
     try {
       const receipt = await burnTransaction.wait();
       return receipt;
-    } catch (error) {
+    }
+    catch (error) {
       sentryTracker.captureException(error);
-      sentryTracker.captureMessage('Transaction Confirmation Error');
-      throw new Error('Transaction Confirmation Error');
+      sentryTracker.captureMessage("Transaction Confirmation Error");
+      throw new Error("Transaction Confirmation Error");
     }
   }
 
@@ -1555,6 +1495,7 @@ class AMM {
     fixedHigh,
     marginDelta,
   }: AMMUpdatePositionMarginArgs): Promise<ContractReceipt | void> {
+
     if (!this.signer) {
       return;
     }
@@ -1574,13 +1515,14 @@ class AMM {
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
-    let tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
+    let tempOverrides: { value?: BigNumber, gasLimit?: BigNumber } = {};
     let scaledMarginDelta: string;
 
     if (this.isETH && marginDelta > 0) {
       tempOverrides.value = ethers.utils.parseEther(marginDelta.toFixed(18).toString());
-      scaledMarginDelta = '0';
-    } else {
+      scaledMarginDelta = "0";
+    }
+    else {
       scaledMarginDelta = this.scale(marginDelta);
     }
 
@@ -1589,19 +1531,17 @@ class AMM {
 
     const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
 
-    await peripheryContract.callStatic
-      .updatePositionMargin(
-        this.marginEngineAddress,
-        tickLower,
-        tickUpper,
-        scaledMarginDelta,
-        false,
-        tempOverrides,
-      )
-      .catch(async (error: any) => {
-        const errorMessage = getReadableErrorMessage(error);
-        throw new Error(errorMessage);
-      });
+    await peripheryContract.callStatic.updatePositionMargin(
+      this.marginEngineAddress,
+      tickLower,
+      tickUpper,
+      scaledMarginDelta,
+      false,
+      tempOverrides
+    ).catch(async (error: any) => {
+      const errorMessage = getReadableErrorMessage(error);
+      throw new Error(errorMessage);
+    });
 
     const estimatedGas = await peripheryContract.estimateGas.updatePositionMargin(
       this.marginEngineAddress,
@@ -1609,37 +1549,36 @@ class AMM {
       tickUpper,
       scaledMarginDelta,
       false,
-      tempOverrides,
+      tempOverrides
     );
 
     tempOverrides.gasLimit = getGasBuffer(estimatedGas);
 
-    const updatePositionMarginTransaction = await peripheryContract
-      .updatePositionMargin(
-        this.marginEngineAddress,
-        tickLower,
-        tickUpper,
-        scaledMarginDelta,
-        false,
-        tempOverrides,
-      )
-      .catch((error) => {
-        sentryTracker.captureException(error);
-        sentryTracker.captureMessage('Transaction Confirmation Error');
-        throw new Error('Transaction Confirmation Error');
-      });
+    const updatePositionMarginTransaction = await peripheryContract.updatePositionMargin(
+      this.marginEngineAddress,
+      tickLower,
+      tickUpper,
+      scaledMarginDelta,
+      false,
+      tempOverrides
+    ).catch((error) => {
+      sentryTracker.captureException(error);
+      sentryTracker.captureMessage("Transaction Confirmation Error");
+      throw new Error("Transaction Confirmation Error");
+    });
 
     try {
       const receipt = await updatePositionMarginTransaction.wait();
       return receipt;
-    } catch (error) {
+    }
+    catch (error) {
       sentryTracker.captureException(error);
-      sentryTracker.captureMessage('Transaction Confirmation Error');
-      throw new Error('Transaction Confirmation Error');
+      sentryTracker.captureMessage("Transaction Confirmation Error");
+      throw new Error("Transaction Confirmation Error");
     }
   }
 
-  // liquidation
+  // liquidation 
 
   public async liquidatePosition({
     owner,
@@ -1655,36 +1594,29 @@ class AMM {
 
     const marginEngineContract = marginEngineFactory.connect(this.marginEngineAddress, this.signer);
 
-    await marginEngineContract.callStatic
-      .liquidatePosition(owner, tickLower, tickUpper)
-      .catch((error) => {
-        const errorMessage = getReadableErrorMessage(error);
-        throw new Error(errorMessage);
-      });
+    await marginEngineContract.callStatic.liquidatePosition(owner, tickLower, tickUpper).catch((error) => {
+      const errorMessage = getReadableErrorMessage(error);
+      throw new Error(errorMessage);
+    });
 
-    const estimatedGas = await marginEngineContract.estimateGas.liquidatePosition(
-      owner,
-      tickLower,
-      tickUpper,
-    );
+    const estimatedGas = await marginEngineContract.estimateGas.liquidatePosition(owner, tickLower, tickUpper);
 
-    const liquidatePositionTransaction = await marginEngineContract
-      .liquidatePosition(owner, tickLower, tickUpper, {
-        gasLimit: getGasBuffer(estimatedGas),
-      })
-      .catch((error) => {
-        sentryTracker.captureException(error);
-        sentryTracker.captureMessage('Transaction Confirmation Error');
-        throw new Error('Transaction Confirmation Error');
-      });
+    const liquidatePositionTransaction = await marginEngineContract.liquidatePosition(owner, tickLower, tickUpper, {
+      gasLimit: getGasBuffer(estimatedGas)
+    }).catch((error) => {
+      sentryTracker.captureException(error);
+      sentryTracker.captureMessage("Transaction Confirmation Error");
+      throw new Error("Transaction Confirmation Error");
+    });;
 
     try {
       const receipt = await liquidatePositionTransaction.wait();
       return receipt;
-    } catch (error) {
+    }
+    catch (error) {
       sentryTracker.captureException(error);
-      sentryTracker.captureMessage('Transaction Confirmation Error');
-      throw new Error('Transaction Confirmation Error');
+      sentryTracker.captureMessage("Transaction Confirmation Error");
+      throw new Error("Transaction Confirmation Error");
     }
   }
 
@@ -1699,7 +1631,7 @@ class AMM {
       throw new Error('Wallet not connected');
     }
 
-    const effectiveOwner = !owner ? await this.signer.getAddress() : owner;
+    const effectiveOwner = (!owner) ? await this.signer.getAddress() : owner;
 
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
@@ -1709,48 +1641,45 @@ class AMM {
 
     const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
 
-    await peripheryContract.callStatic
-      .settlePositionAndWithdrawMargin(
-        this.marginEngineAddress,
-        effectiveOwner,
-        tickLower,
-        tickUpper,
-      )
-      .catch((error) => {
-        const errorMessage = getReadableErrorMessage(error);
-        throw new Error(errorMessage);
-      });
+    await peripheryContract.callStatic.settlePositionAndWithdrawMargin(
+      this.marginEngineAddress,
+      effectiveOwner,
+      tickLower,
+      tickUpper
+    ).catch((error) => {
+      const errorMessage = getReadableErrorMessage(error);
+      throw new Error(errorMessage);
+    });
 
     const estimatedGas = await peripheryContract.estimateGas.settlePositionAndWithdrawMargin(
       this.marginEngineAddress,
       effectiveOwner,
       tickLower,
-      tickUpper,
+      tickUpper
     );
 
-    const settlePositionTransaction = await peripheryContract
-      .settlePositionAndWithdrawMargin(
-        this.marginEngineAddress,
-        effectiveOwner,
-        tickLower,
-        tickUpper,
-        {
-          gasLimit: getGasBuffer(estimatedGas),
-        },
-      )
-      .catch((error) => {
-        sentryTracker.captureException(error);
-        sentryTracker.captureMessage('Transaction Confirmation Error');
-        throw new Error('Transaction Confirmation Error');
-      });
+    const settlePositionTransaction = await peripheryContract.settlePositionAndWithdrawMargin(
+      this.marginEngineAddress,
+      effectiveOwner,
+      tickLower,
+      tickUpper,
+      {
+        gasLimit: getGasBuffer(estimatedGas)
+      }
+    ).catch((error) => {
+      sentryTracker.captureException(error);
+      sentryTracker.captureMessage("Transaction Confirmation Error");
+      throw new Error("Transaction Confirmation Error");
+    });;
 
     try {
       const receipt = await settlePositionTransaction.wait();
       return receipt;
-    } catch (error) {
+    }
+    catch (error) {
       sentryTracker.captureException(error);
-      sentryTracker.captureMessage('Transaction Confirmation Error');
-      throw new Error('Transaction Confirmation Error');
+      sentryTracker.captureMessage("Transaction Confirmation Error");
+      throw new Error("Transaction Confirmation Error");
     }
   }
 
@@ -1774,27 +1703,55 @@ class AMM {
   // descale compound tokens
 
   public descaleCompoundValue(value: BigNumber): number {
-    return Number(
-      ethers.utils.formatUnits(value, parseInt(this.underlyingToken.decimals.toString()) + 10),
-    );
+    return Number(ethers.utils.formatUnits(value, parseInt(this.underlyingToken.decimals.toString()) + 10));
   }
 
   // underlying token approval for periphery
 
-  // token approval for periphery
-  public async isTokenApprovedForPeriphery(
-    tokenAddress: string | undefined,
-  ): Promise<boolean | void> {
-    if (!tokenAddress) {
-      throw new Error('No underlying token');
+  public async isUnderlyingTokenApprovedForPeriphery(): Promise<boolean | void> {
+    if (!this.underlyingToken.id) {
+      throw new Error("No underlying token");
     }
 
     if (!this.signer) {
       throw new Error('Wallet not connected');
     }
 
+    if (this.isETH) {
+      return true;
+    }
+
     const signerAddress = await this.signer.getAddress();
+    const tokenAddress = this.underlyingToken.id;
     const token = tokenFactory.connect(tokenAddress, this.signer);
+
+    const factoryContract = factoryFactory.connect(this.factoryAddress, this.signer);
+    const peripheryAddress = await factoryContract.periphery();
+
+    const allowance = await token.allowance(signerAddress, peripheryAddress);
+
+    return allowance.gte(TresholdApprovalBn);
+  }
+
+  public async isWethTokenApprovedForPeriphery(): Promise<boolean | void> {
+    if (!this.underlyingToken.id) {
+      throw new Error("No underlying token");
+    }
+
+    if (!this.signer) {
+      throw new Error('Wallet not connected');
+    }
+
+    if (!this.isETH) {
+      throw new Error('Not an ETH pool');
+    }
+
+    if (!this.wethAddress) {
+      throw new Error('No WETH address');
+    }
+
+    const signerAddress = await this.signer.getAddress();
+    const token = tokenFactory.connect(this.wethAddress, this.signer);
 
     const factoryContract = factoryFactory.connect(this.factoryAddress, this.signer);
     const peripheryAddress = await factoryContract.periphery();
@@ -1804,8 +1761,9 @@ class AMM {
   }
 
   public async approveUnderlyingTokenForPeriphery(): Promise<ContractReceipt | void> {
+
     if (!this.underlyingToken.id) {
-      throw new Error('No underlying token');
+      throw new Error("No underlying token");
     }
 
     if (!this.signer) {
@@ -1815,14 +1773,12 @@ class AMM {
     let isApproved;
     let tokenAddress = this.underlyingToken.id;
 
-    if (this.isETH && this.wethAddress) {
+    if (this.isETH) {
+      isApproved = await this.isWethTokenApprovedForPeriphery();
       tokenAddress = this.wethAddress;
-    } else if (this.isETH) {
-      // No approval required for ETH (not WETH) collateral
-      isApproved = true;
+    } else {
+      isApproved = await this.isUnderlyingTokenApprovedForPeriphery();
     }
-
-    isApproved = await this.isTokenApprovedForPeriphery(tokenAddress);
 
     if (isApproved) {
       return;
@@ -1835,23 +1791,22 @@ class AMM {
 
     const estimatedGas = await token.estimateGas.approve(peripheryAddress, MaxUint256Bn);
 
-    const approvalTransaction = await token
-      .approve(peripheryAddress, MaxUint256Bn, {
-        gasLimit: getGasBuffer(estimatedGas),
-      })
-      .catch((error) => {
-        sentryTracker.captureException(error);
-        sentryTracker.captureMessage('Transaction Confirmation Error');
-        throw new Error('Transaction Confirmation Error');
-      });
+    const approvalTransaction = await token.approve(peripheryAddress, MaxUint256Bn, {
+      gasLimit: getGasBuffer(estimatedGas)
+    }).catch((error) => {
+      sentryTracker.captureException(error);
+      sentryTracker.captureMessage("Transaction Confirmation Error");
+      throw new Error("Transaction Confirmation Error");
+    });;
 
     try {
       const receipt = await approvalTransaction.wait();
       return receipt;
-    } catch (error) {
+    }
+    catch (error) {
       sentryTracker.captureException(error);
-      sentryTracker.captureMessage('Token approval failed');
-      throw new Error('Token approval failed');
+      sentryTracker.captureMessage("Token approval failed");
+      throw new Error("Token approval failed");
     }
   }
 
@@ -1905,25 +1860,20 @@ class AMM {
     return parseFloat(utils.formatEther(historicalApy));
   }
 
-  public async getVariableFactor(
-    termStartTimestamp: BigNumber,
-    termEndTimestamp: BigNumber,
-  ): Promise<number> {
+  public async getVariableFactor(termStartTimestamp: BigNumber, termEndTimestamp: BigNumber): Promise<number> {
     if (!this.provider) {
       throw new Error('Blockchain not connected');
     }
     const rateOracleContract = BaseRateOracle__factory.connect(this.rateOracle.id, this.provider);
     try {
-      const result = await rateOracleContract.callStatic.variableFactor(
-        termStartTimestamp,
-        termEndTimestamp,
-      );
+      const result = await rateOracleContract.callStatic.variableFactor(termStartTimestamp, termEndTimestamp);
       const resultScaled = result.div(BigNumber.from(10).pow(12)).toNumber() / 1000000;
       return resultScaled;
-    } catch (error) {
+    }
+    catch (error) {
       sentryTracker.captureException(error);
-      sentryTracker.captureMessage('Cannot get variable factor');
-      throw new Error('Cannot get variable factor');
+      sentryTracker.captureMessage("Cannot get variable factor");
+      throw new Error("Cannot get variable factor");
     }
   }
 
@@ -1936,35 +1886,35 @@ class AMM {
       return {
         fixedTokenBalance: 0,
         variableTokenBalance: 0,
-
+  
         liquidity: 0,
         liquidityInUSD: 0,
-
+  
         notional: 0,
         notionalInUSD: 0,
-
+  
         margin: 0,
         marginInUSD: 0,
-
+  
         fees: 0,
         feesInUSD: 0,
-
+  
         accruedCashflow: 0,
         accruedCashflowInUSD: 0,
-
+  
         settlementCashflow: 0,
         settlementCashflowInUSD: 0,
-
+  
         liquidationThreshold: 0,
         safetyThreshold: 0,
-
+  
         variableRateSinceLastSwap: 0,
         fixedRateSinceLastSwap: 0,
-
+  
         fixedApr: 0,
         healthFactor: 0,
         fixedRateHealthFactor: 0,
-
+        
         beforeMaturity: false,
       };
     }
@@ -1979,7 +1929,7 @@ class AMM {
     const rateOracleContract = BaseRateOracle__factory.connect(this.rateOracle.id, this.provider);
 
     // Get last block timestamp
-    const block = await this.provider.getBlock('latest');
+    const block = await this.provider.getBlock("latest");
     const currentTime = block.timestamp - 1;
 
     // Get before maturity
@@ -2007,16 +1957,14 @@ class AMM {
     let settlementCashflow = 0;
     if (!beforeMaturity && !freshPositionInfo.isSettled) {
       const variableFactorWad = await rateOracleContract.callStatic.variableFactor(
-        this.termStartTimestamp.toString(),
+        this.termStartTimestamp.toString(), 
         this.termEndTimestamp.toString(),
       );
 
-      const fixedFactor =
-        (this.endDateTime.toMillis() - this.startDateTime.toMillis()) / ONE_YEAR_IN_SECONDS / 1000;
+      const fixedFactor = (this.endDateTime.toMillis() - this.startDateTime.toMillis()) / ONE_YEAR_IN_SECONDS / 1000;
       const variableFactor = Number(ethers.utils.formatEther(variableFactorWad));
 
-      settlementCashflow =
-        fixedTokenBalance * fixedFactor * 0.01 + variableTokenBalance * variableFactor;
+      settlementCashflow = fixedTokenBalance * fixedFactor * 0.01 + variableTokenBalance * variableFactor;
     }
 
     // Get variable APY and accrued cashflow
@@ -2036,12 +1984,14 @@ class AMM {
           accruedCashflow = accruedCashflowInfo.accruedCashflow;
 
           fixedRateSinceLastSwap = accruedCashflowInfo.avgFixedRate;
-          variableRateSinceLastSwap = (await this.getInstantApy()) * 100;
+          variableRateSinceLastSwap = await this.getInstantApy() * 100;
+
         } catch (error) {
-          console.error('What?', error);
+          console.error("What?", error);
           sentryTracker.captureException(error);
         }
-      } else {
+      }
+      else {
         if (!position.isSettled) {
           accruedCashflow = settlementCashflow;
         }
@@ -2062,7 +2012,7 @@ class AMM {
           position.owner,
           position.tickLower,
           position.tickUpper,
-          true,
+          true
         );
         liquidationThreshold = this.descale(scaledLiqT);
       } catch (error) {
@@ -2075,20 +2025,23 @@ class AMM {
           position.owner,
           position.tickLower,
           position.tickUpper,
-          false,
+          false
         );
         safetyThreshold = this.descale(scaledSafeT);
-      } catch (error) {
+      }
+      catch (error) {
         sentryTracker.captureException(error);
       }
 
       // Get health factor
       if (margin < liquidationThreshold) {
         healthFactor = HealthFactorStatus.DANGER;
-      } else {
+      }
+      else {
         if (margin < safetyThreshold) {
           healthFactor = HealthFactorStatus.WARNING;
-        } else {
+        }
+        else {
           healthFactor = HealthFactorStatus.HEALTHY;
         }
       }
@@ -2097,17 +2050,15 @@ class AMM {
       fixedRateHealthFactor = getRangeHealthFactor(
         position.fixedRateLower.toNumber(),
         position.fixedRateUpper.toNumber(),
-        fixedApr,
-      );
+        fixedApr
+      )
     }
 
-    // Get liquidity
-    const liquidity = position.getNotionalFromLiquidity(
-      JSBI.BigInt(freshPositionInfo._liquidity.toString()),
-    );
+    // Get liquidity 
+    const liquidity = position.getNotionalFromLiquidity(JSBI.BigInt(freshPositionInfo._liquidity.toString()));
 
     // Get notional (LPs - liquidity, Traders - absolute variable tokens)
-    const notional = position.positionType === 3 ? liquidity : Math.abs(variableTokenBalance);
+    const notional = (position.positionType === 3) ? liquidity : Math.abs(variableTokenBalance);
 
     // Build result and return
     return {
@@ -2141,7 +2092,7 @@ class AMM {
       fixedApr,
       healthFactor,
       fixedRateHealthFactor,
-
+      
       beforeMaturity,
     };
   }
@@ -2158,7 +2109,10 @@ class AMM {
 
     const fixedRatePrice = Price.fromNumber(fixedRate);
     const closestTick: number = fixedRateToClosestTick(fixedRatePrice);
-    const closestUsableTick: number = nearestUsableTick(closestTick, this.tickSpacing);
+    const closestUsableTick: number = nearestUsableTick(
+      closestTick,
+      this.tickSpacing,
+    );
     const closestUsableFixedRate: Price = tickToFixedRate(closestUsableTick);
 
     return {
@@ -2175,10 +2129,7 @@ class AMM {
 
   // balance checks
 
-  public async hasEnoughUnderlyingTokens(
-    amount: number,
-    rolloverPosition: { fixedLow: number; fixedHigh: number } | undefined,
-  ): Promise<boolean> {
+  public async hasEnoughUnderlyingTokens(amount: number, rolloverPosition: { fixedLow: number, fixedHigh: number } | undefined): Promise<boolean> {
     if (!this.signer) {
       throw new Error('Wallet not connected');
     }
@@ -2192,9 +2143,10 @@ class AMM {
       }
 
       currentBalance = await this.signer.provider.getBalance(signerAddress);
-    } else {
+    }
+    else {
       if (!this.underlyingToken.id) {
-        throw new Error('No underlying token');
+        throw new Error("No underlying token");
       }
 
       const tokenAddress = this.underlyingToken.id;
@@ -2218,56 +2170,35 @@ class AMM {
         throw new Error('Upper Rate is too high');
       }
 
-      const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(
-        rolloverPosition.fixedLow,
-      );
-      const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(
-        rolloverPosition.fixedHigh,
-      );
+      const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(rolloverPosition.fixedLow);
+      const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(rolloverPosition.fixedHigh);
 
-      const marginEngineContract = marginEngineFactory.connect(
-        this.marginEngineAddress,
-        this.signer,
-      );
+      const marginEngineContract = marginEngineFactory.connect(this.marginEngineAddress, this.signer);
 
-      const position = await marginEngineContract.callStatic.getPosition(
-        signerAddress,
-        tickLower,
-        tickUpper,
-      );
+      const position = await marginEngineContract.callStatic.getPosition(signerAddress, tickLower, tickUpper);
 
       const start = BigNumber.from(this.termStartTimestamp.toString());
       const end = BigNumber.from(this.termEndTimestamp.toString());
 
-      const timeInYearsFromStartToEnd = end.sub(start).div(ONE_YEAR_IN_SECONDS);
+      const timeInYearsFromStartToEnd = (end.sub(start)).div(ONE_YEAR_IN_SECONDS);
 
       const rateOracleContract = BaseRateOracle__factory.connect(this.rateOracle.id, this.signer);
-      const variableFactor = await rateOracleContract.callStatic.variableFactor(
-        this.termStartTimestamp.toString(),
-        this.termEndTimestamp.toString(),
-      );
+      const variableFactor = await rateOracleContract.callStatic.variableFactor(this.termStartTimestamp.toString(), this.termEndTimestamp.toString());
 
-      const fixedCashflow = position.fixedTokenBalance
-        .mul(timeInYearsFromStartToEnd)
-        .div(BigNumber.from(100))
-        .div(BigNumber.from(10).pow(18));
-      const variableCashflow = position.variableTokenBalance
-        .mul(variableFactor)
-        .div(BigNumber.from(10).pow(18));
+      const fixedCashflow = position.fixedTokenBalance.mul(timeInYearsFromStartToEnd).div(BigNumber.from(100)).div(BigNumber.from(10).pow(18));
+      const variableCashflow = position.variableTokenBalance.mul(variableFactor).div(BigNumber.from(10).pow(18));
 
       const cashflow = fixedCashflow.add(variableCashflow);
 
       const marginAfterSettlement = position.margin.add(cashflow);
 
-      return currentBalance.add(marginAfterSettlement).gte(scaledAmount);
+      return (currentBalance.add(marginAfterSettlement)).gte(scaledAmount);
     }
 
     return currentBalance.gte(scaledAmount);
   }
 
-  public async underlyingTokens(
-    rolloverPosition: { fixedLow: number; fixedHigh: number } | undefined,
-  ): Promise<number> {
+  public async underlyingTokens(rolloverPosition: { fixedLow: number, fixedHigh: number } | undefined): Promise<number> {
     if (!this.signer) {
       throw new Error('Wallet not connected');
     }
@@ -2281,9 +2212,10 @@ class AMM {
       }
 
       currentBalance = await this.provider.getBalance(signerAddress);
-    } else {
+    }
+    else {
       if (!this.underlyingToken.id) {
-        throw new Error('No underlying token');
+        throw new Error("No underlying token");
       }
 
       const tokenAddress = this.underlyingToken.id;
@@ -2305,42 +2237,23 @@ class AMM {
         throw new Error('Upper Rate is too high');
       }
 
-      const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(
-        rolloverPosition.fixedLow,
-      );
-      const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(
-        rolloverPosition.fixedHigh,
-      );
+      const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(rolloverPosition.fixedLow);
+      const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(rolloverPosition.fixedHigh);
 
-      const marginEngineContract = marginEngineFactory.connect(
-        this.marginEngineAddress,
-        this.signer,
-      );
+      const marginEngineContract = marginEngineFactory.connect(this.marginEngineAddress, this.signer);
 
-      const position = await marginEngineContract.callStatic.getPosition(
-        signerAddress,
-        tickLower,
-        tickUpper,
-      );
+      const position = await marginEngineContract.callStatic.getPosition(signerAddress, tickLower, tickUpper);
 
       const start = BigNumber.from(this.termStartTimestamp.toString());
       const end = BigNumber.from(this.termEndTimestamp.toString());
 
-      const timeInYearsFromStartToEnd = end.sub(start).div(ONE_YEAR_IN_SECONDS);
+      const timeInYearsFromStartToEnd = (end.sub(start)).div(ONE_YEAR_IN_SECONDS);
 
       const rateOracleContract = BaseRateOracle__factory.connect(this.rateOracle.id, this.signer);
-      const variableFactor = await rateOracleContract.callStatic.variableFactor(
-        this.termStartTimestamp.toString(),
-        this.termEndTimestamp.toString(),
-      );
+      const variableFactor = await rateOracleContract.callStatic.variableFactor(this.termStartTimestamp.toString(), this.termEndTimestamp.toString());
 
-      const fixedCashflow = position.fixedTokenBalance
-        .mul(timeInYearsFromStartToEnd)
-        .div(BigNumber.from(100))
-        .div(BigNumber.from(10).pow(18));
-      const variableCashflow = position.variableTokenBalance
-        .mul(variableFactor)
-        .div(BigNumber.from(10).pow(18));
+      const fixedCashflow = position.fixedTokenBalance.mul(timeInYearsFromStartToEnd).div(BigNumber.from(100)).div(BigNumber.from(10).pow(18));
+      const variableCashflow = position.variableTokenBalance.mul(variableFactor).div(BigNumber.from(10).pow(18));
 
       const cashflow = fixedCashflow.add(variableCashflow);
 
@@ -2362,7 +2275,10 @@ class AMM {
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
-    const marginEngineContract = marginEngineFactory.connect(this.marginEngineAddress, this.signer);
+    const marginEngineContract = marginEngineFactory.connect(
+      this.marginEngineAddress,
+      this.signer,
+    );
 
     const signerAddress = await this.signer.getAddress();
 
@@ -2370,7 +2286,7 @@ class AMM {
       signerAddress,
       tickLower,
       tickUpper,
-      false,
+      false
     );
 
     return this.descale(requirement);
@@ -2392,10 +2308,7 @@ class AMM {
           throw new Error('No underlying error');
         }
 
-        const rateOracleContract = AaveBorrowRateOracle__factory.connect(
-          this.rateOracle.id,
-          this.provider,
-        );
+        const rateOracleContract = AaveBorrowRateOracle__factory.connect(this.rateOracle.id, this.provider);
         const lendingPoolAddress = await rateOracleContract.aaveLendingPool();
         const lendingPool = IAaveV2LendingPool__factory.connect(lendingPoolAddress, this.provider);
         const reservesData = await lendingPool.getReserveData(this.underlyingToken.id);
@@ -2409,22 +2322,16 @@ class AMM {
         const cTokenAddress = await (rateOracle as CompoundRateOracle).ctoken();
         const cTokenContract = ICToken__factory.connect(cTokenAddress, this.provider);
         const supplyRatePerBlock = await cTokenContract.supplyRatePerBlock();
-        const supplyApy =
-          Math.pow((supplyRatePerBlock.toNumber() / 1e18) * blocksPerDay + 1, daysPerYear) - 1;
+        const supplyApy = (((Math.pow((supplyRatePerBlock.toNumber() / 1e18 * blocksPerDay) + 1, daysPerYear))) - 1);
         return supplyApy;
       }
 
       case 3: {
         const lastBlock = await this.provider.getBlockNumber();
         const to = BigNumber.from((await this.provider.getBlock(lastBlock - 1)).timestamp);
-        const from = BigNumber.from(
-          (await this.provider.getBlock(lastBlock - 28 * blockPerHour)).timestamp,
-        );
+        const from = BigNumber.from((await this.provider.getBlock(lastBlock - 28 * blockPerHour)).timestamp);
 
-        const rateOracleContract = BaseRateOracle__factory.connect(
-          this.rateOracle.id,
-          this.provider,
-        );
+        const rateOracleContract = BaseRateOracle__factory.connect(this.rateOracle.id, this.provider);
 
         const oneWeekApy = await rateOracleContract.callStatic.getApyFromTo(from, to);
 
@@ -2434,14 +2341,9 @@ class AMM {
       case 4: {
         const lastBlock = await this.provider.getBlockNumber();
         const to = BigNumber.from((await this.provider.getBlock(lastBlock - 1)).timestamp);
-        const from = BigNumber.from(
-          (await this.provider.getBlock(lastBlock - 28 * blockPerHour)).timestamp,
-        );
+        const from = BigNumber.from((await this.provider.getBlock(lastBlock - 28 * blockPerHour)).timestamp);
 
-        const rateOracleContract = BaseRateOracle__factory.connect(
-          this.rateOracle.id,
-          this.provider,
-        );
+        const rateOracleContract = BaseRateOracle__factory.connect(this.rateOracle.id, this.provider);
 
         const oneWeekApy = await rateOracleContract.callStatic.getApyFromTo(from, to);
 
@@ -2453,10 +2355,7 @@ class AMM {
           throw new Error('No underlying error');
         }
 
-        const rateOracleContract = AaveBorrowRateOracle__factory.connect(
-          this.rateOracle.id,
-          this.provider,
-        );
+        const rateOracleContract = AaveBorrowRateOracle__factory.connect(this.rateOracle.id, this.provider);
         const lendingPoolAddress = await rateOracleContract.aaveLendingPool();
         const lendingPool = IAaveV2LendingPool__factory.connect(lendingPoolAddress, this.provider);
         const reservesData = await lendingPool.getReserveData(this.underlyingToken.id);
@@ -2468,22 +2367,18 @@ class AMM {
       case 6: {
         const daysPerYear = 365;
 
-        const rateOracle = CompoundBorrowRateOracle__factory.connect(
-          this.rateOracle.id,
-          this.provider,
-        );
+        const rateOracle = CompoundBorrowRateOracle__factory.connect(this.rateOracle.id, this.provider);
 
         const cTokenAddress = await (rateOracle as CompoundBorrowRateOracle).ctoken();
         const cTokenContract = ICToken__factory.connect(cTokenAddress, this.provider);
 
         const borrowRatePerBlock = await cTokenContract.borrowRatePerBlock();
-        const borrowApy =
-          Math.pow((borrowRatePerBlock.toNumber() / 1e18) * blocksPerDay + 1, daysPerYear) - 1;
+        const borrowApy = (((Math.pow((borrowRatePerBlock.toNumber() / 1e18 * blocksPerDay) + 1, daysPerYear))) - 1);
         return borrowApy;
       }
 
       default:
-        throw new Error('Unrecognized protocol');
+        throw new Error("Unrecognized protocol");
     }
   }
 }
