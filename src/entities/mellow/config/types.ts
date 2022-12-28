@@ -12,7 +12,7 @@ export type MellowProductMetadata = {
     weight: number;
     maturityTimestampMS: number; // in milliseconds
     pools: string[];
-    estimatedHistoricApy: number;
+    estimatedHistoricApy: [number, number];
     withdrawable: boolean;
   }[];
 };

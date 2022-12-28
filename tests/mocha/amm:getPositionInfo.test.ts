@@ -39,7 +39,7 @@ describe('amm:getPositionInfo', () => {
 
   describe('Stable coin positions', () => {
     describe('LP positions', () => {
-      it.only('Before maturity', async () => {
+      it('Before maturity', async () => {
         const amm = new AMM({
           id: '0x953e581dd817b0faa69eacafb2c5709483f39aba',
           signer: null,
