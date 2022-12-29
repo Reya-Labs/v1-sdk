@@ -42,7 +42,7 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
           deprecated: false,
           vaults: [
             {
-              weight: 50,
+              weight: 0,
               pools: ['AAVE - USDC LEND'],
               maturityTimestampMS: 1672488000000,
               estimatedHistoricApy: [6.51, 6.51],
@@ -50,9 +50,23 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
             },
             {
               weight: 50,
+              pools: ['AAVE - USDC LEND'],
+              maturityTimestampMS: 1675166400000,
+              estimatedHistoricApy: [0, 20],
+              withdrawable: false,
+            },
+            {
+              weight: 40,
               pools: ['AAVE - USDC BORROW'],
               maturityTimestampMS: 1680264000000,
               estimatedHistoricApy: [17.66, 17.66],
+              withdrawable: false,
+            },
+            {
+              weight: 10,
+              pools: ['AAVE - USDC LEND'],
+              maturityTimestampMS: 1680264000000,
+              estimatedHistoricApy: [0, 20],
               withdrawable: false,
             },
           ],
@@ -70,10 +84,17 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
           deprecated: false,
           vaults: [
             {
-              weight: 100,
+              weight: 0,
               maturityTimestampMS: 1672491600000,
               pools: ['AAVE - ETH BORROW', 'AAVE - ETH LEND', 'LIDO - ETH', 'ROCKET - ETH'],
               estimatedHistoricApy: [10.96, 10.96],
+              withdrawable: false,
+            },
+            {
+              weight: 100,
+              maturityTimestampMS: 1680264000000,
+              pools: ['LIDO - ETH', 'ROCKET - ETH'],
+              estimatedHistoricApy: [-16, 6],
               withdrawable: false,
             },
           ],
@@ -91,10 +112,17 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
           deprecated: false,
           vaults: [
             {
-              weight: 100,
+              weight: 0,
               maturityTimestampMS: 1672488000000,
               pools: ['AAVE - DAI LEND', 'COMPOUND - DAI LEND'],
               estimatedHistoricApy: [10.3, 10.3],
+              withdrawable: false,
+            },
+            {
+              weight: 100,
+              maturityTimestampMS: 1680264000000,
+              pools: ['AAVE - DAI LEND', 'COMPOUND - DAI LEND'],
+              estimatedHistoricApy: [1, 4],
               withdrawable: false,
             },
           ],
@@ -112,10 +140,17 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
           deprecated: false,
           vaults: [
             {
-              weight: 100,
+              weight: 20,
               maturityTimestampMS: 1680264000000,
               pools: ['COMPOUND - USDT BORROW'],
               estimatedHistoricApy: [36.96, 36.96],
+              withdrawable: false,
+            },
+            {
+              weight: 80,
+              maturityTimestampMS: 1680264000000,
+              pools: ['AAVE - USDT BORROW'],
+              estimatedHistoricApy: [3, 32],
               withdrawable: false,
             },
           ],
