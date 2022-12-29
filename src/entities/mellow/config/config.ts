@@ -52,7 +52,7 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
               weight: 40,
               pools: ['AAVE - USDC BORROW'],
               maturityTimestampMS: 1680264000000,
-              estimatedHistoricApy: [17.66, 17.66],
+              estimatedHistoricApy: [0, 20],
               withdrawable: false,
             },
             {
@@ -143,7 +143,7 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
               weight: 20,
               maturityTimestampMS: 1680264000000,
               pools: ['COMPOUND - USDT BORROW'],
-              estimatedHistoricApy: [36.96, 36.96],
+              estimatedHistoricApy: [3, 32],
               withdrawable: false,
             },
             {
