@@ -43,7 +43,6 @@ export type AMMSwapArgs = {
   fixedRateLimit?: number;
   fixedLow: number;
   fixedHigh: number;
-  validationOnly?: boolean;
   fullyCollateralisedVTSwap?: boolean;
 };
 
@@ -55,7 +54,6 @@ export type AMMSwapWithWethArgs = {
   fixedRateLimit?: number;
   fixedLow: number;
   fixedHigh: number;
-  validationOnly?: boolean;
 };
 
 export type InfoPostSwap = {
@@ -91,14 +89,15 @@ export type AMMRolloverWithSwapArgs = {
   isFT: boolean;
   notional: number;
   margin: number;
-  marginEth?: number;
   fixedRateLimit?: number;
   fixedLow: number;
   fixedHigh: number;
   newMarginEngine: string;
-  oldFixedLow: number;
-  oldFixedHigh: number;
-  validationOnly?: boolean;
+  rolloverPosition: {
+    tickLower: number;
+    tickUpper: number;
+    settlementBalance: number;
+  };
 };
 
 // mint
@@ -108,7 +107,6 @@ export type AMMMintArgs = {
   fixedHigh: number;
   notional: number;
   margin: number;
-  validationOnly?: boolean;
 };
 
 export type AMMMintWithWethArgs = {
@@ -117,7 +115,6 @@ export type AMMMintWithWethArgs = {
   notional: number;
   marginEth?: number;
   margin: number;
-  validationOnly?: boolean;
 };
 
 export type AMMGetInfoPostMintArgs = {
@@ -135,9 +132,11 @@ export type AMMRolloverWithMintArgs = {
   margin: number;
   marginEth?: number;
   newMarginEngine: string;
-  oldFixedLow: number;
-  oldFixedHigh: number;
-  validationOnly?: boolean;
+  rolloverPosition: {
+    tickLower: number;
+    tickUpper: number;
+    settlementBalance: number;
+  };
 };
 
 // burn

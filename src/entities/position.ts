@@ -323,7 +323,7 @@ class Position {
     return settlementCashflow;
   }
 
-  public async settlementBalance(): Promise<number> {
+  public get settlementBalance(): number {
     if (this.initialized) {
       return this.margin + this.fees + this.settlementCashflow;
     }
