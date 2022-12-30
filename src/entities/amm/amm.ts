@@ -38,14 +38,12 @@ import {
   decodeInfoPostSwap,
   getReadableErrorMessage,
 } from '../../utils/errors/errorHandling';
-import Position from '../position';
 import { getExpectedApy } from '../../services/getExpectedApy';
 import { getAccruedCashflow, transformSwaps } from '../../services/getAccruedCashflow';
 
 import { getProtocolPrefix } from '../../services/getTokenInfo';
 
 import { sentryTracker } from '../../utils/sentry';
-import { getRangeHealthFactor } from '../../utils/rangeHealthFactor';
 import {
   AMMConstructorArgs,
   AMMRolloverWithSwapArgs,
@@ -59,12 +57,10 @@ import {
   AMMBurnArgs,
   AMMUpdatePositionMarginArgs,
   AMMSettlePositionArgs,
-  PositionInfo,
   ClosestTickAndFixedRate,
   ExpectedApyArgs,
   AMMSwapWithWethArgs,
   AMMMintWithWethArgs,
-  HealthFactorStatus,
 } from './types';
 import { geckoEthToUsd } from '../../utils/priceFetch';
 
@@ -154,7 +150,6 @@ export class AMM {
     fixedRateLimit,
     fixedLow,
     fixedHigh,
-    owner,
     newMarginEngine,
     oldFixedLow,
     oldFixedHigh,
@@ -191,7 +186,7 @@ export class AMM {
       throw new Error('No underlying error');
     }
 
-    const effectiveOwner = !owner ? await this.signer.getAddress() : owner;
+    const owner = await this.signer.getAddress();
 
     const { closestUsableTick: oldTickUpper } = this.closestTickAndFixedRate(oldFixedLow);
     const { closestUsableTick: oldTickLower } = this.closestTickAndFixedRate(oldFixedHigh);
@@ -235,7 +230,7 @@ export class AMM {
     await peripheryContract.callStatic
       .rolloverWithSwap(
         this.marginEngineAddress,
-        effectiveOwner,
+        owner,
         oldTickLower,
         oldTickUpper,
         swapPeripheryParams,
@@ -249,7 +244,7 @@ export class AMM {
     const estimatedGas = await peripheryContract.estimateGas
       .rolloverWithSwap(
         this.marginEngineAddress,
-        effectiveOwner,
+        owner,
         oldTickLower,
         oldTickUpper,
         swapPeripheryParams,
@@ -265,7 +260,7 @@ export class AMM {
     const swapTransaction = await peripheryContract
       .rolloverWithSwap(
         this.marginEngineAddress,
-        effectiveOwner,
+        owner,
         oldTickLower,
         oldTickUpper,
         swapPeripheryParams,
@@ -295,7 +290,6 @@ export class AMM {
     notional,
     margin,
     marginEth,
-    owner,
     newMarginEngine,
     oldFixedLow,
     oldFixedHigh,
@@ -332,7 +326,7 @@ export class AMM {
       throw new Error('No underlying error');
     }
 
-    const effectiveOwner = !owner ? await this.signer.getAddress() : owner;
+    const owner = await this.signer.getAddress();
 
     const { closestUsableTick: oldTickUpper } = this.closestTickAndFixedRate(oldFixedLow);
     const { closestUsableTick: oldTickLower } = this.closestTickAndFixedRate(oldFixedHigh);
@@ -365,7 +359,7 @@ export class AMM {
     await peripheryContract.callStatic
       .rolloverWithMint(
         this.marginEngineAddress,
-        effectiveOwner,
+        owner,
         oldTickLower,
         oldTickUpper,
         mintOrBurnParams,
@@ -379,7 +373,7 @@ export class AMM {
     const estimatedGas = await peripheryContract.estimateGas
       .rolloverWithMint(
         this.marginEngineAddress,
-        effectiveOwner,
+        owner,
         oldTickLower,
         oldTickUpper,
         mintOrBurnParams,
@@ -395,7 +389,7 @@ export class AMM {
     const mintTransaction = await peripheryContract
       .rolloverWithMint(
         this.marginEngineAddress,
-        effectiveOwner,
+        owner,
         oldTickLower,
         oldTickUpper,
         mintOrBurnParams,
@@ -1616,221 +1610,6 @@ export class AMM {
       sentryTracker.captureMessage('Cannot get variable factor');
       throw new Error('Cannot get variable factor');
     }
-  }
-
-  public async getPositionInformation(position: Position): Promise<PositionInfo> {
-    if (!this.provider) {
-      throw new Error('Blockchain not connected');
-    }
-
-    if (position.isSettled) {
-      return {
-        fixedTokenBalance: 0,
-        variableTokenBalance: 0,
-
-        liquidity: 0,
-        liquidityInUSD: 0,
-
-        notional: 0,
-        notionalInUSD: 0,
-
-        margin: 0,
-        marginInUSD: 0,
-
-        fees: 0,
-        feesInUSD: 0,
-
-        accruedCashflow: 0,
-        accruedCashflowInUSD: 0,
-
-        settlementCashflow: 0,
-        settlementCashflowInUSD: 0,
-
-        liquidationThreshold: 0,
-        safetyThreshold: 0,
-
-        variableRateSinceLastSwap: 0,
-        fixedRateSinceLastSwap: 0,
-
-        fixedApr: 0,
-        healthFactor: 0,
-        fixedRateHealthFactor: 0,
-
-        beforeMaturity: false,
-      };
-    }
-
-    // Get the underlying token price in USD
-    let usdExchangeRate = 1;
-    if (this.isETH) {
-      usdExchangeRate = await this.ethPrice();
-    }
-
-    // Build the contracts
-    const rateOracleContract = baseRateOracleFactory.connect(this.rateOracle.id, this.provider);
-
-    // Get last block timestamp
-    const block = await this.provider.getBlock('latest');
-    const currentTime = block.timestamp - 1;
-
-    // Get before maturity
-    const beforeMaturity = currentTime < this.endDateTime.toSeconds();
-
-    // Get the margin engine contract
-    const marginEngineContract = marginEngineFactory.connect(
-      this.marginEngineAddress,
-      this.provider,
-    );
-
-    // Get fixed APR of the pool
-    const fixedApr = await this.getFixedApr();
-
-    // Get the position information from the margin engine
-    const freshPositionInfo = await position.getFreshInfo();
-
-    // Descale position information
-    const margin = this.descale(freshPositionInfo.margin);
-    const fees = this.descale(freshPositionInfo.accumulatedFees);
-    const fixedTokenBalance = this.descale(freshPositionInfo.fixedTokenBalance);
-    const variableTokenBalance = this.descale(freshPositionInfo.variableTokenBalance);
-
-    // Get settlement cashflow
-    let settlementCashflow = 0;
-    if (!beforeMaturity && !freshPositionInfo.isSettled) {
-      const variableFactorWad = await rateOracleContract.callStatic.variableFactor(
-        this.termStartTimestamp.toString(),
-        this.termEndTimestamp.toString(),
-      );
-
-      const fixedFactor =
-        (this.endDateTime.toMillis() - this.startDateTime.toMillis()) / ONE_YEAR_IN_SECONDS / 1000;
-      const variableFactor = Number(ethers.utils.formatEther(variableFactorWad));
-
-      settlementCashflow =
-        fixedTokenBalance * fixedFactor * 0.01 + variableTokenBalance * variableFactor;
-    }
-
-    // Get variable APY and accrued cashflow
-    let variableRateSinceLastSwap = 0;
-    let fixedRateSinceLastSwap = 0;
-    let accruedCashflow = 0;
-
-    if (position.swaps.length > 0) {
-      if (beforeMaturity) {
-        try {
-          const accruedCashflowInfo = await getAccruedCashflow({
-            swaps: transformSwaps(position.swaps, this.underlyingToken.decimals),
-            rateOracle: rateOracleContract,
-            currentTime,
-            endTime: this.endDateTime.toSeconds(),
-          });
-          accruedCashflow = accruedCashflowInfo.accruedCashflow;
-
-          fixedRateSinceLastSwap = accruedCashflowInfo.avgFixedRate;
-          variableRateSinceLastSwap = (await this.getInstantApy()) * 100;
-        } catch (error) {
-          console.error('What?', error);
-          sentryTracker.captureException(error);
-        }
-      } else if (!position.isSettled) {
-        accruedCashflow = settlementCashflow;
-      }
-    }
-
-    // Get health factors
-
-    let liquidationThreshold = 0;
-    let safetyThreshold = 0;
-    let healthFactor = HealthFactorStatus.NOT_FOUND;
-    let fixedRateHealthFactor = HealthFactorStatus.NOT_FOUND;
-
-    if (beforeMaturity) {
-      // Get liquidation threshold
-      try {
-        const scaledLiqT = await marginEngineContract.callStatic.getPositionMarginRequirement(
-          position.owner,
-          position.tickLower,
-          position.tickUpper,
-          true,
-        );
-        liquidationThreshold = this.descale(scaledLiqT);
-      } catch (error) {
-        sentryTracker.captureException(error);
-      }
-
-      // Get safety threshold
-      try {
-        const scaledSafeT = await marginEngineContract.callStatic.getPositionMarginRequirement(
-          position.owner,
-          position.tickLower,
-          position.tickUpper,
-          false,
-        );
-        safetyThreshold = this.descale(scaledSafeT);
-      } catch (error) {
-        sentryTracker.captureException(error);
-      }
-
-      // Get health factor
-      if (margin < liquidationThreshold) {
-        healthFactor = HealthFactorStatus.DANGER;
-      } else if (margin < safetyThreshold) {
-        healthFactor = HealthFactorStatus.WARNING;
-      } else {
-        healthFactor = HealthFactorStatus.HEALTHY;
-      }
-
-      // Get range health factor for LPs
-      fixedRateHealthFactor = getRangeHealthFactor(
-        position.fixedRateLower.toNumber(),
-        position.fixedRateUpper.toNumber(),
-        fixedApr,
-      );
-    }
-
-    // Get liquidity
-    const liquidity = position.getNotionalFromLiquidity(
-      JSBI.BigInt(freshPositionInfo._liquidity.toString()),
-    );
-
-    // Get notional (LPs - liquidity, Traders - absolute variable tokens)
-    const notional = position.positionType === 3 ? liquidity : Math.abs(variableTokenBalance);
-
-    // Build result and return
-    return {
-      fixedTokenBalance,
-      variableTokenBalance,
-
-      liquidity,
-      liquidityInUSD: liquidity * usdExchangeRate,
-
-      notional,
-      notionalInUSD: notional * usdExchangeRate,
-
-      margin: margin - fees,
-      marginInUSD: (margin - fees) * usdExchangeRate,
-
-      fees,
-      feesInUSD: fees * usdExchangeRate,
-
-      accruedCashflow,
-      accruedCashflowInUSD: accruedCashflow * usdExchangeRate,
-
-      settlementCashflow,
-      settlementCashflowInUSD: settlementCashflow * usdExchangeRate,
-
-      liquidationThreshold,
-      safetyThreshold,
-
-      variableRateSinceLastSwap,
-      fixedRateSinceLastSwap,
-
-      fixedApr,
-      healthFactor,
-      fixedRateHealthFactor,
-
-      beforeMaturity,
-    };
   }
 
   // tick functionalities

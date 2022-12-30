@@ -238,8 +238,8 @@ class BorrowAMM {
 
   public async getFixedBorrowBalance(position: Position): Promise<number> {
     const fixedCashFlow = await this.getFixedCashFlow(position);
-    const freshPositionInfo = await position.getFreshInfo();
-    const notional = this.descale(BigNumber.from(freshPositionInfo.variableTokenBalance.toString()));
+    await position.refreshInfo();
+    const notional = this.descale(BigNumber.from(position.variableTokenBalance.toString()));
 
     return notional - fixedCashFlow;
   }
@@ -247,8 +247,8 @@ class BorrowAMM {
   // get variable debt: debt from underlying protocol - fixed debt on Voltz
   public async getAggregatedBorrowBalance(position: Position): Promise<number> {
     const variableCashFlow = await this.getVariableCashFlow(position);
-    const freshPositionInfo = await position.getFreshInfo();
-    const notional = BigNumber.from(freshPositionInfo.variableTokenBalance.toString());
+    await position.refreshInfo();
+    const notional = BigNumber.from(position.variableTokenBalance.toString());
     const notionalWithVariableCashFlow = notional.add(variableCashFlow);
 
     const buffer = BigNumber.from("1001").div(BigNumber.from("1000"))
