@@ -1,4 +1,4 @@
-import { HealthFactorStatus } from '../entities/amm';
+import { HealthFactorStatus } from '../entities';
 
 export const getRangeHealthFactor = (
   fixedLow: number,

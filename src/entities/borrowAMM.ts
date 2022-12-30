@@ -19,21 +19,8 @@ import Token from './token';
 import { Price } from './fractions/price';
 import { TokenAmount } from './fractions/tokenAmount';
 import Position from './position';
-import AMM, { AMMGetInfoPostSwapArgs, InfoPostSwap } from './amm';
-
-import axios from 'axios';
-
-var geckoEthToUsd = async () => {
-  for (let attempt = 0; attempt < 5; attempt++) {
-    try{
-      let data = await axios.get('https://pro-api.coingecko.com/api/v3/simple/price?x_cg_pro_api_key='+process.env.REACT_APP_COINGECKO_API_KEY+'&ids=ethereum&vs_currencies=usd');
-      return data.data.ethereum.usd;
-    } catch (error) {
-    }
-  }
-  return 0;
-};
-
+import { geckoEthToUsd } from '../utils/priceFetch';
+import { AMM, InfoPostSwap, AMMGetInfoPostSwapArgs } from './amm';
 
 // dynamic information about position
 
@@ -303,7 +290,7 @@ class BorrowAMM {
   public async getFixedBorrowBalanceInUSD(position: Position): Promise<number> {
     const balanceInTokens = await this.getFixedBorrowBalance(position);
     if (this.amm && this.amm.isETH) {
-      const EthToUsdPrice = await geckoEthToUsd();
+      const EthToUsdPrice = await geckoEthToUsd(process.env.REACT_APP_COINGECKO_API_KEY || '');
       return balanceInTokens*EthToUsdPrice;
     }
     return balanceInTokens;
@@ -312,7 +299,7 @@ class BorrowAMM {
   public async getUnderlyingBorrowBalanceInUSD(): Promise<number> {
     const balanceInTokens = await this.getUnderlyingBorrowBalance();
     if (this.amm && this.amm.isETH) {
-      const EthToUsdPrice = await geckoEthToUsd();
+      const EthToUsdPrice = await geckoEthToUsd(process.env.REACT_APP_COINGECKO_API_KEY || '');
       return balanceInTokens*EthToUsdPrice;
     }
     return balanceInTokens;
@@ -321,7 +308,7 @@ class BorrowAMM {
   public async getAggregatedBorrowBalanceInUSD(position: Position): Promise<number> {
     const balanceInTokens = await this.getAggregatedBorrowBalance(position);
     if (this.amm && this.amm.isETH) {
-      const EthToUsdPrice = await geckoEthToUsd();
+      const EthToUsdPrice = await geckoEthToUsd(process.env.REACT_APP_COINGECKO_API_KEY || '');
       return balanceInTokens*EthToUsdPrice;
     }
     return balanceInTokens;
