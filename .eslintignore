@@ -1,9 +1,7 @@
-src/entities/amm.ts
 src/entities/position.ts
 src/entities/borrowAMM.ts
 src/entities/communitySBT.ts
 *.spec.ts
-# src/utils/errors/errorHandling.ts
 src/utils/errors/*
 src/utils/time.ts
 src/utils/communitySbt/*
