@@ -184,6 +184,11 @@ class Position {
 
     this.isSettled = freshInfo.isSettled;
 
+    // Get last block timestamp
+    const block = await this.amm.provider.getBlock('latest');
+    const currentTime = block.timestamp - 1;
+    this.isPoolMatured = currentTime >= this.amm.endDateTime.toSeconds();
+
     if (!this.isSettled) {
       this.liquidity = this.getNotionalFromLiquidity(freshInfo._liquidity);
       this.fixedTokenBalance = this.amm.descale(freshInfo.fixedTokenBalance);
@@ -193,11 +198,6 @@ class Position {
 
       // Get pool information
       this.poolAPR = await this.amm.getFixedApr();
-
-      // Get last block timestamp
-      const block = await this.amm.provider.getBlock('latest');
-      const currentTime = block.timestamp - 1;
-      this.isPoolMatured = currentTime >= this.amm.endDateTime.toSeconds();
 
       // Get settlement cashflow
       if (this.isPoolMatured && !this.isSettled) {

@@ -16,7 +16,7 @@ import { advanceTimeAndBlock } from '../time';
 const { provider } = waffle;
 const DELTA = 0.0001;
 
-describe('amm:getPositionInfo', () => {
+describe('position:refreshInfo', () => {
   const resetNetwork = async (blockNumber: number) => {
     await network.provider.request({
       method: 'hardhat_reset',
@@ -519,8 +519,8 @@ describe('amm:getPositionInfo', () => {
         expect(position.liquidationThreshold).to.closeTo(0.280685, DELTA);
         expect(position.safetyThreshold).to.closeTo(2.007124, DELTA);
 
-        expect(position.payingRate).to.be.closeTo(3.2166, DELTA);
-        expect(position.receivingRate).to.be.closeTo(2.43286, DELTA);
+        expect(position.receivingRate).to.be.closeTo(3.2166, DELTA);
+        expect(position.payingRate).to.be.closeTo(2.43286, DELTA);
 
         expect(position.poolAPR).to.be.closeTo(3.144, DELTA);
 

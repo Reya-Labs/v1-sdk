@@ -170,41 +170,6 @@ export enum HealthFactorStatus {
 
 // dynamic information about position
 
-export type PositionInfo = {
-  fixedTokenBalance: number;
-  variableTokenBalance: number;
-
-  liquidity: number;
-  liquidityInUSD: number;
-
-  notional: number;
-  notionalInUSD: number;
-
-  margin: number;
-  marginInUSD: number;
-
-  fees: number;
-  feesInUSD: number;
-
-  settlementCashflow: number;
-  settlementCashflowInUSD: number;
-
-  liquidationThreshold: number;
-  safetyThreshold: number;
-
-  accruedCashflow: number;
-  accruedCashflowInUSD: number;
-
-  variableRateSinceLastSwap: number;
-  fixedRateSinceLastSwap: number;
-
-  beforeMaturity: boolean;
-
-  fixedApr: number;
-  healthFactor: HealthFactorStatus;
-  fixedRateHealthFactor: HealthFactorStatus;
-};
-
 export type ClosestTickAndFixedRate = {
   closestUsableTick: number;
   closestUsableFixedRate: Price;
