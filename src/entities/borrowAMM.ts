@@ -22,8 +22,6 @@ import Position from './position';
 import { geckoEthToUsd } from '../utils/priceFetch';
 import { AMM, InfoPostSwap, AMMGetInfoPostSwapArgs } from './amm';
 
-// dynamic information about position
-
 export type BorrowAMMConstructorArgs = {
   id: string;
   amm: AMM;

@@ -167,8 +167,6 @@ export enum HealthFactorStatus {
   HEALTHY = 3,
 }
 
-// dynamic information about position
-
 export type ClosestTickAndFixedRate = {
   closestUsableTick: number;
   closestUsableFixedRate: Price;
