@@ -227,8 +227,9 @@ class Position {
           } catch (error) {
             sentryTracker.captureException(error);
           }
+        } else {
+          this.accruedCashflow = this.settlementCashflow;
         }
-        this.accruedCashflow = this.settlementCashflow;
       }
 
       if (!this.isPoolMatured) {
