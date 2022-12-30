@@ -239,7 +239,7 @@ class BorrowAMM {
   public async getFixedBorrowBalance(position: Position): Promise<number> {
     const fixedCashFlow = await this.getFixedCashFlow(position);
     await position.refreshInfo();
-    const notional = this.descale(BigNumber.from(position.variableTokenBalance.toString()));
+    const notional = position.variableTokenBalance;
 
     return notional - fixedCashFlow;
   }
@@ -248,16 +248,15 @@ class BorrowAMM {
   public async getAggregatedBorrowBalance(position: Position): Promise<number> {
     const variableCashFlow = await this.getVariableCashFlow(position);
     await position.refreshInfo();
-    const notional = BigNumber.from(position.variableTokenBalance.toString());
-    const notionalWithVariableCashFlow = notional.add(variableCashFlow);
+    const notional = position.variableTokenBalance;
+    const notionalWithVariableCashFlow = notional + this.amm.descale(variableCashFlow);
 
-    const buffer = BigNumber.from("1001").div(BigNumber.from("1000"))
-    const notionalWithVariableCashFlowAndBuffer = notionalWithVariableCashFlow.mul(buffer);
+    const notionalWithVariableCashFlowAndBuffer = notionalWithVariableCashFlow * 1.001;
 
-    const underlyingBorrowBalance = await this.getScaledUnderlyingBorrowBalance();
+    const underlyingBorrowBalance = this.amm.descale(await this.getScaledUnderlyingBorrowBalance());
 
-    if (underlyingBorrowBalance.gte(notionalWithVariableCashFlowAndBuffer)) {
-      return this.descale(underlyingBorrowBalance.sub(notionalWithVariableCashFlow));
+    if (underlyingBorrowBalance >= notionalWithVariableCashFlowAndBuffer) {
+      return underlyingBorrowBalance - notionalWithVariableCashFlow;
     } else {
       return 0;
     }
