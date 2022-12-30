@@ -14,8 +14,8 @@ import { abi as IERC20MinimalABI } from '../../src/ABIs/IERC20Minimal.json';
 import { withSigner } from '../utils';
 import { advanceTimeAndBlock } from '../time';
 import { convertGasUnitsToUSD } from '../../src/utils/mellowHelpers/convertGasUnitsToUSD';
-import { geckoEthToUsd } from '../../src/utils/mellowHelpers/geckoEthToUsd';
 import { getGasPriceGwei } from '../../src/utils/mellowHelpers/getGasPriceGwei';
+import { geckoEthToUsd } from '../../src/utils/priceFetch';
 
 const { provider } = waffle;
 let ethMellowLpRouter: MellowLpRouter;
@@ -998,7 +998,7 @@ describe('Mellow Router Test Suite', () => {
     });
 
     it('Gas Units to USD conversion function', async () => {
-      const ethUsdPrice = await geckoEthToUsd();
+      const ethUsdPrice = await geckoEthToUsd(process.env.REACT_APP_COINGECKO_API_KEY || '');
       const gasPriceGwei = await getGasPriceGwei();
 
       expect(await convertGasUnitsToUSD(BigNumber.from('100000'))).to.be.approximately(
