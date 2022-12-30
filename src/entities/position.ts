@@ -200,7 +200,7 @@ class Position {
       this.poolAPR = await this.amm.getFixedApr();
 
       // Get settlement cashflow
-      if (this.isPoolMatured && !this.isSettled) {
+      if (this.isPoolMatured) {
         this.settlementCashflow = await this.getSettlementCashflow();
       }
 
@@ -227,9 +227,8 @@ class Position {
           } catch (error) {
             sentryTracker.captureException(error);
           }
-        } else if (!this.isSettled) {
-          this.accruedCashflow = this.settlementCashflow;
         }
+        this.accruedCashflow = this.settlementCashflow;
       }
 
       if (!this.isPoolMatured) {
