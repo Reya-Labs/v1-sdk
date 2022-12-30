@@ -144,8 +144,15 @@ class Position {
       throw new Error('Blockchain not connected');
     }
 
-    const marginEngineContract = marginEngineFactory.connect(this.amm.marginEngineAddress, this.amm.provider);
-    const freshInfo = await marginEngineContract.callStatic.getPosition(this.owner, this.tickLower, this.tickUpper);
+    const marginEngineContract = marginEngineFactory.connect(
+      this.amm.marginEngineAddress,
+      this.amm.provider,
+    );
+    const freshInfo = await marginEngineContract.callStatic.getPosition(
+      this.owner,
+      this.tickLower,
+      this.tickUpper,
+    );
 
     return freshInfo;
   }

@@ -16,6 +16,7 @@
     "import/no-unresolved": "off",
     "import/extensions": "off",
     "no-unused-vars": "off",
+    "no-empty": "warn",
     "lines-between-class-members": "off",
     "prettier/prettier": "error",
     "@typescript-eslint/indent": "off",

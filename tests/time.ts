@@ -1,5 +1,3 @@
-/* eslint-disable no-await-in-loop */
-
 import { waffle } from 'hardhat';
 
 const { provider } = waffle;
