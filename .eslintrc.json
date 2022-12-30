@@ -19,8 +19,11 @@
     "lines-between-class-members": "off",
     "prettier/prettier": "error",
     "@typescript-eslint/indent": "off",
+    "prefer-destructuring": "off",
     "@typescript-eslint/no-unused-vars": "error",
-    "@typescript-eslint/no-explicit-any": "error",
+    "no-underscore-dangle": "warn",
+    "@typescript-eslint/no-explicit-any": "warn",
+    "no-await-in-loop": "warn",
     "no-shadow": "off",
     "@typescript-eslint/no-shadow": ["error"],
     "no-console": ["error", { "allow": ["warn", "error"] }]

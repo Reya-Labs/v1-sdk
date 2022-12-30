@@ -1,7 +1,7 @@
 import JSBI from 'jsbi';
 
 import { DateTime } from 'luxon';
-import AMM from './amm';
+import { AMM } from './amm';
 import Burn from './burn';
 import Liquidation from './liquidation';
 import MarginUpdate from './marginUpdate';

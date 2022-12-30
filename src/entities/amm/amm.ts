@@ -1,9 +1,8 @@
 import JSBI from 'jsbi';
-import { ethers, providers } from 'ethers';
+import { ethers, providers, BigNumber, ContractReceipt, Signer, utils } from 'ethers';
 import { DateTime } from 'luxon';
-import { BigNumber, ContractReceipt, Signer, utils } from 'ethers';
 
-import { SwapPeripheryParams, MintOrBurnParams } from '../types';
+import { SwapPeripheryParams, MintOrBurnParams } from '../../types';
 import {
   MIN_FIXED_RATE,
   MAX_FIXED_RATE,
@@ -11,284 +10,65 @@ import {
   MaxUint256Bn,
   TresholdApprovalBn,
   getGasBuffer,
-} from '../constants';
+} from '../../constants';
 import {
   Periphery__factory as peripheryFactory,
   MarginEngine__factory as marginEngineFactory,
   Factory__factory as factoryFactory,
   IERC20Minimal__factory as tokenFactory,
-  BaseRateOracle__factory,
-  ICToken__factory,
+  BaseRateOracle__factory as baseRateOracleFactory,
+  ICToken__factory as iCTokenFactory,
   CompoundRateOracle,
-  CompoundRateOracle__factory,
+  CompoundRateOracle__factory as compoundRateOracleFactory,
   CompoundBorrowRateOracle,
-  AaveBorrowRateOracle__factory,
-  IAaveV2LendingPool__factory,
-  CompoundBorrowRateOracle__factory,
-} from '../typechain';
-import RateOracle from './rateOracle';
-import { TickMath } from '../utils/tickMath';
-import timestampWadToDateTime from '../utils/timestampWadToDateTime';
-import { fixedRateToClosestTick, tickToFixedRate } from '../utils/priceTickConversions';
-import { nearestUsableTick } from '../utils/nearestUsableTick';
-import Token from './token';
-import { Price } from './fractions/price';
-import { TokenAmount } from './fractions/tokenAmount';
+  AaveBorrowRateOracle__factory as aaveBorrowRateOracleFactory,
+  IAaveV2LendingPool__factory as iAaveV2LendingPoolFactory,
+  CompoundBorrowRateOracle__factory as compoundBorrowRateOracleFactory,
+} from '../../typechain';
+import RateOracle from '../rateOracle';
+import { TickMath } from '../../utils/tickMath';
+import timestampWadToDateTime from '../../utils/timestampWadToDateTime';
+import { fixedRateToClosestTick, tickToFixedRate } from '../../utils/priceTickConversions';
+import { nearestUsableTick } from '../../utils/nearestUsableTick';
+import Token from '../token';
+import { Price } from '../fractions/price';
+import { TokenAmount } from '../fractions/tokenAmount';
 import {
   decodeInfoPostMint,
   decodeInfoPostSwap,
   getReadableErrorMessage,
-} from '../utils/errors/errorHandling';
-import Position from './position';
-import { getExpectedApy } from '../services/getExpectedApy';
-import { getAccruedCashflow, transformSwaps } from '../services/getAccruedCashflow';
+} from '../../utils/errors/errorHandling';
+import Position from '../position';
+import { getExpectedApy } from '../../services/getExpectedApy';
+import { getAccruedCashflow, transformSwaps } from '../../services/getAccruedCashflow';
 
-import axios from 'axios';
-import { getProtocolPrefix } from '../services/getTokenInfo';
+import { getProtocolPrefix } from '../../services/getTokenInfo';
 
-import { sentryTracker } from '../utils/sentry';
-import { getRangeHealthFactor } from '../utils/rangeHealthFactor';
+import { sentryTracker } from '../../utils/sentry';
+import { getRangeHealthFactor } from '../../utils/rangeHealthFactor';
+import {
+  AMMConstructorArgs,
+  AMMRolloverWithSwapArgs,
+  AMMRolloverWithMintArgs,
+  AMMGetInfoPostSwapArgs,
+  InfoPostSwap,
+  ExpectedApyInfo,
+  AMMSwapArgs,
+  AMMGetInfoPostMintArgs,
+  AMMMintArgs,
+  AMMBurnArgs,
+  AMMUpdatePositionMarginArgs,
+  AMMSettlePositionArgs,
+  PositionInfo,
+  ClosestTickAndFixedRate,
+  ExpectedApyArgs,
+  AMMSwapWithWethArgs,
+  AMMMintWithWethArgs,
+  HealthFactorStatus,
+} from './types';
+import { geckoEthToUsd } from '../../utils/priceFetch';
 
-var geckoEthToUsd = async () => {
-  for (let attempt = 0; attempt < 5; attempt++) {
-    try {
-      let data = await axios.get(
-        'https://pro-api.coingecko.com/api/v3/simple/price?x_cg_pro_api_key=' +
-          process.env.REACT_APP_COINGECKO_API_KEY +
-          '&ids=ethereum&vs_currencies=usd',
-      );
-      return data.data.ethereum.usd;
-    } catch (error) {}
-  }
-  return 0;
-};
-
-export type AMMConstructorArgs = {
-  id: string;
-  signer: Signer | null;
-  provider?: providers.Provider;
-
-  factoryAddress: string;
-  marginEngineAddress: string;
-  rateOracle: RateOracle;
-  underlyingToken: Token;
-
-  termStartTimestamp: JSBI;
-  termEndTimestamp: JSBI;
-
-  tickSpacing: number;
-  wethAddress: string;
-
-  ethPrice?: () => Promise<number>;
-};
-
-// swap
-
-export type AMMGetInfoPostSwapArgs = {
-  position?: Position;
-  isFT: boolean;
-  notional: number;
-  fixedRateLimit?: number;
-  fixedLow: number;
-  fixedHigh: number;
-  margin?: number;
-};
-
-export type AMMSwapArgs = {
-  isFT: boolean;
-  notional: number;
-  margin: number;
-  fixedRateLimit?: number;
-  fixedLow: number;
-  fixedHigh: number;
-  validationOnly?: boolean;
-  fullyCollateralisedVTSwap?: boolean;
-};
-
-export type AMMSwapWithWethArgs = {
-  isFT: boolean;
-  notional: number;
-  margin: number;
-  marginEth?: number;
-  fixedRateLimit?: number;
-  fixedLow: number;
-  fixedHigh: number;
-  validationOnly?: boolean;
-};
-
-export type InfoPostSwap = {
-  marginRequirement: number;
-  availableNotional: number;
-  fee: number;
-  slippage: number;
-  averageFixedRate: number;
-  fixedTokenDeltaBalance: number;
-  variableTokenDeltaBalance: number;
-  fixedTokenDeltaUnbalanced: number;
-  maxAvailableNotional?: number;
-};
-
-export type ExpectedApyArgs = {
-  margin: number;
-  position?: Position;
-  fixedLow: number;
-  fixedHigh: number;
-  fixedTokenDeltaUnbalanced: number;
-  availableNotional: number;
-  predictedVariableApy: number;
-};
-
-export type ExpectedApyInfo = {
-  expectedApy: number;
-  expectedCashflow: number;
-};
-
-// rollover with swap
-
-export type AMMRolloverWithSwapArgs = {
-  isFT: boolean;
-  notional: number;
-  margin: number;
-  marginEth?: number;
-  fixedRateLimit?: number;
-  fixedLow: number;
-  fixedHigh: number;
-  owner: string;
-  newMarginEngine: string;
-  oldFixedLow: number;
-  oldFixedHigh: number;
-  validationOnly?: boolean;
-};
-
-// mint
-
-export type AMMMintArgs = {
-  fixedLow: number;
-  fixedHigh: number;
-  notional: number;
-  margin: number;
-  validationOnly?: boolean;
-};
-
-export type AMMMintWithWethArgs = {
-  fixedLow: number;
-  fixedHigh: number;
-  notional: number;
-  marginEth?: number;
-  margin: number;
-  validationOnly?: boolean;
-};
-
-export type AMMGetInfoPostMintArgs = {
-  fixedLow: number;
-  fixedHigh: number;
-  notional: number;
-};
-
-//rollover with swap
-
-export type AMMRolloverWithMintArgs = {
-  fixedLow: number;
-  fixedHigh: number;
-  notional: number;
-  margin: number;
-  marginEth?: number;
-  owner: string;
-  newMarginEngine: string;
-  oldFixedLow: number;
-  oldFixedHigh: number;
-  validationOnly?: boolean;
-};
-
-export type AMMGetInfoPostRolloverWithMintArgs = {
-  fixedLow: number;
-  fixedHigh: number;
-  notional: number;
-  owner: string;
-  newMarginEngine: string;
-  oldFixedLow: number;
-  oldFixedHigh: number;
-};
-
-// burn
-
-export type AMMBurnArgs = Omit<AMMMintArgs, 'margin'>;
-
-// update position margin
-
-export type AMMUpdatePositionMarginArgs = {
-  owner?: string;
-  fixedLow: number;
-  fixedHigh: number;
-  marginDelta: number;
-};
-
-// liquidation
-
-export type AMMLiquidatePositionArgs = {
-  owner: string;
-  fixedLow: number;
-  fixedHigh: number;
-};
-
-// settlement
-
-export type AMMSettlePositionArgs = {
-  owner?: string;
-  fixedLow: number;
-  fixedHigh: number;
-};
-
-export enum HealthFactorStatus {
-  NOT_FOUND = 0,
-  DANGER = 1,
-  WARNING = 2,
-  HEALTHY = 3,
-}
-
-// dynamic information about position
-
-export type PositionInfo = {
-  fixedTokenBalance: number;
-  variableTokenBalance: number;
-
-  liquidity: number;
-  liquidityInUSD: number;
-
-  notional: number;
-  notionalInUSD: number;
-
-  margin: number;
-  marginInUSD: number;
-
-  fees: number;
-  feesInUSD: number;
-
-  settlementCashflow: number;
-  settlementCashflowInUSD: number;
-
-  liquidationThreshold: number;
-  safetyThreshold: number;
-
-  accruedCashflow: number;
-  accruedCashflowInUSD: number;
-
-  variableRateSinceLastSwap: number;
-  fixedRateSinceLastSwap: number;
-
-  beforeMaturity: boolean;
-
-  fixedApr: number;
-  healthFactor: HealthFactorStatus;
-  fixedRateHealthFactor: HealthFactorStatus;
-};
-
-export type ClosestTickAndFixedRate = {
-  closestUsableTick: number;
-  closestUsableFixedRate: Price;
-};
-
-class AMM {
+export class AMM {
   public readonly id: string;
   public readonly signer: Signer | null;
   public readonly provider?: providers.Provider;
@@ -329,11 +109,17 @@ class AMM {
     this.tickSpacing = tickSpacing;
     this.wethAddress = wethAddress;
     this.isETH = this.underlyingToken.name === 'ETH';
-    this.ethPrice = ethPrice || geckoEthToUsd;
+    this.ethPrice =
+      ethPrice || (() => geckoEthToUsd(process.env.REACT_APP_COINGECKO_API_KEY || ''));
   }
 
   // expected apy
-  expectedApy = async (ft: BigNumber, vt: BigNumber, margin: number, rate: number) => {
+  expectedApy = async (
+    ft: BigNumber,
+    vt: BigNumber,
+    margin: number,
+    rate: number,
+  ): Promise<[number, number]> => {
     const now = Math.round(new Date().getTime() / 1000);
 
     const end =
@@ -372,8 +158,7 @@ class AMM {
     newMarginEngine,
     oldFixedLow,
     oldFixedHigh,
-    validationOnly,
-  }: AMMRolloverWithSwapArgs): Promise<ContractReceipt | void> {
+  }: AMMRolloverWithSwapArgs): Promise<ContractReceipt> {
     if (!this.signer) {
       throw new Error('Wallet not connected');
     }
@@ -406,10 +191,6 @@ class AMM {
       throw new Error('No underlying error');
     }
 
-    if (validationOnly) {
-      return;
-    }
-
     const effectiveOwner = !owner ? await this.signer.getAddress() : owner;
 
     const { closestUsableTick: oldTickUpper } = this.closestTickAndFixedRate(oldFixedLow);
@@ -422,12 +203,10 @@ class AMM {
     if (fixedRateLimit) {
       const { closestUsableTick: tickLimit } = this.closestTickAndFixedRate(fixedRateLimit);
       sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(tickLimit).toString();
+    } else if (isFT) {
+      sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MAX_TICK - 1).toString();
     } else {
-      if (isFT) {
-        sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MAX_TICK - 1).toString();
-      } else {
-        sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MIN_TICK + 1).toString();
-      }
+      sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MIN_TICK + 1).toString();
     }
 
     const factoryContract = factoryFactory.connect(this.factoryAddress, this.signer);
@@ -435,8 +214,7 @@ class AMM {
     const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
     const scaledNotional = this.scale(notional);
 
-    let swapPeripheryParams: SwapPeripheryParams;
-    let tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
+    const tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
 
     if (this.isETH && marginEth) {
       tempOverrides.value = ethers.utils.parseEther(marginEth.toFixed(18).toString());
@@ -444,7 +222,7 @@ class AMM {
 
     const scaledMarginDelta = this.scale(margin);
 
-    swapPeripheryParams = {
+    const swapPeripheryParams = {
       marginEngine: newMarginEngine,
       isFT,
       notional: scaledNotional,
@@ -521,8 +299,7 @@ class AMM {
     newMarginEngine,
     oldFixedLow,
     oldFixedHigh,
-    validationOnly,
-  }: AMMRolloverWithMintArgs): Promise<ContractReceipt | void> {
+  }: AMMRolloverWithMintArgs): Promise<ContractReceipt> {
     if (!this.signer) {
       throw new Error('Wallet not connected');
     }
@@ -555,10 +332,6 @@ class AMM {
       throw new Error('No underlying error');
     }
 
-    if (validationOnly) {
-      return;
-    }
-
     const effectiveOwner = !owner ? await this.signer.getAddress() : owner;
 
     const { closestUsableTick: oldTickUpper } = this.closestTickAndFixedRate(oldFixedLow);
@@ -570,10 +343,9 @@ class AMM {
     const factoryContract = factoryFactory.connect(this.factoryAddress, this.signer);
     const peripheryAddress = await factoryContract.periphery();
     const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
-    const _notional = this.scale(notional);
+    const scaledNotional = this.scale(notional);
 
-    let mintOrBurnParams: MintOrBurnParams;
-    let tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
+    const tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
 
     if (this.isETH && marginEth) {
       tempOverrides.value = ethers.utils.parseEther(marginEth.toFixed(18).toString());
@@ -581,11 +353,11 @@ class AMM {
 
     const scaledMarginDelta = this.scale(margin);
 
-    mintOrBurnParams = {
+    const mintOrBurnParams = {
       marginEngine: newMarginEngine,
       tickLower,
       tickUpper,
-      notional: _notional,
+      notional: scaledNotional,
       isMint: true,
       marginDelta: scaledMarginDelta,
     };
@@ -683,12 +455,10 @@ class AMM {
     if (fixedRateLimit) {
       const { closestUsableTick: tickLimit } = this.closestTickAndFixedRate(fixedRateLimit);
       sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(tickLimit).toString();
+    } else if (isFT) {
+      sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MAX_TICK - 1).toString();
     } else {
-      if (isFT) {
-        sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MAX_TICK - 1).toString();
-      } else {
-        sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MIN_TICK + 1).toString();
-      }
+      sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MIN_TICK + 1).toString();
     }
 
     const scaledNotional = this.scale(notional);
@@ -707,7 +477,7 @@ class AMM {
       marginDelta: '0',
     };
 
-    let tickBefore = await peripheryContract.getCurrentTick(this.marginEngineAddress);
+    const tickBefore = await peripheryContract.getCurrentTick(this.marginEngineAddress);
     let tickAfter = 0;
     let marginRequirement: BigNumber = BigNumber.from(0);
     let fee = BigNumber.from(0);
@@ -721,7 +491,7 @@ class AMM {
         fee = result[2];
         fixedTokenDeltaUnbalanced = result[3];
         marginRequirement = result[4];
-        tickAfter = parseInt(result[5]);
+        tickAfter = parseInt(result[5], 10);
         fixedTokenDelta = result[0];
       },
       (error: any) => {
@@ -838,7 +608,7 @@ class AMM {
       await marginEngineContract.callStatic.getPosition(signerAddress, tickLower, tickUpper)
     ).margin;
 
-    const rateOracleContract = BaseRateOracle__factory.connect(this.rateOracle.id, this.provider);
+    const rateOracleContract = baseRateOracleFactory.connect(this.rateOracle.id, this.provider);
 
     const lastBlock = await this.provider.getBlockNumber();
     const lastBlockTimestamp = BigNumber.from(
@@ -853,10 +623,15 @@ class AMM {
     let positionVt = BigNumber.from(0);
 
     if (position) {
-      for (let swap of position.swaps) {
-        positionUft = positionUft.add(swap.fixedTokenDeltaUnbalanced.toString());
-        positionVt = positionVt.add(swap.variableTokenDelta.toString());
-      }
+      positionUft = position.swaps.reduce(
+        (acc, swap) => acc.add(swap.fixedTokenDeltaUnbalanced.toString()),
+        BigNumber.from(0),
+      );
+
+      positionVt = position.swaps.reduce(
+        (acc, swap) => acc.add(swap.variableTokenDelta.toString()),
+        BigNumber.from(0),
+      );
 
       positionMargin = scaledCurrentMargin;
 
@@ -883,8 +658,8 @@ class AMM {
     );
 
     const result: ExpectedApyInfo = {
-      expectedApy: expectedApy,
-      expectedCashflow: expectedCashflow,
+      expectedApy,
+      expectedCashflow,
     };
 
     return result;
@@ -897,9 +672,8 @@ class AMM {
     fixedRateLimit,
     fixedLow,
     fixedHigh,
-    validationOnly,
     fullyCollateralisedVTSwap,
-  }: AMMSwapArgs): Promise<ContractReceipt | void> {
+  }: AMMSwapArgs): Promise<ContractReceipt> {
     if (!this.provider) {
       throw new Error('Blockchain not connected');
     }
@@ -928,10 +702,6 @@ class AMM {
       throw new Error('No underlying error');
     }
 
-    if (validationOnly) {
-      return;
-    }
-
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
@@ -939,12 +709,10 @@ class AMM {
     if (fixedRateLimit) {
       const { closestUsableTick: tickLimit } = this.closestTickAndFixedRate(fixedRateLimit);
       sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(tickLimit).toString();
+    } else if (isFT) {
+      sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MAX_TICK - 1).toString();
     } else {
-      if (isFT) {
-        sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MAX_TICK - 1).toString();
-      } else {
-        sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MIN_TICK + 1).toString();
-      }
+      sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MIN_TICK + 1).toString();
     }
 
     const factoryContract = factoryFactory.connect(this.factoryAddress, this.signer);
@@ -954,7 +722,7 @@ class AMM {
     const scaledNotional = this.scale(notional);
 
     let swapPeripheryParams: SwapPeripheryParams;
-    let tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
+    const tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
 
     if (this.isETH) {
       swapPeripheryParams = {
@@ -987,7 +755,6 @@ class AMM {
       await peripheryContract.callStatic
         .swap(swapPeripheryParams, tempOverrides)
         .catch(async (error: any) => {
-          let result = decodeInfoPostSwap(error);
           const errorMessage = getReadableErrorMessage(error);
           throw new Error(errorMessage);
         });
@@ -1009,7 +776,7 @@ class AMM {
           throw new Error('Transaction Confirmation Error');
         });
     } else {
-      const rateOracleContract = BaseRateOracle__factory.connect(this.rateOracle.id, this.provider);
+      const rateOracleContract = baseRateOracleFactory.connect(this.rateOracle.id, this.provider);
       const variableFactorFromStartToNowWad = await rateOracleContract.callStatic.variableFactor(
         BigNumber.from(this.termStartTimestamp.toString()),
         BigNumber.from(this.termEndTimestamp.toString()),
@@ -1022,7 +789,6 @@ class AMM {
           tempOverrides,
         )
         .catch(async (error: any) => {
-          let result = decodeInfoPostSwap(error);
           const errorMessage = getReadableErrorMessage(error);
           throw new Error(errorMessage);
         });
@@ -1071,8 +837,7 @@ class AMM {
     fixedRateLimit,
     fixedLow,
     fixedHigh,
-    validationOnly,
-  }: AMMSwapWithWethArgs): Promise<ContractReceipt | void> {
+  }: AMMSwapWithWethArgs): Promise<ContractReceipt> {
     if (!this.signer) {
       throw new Error('Wallet not connected');
     }
@@ -1105,10 +870,6 @@ class AMM {
       throw new Error('No underlying error');
     }
 
-    if (validationOnly) {
-      return;
-    }
-
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
@@ -1116,12 +877,10 @@ class AMM {
     if (fixedRateLimit) {
       const { closestUsableTick: tickLimit } = this.closestTickAndFixedRate(fixedRateLimit);
       sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(tickLimit).toString();
+    } else if (isFT) {
+      sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MAX_TICK - 1).toString();
     } else {
-      if (isFT) {
-        sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MAX_TICK - 1).toString();
-      } else {
-        sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MIN_TICK + 1).toString();
-      }
+      sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MIN_TICK + 1).toString();
     }
 
     const factoryContract = factoryFactory.connect(this.factoryAddress, this.signer);
@@ -1129,8 +888,7 @@ class AMM {
     const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
     const scaledNotional = this.scale(notional);
 
-    let swapPeripheryParams: SwapPeripheryParams;
-    let tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
+    const tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
 
     if (this.isETH && marginEth) {
       tempOverrides.value = ethers.utils.parseEther(marginEth.toFixed(18).toString());
@@ -1138,7 +896,7 @@ class AMM {
 
     const scaledMarginDelta = this.scale(margin);
 
-    swapPeripheryParams = {
+    const swapPeripheryParams = {
       marginEngine: this.marginEngineAddress,
       isFT,
       notional: scaledNotional,
@@ -1224,8 +982,8 @@ class AMM {
     const scaledNotional = this.scale(notional);
     const mintOrBurnParams: MintOrBurnParams = {
       marginEngine: this.marginEngineAddress,
-      tickLower: tickLower,
-      tickUpper: tickUpper,
+      tickLower,
+      tickUpper,
       notional: scaledNotional,
       isMint: true,
       marginDelta: '0',
@@ -1252,9 +1010,8 @@ class AMM {
 
     if (scaledMarginRequirement > scaledCurrentMargin) {
       return scaledMarginRequirement - scaledCurrentMargin;
-    } else {
-      return 0;
     }
+    return 0;
   }
 
   public async mint({
@@ -1262,8 +1019,7 @@ class AMM {
     fixedHigh,
     notional,
     margin,
-    validationOnly,
-  }: AMMMintArgs): Promise<ContractReceipt | void> {
+  }: AMMMintArgs): Promise<ContractReceipt> {
     if (!this.signer) {
       throw new Error('Wallet not connected');
     }
@@ -1292,10 +1048,6 @@ class AMM {
       throw new Error('No underlying error');
     }
 
-    if (validationOnly) {
-      return;
-    }
-
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
@@ -1303,17 +1055,17 @@ class AMM {
     const peripheryAddress = await factoryContract.periphery();
 
     const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
-    const _notional = this.scale(notional);
+    const scaledNotional = this.scale(notional);
 
     let mintOrBurnParams: MintOrBurnParams;
-    let tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
+    const tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
 
     if (this.isETH) {
       mintOrBurnParams = {
         marginEngine: this.marginEngineAddress,
         tickLower,
         tickUpper,
-        notional: _notional,
+        notional: scaledNotional,
         isMint: true,
         marginDelta: 0,
       };
@@ -1326,7 +1078,7 @@ class AMM {
         marginEngine: this.marginEngineAddress,
         tickLower,
         tickUpper,
-        notional: _notional,
+        notional: scaledNotional,
         isMint: true,
         marginDelta: scaledMarginDelta,
       };
@@ -1372,8 +1124,7 @@ class AMM {
     notional,
     margin,
     marginEth,
-    validationOnly,
-  }: AMMMintWithWethArgs): Promise<ContractReceipt | void> {
+  }: AMMMintWithWethArgs): Promise<ContractReceipt> {
     if (!this.signer) {
       throw new Error('Wallet not connected');
     }
@@ -1406,20 +1157,15 @@ class AMM {
       throw new Error('No underlying error');
     }
 
-    if (validationOnly) {
-      return;
-    }
-
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
     const factoryContract = factoryFactory.connect(this.factoryAddress, this.signer);
     const peripheryAddress = await factoryContract.periphery();
     const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
-    const _notional = this.scale(notional);
+    const scaledNotional = this.scale(notional);
 
-    let mintOrBurnParams: MintOrBurnParams;
-    let tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
+    const tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
 
     if (this.isETH && marginEth) {
       tempOverrides.value = ethers.utils.parseEther(marginEth.toFixed(18).toString());
@@ -1427,11 +1173,11 @@ class AMM {
 
     const scaledMarginDelta = this.scale(margin);
 
-    mintOrBurnParams = {
+    const mintOrBurnParams = {
       marginEngine: this.marginEngineAddress,
       tickLower,
       tickUpper,
-      notional: _notional,
+      notional: scaledNotional,
       isMint: true,
       marginDelta: scaledMarginDelta,
     };
@@ -1472,12 +1218,7 @@ class AMM {
 
   // burn
 
-  public async burn({
-    fixedLow,
-    fixedHigh,
-    notional,
-    validationOnly,
-  }: AMMBurnArgs): Promise<ContractReceipt | void> {
+  public async burn({ fixedLow, fixedHigh, notional }: AMMBurnArgs): Promise<ContractReceipt> {
     if (!this.signer) {
       throw new Error('Wallet not connected');
     }
@@ -1498,10 +1239,6 @@ class AMM {
       throw new Error('Amount of notional must be greater than 0');
     }
 
-    if (validationOnly) {
-      return;
-    }
-
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
@@ -1510,13 +1247,13 @@ class AMM {
 
     const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
 
-    const _notional = this.scale(notional);
+    const scaledNotional = this.scale(notional);
 
     const mintOrBurnParams: MintOrBurnParams = {
       marginEngine: this.marginEngineAddress,
       tickLower,
       tickUpper,
-      notional: _notional,
+      notional: scaledNotional,
       isMint: false,
       marginDelta: '0',
     };
@@ -1554,9 +1291,9 @@ class AMM {
     fixedLow,
     fixedHigh,
     marginDelta,
-  }: AMMUpdatePositionMarginArgs): Promise<ContractReceipt | void> {
+  }: AMMUpdatePositionMarginArgs): Promise<ContractReceipt> {
     if (!this.signer) {
-      return;
+      throw new Error('Wallet not connected');
     }
 
     if (!this.signer) {
@@ -1574,7 +1311,7 @@ class AMM {
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
-    let tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
+    const tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
     let scaledMarginDelta: string;
 
     if (this.isETH && marginDelta > 0) {
@@ -1631,55 +1368,6 @@ class AMM {
 
     try {
       const receipt = await updatePositionMarginTransaction.wait();
-      return receipt;
-    } catch (error) {
-      sentryTracker.captureException(error);
-      sentryTracker.captureMessage('Transaction Confirmation Error');
-      throw new Error('Transaction Confirmation Error');
-    }
-  }
-
-  // liquidation
-
-  public async liquidatePosition({
-    owner,
-    fixedLow,
-    fixedHigh,
-  }: AMMLiquidatePositionArgs): Promise<ContractReceipt> {
-    if (!this.signer) {
-      throw new Error('Wallet not connected');
-    }
-
-    const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
-    const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
-
-    const marginEngineContract = marginEngineFactory.connect(this.marginEngineAddress, this.signer);
-
-    await marginEngineContract.callStatic
-      .liquidatePosition(owner, tickLower, tickUpper)
-      .catch((error) => {
-        const errorMessage = getReadableErrorMessage(error);
-        throw new Error(errorMessage);
-      });
-
-    const estimatedGas = await marginEngineContract.estimateGas.liquidatePosition(
-      owner,
-      tickLower,
-      tickUpper,
-    );
-
-    const liquidatePositionTransaction = await marginEngineContract
-      .liquidatePosition(owner, tickLower, tickUpper, {
-        gasLimit: getGasBuffer(estimatedGas),
-      })
-      .catch((error) => {
-        sentryTracker.captureException(error);
-        sentryTracker.captureMessage('Transaction Confirmation Error');
-        throw new Error('Transaction Confirmation Error');
-      });
-
-    try {
-      const receipt = await liquidatePositionTransaction.wait();
       return receipt;
     } catch (error) {
       sentryTracker.captureException(error);
@@ -1771,14 +1459,6 @@ class AMM {
     return Number(ethers.utils.formatUnits(value, this.underlyingToken.decimals));
   }
 
-  // descale compound tokens
-
-  public descaleCompoundValue(value: BigNumber): number {
-    return Number(
-      ethers.utils.formatUnits(value, parseInt(this.underlyingToken.decimals.toString()) + 10),
-    );
-  }
-
   // underlying token approval for periphery
 
   // token approval for periphery
@@ -1786,7 +1466,6 @@ class AMM {
     tokenAddress: string | undefined,
     approvalAmount?: number, // Unscaled, e.g. dollars not wei
   ): Promise<boolean> {
-
     if (this.isETH) {
       return true;
     }
@@ -1810,12 +1489,11 @@ class AMM {
 
     if (scaledAmount === undefined) {
       return allowance.gte(TresholdApprovalBn);
-    } else {
-      return allowance.gte(scaledAmount);
     }
+    return allowance.gte(scaledAmount);
   }
 
-  public async approveUnderlyingTokenForPeriphery(): Promise<ContractReceipt | void> {
+  public async approveUnderlyingTokenForPeriphery(): Promise<void> {
     if (!this.underlyingToken.id) {
       throw new Error('No underlying token');
     }
@@ -1824,8 +1502,8 @@ class AMM {
       throw new Error('Wallet not connected');
     }
 
-    let tokenAddress = this.underlyingToken.id;
-    let isApproved = await this.isTokenApprovedForPeriphery(tokenAddress);
+    const tokenAddress = this.underlyingToken.id;
+    const isApproved = await this.isTokenApprovedForPeriphery(tokenAddress);
 
     if (isApproved) {
       return;
@@ -1860,8 +1538,7 @@ class AMM {
       });
 
     try {
-      const receipt = await approvalTransaction.wait();
-      return receipt;
+      await approvalTransaction.wait();
     } catch (error) {
       sentryTracker.captureException(error);
       sentryTracker.captureMessage('Token approval failed');
@@ -1874,7 +1551,7 @@ class AMM {
   public get protocol(): string {
     const tokenName = this.underlyingToken.name;
 
-    let prefix = getProtocolPrefix(this.rateOracle.protocolId);
+    const prefix = getProtocolPrefix(this.rateOracle.protocolId);
 
     return `${prefix}${tokenName}`;
   }
@@ -1926,7 +1603,7 @@ class AMM {
     if (!this.provider) {
       throw new Error('Blockchain not connected');
     }
-    const rateOracleContract = BaseRateOracle__factory.connect(this.rateOracle.id, this.provider);
+    const rateOracleContract = baseRateOracleFactory.connect(this.rateOracle.id, this.provider);
     try {
       const result = await rateOracleContract.callStatic.variableFactor(
         termStartTimestamp,
@@ -1990,7 +1667,7 @@ class AMM {
     }
 
     // Build the contracts
-    const rateOracleContract = BaseRateOracle__factory.connect(this.rateOracle.id, this.provider);
+    const rateOracleContract = baseRateOracleFactory.connect(this.rateOracle.id, this.provider);
 
     // Get last block timestamp
     const block = await this.provider.getBlock('latest');
@@ -2055,10 +1732,8 @@ class AMM {
           console.error('What?', error);
           sentryTracker.captureException(error);
         }
-      } else {
-        if (!position.isSettled) {
-          accruedCashflow = settlementCashflow;
-        }
+      } else if (!position.isSettled) {
+        accruedCashflow = settlementCashflow;
       }
     }
 
@@ -2099,12 +1774,10 @@ class AMM {
       // Get health factor
       if (margin < liquidationThreshold) {
         healthFactor = HealthFactorStatus.DANGER;
+      } else if (margin < safetyThreshold) {
+        healthFactor = HealthFactorStatus.WARNING;
       } else {
-        if (margin < safetyThreshold) {
-          healthFactor = HealthFactorStatus.WARNING;
-        } else {
-          healthFactor = HealthFactorStatus.HEALTHY;
-        }
+        healthFactor = HealthFactorStatus.HEALTHY;
       }
 
       // Get range health factor for LPs
@@ -2140,10 +1813,10 @@ class AMM {
       fees,
       feesInUSD: fees * usdExchangeRate,
 
-      accruedCashflow: accruedCashflow,
+      accruedCashflow,
       accruedCashflowInUSD: accruedCashflow * usdExchangeRate,
 
-      settlementCashflow: settlementCashflow,
+      settlementCashflow,
       settlementCashflowInUSD: settlementCashflow * usdExchangeRate,
 
       liquidationThreshold,
@@ -2163,14 +1836,9 @@ class AMM {
   // tick functionalities
 
   public closestTickAndFixedRate(fixedRate: number): ClosestTickAndFixedRate {
-    if (fixedRate < MIN_FIXED_RATE) {
-      fixedRate = MIN_FIXED_RATE;
-    }
-    if (fixedRate > MAX_FIXED_RATE) {
-      fixedRate = MAX_FIXED_RATE;
-    }
+    const inRangeFixedRate = Math.min(Math.max(fixedRate, MIN_FIXED_RATE), MAX_FIXED_RATE);
 
-    const fixedRatePrice = Price.fromNumber(fixedRate);
+    const fixedRatePrice = Price.fromNumber(inRangeFixedRate);
     const closestTick: number = fixedRateToClosestTick(fixedRatePrice);
     const closestUsableTick: number = nearestUsableTick(closestTick, this.tickSpacing);
     const closestUsableFixedRate: Price = tickToFixedRate(closestUsableTick);
@@ -2255,7 +1923,7 @@ class AMM {
 
       const timeInYearsFromStartToEnd = end.sub(start).div(ONE_YEAR_IN_SECONDS);
 
-      const rateOracleContract = BaseRateOracle__factory.connect(this.rateOracle.id, this.signer);
+      const rateOracleContract = baseRateOracleFactory.connect(this.rateOracle.id, this.signer);
       const variableFactor = await rateOracleContract.callStatic.variableFactor(
         this.termStartTimestamp.toString(),
         this.termEndTimestamp.toString(),
@@ -2342,7 +2010,7 @@ class AMM {
 
       const timeInYearsFromStartToEnd = end.sub(start).div(ONE_YEAR_IN_SECONDS);
 
-      const rateOracleContract = BaseRateOracle__factory.connect(this.rateOracle.id, this.signer);
+      const rateOracleContract = baseRateOracleFactory.connect(this.rateOracle.id, this.signer);
       const variableFactor = await rateOracleContract.callStatic.variableFactor(
         this.termStartTimestamp.toString(),
         this.termEndTimestamp.toString(),
@@ -2406,12 +2074,12 @@ class AMM {
           throw new Error('No underlying error');
         }
 
-        const rateOracleContract = AaveBorrowRateOracle__factory.connect(
+        const rateOracleContract = aaveBorrowRateOracleFactory.connect(
           this.rateOracle.id,
           this.provider,
         );
         const lendingPoolAddress = await rateOracleContract.aaveLendingPool();
-        const lendingPool = IAaveV2LendingPool__factory.connect(lendingPoolAddress, this.provider);
+        const lendingPool = iAaveV2LendingPoolFactory.connect(lendingPoolAddress, this.provider);
         const reservesData = await lendingPool.getReserveData(this.underlyingToken.id);
         const rateInRay = reservesData.currentLiquidityRate;
         const result = rateInRay.div(BigNumber.from(10).pow(21)).toNumber() / 1000000;
@@ -2419,12 +2087,12 @@ class AMM {
       }
       case 2: {
         const daysPerYear = 365;
-        const rateOracle = CompoundRateOracle__factory.connect(this.rateOracle.id, this.provider);
+        const rateOracle = compoundRateOracleFactory.connect(this.rateOracle.id, this.provider);
         const cTokenAddress = await (rateOracle as CompoundRateOracle).ctoken();
-        const cTokenContract = ICToken__factory.connect(cTokenAddress, this.provider);
+        const cTokenContract = iCTokenFactory.connect(cTokenAddress, this.provider);
         const supplyRatePerBlock = await cTokenContract.supplyRatePerBlock();
         const supplyApy =
-          Math.pow((supplyRatePerBlock.toNumber() / 1e18) * blocksPerDay + 1, daysPerYear) - 1;
+          ((supplyRatePerBlock.toNumber() / 1e18) * blocksPerDay + 1) ** daysPerYear - 1;
         return supplyApy;
       }
 
@@ -2435,10 +2103,7 @@ class AMM {
           (await this.provider.getBlock(lastBlock - 28 * blockPerHour)).timestamp,
         );
 
-        const rateOracleContract = BaseRateOracle__factory.connect(
-          this.rateOracle.id,
-          this.provider,
-        );
+        const rateOracleContract = baseRateOracleFactory.connect(this.rateOracle.id, this.provider);
 
         const oneWeekApy = await rateOracleContract.callStatic.getApyFromTo(from, to);
 
@@ -2452,10 +2117,7 @@ class AMM {
           (await this.provider.getBlock(lastBlock - 28 * blockPerHour)).timestamp,
         );
 
-        const rateOracleContract = BaseRateOracle__factory.connect(
-          this.rateOracle.id,
-          this.provider,
-        );
+        const rateOracleContract = baseRateOracleFactory.connect(this.rateOracle.id, this.provider);
 
         const oneWeekApy = await rateOracleContract.callStatic.getApyFromTo(from, to);
 
@@ -2467,12 +2129,12 @@ class AMM {
           throw new Error('No underlying error');
         }
 
-        const rateOracleContract = AaveBorrowRateOracle__factory.connect(
+        const rateOracleContract = aaveBorrowRateOracleFactory.connect(
           this.rateOracle.id,
           this.provider,
         );
         const lendingPoolAddress = await rateOracleContract.aaveLendingPool();
-        const lendingPool = IAaveV2LendingPool__factory.connect(lendingPoolAddress, this.provider);
+        const lendingPool = iAaveV2LendingPoolFactory.connect(lendingPoolAddress, this.provider);
         const reservesData = await lendingPool.getReserveData(this.underlyingToken.id);
         const rateInRay = reservesData.currentVariableBorrowRate;
         const result = rateInRay.div(BigNumber.from(10).pow(21)).toNumber() / 1000000;
@@ -2482,17 +2144,17 @@ class AMM {
       case 6: {
         const daysPerYear = 365;
 
-        const rateOracle = CompoundBorrowRateOracle__factory.connect(
+        const rateOracle = compoundBorrowRateOracleFactory.connect(
           this.rateOracle.id,
           this.provider,
         );
 
         const cTokenAddress = await (rateOracle as CompoundBorrowRateOracle).ctoken();
-        const cTokenContract = ICToken__factory.connect(cTokenAddress, this.provider);
+        const cTokenContract = iCTokenFactory.connect(cTokenAddress, this.provider);
 
         const borrowRatePerBlock = await cTokenContract.borrowRatePerBlock();
         const borrowApy =
-          Math.pow((borrowRatePerBlock.toNumber() / 1e18) * blocksPerDay + 1, daysPerYear) - 1;
+          ((borrowRatePerBlock.toNumber() / 1e18) * blocksPerDay + 1) ** daysPerYear - 1;
         return borrowApy;
       }
 
@@ -2501,5 +2163,3 @@ class AMM {
     }
   }
 }
-
-export default AMM;
