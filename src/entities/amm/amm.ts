@@ -279,7 +279,6 @@ export class AMM {
     fixedHigh,
     notional,
     margin,
-    marginEth,
     newMarginEngine,
     rolloverPosition,
   }: AMMRolloverWithMintArgs): Promise<ContractReceipt> {
@@ -293,10 +292,6 @@ export class AMM {
 
     if (margin < 0) {
       throw new Error('Amount of margin cannot be negative');
-    }
-
-    if (marginEth && marginEth < 0) {
-      throw new Error('Amount of margin in ETH cannot be negative');
     }
 
     if (!this.underlyingToken.id) {
@@ -327,7 +322,9 @@ export class AMM {
       } else {
         // Case 2. if you get from the settled pool less than want to roll over, then need to deposit extra ETH
         scaledMarginDelta = this.scale(settlementMargin);
-        tempOverrides.value = BigNumber.from(this.scale(margin - settlementMargin));
+        tempOverrides.value = BigNumber.from(this.scale(margin)).sub(
+          BigNumber.from(scaledMarginDelta),
+        );
       }
     } else {
       scaledMarginDelta = this.scale(margin);

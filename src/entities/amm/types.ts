@@ -130,7 +130,6 @@ export type AMMRolloverWithMintArgs = {
   fixedHigh: number;
   notional: number;
   margin: number;
-  marginEth?: number;
   newMarginEngine: string;
   rolloverPosition: {
     tickLower: number;
