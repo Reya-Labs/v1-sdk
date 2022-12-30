@@ -1,8 +1,5 @@
-src/entities/position.ts
 src/entities/borrowAMM.ts
 src/entities/communitySBT.ts
 *.spec.ts
-src/utils/errors/*
-src/utils/time.ts
 src/utils/communitySbt/*
 src/entities/fractions/*
