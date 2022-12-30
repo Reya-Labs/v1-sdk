@@ -73,11 +73,9 @@ describe('amm:getPositionInfo', () => {
           tickLower: -4680,
           tickUpper: -3360,
 
-          createdTimestamp: JSBI.BigInt(0),
-          updatedTimestamp: JSBI.BigInt(0),
+          createdTimestamp: 0,
 
           positionType: 3,
-          isSettled: false,
 
           mints: [
             new Mint({
@@ -125,41 +123,41 @@ describe('amm:getPositionInfo', () => {
           settlements: [],
         });
 
-        const positionInfo = await amm.getPositionInformation(position);
+        await position.refreshInfo();
 
-        expect(positionInfo.fixedTokenBalance).to.be.closeTo(-737.63358, DELTA);
-        expect(positionInfo.variableTokenBalance).to.be.closeTo(513.331319, DELTA);
+        expect(position.fixedTokenBalance).to.be.closeTo(-737.63358, DELTA);
+        expect(position.variableTokenBalance).to.be.closeTo(513.331319, DELTA);
 
-        expect(positionInfo.liquidity).to.be.closeTo(1010, DELTA);
-        expect(positionInfo.liquidityInUSD).to.be.closeTo(1010, DELTA);
+        expect(position.liquidity).to.be.closeTo(1010, DELTA);
+        expect(position.liquidityInUSD).to.be.closeTo(1010, DELTA);
 
-        expect(positionInfo.notional).to.be.closeTo(1010, DELTA);
-        expect(positionInfo.notionalInUSD).to.be.closeTo(1010, DELTA);
+        expect(position.notional).to.be.closeTo(1010, DELTA);
+        expect(position.notionalInUSD).to.be.closeTo(1010, DELTA);
 
-        expect(positionInfo.margin).to.be.closeTo(3, DELTA);
-        expect(positionInfo.marginInUSD).to.be.closeTo(3, DELTA);
+        expect(position.margin).to.be.closeTo(3, DELTA);
+        expect(position.marginInUSD).to.be.closeTo(3, DELTA);
 
-        expect(positionInfo.fees).to.be.closeTo(0.128066, DELTA);
-        expect(positionInfo.feesInUSD).to.be.closeTo(0.128066, DELTA);
+        expect(position.fees).to.be.closeTo(0.128066, DELTA);
+        expect(position.feesInUSD).to.be.closeTo(0.128066, DELTA);
 
-        expect(positionInfo.accruedCashflow).to.closeTo(0, DELTA);
-        expect(positionInfo.accruedCashflowInUSD).to.closeTo(0, DELTA);
+        expect(position.accruedCashflow).to.closeTo(0, DELTA);
+        expect(position.accruedCashflowInUSD).to.closeTo(0, DELTA);
 
-        expect(positionInfo.settlementCashflow).to.closeTo(0, DELTA);
-        expect(positionInfo.settlementCashflowInUSD).to.closeTo(0, DELTA);
+        expect(position.settlementCashflow).to.closeTo(0, DELTA);
+        expect(position.settlementCashflowInUSD).to.closeTo(0, DELTA);
 
-        expect(positionInfo.liquidationThreshold).to.closeTo(0.557287, DELTA);
-        expect(positionInfo.safetyThreshold).to.closeTo(0.604046, DELTA);
+        expect(position.liquidationThreshold).to.closeTo(0.557287, DELTA);
+        expect(position.safetyThreshold).to.closeTo(0.604046, DELTA);
 
-        expect(positionInfo.variableRateSinceLastSwap).to.be.closeTo(0, DELTA);
-        expect(positionInfo.fixedRateSinceLastSwap).to.be.closeTo(0, DELTA);
+        expect(position.payingRate).to.be.closeTo(0, DELTA);
+        expect(position.receivingRate).to.be.closeTo(0, DELTA);
 
-        expect(positionInfo.fixedApr).to.be.closeTo(1.007, DELTA);
+        expect(position.poolAPR).to.be.closeTo(1.007, DELTA);
 
-        expect(positionInfo.healthFactor).to.be.eq(3);
-        expect(positionInfo.fixedRateHealthFactor).to.be.eq(1);
+        expect(position.healthFactor).to.be.eq(3);
+        expect(position.fixedRateHealthFactor).to.be.eq(1);
 
-        expect(positionInfo.beforeMaturity).to.be.eq(true);
+        expect(position.isPoolMatured).to.be.eq(false);
       });
 
       it('After maturity, un-settled position', async () => {
@@ -196,11 +194,8 @@ describe('amm:getPositionInfo', () => {
           tickLower: -5280,
           tickUpper: -2640,
 
-          createdTimestamp: JSBI.BigInt(0),
-          updatedTimestamp: JSBI.BigInt(0),
-
+          createdTimestamp: 0,
           positionType: 3,
-          isSettled: false,
 
           mints: [
             new Mint({
@@ -230,41 +225,41 @@ describe('amm:getPositionInfo', () => {
           settlements: [],
         });
 
-        const positionInfo = await amm.getPositionInformation(position);
+        await position.refreshInfo();
 
-        expect(positionInfo.fixedTokenBalance).to.be.closeTo(-119.96543, DELTA);
-        expect(positionInfo.variableTokenBalance).to.be.closeTo(95.13969, DELTA);
+        expect(position.fixedTokenBalance).to.be.closeTo(-119.96543, DELTA);
+        expect(position.variableTokenBalance).to.be.closeTo(95.13969, DELTA);
 
-        expect(positionInfo.liquidity).to.be.closeTo(1000, DELTA);
-        expect(positionInfo.liquidityInUSD).to.be.closeTo(1000, DELTA);
+        expect(position.liquidity).to.be.closeTo(1000, DELTA);
+        expect(position.liquidityInUSD).to.be.closeTo(1000, DELTA);
 
-        expect(positionInfo.notional).to.be.closeTo(1000, DELTA);
-        expect(positionInfo.notionalInUSD).to.be.closeTo(1000, DELTA);
+        expect(position.notional).to.be.closeTo(1000, DELTA);
+        expect(position.notionalInUSD).to.be.closeTo(1000, DELTA);
 
-        expect(positionInfo.margin).to.be.closeTo(10, DELTA);
-        expect(positionInfo.marginInUSD).to.be.closeTo(10, DELTA);
+        expect(position.margin).to.be.closeTo(10, DELTA);
+        expect(position.marginInUSD).to.be.closeTo(10, DELTA);
 
-        expect(positionInfo.fees).to.be.closeTo(0.04517, DELTA);
-        expect(positionInfo.feesInUSD).to.be.closeTo(0.04517, DELTA);
+        expect(position.fees).to.be.closeTo(0.04517, DELTA);
+        expect(position.feesInUSD).to.be.closeTo(0.04517, DELTA);
 
-        expect(positionInfo.accruedCashflow).to.closeTo(0, DELTA);
-        expect(positionInfo.accruedCashflowInUSD).to.closeTo(0, DELTA);
+        expect(position.accruedCashflow).to.closeTo(0, DELTA);
+        expect(position.accruedCashflowInUSD).to.closeTo(0, DELTA);
 
-        expect(positionInfo.settlementCashflow).to.closeTo(-0.06205, DELTA);
-        expect(positionInfo.settlementCashflowInUSD).to.closeTo(-0.06205, DELTA);
+        expect(position.settlementCashflow).to.closeTo(-0.06205, DELTA);
+        expect(position.settlementCashflowInUSD).to.closeTo(-0.06205, DELTA);
 
-        expect(positionInfo.liquidationThreshold).to.closeTo(0, DELTA);
-        expect(positionInfo.safetyThreshold).to.closeTo(0, DELTA);
+        expect(position.liquidationThreshold).to.closeTo(0, DELTA);
+        expect(position.safetyThreshold).to.closeTo(0, DELTA);
 
-        expect(positionInfo.variableRateSinceLastSwap).to.be.closeTo(0, DELTA);
-        expect(positionInfo.fixedRateSinceLastSwap).to.be.closeTo(0, DELTA);
+        expect(position.payingRate).to.be.closeTo(0, DELTA);
+        expect(position.receivingRate).to.be.closeTo(0, DELTA);
 
-        expect(positionInfo.fixedApr).to.be.closeTo(0.139, DELTA);
+        expect(position.poolAPR).to.be.closeTo(0.139, DELTA);
 
-        expect(positionInfo.healthFactor).to.be.eq(0);
-        expect(positionInfo.fixedRateHealthFactor).to.be.eq(0);
+        expect(position.healthFactor).to.be.eq(0);
+        expect(position.fixedRateHealthFactor).to.be.eq(0);
 
-        expect(positionInfo.beforeMaturity).to.be.eq(false);
+        expect(position.isPoolMatured).to.be.eq(true);
       });
 
       it('After maturity, settled position', async () => {
@@ -301,11 +296,9 @@ describe('amm:getPositionInfo', () => {
           tickLower: -5880,
           tickUpper: -1800,
 
-          createdTimestamp: JSBI.BigInt(0),
-          updatedTimestamp: JSBI.BigInt(0),
+          createdTimestamp: 0,
 
           positionType: 3,
-          isSettled: true,
 
           mints: [
             new Mint({
@@ -353,41 +346,41 @@ describe('amm:getPositionInfo', () => {
           ],
         });
 
-        const positionInfo = await amm.getPositionInformation(position);
+        await position.refreshInfo();
 
-        expect(positionInfo.fixedTokenBalance).to.be.eq(0);
-        expect(positionInfo.variableTokenBalance).to.be.eq(0);
+        expect(position.fixedTokenBalance).to.be.eq(0);
+        expect(position.variableTokenBalance).to.be.eq(0);
 
-        expect(positionInfo.liquidity).to.be.eq(0);
-        expect(positionInfo.liquidityInUSD).to.be.eq(0);
+        expect(position.liquidity).to.be.eq(0);
+        expect(position.liquidityInUSD).to.be.eq(0);
 
-        expect(positionInfo.notional).to.be.eq(0);
-        expect(positionInfo.notionalInUSD).to.be.eq(0);
+        expect(position.notional).to.be.eq(0);
+        expect(position.notionalInUSD).to.be.eq(0);
 
-        expect(positionInfo.margin).to.be.eq(0);
-        expect(positionInfo.marginInUSD).to.be.eq(0);
+        expect(position.margin).to.be.eq(0);
+        expect(position.marginInUSD).to.be.eq(0);
 
-        expect(positionInfo.fees).to.be.eq(0);
-        expect(positionInfo.feesInUSD).to.be.eq(0);
+        expect(position.fees).to.be.eq(0);
+        expect(position.feesInUSD).to.be.eq(0);
 
-        expect(positionInfo.accruedCashflow).to.eq(0);
-        expect(positionInfo.accruedCashflowInUSD).to.eq(0);
+        expect(position.accruedCashflow).to.eq(0);
+        expect(position.accruedCashflowInUSD).to.eq(0);
 
-        expect(positionInfo.settlementCashflow).to.eq(0);
-        expect(positionInfo.settlementCashflowInUSD).to.eq(0);
+        expect(position.settlementCashflow).to.eq(0);
+        expect(position.settlementCashflowInUSD).to.eq(0);
 
-        expect(positionInfo.liquidationThreshold).to.eq(0);
-        expect(positionInfo.safetyThreshold).to.eq(0);
+        expect(position.liquidationThreshold).to.eq(0);
+        expect(position.safetyThreshold).to.eq(0);
 
-        expect(positionInfo.variableRateSinceLastSwap).to.be.eq(0);
-        expect(positionInfo.fixedRateSinceLastSwap).to.be.eq(0);
+        expect(position.payingRate).to.be.eq(0);
+        expect(position.receivingRate).to.be.eq(0);
 
-        expect(positionInfo.fixedApr).to.be.eq(0);
+        expect(position.poolAPR).to.be.eq(0);
 
-        expect(positionInfo.healthFactor).to.be.eq(0);
-        expect(positionInfo.fixedRateHealthFactor).to.be.eq(0);
+        expect(position.healthFactor).to.be.eq(0);
+        expect(position.fixedRateHealthFactor).to.be.eq(0);
 
-        expect(positionInfo.beforeMaturity).to.be.eq(false);
+        expect(position.isPoolMatured).to.be.eq(true);
       });
     });
 
@@ -426,11 +419,9 @@ describe('amm:getPositionInfo', () => {
           tickLower: -69060,
           tickUpper: 0,
 
-          createdTimestamp: JSBI.BigInt(0),
-          updatedTimestamp: JSBI.BigInt(0),
+          createdTimestamp: 0,
 
           positionType: 2,
-          isSettled: false,
 
           mints: [],
           burns: [],
@@ -502,41 +493,41 @@ describe('amm:getPositionInfo', () => {
           settlements: [],
         });
 
-        const positionInfo = await amm.getPositionInformation(position);
+        await position.refreshInfo();
 
-        expect(positionInfo.fixedTokenBalance).to.be.closeTo(-4873.32425, DELTA);
-        expect(positionInfo.variableTokenBalance).to.be.closeTo(2000, DELTA);
+        expect(position.fixedTokenBalance).to.be.closeTo(-4873.32425, DELTA);
+        expect(position.variableTokenBalance).to.be.closeTo(2000, DELTA);
 
-        expect(positionInfo.liquidity).to.be.closeTo(0, DELTA);
-        expect(positionInfo.liquidityInUSD).to.be.closeTo(0, DELTA);
+        expect(position.liquidity).to.be.closeTo(0, DELTA);
+        expect(position.liquidityInUSD).to.be.closeTo(0, DELTA);
 
-        expect(positionInfo.notional).to.be.closeTo(2000, DELTA);
-        expect(positionInfo.notionalInUSD).to.be.closeTo(2000, DELTA);
+        expect(position.notional).to.be.closeTo(2000, DELTA);
+        expect(position.notionalInUSD).to.be.closeTo(2000, DELTA);
 
-        expect(positionInfo.margin).to.be.closeTo(22.79593, DELTA);
-        expect(positionInfo.marginInUSD).to.be.closeTo(22.79593, DELTA);
+        expect(position.margin).to.be.closeTo(22.79593, DELTA);
+        expect(position.marginInUSD).to.be.closeTo(22.79593, DELTA);
 
-        expect(positionInfo.fees).to.be.closeTo(0, DELTA);
-        expect(positionInfo.feesInUSD).to.be.closeTo(0, DELTA);
+        expect(position.fees).to.be.closeTo(0, DELTA);
+        expect(position.feesInUSD).to.be.closeTo(0, DELTA);
 
-        expect(positionInfo.accruedCashflow).to.closeTo(7.43095, DELTA);
-        expect(positionInfo.accruedCashflowInUSD).to.closeTo(7.43095, DELTA);
+        expect(position.accruedCashflow).to.closeTo(7.43095, DELTA);
+        expect(position.accruedCashflowInUSD).to.closeTo(7.43095, DELTA);
 
-        expect(positionInfo.settlementCashflow).to.closeTo(0, DELTA);
-        expect(positionInfo.settlementCashflowInUSD).to.closeTo(0, DELTA);
+        expect(position.settlementCashflow).to.closeTo(0, DELTA);
+        expect(position.settlementCashflowInUSD).to.closeTo(0, DELTA);
 
-        expect(positionInfo.liquidationThreshold).to.closeTo(0.280685, DELTA);
-        expect(positionInfo.safetyThreshold).to.closeTo(2.007124, DELTA);
+        expect(position.liquidationThreshold).to.closeTo(0.280685, DELTA);
+        expect(position.safetyThreshold).to.closeTo(2.007124, DELTA);
 
-        expect(positionInfo.variableRateSinceLastSwap).to.be.closeTo(3.2166, DELTA);
-        expect(positionInfo.fixedRateSinceLastSwap).to.be.closeTo(2.43286, DELTA);
+        expect(position.payingRate).to.be.closeTo(3.2166, DELTA);
+        expect(position.receivingRate).to.be.closeTo(2.43286, DELTA);
 
-        expect(positionInfo.fixedApr).to.be.closeTo(3.144, DELTA);
+        expect(position.poolAPR).to.be.closeTo(3.144, DELTA);
 
-        expect(positionInfo.healthFactor).to.be.eq(3);
-        expect(positionInfo.fixedRateHealthFactor).to.be.eq(2);
+        expect(position.healthFactor).to.be.eq(3);
+        expect(position.fixedRateHealthFactor).to.be.eq(2);
 
-        expect(positionInfo.beforeMaturity).to.be.eq(true);
+        expect(position.isPoolMatured).to.be.eq(false);
       });
 
       it('After maturity, un-settled position', async () => {
@@ -575,11 +566,8 @@ describe('amm:getPositionInfo', () => {
           tickLower: -69060,
           tickUpper: 0,
 
-          createdTimestamp: JSBI.BigInt(0),
-          updatedTimestamp: JSBI.BigInt(0),
-
+          createdTimestamp: 0,
           positionType: 2,
-          isSettled: false,
 
           mints: [],
           burns: [],
@@ -651,41 +639,41 @@ describe('amm:getPositionInfo', () => {
           settlements: [],
         });
 
-        const positionInfo = await amm.getPositionInformation(position);
+        await position.refreshInfo();
 
-        expect(positionInfo.fixedTokenBalance).to.be.closeTo(-4873.32425, DELTA);
-        expect(positionInfo.variableTokenBalance).to.be.closeTo(2000, DELTA);
+        expect(position.fixedTokenBalance).to.be.closeTo(-4873.32425, DELTA);
+        expect(position.variableTokenBalance).to.be.closeTo(2000, DELTA);
 
-        expect(positionInfo.liquidity).to.be.closeTo(0, DELTA);
-        expect(positionInfo.liquidityInUSD).to.be.closeTo(0, DELTA);
+        expect(position.liquidity).to.be.closeTo(0, DELTA);
+        expect(position.liquidityInUSD).to.be.closeTo(0, DELTA);
 
-        expect(positionInfo.notional).to.be.closeTo(2000, DELTA);
-        expect(positionInfo.notionalInUSD).to.be.closeTo(2000, DELTA);
+        expect(position.notional).to.be.closeTo(2000, DELTA);
+        expect(position.notionalInUSD).to.be.closeTo(2000, DELTA);
 
-        expect(positionInfo.margin).to.be.closeTo(22.79593, DELTA);
-        expect(positionInfo.marginInUSD).to.be.closeTo(22.79593, DELTA);
+        expect(position.margin).to.be.closeTo(22.79593, DELTA);
+        expect(position.marginInUSD).to.be.closeTo(22.79593, DELTA);
 
-        expect(positionInfo.fees).to.be.closeTo(0, DELTA);
-        expect(positionInfo.feesInUSD).to.be.closeTo(0, DELTA);
+        expect(position.fees).to.be.closeTo(0, DELTA);
+        expect(position.feesInUSD).to.be.closeTo(0, DELTA);
 
-        expect(positionInfo.accruedCashflow).to.closeTo(-5.91618, DELTA);
-        expect(positionInfo.accruedCashflowInUSD).to.closeTo(-5.91618, DELTA);
+        expect(position.accruedCashflow).to.closeTo(-5.91618, DELTA);
+        expect(position.accruedCashflowInUSD).to.closeTo(-5.91618, DELTA);
 
-        expect(positionInfo.settlementCashflow).to.closeTo(-5.91618, DELTA);
-        expect(positionInfo.settlementCashflowInUSD).to.closeTo(-5.91618, DELTA);
+        expect(position.settlementCashflow).to.closeTo(-5.91618, DELTA);
+        expect(position.settlementCashflowInUSD).to.closeTo(-5.91618, DELTA);
 
-        expect(positionInfo.liquidationThreshold).to.closeTo(0, DELTA);
-        expect(positionInfo.safetyThreshold).to.closeTo(0, DELTA);
+        expect(position.liquidationThreshold).to.closeTo(0, DELTA);
+        expect(position.safetyThreshold).to.closeTo(0, DELTA);
 
-        expect(positionInfo.variableRateSinceLastSwap).to.be.closeTo(0, DELTA);
-        expect(positionInfo.fixedRateSinceLastSwap).to.be.closeTo(0, DELTA);
+        expect(position.payingRate).to.be.closeTo(0, DELTA);
+        expect(position.receivingRate).to.be.closeTo(0, DELTA);
 
-        expect(positionInfo.fixedApr).to.be.closeTo(3.144, DELTA);
+        expect(position.poolAPR).to.be.closeTo(3.144, DELTA);
 
-        expect(positionInfo.healthFactor).to.be.eq(0);
-        expect(positionInfo.fixedRateHealthFactor).to.be.eq(0);
+        expect(position.healthFactor).to.be.eq(0);
+        expect(position.fixedRateHealthFactor).to.be.eq(0);
 
-        expect(positionInfo.beforeMaturity).to.be.eq(false);
+        expect(position.isPoolMatured).to.be.eq(true);
       });
     });
   });
@@ -726,11 +714,9 @@ describe('amm:getPositionInfo', () => {
           tickLower: -16080,
           tickUpper: -12540,
 
-          createdTimestamp: JSBI.BigInt(0),
-          updatedTimestamp: JSBI.BigInt(0),
+          createdTimestamp: 0,
 
           positionType: 3,
-          isSettled: false,
 
           mints: [
             new Mint({
@@ -760,41 +746,41 @@ describe('amm:getPositionInfo', () => {
           settlements: [],
         });
 
-        const positionInfo = await amm.getPositionInformation(position);
+        await position.refreshInfo();
 
-        expect(positionInfo.fixedTokenBalance).to.be.closeTo(-0.10261, DELTA);
-        expect(positionInfo.variableTokenBalance).to.be.closeTo(0.02253, DELTA);
+        expect(position.fixedTokenBalance).to.be.closeTo(-0.10261, DELTA);
+        expect(position.variableTokenBalance).to.be.closeTo(0.02253, DELTA);
 
-        expect(positionInfo.liquidity).to.be.closeTo(0.1, DELTA);
-        expect(positionInfo.liquidityInUSD).to.be.closeTo(120, DELTA);
+        expect(position.liquidity).to.be.closeTo(0.1, DELTA);
+        expect(position.liquidityInUSD).to.be.closeTo(120, DELTA);
 
-        expect(positionInfo.notional).to.be.closeTo(0.1, DELTA);
-        expect(positionInfo.notionalInUSD).to.be.closeTo(120, DELTA);
+        expect(position.notional).to.be.closeTo(0.1, DELTA);
+        expect(position.notionalInUSD).to.be.closeTo(120, DELTA);
 
-        expect(positionInfo.margin).to.be.closeTo(0.01, DELTA);
-        expect(positionInfo.marginInUSD).to.be.closeTo(12, DELTA);
+        expect(position.margin).to.be.closeTo(0.01, DELTA);
+        expect(position.marginInUSD).to.be.closeTo(12, DELTA);
 
-        expect(positionInfo.fees).to.be.closeTo(0.000027, DELTA);
-        expect(positionInfo.feesInUSD).to.be.closeTo(0.032407, DELTA);
+        expect(position.fees).to.be.closeTo(0.000027, DELTA);
+        expect(position.feesInUSD).to.be.closeTo(0.032407, DELTA);
 
-        expect(positionInfo.accruedCashflow).to.closeTo(0, DELTA);
-        expect(positionInfo.accruedCashflowInUSD).to.closeTo(0, DELTA);
+        expect(position.accruedCashflow).to.closeTo(0, DELTA);
+        expect(position.accruedCashflowInUSD).to.closeTo(0, DELTA);
 
-        expect(positionInfo.settlementCashflow).to.closeTo(0, DELTA);
-        expect(positionInfo.settlementCashflowInUSD).to.closeTo(0, DELTA);
+        expect(position.settlementCashflow).to.closeTo(0, DELTA);
+        expect(position.settlementCashflowInUSD).to.closeTo(0, DELTA);
 
-        expect(positionInfo.liquidationThreshold).to.closeTo(0.000004, DELTA);
-        expect(positionInfo.safetyThreshold).to.closeTo(0.000023, DELTA);
+        expect(position.liquidationThreshold).to.closeTo(0.000004, DELTA);
+        expect(position.safetyThreshold).to.closeTo(0.000023, DELTA);
 
-        expect(positionInfo.variableRateSinceLastSwap).to.be.closeTo(0, DELTA);
-        expect(positionInfo.fixedRateSinceLastSwap).to.be.closeTo(0, DELTA);
+        expect(position.payingRate).to.be.closeTo(0, DELTA);
+        expect(position.receivingRate).to.be.closeTo(0, DELTA);
 
-        expect(positionInfo.fixedApr).to.be.closeTo(4.584, DELTA);
+        expect(position.poolAPR).to.be.closeTo(4.584, DELTA);
 
-        expect(positionInfo.healthFactor).to.be.eq(3);
-        expect(positionInfo.fixedRateHealthFactor).to.be.eq(3);
+        expect(position.healthFactor).to.be.eq(3);
+        expect(position.fixedRateHealthFactor).to.be.eq(3);
 
-        expect(positionInfo.beforeMaturity).to.be.eq(true);
+        expect(position.isPoolMatured).to.be.eq(false);
       });
     });
 
@@ -833,11 +819,8 @@ describe('amm:getPositionInfo', () => {
           tickLower: -69060,
           tickUpper: 0,
 
-          createdTimestamp: JSBI.BigInt(0),
-          updatedTimestamp: JSBI.BigInt(0),
-
+          createdTimestamp: 0,
           positionType: 1,
-          isSettled: false,
 
           mints: [],
           burns: [],
@@ -904,41 +887,41 @@ describe('amm:getPositionInfo', () => {
           settlements: [],
         });
 
-        const positionInfo = await amm.getPositionInformation(position);
+        await position.refreshInfo();
 
-        expect(positionInfo.fixedTokenBalance).to.be.closeTo(5.53975, DELTA);
-        expect(positionInfo.variableTokenBalance).to.be.closeTo(-1.1, DELTA);
+        expect(position.fixedTokenBalance).to.be.closeTo(5.53975, DELTA);
+        expect(position.variableTokenBalance).to.be.closeTo(-1.1, DELTA);
 
-        expect(positionInfo.liquidity).to.be.closeTo(0, DELTA);
-        expect(positionInfo.liquidityInUSD).to.be.closeTo(0, DELTA);
+        expect(position.liquidity).to.be.closeTo(0, DELTA);
+        expect(position.liquidityInUSD).to.be.closeTo(0, DELTA);
 
-        expect(positionInfo.notional).to.be.closeTo(1.1, DELTA);
-        expect(positionInfo.notionalInUSD).to.be.closeTo(1320, DELTA);
+        expect(position.notional).to.be.closeTo(1.1, DELTA);
+        expect(position.notionalInUSD).to.be.closeTo(1320, DELTA);
 
-        expect(positionInfo.margin).to.be.closeTo(0.098521, DELTA);
-        expect(positionInfo.marginInUSD).to.be.closeTo(118.22573, DELTA);
+        expect(position.margin).to.be.closeTo(0.098521, DELTA);
+        expect(position.marginInUSD).to.be.closeTo(118.22573, DELTA);
 
-        expect(positionInfo.fees).to.be.closeTo(0, DELTA);
-        expect(positionInfo.feesInUSD).to.be.closeTo(0, DELTA);
+        expect(position.fees).to.be.closeTo(0, DELTA);
+        expect(position.feesInUSD).to.be.closeTo(0, DELTA);
 
-        expect(positionInfo.accruedCashflow).to.closeTo(0.002328, DELTA);
-        expect(positionInfo.accruedCashflowInUSD).to.closeTo(2.79401, DELTA);
+        expect(position.accruedCashflow).to.closeTo(0.002328, DELTA);
+        expect(position.accruedCashflowInUSD).to.closeTo(2.79401, DELTA);
 
-        expect(positionInfo.settlementCashflow).to.closeTo(0, DELTA);
-        expect(positionInfo.settlementCashflowInUSD).to.closeTo(0, DELTA);
+        expect(position.settlementCashflow).to.closeTo(0, DELTA);
+        expect(position.settlementCashflowInUSD).to.closeTo(0, DELTA);
 
-        expect(positionInfo.liquidationThreshold).to.closeTo(0.00005, DELTA);
-        expect(positionInfo.safetyThreshold).to.closeTo(0.0002, DELTA);
+        expect(position.liquidationThreshold).to.closeTo(0.00005, DELTA);
+        expect(position.safetyThreshold).to.closeTo(0.0002, DELTA);
 
-        expect(positionInfo.variableRateSinceLastSwap).to.be.closeTo(4.1388, DELTA);
-        expect(positionInfo.fixedRateSinceLastSwap).to.be.closeTo(5.20099, DELTA);
+        expect(position.payingRate).to.be.closeTo(4.1388, DELTA);
+        expect(position.receivingRate).to.be.closeTo(5.20099, DELTA);
 
-        expect(positionInfo.fixedApr).to.be.closeTo(4.584, DELTA);
+        expect(position.poolAPR).to.be.closeTo(4.584, DELTA);
 
-        expect(positionInfo.healthFactor).to.be.eq(3);
-        expect(positionInfo.fixedRateHealthFactor).to.be.eq(2);
+        expect(position.healthFactor).to.be.eq(3);
+        expect(position.fixedRateHealthFactor).to.be.eq(2);
 
-        expect(positionInfo.beforeMaturity).to.be.eq(true);
+        expect(position.isPoolMatured).to.be.eq(false);
       });
     });
   });

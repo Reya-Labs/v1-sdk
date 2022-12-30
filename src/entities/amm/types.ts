@@ -95,7 +95,6 @@ export type AMMRolloverWithSwapArgs = {
   fixedRateLimit?: number;
   fixedLow: number;
   fixedHigh: number;
-  owner: string;
   newMarginEngine: string;
   oldFixedLow: number;
   oldFixedHigh: number;
@@ -135,7 +134,6 @@ export type AMMRolloverWithMintArgs = {
   notional: number;
   margin: number;
   marginEth?: number;
-  owner: string;
   newMarginEngine: string;
   oldFixedLow: number;
   oldFixedHigh: number;
