@@ -6,7 +6,6 @@ import { SwapPeripheryParams, MintOrBurnParams } from '../../types';
 import {
   MIN_FIXED_RATE,
   MAX_FIXED_RATE,
-  ONE_YEAR_IN_SECONDS,
   MaxUint256Bn,
   TresholdApprovalBn,
   getGasBuffer,
@@ -146,28 +145,14 @@ export class AMM {
     isFT,
     notional,
     margin,
-    marginEth,
     fixedRateLimit,
     fixedLow,
     fixedHigh,
     newMarginEngine,
-    oldFixedLow,
-    oldFixedHigh,
+    rolloverPosition,
   }: AMMRolloverWithSwapArgs): Promise<ContractReceipt> {
     if (!this.signer) {
       throw new Error('Wallet not connected');
-    }
-
-    if (fixedLow >= fixedHigh && oldFixedLow >= oldFixedHigh) {
-      throw new Error('Lower Rate must be smaller than Upper Rate');
-    }
-
-    if (fixedLow < MIN_FIXED_RATE && oldFixedLow < MIN_FIXED_RATE) {
-      throw new Error('Lower Rate is too low');
-    }
-
-    if (fixedHigh > MAX_FIXED_RATE && oldFixedHigh > MAX_FIXED_RATE) {
-      throw new Error('Upper Rate is too high');
     }
 
     if (notional <= 0) {
@@ -178,18 +163,11 @@ export class AMM {
       throw new Error('Amount of margin cannot be negative');
     }
 
-    if (marginEth && marginEth < 0) {
-      throw new Error('Amount of margin in ETH cannot be negative');
-    }
-
     if (!this.underlyingToken.id) {
       throw new Error('No underlying error');
     }
 
     const owner = await this.signer.getAddress();
-
-    const { closestUsableTick: oldTickUpper } = this.closestTickAndFixedRate(oldFixedLow);
-    const { closestUsableTick: oldTickLower } = this.closestTickAndFixedRate(oldFixedHigh);
 
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
@@ -209,13 +187,25 @@ export class AMM {
     const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
     const scaledNotional = this.scale(notional);
 
+    // Get the margin delta in underlying ERC20 tokens and ETH
+    let scaledMarginDelta = '0';
     const tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
 
-    if (this.isETH && marginEth) {
-      tempOverrides.value = ethers.utils.parseEther(marginEth.toFixed(18).toString());
-    }
+    if (this.isETH) {
+      // Get the settlement margin from the previous position
+      const settlementBalance = rolloverPosition.settlementBalance;
 
-    const scaledMarginDelta = this.scale(margin);
+      if (settlementBalance >= margin) {
+        // Case 1. If you get from the settled pool more than want to roll over
+        scaledMarginDelta = this.scale(margin);
+      } else {
+        // Case 2. if you get from the settled pool less than want to roll over, then need to deposit extra ETH
+        scaledMarginDelta = this.scale(settlementBalance);
+        tempOverrides.value = BigNumber.from(this.scale(margin - settlementBalance));
+      }
+    } else {
+      scaledMarginDelta = this.scale(margin);
+    }
 
     const swapPeripheryParams = {
       marginEngine: newMarginEngine,
@@ -231,8 +221,8 @@ export class AMM {
       .rolloverWithSwap(
         this.marginEngineAddress,
         owner,
-        oldTickLower,
-        oldTickUpper,
+        rolloverPosition.tickLower,
+        rolloverPosition.tickUpper,
         swapPeripheryParams,
         tempOverrides,
       )
@@ -245,8 +235,8 @@ export class AMM {
       .rolloverWithSwap(
         this.marginEngineAddress,
         owner,
-        oldTickLower,
-        oldTickUpper,
+        rolloverPosition.tickLower,
+        rolloverPosition.tickUpper,
         swapPeripheryParams,
         tempOverrides,
       )
@@ -261,8 +251,8 @@ export class AMM {
       .rolloverWithSwap(
         this.marginEngineAddress,
         owner,
-        oldTickLower,
-        oldTickUpper,
+        rolloverPosition.tickLower,
+        rolloverPosition.tickUpper,
         swapPeripheryParams,
         tempOverrides,
       )
@@ -291,23 +281,10 @@ export class AMM {
     margin,
     marginEth,
     newMarginEngine,
-    oldFixedLow,
-    oldFixedHigh,
+    rolloverPosition,
   }: AMMRolloverWithMintArgs): Promise<ContractReceipt> {
     if (!this.signer) {
       throw new Error('Wallet not connected');
-    }
-
-    if (fixedLow >= fixedHigh && oldFixedLow >= oldFixedHigh) {
-      throw new Error('Lower Rate must be smaller than Upper Rate');
-    }
-
-    if (fixedLow < MIN_FIXED_RATE && oldFixedLow < MIN_FIXED_RATE) {
-      throw new Error('Lower Rate is too low');
-    }
-
-    if (fixedHigh > MAX_FIXED_RATE && oldFixedHigh > MAX_FIXED_RATE) {
-      throw new Error('Upper Rate is too high');
     }
 
     if (notional <= 0) {
@@ -328,9 +305,6 @@ export class AMM {
 
     const owner = await this.signer.getAddress();
 
-    const { closestUsableTick: oldTickUpper } = this.closestTickAndFixedRate(oldFixedLow);
-    const { closestUsableTick: oldTickLower } = this.closestTickAndFixedRate(oldFixedHigh);
-
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
@@ -339,13 +313,25 @@ export class AMM {
     const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
     const scaledNotional = this.scale(notional);
 
+    // Get the margin delta in underlying ERC20 tokens and ETH
+    let scaledMarginDelta = '0';
     const tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
 
-    if (this.isETH && marginEth) {
-      tempOverrides.value = ethers.utils.parseEther(marginEth.toFixed(18).toString());
-    }
+    if (this.isETH) {
+      // Get the settlement margin from the previous position
 
-    const scaledMarginDelta = this.scale(margin);
+      const settlementMargin = rolloverPosition.settlementBalance;
+      if (settlementMargin >= margin) {
+        // Case 1. If you get from the settled pool more than want to roll over
+        scaledMarginDelta = this.scale(margin);
+      } else {
+        // Case 2. if you get from the settled pool less than want to roll over, then need to deposit extra ETH
+        scaledMarginDelta = this.scale(settlementMargin);
+        tempOverrides.value = BigNumber.from(this.scale(margin - settlementMargin));
+      }
+    } else {
+      scaledMarginDelta = this.scale(margin);
+    }
 
     const mintOrBurnParams = {
       marginEngine: newMarginEngine,
@@ -360,8 +346,8 @@ export class AMM {
       .rolloverWithMint(
         this.marginEngineAddress,
         owner,
-        oldTickLower,
-        oldTickUpper,
+        rolloverPosition.tickLower,
+        rolloverPosition.tickUpper,
         mintOrBurnParams,
         tempOverrides,
       )
@@ -374,8 +360,8 @@ export class AMM {
       .rolloverWithMint(
         this.marginEngineAddress,
         owner,
-        oldTickLower,
-        oldTickUpper,
+        rolloverPosition.tickLower,
+        rolloverPosition.tickUpper,
         mintOrBurnParams,
         tempOverrides,
       )
@@ -390,8 +376,8 @@ export class AMM {
       .rolloverWithMint(
         this.marginEngineAddress,
         owner,
-        oldTickLower,
-        oldTickUpper,
+        rolloverPosition.tickLower,
+        rolloverPosition.tickUpper,
         mintOrBurnParams,
         tempOverrides,
       )
@@ -1453,28 +1439,27 @@ export class AMM {
     return Number(ethers.utils.formatUnits(value, this.underlyingToken.decimals));
   }
 
-  // underlying token approval for periphery
-
   // token approval for periphery
-  public async isTokenApprovedForPeriphery(
-    tokenAddress: string | undefined,
-    approvalAmount?: number, // Unscaled, e.g. dollars not wei
-  ): Promise<boolean> {
-    if (this.isETH) {
+  public async isTokenApprovedForPeriphery({
+    forceErc20Check,
+    approvalAmount, // Unscaled, e.g. dollars not wei
+  }: {
+    forceErc20Check: boolean;
+    approvalAmount?: number;
+  }): Promise<boolean> {
+    if (!forceErc20Check && this.isETH) {
       return true;
     }
 
     const scaledAmount = approvalAmount && this.scale(approvalAmount);
-
-    if (!tokenAddress) {
-      throw new Error('No underlying token');
-    }
 
     if (!this.signer) {
       throw new Error('Wallet not connected');
     }
 
     const signerAddress = await this.signer.getAddress();
+
+    const tokenAddress = this.underlyingToken.id;
     const token = tokenFactory.connect(tokenAddress, this.signer);
 
     const factoryContract = factoryFactory.connect(this.factoryAddress, this.signer);
@@ -1497,12 +1482,6 @@ export class AMM {
     }
 
     const tokenAddress = this.underlyingToken.id;
-    const isApproved = await this.isTokenApprovedForPeriphery(tokenAddress);
-
-    if (isApproved) {
-      return;
-    }
-
     const token = tokenFactory.connect(tokenAddress, this.signer);
 
     const factoryContract = factoryFactory.connect(this.factoryAddress, this.signer);
@@ -1560,8 +1539,6 @@ export class AMM {
     return timestampWadToDateTime(this.termEndTimestamp);
   }
 
-  // get position information
-
   public async getFixedApr(): Promise<number> {
     if (!this.provider) {
       throw new Error('Blockchain not connected');
@@ -1574,20 +1551,6 @@ export class AMM {
     const apr = tickToFixedRate(currentTick).toNumber();
 
     return apr;
-  }
-
-  public async getVariableApy(): Promise<number> {
-    if (!this.provider) {
-      throw new Error('Blockchain not connected');
-    }
-
-    const marginEngineContract = marginEngineFactory.connect(
-      this.marginEngineAddress,
-      this.provider,
-    );
-    const historicalApy = await marginEngineContract.callStatic.getHistoricalApy();
-
-    return parseFloat(utils.formatEther(historicalApy));
   }
 
   public async getVariableFactor(
@@ -1636,99 +1599,7 @@ export class AMM {
 
   // balance checks
 
-  public async hasEnoughUnderlyingTokens(
-    amount: number,
-    rolloverPosition: { fixedLow: number; fixedHigh: number } | undefined,
-  ): Promise<boolean> {
-    if (!this.signer) {
-      throw new Error('Wallet not connected');
-    }
-
-    const signerAddress = await this.signer.getAddress();
-
-    let currentBalance: BigNumber;
-    if (this.isETH) {
-      if (!this.signer.provider) {
-        throw new Error('Provider not connected');
-      }
-
-      currentBalance = await this.signer.provider.getBalance(signerAddress);
-    } else {
-      if (!this.underlyingToken.id) {
-        throw new Error('No underlying token');
-      }
-
-      const tokenAddress = this.underlyingToken.id;
-      const token = tokenFactory.connect(tokenAddress, this.signer);
-
-      currentBalance = await token.balanceOf(signerAddress);
-    }
-
-    const scaledAmount = BigNumber.from(this.scale(amount));
-
-    if (rolloverPosition && !this.isETH) {
-      if (rolloverPosition.fixedLow >= rolloverPosition.fixedHigh) {
-        throw new Error('Lower Rate must be smaller than Upper Rate');
-      }
-
-      if (rolloverPosition.fixedLow < MIN_FIXED_RATE) {
-        throw new Error('Lower Rate is too low');
-      }
-
-      if (rolloverPosition.fixedHigh > MAX_FIXED_RATE) {
-        throw new Error('Upper Rate is too high');
-      }
-
-      const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(
-        rolloverPosition.fixedLow,
-      );
-      const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(
-        rolloverPosition.fixedHigh,
-      );
-
-      const marginEngineContract = marginEngineFactory.connect(
-        this.marginEngineAddress,
-        this.signer,
-      );
-
-      const position = await marginEngineContract.callStatic.getPosition(
-        signerAddress,
-        tickLower,
-        tickUpper,
-      );
-
-      const start = BigNumber.from(this.termStartTimestamp.toString());
-      const end = BigNumber.from(this.termEndTimestamp.toString());
-
-      const timeInYearsFromStartToEnd = end.sub(start).div(ONE_YEAR_IN_SECONDS);
-
-      const rateOracleContract = baseRateOracleFactory.connect(this.rateOracle.id, this.signer);
-      const variableFactor = await rateOracleContract.callStatic.variableFactor(
-        this.termStartTimestamp.toString(),
-        this.termEndTimestamp.toString(),
-      );
-
-      const fixedCashflow = position.fixedTokenBalance
-        .mul(timeInYearsFromStartToEnd)
-        .div(BigNumber.from(100))
-        .div(BigNumber.from(10).pow(18));
-      const variableCashflow = position.variableTokenBalance
-        .mul(variableFactor)
-        .div(BigNumber.from(10).pow(18));
-
-      const cashflow = fixedCashflow.add(variableCashflow);
-
-      const marginAfterSettlement = position.margin.add(cashflow);
-
-      return currentBalance.add(marginAfterSettlement).gte(scaledAmount);
-    }
-
-    return currentBalance.gte(scaledAmount);
-  }
-
-  public async underlyingTokens(
-    rolloverPosition: { fixedLow: number; fixedHigh: number } | undefined,
-  ): Promise<number> {
+  public async underlyingTokens(): Promise<number> {
     if (!this.signer) {
       throw new Error('Wallet not connected');
     }
@@ -1753,88 +1624,7 @@ export class AMM {
       currentBalance = await token.balanceOf(signerAddress);
     }
 
-    if (rolloverPosition && !this.isETH) {
-      if (rolloverPosition.fixedLow >= rolloverPosition.fixedHigh) {
-        throw new Error('Lower Rate must be smaller than Upper Rate');
-      }
-
-      if (rolloverPosition.fixedLow < MIN_FIXED_RATE) {
-        throw new Error('Lower Rate is too low');
-      }
-
-      if (rolloverPosition.fixedHigh > MAX_FIXED_RATE) {
-        throw new Error('Upper Rate is too high');
-      }
-
-      const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(
-        rolloverPosition.fixedLow,
-      );
-      const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(
-        rolloverPosition.fixedHigh,
-      );
-
-      const marginEngineContract = marginEngineFactory.connect(
-        this.marginEngineAddress,
-        this.signer,
-      );
-
-      const position = await marginEngineContract.callStatic.getPosition(
-        signerAddress,
-        tickLower,
-        tickUpper,
-      );
-
-      const start = BigNumber.from(this.termStartTimestamp.toString());
-      const end = BigNumber.from(this.termEndTimestamp.toString());
-
-      const timeInYearsFromStartToEnd = end.sub(start).div(ONE_YEAR_IN_SECONDS);
-
-      const rateOracleContract = baseRateOracleFactory.connect(this.rateOracle.id, this.signer);
-      const variableFactor = await rateOracleContract.callStatic.variableFactor(
-        this.termStartTimestamp.toString(),
-        this.termEndTimestamp.toString(),
-      );
-
-      const fixedCashflow = position.fixedTokenBalance
-        .mul(timeInYearsFromStartToEnd)
-        .div(BigNumber.from(100))
-        .div(BigNumber.from(10).pow(18));
-      const variableCashflow = position.variableTokenBalance
-        .mul(variableFactor)
-        .div(BigNumber.from(10).pow(18));
-
-      const cashflow = fixedCashflow.add(variableCashflow);
-
-      const marginAfterSettlement = position.margin.add(cashflow);
-
-      return this.descale(currentBalance.add(marginAfterSettlement));
-    }
-
     return this.descale(currentBalance);
-  }
-
-  // current position margin requirement
-
-  async getPositionMarginRequirement(fixedLow: number, fixedHigh: number): Promise<number> {
-    if (!this.signer) {
-      throw new Error('Wallet not connected');
-    }
-
-    const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
-    const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
-
-    const marginEngineContract = marginEngineFactory.connect(this.marginEngineAddress, this.signer);
-
-    const signerAddress = await this.signer.getAddress();
-
-    const requirement = await marginEngineContract.callStatic.getPositionMarginRequirement(
-      signerAddress,
-      tickLower,
-      tickUpper,
-      false,
-    );
-
-    return this.descale(requirement);
   }
 
   // one week look-back window apy
