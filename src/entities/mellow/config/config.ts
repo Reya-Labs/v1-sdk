@@ -24,7 +24,7 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
               pools: ['Lido - ETH'],
               maturityTimestampMS: 1672491600000,
               estimatedHistoricApy: [31.03, 31.03],
-              withdrawable: false,
+              withdrawable: true,
             },
           ],
         },
@@ -46,7 +46,7 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
               pools: ['AAVE - USDC LEND'],
               maturityTimestampMS: 1672488000000,
               estimatedHistoricApy: [6.51, 6.51],
-              withdrawable: false,
+              withdrawable: true,
             },
             {
               weight: 10,
@@ -88,7 +88,7 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
               maturityTimestampMS: 1672491600000,
               pools: ['AAVE - ETH BORROW', 'AAVE - ETH LEND', 'LIDO - ETH', 'ROCKET - ETH'],
               estimatedHistoricApy: [10.96, 10.96],
-              withdrawable: false,
+              withdrawable: true,
             },
             {
               weight: 100,
@@ -116,7 +116,7 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
               maturityTimestampMS: 1672488000000,
               pools: ['AAVE - DAI LEND', 'COMPOUND - DAI LEND'],
               estimatedHistoricApy: [10.3, 10.3],
-              withdrawable: false,
+              withdrawable: true,
             },
             {
               weight: 100,
