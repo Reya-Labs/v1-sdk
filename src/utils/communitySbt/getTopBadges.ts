@@ -59,8 +59,8 @@ export async function getScores({
     isLP
 } : GetScoresArgs): Promise<Record<string, number>> {
     const activityQuery = `
-        query( $skipCount: Int) {
-            wallets(first: 1000, skip: $skipCount) {
+        query( $lastId: String) {
+            wallets(first: 1000, where: {id_gt: $lastId}) {
                 id
                 positions {
                     amm {
@@ -100,15 +100,14 @@ export async function getScores({
   
     const scores: Record<string, number> = {};
   
-    let skip = 0;
+    let lastId = "0";
     while (true) {
         const data = await client.query({
             query: gql(activityQuery),
             variables: {
-                skipCount: skip,
+              lastId: lastId,
             },
         });
-      skip += 1000;
 
       const wallets = data?.data?.wallets ?? [];
   
@@ -148,6 +147,7 @@ export async function getScores({
         if (score > 0 && !ignoredWalletIds[wallet.id.toLowerCase()]) {
             scores[wallet.id] = score;
         }
+        lastId = wallet.id;
       }
   
       if (wallets < 1000) {

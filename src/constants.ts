@@ -71,4 +71,5 @@ export const GOERLI_ONE_HUNDRED_THOUSAND = 1;
 export const GOERLI_TWO_MILLON = 200;
 
 export const ONE_HOUR_IN_MS = 60 * 60 * 1000;
+export const ONE_DAY_IN_SECONDS = 60 * 60 * 24;
 export const DEPOSIT_WINDOW = 48 * ONE_HOUR_IN_MS;
