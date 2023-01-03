@@ -5,7 +5,7 @@ import { createLeaves } from '../utils/communitySbt/getIpfsLeaves';
 import { getRootFromSubgraph } from '../utils/communitySbt/getSubgraphRoot';
 import { getProof } from '../utils/communitySbt/merkle-tree';
 import  axios from 'axios';
-import { MULTI_REDEEM_METHOD_ID, REDEEM_METHOD_ID } from '../constants';
+import { MULTI_REDEEM_METHOD_ID, ONE_DAY_IN_SECONDS, ONE_HOUR_IN_MS, REDEEM_METHOD_ID } from '../constants';
 import { decodeBadgeType, decodeMultipleBadgeTypes, get100KRefereeBenchmark, get2MRefereeBenchmark, getEtherscanURL, getLeavesIpfsUri, getSelectedSeasonBadgesUrl, getTopBadgeType, toMillis } from '../utils/communitySbt/helpers';
 import { DateTime } from 'luxon';
 import { getScores, GetScoresArgs } from '../utils/communitySbt/getTopBadges';
@@ -463,7 +463,7 @@ class SBT {
                 subgraphSnapshots.push({
                     id: id,
                     badgeType: entry.badgeType.toString(),
-                    awardedTimestampMs: mapBadges.get(id)?.awardedTimestampMs || toMillis(seasonEnd),
+                    awardedTimestampMs: mapBadges.get(id)?.awardedTimestampMs || toMillis(seasonEnd - ONE_DAY_IN_SECONDS),
                     mintedTimestampMs: mapBadges.get(id)?.mintedTimestampMs || undefined,
                 })
             }
