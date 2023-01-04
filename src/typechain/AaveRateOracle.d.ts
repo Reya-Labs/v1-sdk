@@ -13,254 +13,143 @@ import {
   ContractTransaction,
   Overrides,
   CallOverrides,
-} from "ethers";
-import { BytesLike } from "@ethersproject/bytes";
-import { Listener, Provider } from "@ethersproject/providers";
-import { FunctionFragment, EventFragment, Result } from "@ethersproject/abi";
-import type { TypedEventFilter, TypedEvent, TypedListener } from "./common";
+} from 'ethers';
+import { BytesLike } from '@ethersproject/bytes';
+import { Listener, Provider } from '@ethersproject/providers';
+import { FunctionFragment, EventFragment, Result } from '@ethersproject/abi';
+import type { TypedEventFilter, TypedEvent, TypedListener } from './common';
 
 interface AaveRateOracleInterface extends ethers.utils.Interface {
   functions: {
-    "ONE_IN_WAD()": FunctionFragment;
-    "UNDERLYING_YIELD_BEARING_PROTOCOL_ID()": FunctionFragment;
-    "aaveLendingPool()": FunctionFragment;
-    "currentBlockSlope()": FunctionFragment;
-    "getApyFrom(uint256)": FunctionFragment;
-    "getApyFromTo(uint256,uint256)": FunctionFragment;
-    "getBlockSlope()": FunctionFragment;
-    "getCurrentRateInRay()": FunctionFragment;
-    "getLastRateSlope()": FunctionFragment;
-    "getLastUpdatedRate()": FunctionFragment;
-    "getRateFrom(uint256)": FunctionFragment;
-    "getRateFromTo(uint256,uint256)": FunctionFragment;
-    "increaseObservationCardinalityNext(uint16)": FunctionFragment;
-    "interpolateRateValue(uint256,uint256,uint256)": FunctionFragment;
-    "lastUpdatedBlock()": FunctionFragment;
-    "minSecondsSinceLastUpdate()": FunctionFragment;
-    "observations(uint256)": FunctionFragment;
-    "oracleVars()": FunctionFragment;
-    "owner()": FunctionFragment;
-    "renounceOwnership()": FunctionFragment;
-    "setMinSecondsSinceLastUpdate(uint256)": FunctionFragment;
-    "settlementRateCache(uint32,uint32)": FunctionFragment;
-    "transferOwnership(address)": FunctionFragment;
-    "underlying()": FunctionFragment;
-    "variableFactor(uint256,uint256)": FunctionFragment;
-    "variableFactorNoCache(uint256,uint256)": FunctionFragment;
-    "writeOracleEntry()": FunctionFragment;
+    'ONE_IN_WAD()': FunctionFragment;
+    'UNDERLYING_YIELD_BEARING_PROTOCOL_ID()': FunctionFragment;
+    'aaveLendingPool()': FunctionFragment;
+    'currentBlockSlope()': FunctionFragment;
+    'getApyFrom(uint256)': FunctionFragment;
+    'getApyFromTo(uint256,uint256)': FunctionFragment;
+    'getBlockSlope()': FunctionFragment;
+    'getCurrentRateInRay()': FunctionFragment;
+    'getLastRateSlope()': FunctionFragment;
+    'getLastUpdatedRate()': FunctionFragment;
+    'getRateFrom(uint256)': FunctionFragment;
+    'getRateFromTo(uint256,uint256)': FunctionFragment;
+    'increaseObservationCardinalityNext(uint16)': FunctionFragment;
+    'interpolateRateValue(uint256,uint256,uint256)': FunctionFragment;
+    'lastUpdatedBlock()': FunctionFragment;
+    'minSecondsSinceLastUpdate()': FunctionFragment;
+    'observations(uint256)': FunctionFragment;
+    'oracleVars()': FunctionFragment;
+    'owner()': FunctionFragment;
+    'renounceOwnership()': FunctionFragment;
+    'setMinSecondsSinceLastUpdate(uint256)': FunctionFragment;
+    'settlementRateCache(uint32,uint32)': FunctionFragment;
+    'transferOwnership(address)': FunctionFragment;
+    'underlying()': FunctionFragment;
+    'variableFactor(uint256,uint256)': FunctionFragment;
+    'variableFactorNoCache(uint256,uint256)': FunctionFragment;
+    'writeOracleEntry()': FunctionFragment;
   };
 
+  encodeFunctionData(functionFragment: 'ONE_IN_WAD', values?: undefined): string;
   encodeFunctionData(
-    functionFragment: "ONE_IN_WAD",
-    values?: undefined
+    functionFragment: 'UNDERLYING_YIELD_BEARING_PROTOCOL_ID',
+    values?: undefined,
+  ): string;
+  encodeFunctionData(functionFragment: 'aaveLendingPool', values?: undefined): string;
+  encodeFunctionData(functionFragment: 'currentBlockSlope', values?: undefined): string;
+  encodeFunctionData(functionFragment: 'getApyFrom', values: [BigNumberish]): string;
+  encodeFunctionData(
+    functionFragment: 'getApyFromTo',
+    values: [BigNumberish, BigNumberish],
+  ): string;
+  encodeFunctionData(functionFragment: 'getBlockSlope', values?: undefined): string;
+  encodeFunctionData(functionFragment: 'getCurrentRateInRay', values?: undefined): string;
+  encodeFunctionData(functionFragment: 'getLastRateSlope', values?: undefined): string;
+  encodeFunctionData(functionFragment: 'getLastUpdatedRate', values?: undefined): string;
+  encodeFunctionData(functionFragment: 'getRateFrom', values: [BigNumberish]): string;
+  encodeFunctionData(
+    functionFragment: 'getRateFromTo',
+    values: [BigNumberish, BigNumberish],
   ): string;
   encodeFunctionData(
-    functionFragment: "UNDERLYING_YIELD_BEARING_PROTOCOL_ID",
-    values?: undefined
+    functionFragment: 'increaseObservationCardinalityNext',
+    values: [BigNumberish],
   ): string;
   encodeFunctionData(
-    functionFragment: "aaveLendingPool",
-    values?: undefined
+    functionFragment: 'interpolateRateValue',
+    values: [BigNumberish, BigNumberish, BigNumberish],
+  ): string;
+  encodeFunctionData(functionFragment: 'lastUpdatedBlock', values?: undefined): string;
+  encodeFunctionData(functionFragment: 'minSecondsSinceLastUpdate', values?: undefined): string;
+  encodeFunctionData(functionFragment: 'observations', values: [BigNumberish]): string;
+  encodeFunctionData(functionFragment: 'oracleVars', values?: undefined): string;
+  encodeFunctionData(functionFragment: 'owner', values?: undefined): string;
+  encodeFunctionData(functionFragment: 'renounceOwnership', values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: 'setMinSecondsSinceLastUpdate',
+    values: [BigNumberish],
   ): string;
   encodeFunctionData(
-    functionFragment: "currentBlockSlope",
-    values?: undefined
+    functionFragment: 'settlementRateCache',
+    values: [BigNumberish, BigNumberish],
+  ): string;
+  encodeFunctionData(functionFragment: 'transferOwnership', values: [string]): string;
+  encodeFunctionData(functionFragment: 'underlying', values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: 'variableFactor',
+    values: [BigNumberish, BigNumberish],
   ): string;
   encodeFunctionData(
-    functionFragment: "getApyFrom",
-    values: [BigNumberish]
+    functionFragment: 'variableFactorNoCache',
+    values: [BigNumberish, BigNumberish],
   ): string;
-  encodeFunctionData(
-    functionFragment: "getApyFromTo",
-    values: [BigNumberish, BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getBlockSlope",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getCurrentRateInRay",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getLastRateSlope",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getLastUpdatedRate",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getRateFrom",
-    values: [BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getRateFromTo",
-    values: [BigNumberish, BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "increaseObservationCardinalityNext",
-    values: [BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "interpolateRateValue",
-    values: [BigNumberish, BigNumberish, BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "lastUpdatedBlock",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "minSecondsSinceLastUpdate",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "observations",
-    values: [BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "oracleVars",
-    values?: undefined
-  ): string;
-  encodeFunctionData(functionFragment: "owner", values?: undefined): string;
-  encodeFunctionData(
-    functionFragment: "renounceOwnership",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "setMinSecondsSinceLastUpdate",
-    values: [BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "settlementRateCache",
-    values: [BigNumberish, BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "transferOwnership",
-    values: [string]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "underlying",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "variableFactor",
-    values: [BigNumberish, BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "variableFactorNoCache",
-    values: [BigNumberish, BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "writeOracleEntry",
-    values?: undefined
-  ): string;
+  encodeFunctionData(functionFragment: 'writeOracleEntry', values?: undefined): string;
 
-  decodeFunctionResult(functionFragment: "ONE_IN_WAD", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'ONE_IN_WAD', data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "UNDERLYING_YIELD_BEARING_PROTOCOL_ID",
-    data: BytesLike
+    functionFragment: 'UNDERLYING_YIELD_BEARING_PROTOCOL_ID',
+    data: BytesLike,
   ): Result;
+  decodeFunctionResult(functionFragment: 'aaveLendingPool', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'currentBlockSlope', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'getApyFrom', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'getApyFromTo', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'getBlockSlope', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'getCurrentRateInRay', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'getLastRateSlope', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'getLastUpdatedRate', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'getRateFrom', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'getRateFromTo', data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "aaveLendingPool",
-    data: BytesLike
+    functionFragment: 'increaseObservationCardinalityNext',
+    data: BytesLike,
   ): Result;
-  decodeFunctionResult(
-    functionFragment: "currentBlockSlope",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(functionFragment: "getApyFrom", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "getApyFromTo",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getBlockSlope",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getCurrentRateInRay",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getLastRateSlope",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getLastUpdatedRate",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getRateFrom",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getRateFromTo",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "increaseObservationCardinalityNext",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "interpolateRateValue",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "lastUpdatedBlock",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "minSecondsSinceLastUpdate",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "observations",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(functionFragment: "oracleVars", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "renounceOwnership",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "setMinSecondsSinceLastUpdate",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "settlementRateCache",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "transferOwnership",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(functionFragment: "underlying", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "variableFactor",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "variableFactorNoCache",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "writeOracleEntry",
-    data: BytesLike
-  ): Result;
+  decodeFunctionResult(functionFragment: 'interpolateRateValue', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'lastUpdatedBlock', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'minSecondsSinceLastUpdate', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'observations', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'oracleVars', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'owner', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'renounceOwnership', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'setMinSecondsSinceLastUpdate', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'settlementRateCache', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'transferOwnership', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'underlying', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'variableFactor', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'variableFactorNoCache', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'writeOracleEntry', data: BytesLike): Result;
 
   events: {
-    "MinSecondsSinceLastUpdate(uint256)": EventFragment;
-    "OracleBufferUpdate(uint256,address,uint16,uint32,uint256,uint16,uint16)": EventFragment;
-    "OwnershipTransferred(address,address)": EventFragment;
-    "RateCardinalityNext(uint16)": EventFragment;
+    'MinSecondsSinceLastUpdate(uint256)': EventFragment;
+    'OracleBufferUpdate(uint256,address,uint16,uint32,uint256,uint16,uint16)': EventFragment;
+    'OwnershipTransferred(address,address)': EventFragment;
+    'RateCardinalityNext(uint16)': EventFragment;
   };
 
-  getEvent(nameOrSignatureOrTopic: "MinSecondsSinceLastUpdate"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "OracleBufferUpdate"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "OwnershipTransferred"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "RateCardinalityNext"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: 'MinSecondsSinceLastUpdate'): EventFragment;
+  getEvent(nameOrSignatureOrTopic: 'OracleBufferUpdate'): EventFragment;
+  getEvent(nameOrSignatureOrTopic: 'OwnershipTransferred'): EventFragment;
+  getEvent(nameOrSignatureOrTopic: 'RateCardinalityNext'): EventFragment;
 }
 
 export type MinSecondsSinceLastUpdateEvent = TypedEvent<
@@ -293,26 +182,26 @@ export class AaveRateOracle extends BaseContract {
   deployed(): Promise<this>;
 
   listeners<EventArgsArray extends Array<any>, EventArgsObject>(
-    eventFilter?: TypedEventFilter<EventArgsArray, EventArgsObject>
+    eventFilter?: TypedEventFilter<EventArgsArray, EventArgsObject>,
   ): Array<TypedListener<EventArgsArray, EventArgsObject>>;
   off<EventArgsArray extends Array<any>, EventArgsObject>(
     eventFilter: TypedEventFilter<EventArgsArray, EventArgsObject>,
-    listener: TypedListener<EventArgsArray, EventArgsObject>
+    listener: TypedListener<EventArgsArray, EventArgsObject>,
   ): this;
   on<EventArgsArray extends Array<any>, EventArgsObject>(
     eventFilter: TypedEventFilter<EventArgsArray, EventArgsObject>,
-    listener: TypedListener<EventArgsArray, EventArgsObject>
+    listener: TypedListener<EventArgsArray, EventArgsObject>,
   ): this;
   once<EventArgsArray extends Array<any>, EventArgsObject>(
     eventFilter: TypedEventFilter<EventArgsArray, EventArgsObject>,
-    listener: TypedListener<EventArgsArray, EventArgsObject>
+    listener: TypedListener<EventArgsArray, EventArgsObject>,
   ): this;
   removeListener<EventArgsArray extends Array<any>, EventArgsObject>(
     eventFilter: TypedEventFilter<EventArgsArray, EventArgsObject>,
-    listener: TypedListener<EventArgsArray, EventArgsObject>
+    listener: TypedListener<EventArgsArray, EventArgsObject>,
   ): this;
   removeAllListeners<EventArgsArray extends Array<any>, EventArgsObject>(
-    eventFilter: TypedEventFilter<EventArgsArray, EventArgsObject>
+    eventFilter: TypedEventFilter<EventArgsArray, EventArgsObject>,
   ): this;
 
   listeners(eventName?: string): Array<Listener>;
@@ -325,7 +214,7 @@ export class AaveRateOracle extends BaseContract {
   queryFilter<EventArgsArray extends Array<any>, EventArgsObject>(
     event: TypedEventFilter<EventArgsArray, EventArgsObject>,
     fromBlockOrBlockhash?: string | number | undefined,
-    toBlock?: string | number | undefined
+    toBlock?: string | number | undefined,
   ): Promise<Array<TypedEvent<EventArgsArray & EventArgsObject>>>;
 
   interface: AaveRateOracleInterface;
@@ -333,83 +222,70 @@ export class AaveRateOracle extends BaseContract {
   functions: {
     ONE_IN_WAD(overrides?: CallOverrides): Promise<[BigNumber]>;
 
-    UNDERLYING_YIELD_BEARING_PROTOCOL_ID(
-      overrides?: CallOverrides
-    ): Promise<[number]>;
+    UNDERLYING_YIELD_BEARING_PROTOCOL_ID(overrides?: CallOverrides): Promise<[number]>;
 
     aaveLendingPool(overrides?: CallOverrides): Promise<[string]>;
 
     currentBlockSlope(
-      overrides?: CallOverrides
-    ): Promise<
-      [number, BigNumber] & { timeChange: number; blockChange: BigNumber }
-    >;
+      overrides?: CallOverrides,
+    ): Promise<[number, BigNumber] & { timeChange: number; blockChange: BigNumber }>;
 
     getApyFrom(
       from: BigNumberish,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<[BigNumber] & { apyFromToWad: BigNumber }>;
 
     getApyFromTo(
       from: BigNumberish,
       to: BigNumberish,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<[BigNumber] & { apyFromToWad: BigNumber }>;
 
     getBlockSlope(
-      overrides?: CallOverrides
-    ): Promise<
-      [BigNumber, number] & { blockChange: BigNumber; timeChange: number }
-    >;
+      overrides?: CallOverrides,
+    ): Promise<[BigNumber, number] & { blockChange: BigNumber; timeChange: number }>;
 
     getCurrentRateInRay(
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<[BigNumber] & { currentRate: BigNumber }>;
 
     getLastRateSlope(
-      overrides?: CallOverrides
-    ): Promise<
-      [BigNumber, number] & { rateChange: BigNumber; timeChange: number }
-    >;
+      overrides?: CallOverrides,
+    ): Promise<[BigNumber, number] & { rateChange: BigNumber; timeChange: number }>;
 
     getLastUpdatedRate(
-      overrides?: CallOverrides
-    ): Promise<
-      [number, BigNumber] & { timestamp: number; resultRay: BigNumber }
-    >;
+      overrides?: CallOverrides,
+    ): Promise<[number, BigNumber] & { timestamp: number; resultRay: BigNumber }>;
 
-    getRateFrom(
-      _from: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<[BigNumber]>;
+    getRateFrom(_from: BigNumberish, overrides?: CallOverrides): Promise<[BigNumber]>;
 
     getRateFromTo(
       _from: BigNumberish,
       _to: BigNumberish,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<[BigNumber]>;
 
     increaseObservationCardinalityNext(
       rateCardinalityNext: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<ContractTransaction>;
 
     interpolateRateValue(
       beforeOrAtRateValueRay: BigNumberish,
       apyFromBeforeOrAtToAtOrAfterWad: BigNumberish,
       timeDeltaBeforeOrAtToQueriedTimeWad: BigNumberish,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<[BigNumber] & { rateValueRay: BigNumber }>;
 
     lastUpdatedBlock(
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<[number, BigNumber] & { timestamp: number; number: BigNumber }>;
 
     minSecondsSinceLastUpdate(overrides?: CallOverrides): Promise<[BigNumber]>;
 
     observations(
       arg0: BigNumberish,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<
       [number, BigNumber, boolean] & {
         blockTimestamp: number;
@@ -418,9 +294,7 @@ export class AaveRateOracle extends BaseContract {
       }
     >;
 
-    oracleVars(
-      overrides?: CallOverrides
-    ): Promise<
+    oracleVars(overrides?: CallOverrides): Promise<
       [number, number, number] & {
         rateIndex: number;
         rateCardinality: number;
@@ -431,23 +305,23 @@ export class AaveRateOracle extends BaseContract {
     owner(overrides?: CallOverrides): Promise<[string]>;
 
     renounceOwnership(
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<ContractTransaction>;
 
     setMinSecondsSinceLastUpdate(
       _minSecondsSinceLastUpdate: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<ContractTransaction>;
 
     settlementRateCache(
       arg0: BigNumberish,
       arg1: BigNumberish,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<[BigNumber]>;
 
     transferOwnership(
       newOwner: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<ContractTransaction>;
 
     underlying(overrides?: CallOverrides): Promise<[string]>;
@@ -455,92 +329,77 @@ export class AaveRateOracle extends BaseContract {
     variableFactor(
       termStartTimestampInWeiSeconds: BigNumberish,
       termEndTimestampInWeiSeconds: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<ContractTransaction>;
 
     variableFactorNoCache(
       termStartTimestampInWeiSeconds: BigNumberish,
       termEndTimestampInWeiSeconds: BigNumberish,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<[BigNumber] & { resultWad: BigNumber }>;
 
     writeOracleEntry(
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<ContractTransaction>;
   };
 
   ONE_IN_WAD(overrides?: CallOverrides): Promise<BigNumber>;
 
-  UNDERLYING_YIELD_BEARING_PROTOCOL_ID(
-    overrides?: CallOverrides
-  ): Promise<number>;
+  UNDERLYING_YIELD_BEARING_PROTOCOL_ID(overrides?: CallOverrides): Promise<number>;
 
   aaveLendingPool(overrides?: CallOverrides): Promise<string>;
 
   currentBlockSlope(
-    overrides?: CallOverrides
-  ): Promise<
-    [number, BigNumber] & { timeChange: number; blockChange: BigNumber }
-  >;
+    overrides?: CallOverrides,
+  ): Promise<[number, BigNumber] & { timeChange: number; blockChange: BigNumber }>;
 
   getApyFrom(from: BigNumberish, overrides?: CallOverrides): Promise<BigNumber>;
 
-  getApyFromTo(
-    from: BigNumberish,
-    to: BigNumberish,
-    overrides?: CallOverrides
-  ): Promise<BigNumber>;
+  getApyFromTo(from: BigNumberish, to: BigNumberish, overrides?: CallOverrides): Promise<BigNumber>;
 
   getBlockSlope(
-    overrides?: CallOverrides
-  ): Promise<
-    [BigNumber, number] & { blockChange: BigNumber; timeChange: number }
-  >;
+    overrides?: CallOverrides,
+  ): Promise<[BigNumber, number] & { blockChange: BigNumber; timeChange: number }>;
 
   getCurrentRateInRay(overrides?: CallOverrides): Promise<BigNumber>;
 
   getLastRateSlope(
-    overrides?: CallOverrides
-  ): Promise<
-    [BigNumber, number] & { rateChange: BigNumber; timeChange: number }
-  >;
+    overrides?: CallOverrides,
+  ): Promise<[BigNumber, number] & { rateChange: BigNumber; timeChange: number }>;
 
   getLastUpdatedRate(
-    overrides?: CallOverrides
+    overrides?: CallOverrides,
   ): Promise<[number, BigNumber] & { timestamp: number; resultRay: BigNumber }>;
 
-  getRateFrom(
-    _from: BigNumberish,
-    overrides?: CallOverrides
-  ): Promise<BigNumber>;
+  getRateFrom(_from: BigNumberish, overrides?: CallOverrides): Promise<BigNumber>;
 
   getRateFromTo(
     _from: BigNumberish,
     _to: BigNumberish,
-    overrides?: CallOverrides
+    overrides?: CallOverrides,
   ): Promise<BigNumber>;
 
   increaseObservationCardinalityNext(
     rateCardinalityNext: BigNumberish,
-    overrides?: Overrides & { from?: string | Promise<string> }
+    overrides?: Overrides & { from?: string | Promise<string> },
   ): Promise<ContractTransaction>;
 
   interpolateRateValue(
     beforeOrAtRateValueRay: BigNumberish,
     apyFromBeforeOrAtToAtOrAfterWad: BigNumberish,
     timeDeltaBeforeOrAtToQueriedTimeWad: BigNumberish,
-    overrides?: CallOverrides
+    overrides?: CallOverrides,
   ): Promise<BigNumber>;
 
   lastUpdatedBlock(
-    overrides?: CallOverrides
+    overrides?: CallOverrides,
   ): Promise<[number, BigNumber] & { timestamp: number; number: BigNumber }>;
 
   minSecondsSinceLastUpdate(overrides?: CallOverrides): Promise<BigNumber>;
 
   observations(
     arg0: BigNumberish,
-    overrides?: CallOverrides
+    overrides?: CallOverrides,
   ): Promise<
     [number, BigNumber, boolean] & {
       blockTimestamp: number;
@@ -549,9 +408,7 @@ export class AaveRateOracle extends BaseContract {
     }
   >;
 
-  oracleVars(
-    overrides?: CallOverrides
-  ): Promise<
+  oracleVars(overrides?: CallOverrides): Promise<
     [number, number, number] & {
       rateIndex: number;
       rateCardinality: number;
@@ -562,23 +419,23 @@ export class AaveRateOracle extends BaseContract {
   owner(overrides?: CallOverrides): Promise<string>;
 
   renounceOwnership(
-    overrides?: Overrides & { from?: string | Promise<string> }
+    overrides?: Overrides & { from?: string | Promise<string> },
   ): Promise<ContractTransaction>;
 
   setMinSecondsSinceLastUpdate(
     _minSecondsSinceLastUpdate: BigNumberish,
-    overrides?: Overrides & { from?: string | Promise<string> }
+    overrides?: Overrides & { from?: string | Promise<string> },
   ): Promise<ContractTransaction>;
 
   settlementRateCache(
     arg0: BigNumberish,
     arg1: BigNumberish,
-    overrides?: CallOverrides
+    overrides?: CallOverrides,
   ): Promise<BigNumber>;
 
   transferOwnership(
     newOwner: string,
-    overrides?: Overrides & { from?: string | Promise<string> }
+    overrides?: Overrides & { from?: string | Promise<string> },
   ): Promise<ContractTransaction>;
 
   underlying(overrides?: CallOverrides): Promise<string>;
@@ -586,97 +443,81 @@ export class AaveRateOracle extends BaseContract {
   variableFactor(
     termStartTimestampInWeiSeconds: BigNumberish,
     termEndTimestampInWeiSeconds: BigNumberish,
-    overrides?: Overrides & { from?: string | Promise<string> }
+    overrides?: Overrides & { from?: string | Promise<string> },
   ): Promise<ContractTransaction>;
 
   variableFactorNoCache(
     termStartTimestampInWeiSeconds: BigNumberish,
     termEndTimestampInWeiSeconds: BigNumberish,
-    overrides?: CallOverrides
+    overrides?: CallOverrides,
   ): Promise<BigNumber>;
 
   writeOracleEntry(
-    overrides?: Overrides & { from?: string | Promise<string> }
+    overrides?: Overrides & { from?: string | Promise<string> },
   ): Promise<ContractTransaction>;
 
   callStatic: {
     ONE_IN_WAD(overrides?: CallOverrides): Promise<BigNumber>;
 
-    UNDERLYING_YIELD_BEARING_PROTOCOL_ID(
-      overrides?: CallOverrides
-    ): Promise<number>;
+    UNDERLYING_YIELD_BEARING_PROTOCOL_ID(overrides?: CallOverrides): Promise<number>;
 
     aaveLendingPool(overrides?: CallOverrides): Promise<string>;
 
     currentBlockSlope(
-      overrides?: CallOverrides
-    ): Promise<
-      [number, BigNumber] & { timeChange: number; blockChange: BigNumber }
-    >;
+      overrides?: CallOverrides,
+    ): Promise<[number, BigNumber] & { timeChange: number; blockChange: BigNumber }>;
 
-    getApyFrom(
-      from: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
+    getApyFrom(from: BigNumberish, overrides?: CallOverrides): Promise<BigNumber>;
 
     getApyFromTo(
       from: BigNumberish,
       to: BigNumberish,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<BigNumber>;
 
     getBlockSlope(
-      overrides?: CallOverrides
-    ): Promise<
-      [BigNumber, number] & { blockChange: BigNumber; timeChange: number }
-    >;
+      overrides?: CallOverrides,
+    ): Promise<[BigNumber, number] & { blockChange: BigNumber; timeChange: number }>;
 
     getCurrentRateInRay(overrides?: CallOverrides): Promise<BigNumber>;
 
     getLastRateSlope(
-      overrides?: CallOverrides
-    ): Promise<
-      [BigNumber, number] & { rateChange: BigNumber; timeChange: number }
-    >;
+      overrides?: CallOverrides,
+    ): Promise<[BigNumber, number] & { rateChange: BigNumber; timeChange: number }>;
 
     getLastUpdatedRate(
-      overrides?: CallOverrides
-    ): Promise<
-      [number, BigNumber] & { timestamp: number; resultRay: BigNumber }
-    >;
+      overrides?: CallOverrides,
+    ): Promise<[number, BigNumber] & { timestamp: number; resultRay: BigNumber }>;
 
-    getRateFrom(
-      _from: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
+    getRateFrom(_from: BigNumberish, overrides?: CallOverrides): Promise<BigNumber>;
 
     getRateFromTo(
       _from: BigNumberish,
       _to: BigNumberish,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<BigNumber>;
 
     increaseObservationCardinalityNext(
       rateCardinalityNext: BigNumberish,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<void>;
 
     interpolateRateValue(
       beforeOrAtRateValueRay: BigNumberish,
       apyFromBeforeOrAtToAtOrAfterWad: BigNumberish,
       timeDeltaBeforeOrAtToQueriedTimeWad: BigNumberish,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<BigNumber>;
 
     lastUpdatedBlock(
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<[number, BigNumber] & { timestamp: number; number: BigNumber }>;
 
     minSecondsSinceLastUpdate(overrides?: CallOverrides): Promise<BigNumber>;
 
     observations(
       arg0: BigNumberish,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<
       [number, BigNumber, boolean] & {
         blockTimestamp: number;
@@ -685,9 +526,7 @@ export class AaveRateOracle extends BaseContract {
       }
     >;
 
-    oracleVars(
-      overrides?: CallOverrides
-    ): Promise<
+    oracleVars(overrides?: CallOverrides): Promise<
       [number, number, number] & {
         rateIndex: number;
         rateCardinality: number;
@@ -701,54 +540,51 @@ export class AaveRateOracle extends BaseContract {
 
     setMinSecondsSinceLastUpdate(
       _minSecondsSinceLastUpdate: BigNumberish,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<void>;
 
     settlementRateCache(
       arg0: BigNumberish,
       arg1: BigNumberish,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<BigNumber>;
 
-    transferOwnership(
-      newOwner: string,
-      overrides?: CallOverrides
-    ): Promise<void>;
+    transferOwnership(newOwner: string, overrides?: CallOverrides): Promise<void>;
 
     underlying(overrides?: CallOverrides): Promise<string>;
 
     variableFactor(
       termStartTimestampInWeiSeconds: BigNumberish,
       termEndTimestampInWeiSeconds: BigNumberish,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<BigNumber>;
 
     variableFactorNoCache(
       termStartTimestampInWeiSeconds: BigNumberish,
       termEndTimestampInWeiSeconds: BigNumberish,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<BigNumber>;
 
     writeOracleEntry(overrides?: CallOverrides): Promise<void>;
   };
 
   filters: {
-    "MinSecondsSinceLastUpdate(uint256)"(
-      _minSecondsSinceLastUpdate?: null
+    'MinSecondsSinceLastUpdate(uint256)'(
+      _minSecondsSinceLastUpdate?: null,
     ): TypedEventFilter<[BigNumber], { _minSecondsSinceLastUpdate: BigNumber }>;
 
     MinSecondsSinceLastUpdate(
-      _minSecondsSinceLastUpdate?: null
+      _minSecondsSinceLastUpdate?: null,
     ): TypedEventFilter<[BigNumber], { _minSecondsSinceLastUpdate: BigNumber }>;
 
-    "OracleBufferUpdate(uint256,address,uint16,uint32,uint256,uint16,uint16)"(
+    'OracleBufferUpdate(uint256,address,uint16,uint32,uint256,uint16,uint16)'(
       blockTimestampScaled?: null,
       source?: null,
       index?: null,
       blockTimestamp?: null,
       observedValue?: null,
       cardinality?: null,
-      cardinalityNext?: null
+      cardinalityNext?: null,
     ): TypedEventFilter<
       [BigNumber, string, number, number, BigNumber, number, number],
       {
@@ -769,7 +605,7 @@ export class AaveRateOracle extends BaseContract {
       blockTimestamp?: null,
       observedValue?: null,
       cardinality?: null,
-      cardinalityNext?: null
+      cardinalityNext?: null,
     ): TypedEventFilter<
       [BigNumber, string, number, number, BigNumber, number, number],
       {
@@ -783,51 +619,40 @@ export class AaveRateOracle extends BaseContract {
       }
     >;
 
-    "OwnershipTransferred(address,address)"(
+    'OwnershipTransferred(address,address)'(
       previousOwner?: string | null,
-      newOwner?: string | null
-    ): TypedEventFilter<
-      [string, string],
-      { previousOwner: string; newOwner: string }
-    >;
+      newOwner?: string | null,
+    ): TypedEventFilter<[string, string], { previousOwner: string; newOwner: string }>;
 
     OwnershipTransferred(
       previousOwner?: string | null,
-      newOwner?: string | null
-    ): TypedEventFilter<
-      [string, string],
-      { previousOwner: string; newOwner: string }
-    >;
+      newOwner?: string | null,
+    ): TypedEventFilter<[string, string], { previousOwner: string; newOwner: string }>;
 
-    "RateCardinalityNext(uint16)"(
-      observationCardinalityNextNew?: null
+    'RateCardinalityNext(uint16)'(
+      observationCardinalityNextNew?: null,
     ): TypedEventFilter<[number], { observationCardinalityNextNew: number }>;
 
     RateCardinalityNext(
-      observationCardinalityNextNew?: null
+      observationCardinalityNextNew?: null,
     ): TypedEventFilter<[number], { observationCardinalityNextNew: number }>;
   };
 
   estimateGas: {
     ONE_IN_WAD(overrides?: CallOverrides): Promise<BigNumber>;
 
-    UNDERLYING_YIELD_BEARING_PROTOCOL_ID(
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
+    UNDERLYING_YIELD_BEARING_PROTOCOL_ID(overrides?: CallOverrides): Promise<BigNumber>;
 
     aaveLendingPool(overrides?: CallOverrides): Promise<BigNumber>;
 
     currentBlockSlope(overrides?: CallOverrides): Promise<BigNumber>;
 
-    getApyFrom(
-      from: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
+    getApyFrom(from: BigNumberish, overrides?: CallOverrides): Promise<BigNumber>;
 
     getApyFromTo(
       from: BigNumberish,
       to: BigNumberish,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<BigNumber>;
 
     getBlockSlope(overrides?: CallOverrides): Promise<BigNumber>;
@@ -838,60 +663,54 @@ export class AaveRateOracle extends BaseContract {
 
     getLastUpdatedRate(overrides?: CallOverrides): Promise<BigNumber>;
 
-    getRateFrom(
-      _from: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
+    getRateFrom(_from: BigNumberish, overrides?: CallOverrides): Promise<BigNumber>;
 
     getRateFromTo(
       _from: BigNumberish,
       _to: BigNumberish,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<BigNumber>;
 
     increaseObservationCardinalityNext(
       rateCardinalityNext: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<BigNumber>;
 
     interpolateRateValue(
       beforeOrAtRateValueRay: BigNumberish,
       apyFromBeforeOrAtToAtOrAfterWad: BigNumberish,
       timeDeltaBeforeOrAtToQueriedTimeWad: BigNumberish,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<BigNumber>;
 
     lastUpdatedBlock(overrides?: CallOverrides): Promise<BigNumber>;
 
     minSecondsSinceLastUpdate(overrides?: CallOverrides): Promise<BigNumber>;
 
-    observations(
-      arg0: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
+    observations(arg0: BigNumberish, overrides?: CallOverrides): Promise<BigNumber>;
 
     oracleVars(overrides?: CallOverrides): Promise<BigNumber>;
 
     owner(overrides?: CallOverrides): Promise<BigNumber>;
 
     renounceOwnership(
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<BigNumber>;
 
     setMinSecondsSinceLastUpdate(
       _minSecondsSinceLastUpdate: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<BigNumber>;
 
     settlementRateCache(
       arg0: BigNumberish,
       arg1: BigNumberish,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<BigNumber>;
 
     transferOwnership(
       newOwner: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<BigNumber>;
 
     underlying(overrides?: CallOverrides): Promise<BigNumber>;
@@ -899,110 +718,93 @@ export class AaveRateOracle extends BaseContract {
     variableFactor(
       termStartTimestampInWeiSeconds: BigNumberish,
       termEndTimestampInWeiSeconds: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<BigNumber>;
 
     variableFactorNoCache(
       termStartTimestampInWeiSeconds: BigNumberish,
       termEndTimestampInWeiSeconds: BigNumberish,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<BigNumber>;
 
     writeOracleEntry(
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<BigNumber>;
   };
 
   populateTransaction: {
     ONE_IN_WAD(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
-    UNDERLYING_YIELD_BEARING_PROTOCOL_ID(
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
+    UNDERLYING_YIELD_BEARING_PROTOCOL_ID(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     aaveLendingPool(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     currentBlockSlope(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
-    getApyFrom(
-      from: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
+    getApyFrom(from: BigNumberish, overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     getApyFromTo(
       from: BigNumberish,
       to: BigNumberish,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<PopulatedTransaction>;
 
     getBlockSlope(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
-    getCurrentRateInRay(
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
+    getCurrentRateInRay(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     getLastRateSlope(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
-    getLastUpdatedRate(
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
+    getLastUpdatedRate(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
-    getRateFrom(
-      _from: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
+    getRateFrom(_from: BigNumberish, overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     getRateFromTo(
       _from: BigNumberish,
       _to: BigNumberish,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<PopulatedTransaction>;
 
     increaseObservationCardinalityNext(
       rateCardinalityNext: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<PopulatedTransaction>;
 
     interpolateRateValue(
       beforeOrAtRateValueRay: BigNumberish,
       apyFromBeforeOrAtToAtOrAfterWad: BigNumberish,
       timeDeltaBeforeOrAtToQueriedTimeWad: BigNumberish,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<PopulatedTransaction>;
 
     lastUpdatedBlock(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
-    minSecondsSinceLastUpdate(
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
+    minSecondsSinceLastUpdate(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
-    observations(
-      arg0: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
+    observations(arg0: BigNumberish, overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     oracleVars(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     owner(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     renounceOwnership(
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<PopulatedTransaction>;
 
     setMinSecondsSinceLastUpdate(
       _minSecondsSinceLastUpdate: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<PopulatedTransaction>;
 
     settlementRateCache(
       arg0: BigNumberish,
       arg1: BigNumberish,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<PopulatedTransaction>;
 
     transferOwnership(
       newOwner: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<PopulatedTransaction>;
 
     underlying(overrides?: CallOverrides): Promise<PopulatedTransaction>;
@@ -1010,17 +812,17 @@ export class AaveRateOracle extends BaseContract {
     variableFactor(
       termStartTimestampInWeiSeconds: BigNumberish,
       termEndTimestampInWeiSeconds: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<PopulatedTransaction>;
 
     variableFactorNoCache(
       termStartTimestampInWeiSeconds: BigNumberish,
       termEndTimestampInWeiSeconds: BigNumberish,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<PopulatedTransaction>;
 
     writeOracleEntry(
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<PopulatedTransaction>;
   };
 }

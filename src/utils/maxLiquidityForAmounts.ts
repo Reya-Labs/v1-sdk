@@ -20,6 +20,7 @@ function maxLiquidityForAmount0Imprecise(
   amount0: BigIntish,
 ): JSBI {
   if (JSBI.greaterThan(sqrtRatioAX96, sqrtRatioBX96)) {
+    // eslint-disable-next-line no-param-reassign
     [sqrtRatioAX96, sqrtRatioBX96] = [sqrtRatioBX96, sqrtRatioAX96];
   }
   const intermediate = JSBI.divide(JSBI.multiply(sqrtRatioAX96, sqrtRatioBX96), Q96);
@@ -43,6 +44,7 @@ function maxLiquidityForAmount0Precise(
   amount0: BigIntish,
 ): JSBI {
   if (JSBI.greaterThan(sqrtRatioAX96, sqrtRatioBX96)) {
+    // eslint-disable-next-line no-param-reassign
     [sqrtRatioAX96, sqrtRatioBX96] = [sqrtRatioBX96, sqrtRatioAX96];
   }
 
@@ -68,6 +70,7 @@ function maxLiquidityForAmount1(
   amount1: BigIntish,
 ): JSBI {
   if (JSBI.greaterThan(sqrtRatioAX96, sqrtRatioBX96)) {
+    // eslint-disable-next-line no-param-reassign
     [sqrtRatioAX96, sqrtRatioBX96] = [sqrtRatioBX96, sqrtRatioAX96];
   }
   return JSBI.divide(
@@ -96,6 +99,7 @@ export function maxLiquidityForAmounts(
   useFullPrecision: boolean,
 ): JSBI {
   if (JSBI.greaterThan(sqrtRatioAX96, sqrtRatioBX96)) {
+    // eslint-disable-next-line no-param-reassign
     [sqrtRatioAX96, sqrtRatioBX96] = [sqrtRatioBX96, sqrtRatioAX96];
   }
 
@@ -105,11 +109,11 @@ export function maxLiquidityForAmounts(
 
   if (JSBI.lessThanOrEqual(sqrtRatioCurrentX96, sqrtRatioAX96)) {
     return maxLiquidityForAmount0(sqrtRatioAX96, sqrtRatioBX96, amount0);
-  } else if (JSBI.lessThan(sqrtRatioCurrentX96, sqrtRatioBX96)) {
+  }
+  if (JSBI.lessThan(sqrtRatioCurrentX96, sqrtRatioBX96)) {
     const liquidity0 = maxLiquidityForAmount0(sqrtRatioCurrentX96, sqrtRatioBX96, amount0);
     const liquidity1 = maxLiquidityForAmount1(sqrtRatioAX96, sqrtRatioCurrentX96, amount1);
     return JSBI.lessThan(liquidity0, liquidity1) ? liquidity0 : liquidity1;
-  } else {
-    return maxLiquidityForAmount1(sqrtRatioAX96, sqrtRatioBX96, amount1);
   }
+  return maxLiquidityForAmount1(sqrtRatioAX96, sqrtRatioBX96, amount1);
 }

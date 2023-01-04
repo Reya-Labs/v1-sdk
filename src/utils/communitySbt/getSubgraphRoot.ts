@@ -1,5 +1,4 @@
-import { ApolloClient, gql, HttpLink, InMemoryCache } from '@apollo/client';
-import fetch from 'cross-fetch';
+import { gql } from '@apollo/client';
 import { Bytes } from 'ethers';
 import { getApolloClient } from './getApolloClient';
 
@@ -31,7 +30,7 @@ export async function getRootFromSubgraph(
   const data = await client.query({
     query: gql(rootsQuery),
     variables: {
-      timestamp: timestamp,
+      timestamp,
     },
   });
 

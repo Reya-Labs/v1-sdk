@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { BigNumber, BigNumberish } from 'ethers';
 import { toBn } from 'evm-bn';
 import { expect } from 'chai';

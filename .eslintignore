@@ -1,5 +1,0 @@
-src/entities/borrowAMM.ts
-src/entities/communitySBT.ts
-*.spec.ts
-src/utils/communitySbt/*
-src/entities/fractions/*

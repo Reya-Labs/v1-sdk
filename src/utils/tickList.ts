@@ -88,14 +88,13 @@ export abstract class TickList {
       }
       const index = this.binarySearch(ticks, tick);
       return ticks[index];
-    } else {
-      invariant(!this.isAtOrAboveLargest(ticks, tick), 'AT_OR_ABOVE_LARGEST');
-      if (this.isBelowSmallest(ticks, tick)) {
-        return ticks[0];
-      }
-      const index = this.binarySearch(ticks, tick);
-      return ticks[index + 1];
     }
+    invariant(!this.isAtOrAboveLargest(ticks, tick), 'AT_OR_ABOVE_LARGEST');
+    if (this.isBelowSmallest(ticks, tick)) {
+      return ticks[0];
+    }
+    const index = this.binarySearch(ticks, tick);
+    return ticks[index + 1];
   }
 
   public static nextInitializedTickWithinOneWord(
@@ -117,17 +116,16 @@ export abstract class TickList {
       const index = TickList.nextInitializedTick(ticks, tick, lte).index;
       const nextInitializedTick = Math.max(minimum, index);
       return [nextInitializedTick, nextInitializedTick === index];
-    } else {
-      const wordPos = (compressed + 1) >> 8;
-      const maximum = (((wordPos + 1) << 8) - 1) * tickSpacing;
-
-      if (this.isAtOrAboveLargest(ticks, tick)) {
-        return [maximum, false];
-      }
-
-      const index = this.nextInitializedTick(ticks, tick, lte).index;
-      const nextInitializedTick = Math.min(maximum, index);
-      return [nextInitializedTick, nextInitializedTick === index];
     }
+    const wordPos = (compressed + 1) >> 8;
+    const maximum = (((wordPos + 1) << 8) - 1) * tickSpacing;
+
+    if (this.isAtOrAboveLargest(ticks, tick)) {
+      return [maximum, false];
+    }
+
+    const index = this.nextInitializedTick(ticks, tick, lte).index;
+    const nextInitializedTick = Math.min(maximum, index);
+    return [nextInitializedTick, nextInitializedTick === index];
   }
 }

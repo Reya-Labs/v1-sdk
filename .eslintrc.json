@@ -4,10 +4,12 @@
     "plugin:@typescript-eslint/recommended",
     "airbnb",
     "plugin:prettier/recommended",
-    "prettier"
+    "prettier",
+    "plugin:import/recommended",
+    "plugin:import/typescript"
   ],
   "parser": "@typescript-eslint/parser",
-  "plugins": ["@typescript-eslint", "prettier"],
+  "plugins": ["unused-imports", "@typescript-eslint", "prettier"],
   "env": {
     "jest": true
   },
@@ -21,12 +23,29 @@
     "prettier/prettier": "error",
     "@typescript-eslint/indent": "off",
     "prefer-destructuring": "off",
-    "@typescript-eslint/no-unused-vars": "error",
     "no-underscore-dangle": "warn",
     "@typescript-eslint/no-explicit-any": "warn",
     "no-await-in-loop": "warn",
     "no-shadow": "off",
     "@typescript-eslint/no-shadow": ["error"],
-    "no-console": ["error", { "allow": ["warn", "error"] }]
+    "no-console": ["error", { "allow": ["warn", "error"] }],
+    "unused-imports/no-unused-imports-ts": "error",
+    "camelcase": "warn",
+    "eqeqeq": "warn",
+    "no-nested-ternary": "warn",
+    "no-plusplus": "off",
+    "no-bitwise": "off",
+    "@typescript-eslint/no-empty-function": "warn",
+    "no-empty-function": "warn",
+    "no-useless-constructor": "warn",
+    "no-restricted-syntax": "warn",
+    "@typescript-eslint/no-unused-vars": "error",
+    "import/no-cycle": "warn",
+    "no-array-constructor": "warn",
+    "radix": "warn",
+    "no-use-before-define": "warn",
+    "@typescript-eslint/no-use-before-define": "warn",
+    "no-continue": "warn",
+    "class-methods-use-this": "warn"
   }
 }

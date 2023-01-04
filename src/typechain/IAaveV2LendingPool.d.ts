@@ -13,50 +13,35 @@ import {
   ContractTransaction,
   Overrides,
   CallOverrides,
-} from "ethers";
-import { BytesLike } from "@ethersproject/bytes";
-import { Listener, Provider } from "@ethersproject/providers";
-import { FunctionFragment, EventFragment, Result } from "@ethersproject/abi";
-import type { TypedEventFilter, TypedEvent, TypedListener } from "./common";
+} from 'ethers';
+import { BytesLike } from '@ethersproject/bytes';
+import { Listener, Provider } from '@ethersproject/providers';
+import { FunctionFragment, EventFragment, Result } from '@ethersproject/abi';
+import type { TypedEventFilter, TypedEvent, TypedListener } from './common';
 
 interface IAaveV2LendingPoolInterface extends ethers.utils.Interface {
   functions: {
-    "getReserveData(address)": FunctionFragment;
-    "getReserveNormalizedIncome(address)": FunctionFragment;
-    "getReserveNormalizedVariableDebt(address)": FunctionFragment;
-    "withdraw(address,uint256,address)": FunctionFragment;
+    'getReserveData(address)': FunctionFragment;
+    'getReserveNormalizedIncome(address)': FunctionFragment;
+    'getReserveNormalizedVariableDebt(address)': FunctionFragment;
+    'withdraw(address,uint256,address)': FunctionFragment;
   };
 
+  encodeFunctionData(functionFragment: 'getReserveData', values: [string]): string;
+  encodeFunctionData(functionFragment: 'getReserveNormalizedIncome', values: [string]): string;
   encodeFunctionData(
-    functionFragment: "getReserveData",
-    values: [string]
+    functionFragment: 'getReserveNormalizedVariableDebt',
+    values: [string],
   ): string;
-  encodeFunctionData(
-    functionFragment: "getReserveNormalizedIncome",
-    values: [string]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "getReserveNormalizedVariableDebt",
-    values: [string]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "withdraw",
-    values: [string, BigNumberish, string]
-  ): string;
+  encodeFunctionData(functionFragment: 'withdraw', values: [string, BigNumberish, string]): string;
 
+  decodeFunctionResult(functionFragment: 'getReserveData', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'getReserveNormalizedIncome', data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "getReserveData",
-    data: BytesLike
+    functionFragment: 'getReserveNormalizedVariableDebt',
+    data: BytesLike,
   ): Result;
-  decodeFunctionResult(
-    functionFragment: "getReserveNormalizedIncome",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getReserveNormalizedVariableDebt",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(functionFragment: "withdraw", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'withdraw', data: BytesLike): Result;
 
   events: {};
 }
@@ -67,26 +52,26 @@ export class IAaveV2LendingPool extends BaseContract {
   deployed(): Promise<this>;
 
   listeners<EventArgsArray extends Array<any>, EventArgsObject>(
-    eventFilter?: TypedEventFilter<EventArgsArray, EventArgsObject>
+    eventFilter?: TypedEventFilter<EventArgsArray, EventArgsObject>,
   ): Array<TypedListener<EventArgsArray, EventArgsObject>>;
   off<EventArgsArray extends Array<any>, EventArgsObject>(
     eventFilter: TypedEventFilter<EventArgsArray, EventArgsObject>,
-    listener: TypedListener<EventArgsArray, EventArgsObject>
+    listener: TypedListener<EventArgsArray, EventArgsObject>,
   ): this;
   on<EventArgsArray extends Array<any>, EventArgsObject>(
     eventFilter: TypedEventFilter<EventArgsArray, EventArgsObject>,
-    listener: TypedListener<EventArgsArray, EventArgsObject>
+    listener: TypedListener<EventArgsArray, EventArgsObject>,
   ): this;
   once<EventArgsArray extends Array<any>, EventArgsObject>(
     eventFilter: TypedEventFilter<EventArgsArray, EventArgsObject>,
-    listener: TypedListener<EventArgsArray, EventArgsObject>
+    listener: TypedListener<EventArgsArray, EventArgsObject>,
   ): this;
   removeListener<EventArgsArray extends Array<any>, EventArgsObject>(
     eventFilter: TypedEventFilter<EventArgsArray, EventArgsObject>,
-    listener: TypedListener<EventArgsArray, EventArgsObject>
+    listener: TypedListener<EventArgsArray, EventArgsObject>,
   ): this;
   removeAllListeners<EventArgsArray extends Array<any>, EventArgsObject>(
-    eventFilter: TypedEventFilter<EventArgsArray, EventArgsObject>
+    eventFilter: TypedEventFilter<EventArgsArray, EventArgsObject>,
   ): this;
 
   listeners(eventName?: string): Array<Listener>;
@@ -99,7 +84,7 @@ export class IAaveV2LendingPool extends BaseContract {
   queryFilter<EventArgsArray extends Array<any>, EventArgsObject>(
     event: TypedEventFilter<EventArgsArray, EventArgsObject>,
     fromBlockOrBlockhash?: string | number | undefined,
-    toBlock?: string | number | undefined
+    toBlock?: string | number | undefined,
   ): Promise<Array<TypedEvent<EventArgsArray & EventArgsObject>>>;
 
   interface: IAaveV2LendingPoolInterface;
@@ -107,7 +92,7 @@ export class IAaveV2LendingPool extends BaseContract {
   functions: {
     getReserveData(
       asset: string,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<
       [
         [
@@ -122,7 +107,7 @@ export class IAaveV2LendingPool extends BaseContract {
           string,
           string,
           string,
-          number
+          number,
         ] & {
           configuration: [BigNumber] & { data: BigNumber };
           liquidityIndex: BigNumber;
@@ -136,31 +121,31 @@ export class IAaveV2LendingPool extends BaseContract {
           variableDebtTokenAddress: string;
           interestRateStrategyAddress: string;
           id: number;
-        }
+        },
       ]
     >;
 
     getReserveNormalizedIncome(
       underlyingAsset: string,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<[BigNumber]>;
 
     getReserveNormalizedVariableDebt(
       underlyingAsset: string,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<[BigNumber]>;
 
     withdraw(
       asset: string,
       amount: BigNumberish,
       to: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<ContractTransaction>;
   };
 
   getReserveData(
     asset: string,
-    overrides?: CallOverrides
+    overrides?: CallOverrides,
   ): Promise<
     [
       [BigNumber] & { data: BigNumber },
@@ -174,7 +159,7 @@ export class IAaveV2LendingPool extends BaseContract {
       string,
       string,
       string,
-      number
+      number,
     ] & {
       configuration: [BigNumber] & { data: BigNumber };
       liquidityIndex: BigNumber;
@@ -193,25 +178,25 @@ export class IAaveV2LendingPool extends BaseContract {
 
   getReserveNormalizedIncome(
     underlyingAsset: string,
-    overrides?: CallOverrides
+    overrides?: CallOverrides,
   ): Promise<BigNumber>;
 
   getReserveNormalizedVariableDebt(
     underlyingAsset: string,
-    overrides?: CallOverrides
+    overrides?: CallOverrides,
   ): Promise<BigNumber>;
 
   withdraw(
     asset: string,
     amount: BigNumberish,
     to: string,
-    overrides?: Overrides & { from?: string | Promise<string> }
+    overrides?: Overrides & { from?: string | Promise<string> },
   ): Promise<ContractTransaction>;
 
   callStatic: {
     getReserveData(
       asset: string,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<
       [
         [BigNumber] & { data: BigNumber },
@@ -225,7 +210,7 @@ export class IAaveV2LendingPool extends BaseContract {
         string,
         string,
         string,
-        number
+        number,
       ] & {
         configuration: [BigNumber] & { data: BigNumber };
         liquidityIndex: BigNumber;
@@ -244,69 +229,63 @@ export class IAaveV2LendingPool extends BaseContract {
 
     getReserveNormalizedIncome(
       underlyingAsset: string,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<BigNumber>;
 
     getReserveNormalizedVariableDebt(
       underlyingAsset: string,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<BigNumber>;
 
     withdraw(
       asset: string,
       amount: BigNumberish,
       to: string,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<BigNumber>;
   };
 
   filters: {};
 
   estimateGas: {
-    getReserveData(
-      asset: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
+    getReserveData(asset: string, overrides?: CallOverrides): Promise<BigNumber>;
 
     getReserveNormalizedIncome(
       underlyingAsset: string,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<BigNumber>;
 
     getReserveNormalizedVariableDebt(
       underlyingAsset: string,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<BigNumber>;
 
     withdraw(
       asset: string,
       amount: BigNumberish,
       to: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<BigNumber>;
   };
 
   populateTransaction: {
-    getReserveData(
-      asset: string,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
+    getReserveData(asset: string, overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     getReserveNormalizedIncome(
       underlyingAsset: string,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<PopulatedTransaction>;
 
     getReserveNormalizedVariableDebt(
       underlyingAsset: string,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<PopulatedTransaction>;
 
     withdraw(
       asset: string,
       amount: BigNumberish,
       to: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<PopulatedTransaction>;
   };
 }
