@@ -2,9 +2,9 @@
 /* tslint:disable */
 /* eslint-disable */
 
-import { Contract, Signer, utils } from 'ethers';
-import type { Provider } from '@ethersproject/providers';
-import type { IERC5192, IERC5192Interface } from '../../contracts/IERC5192';
+import { Contract, Signer, utils } from "ethers";
+import type { Provider } from "@ethersproject/providers";
+import type { IERC5192, IERC5192Interface } from "../../contracts/IERC5192";
 
 const _abi = [
   {
@@ -12,45 +12,45 @@ const _abi = [
     inputs: [
       {
         indexed: false,
-        internalType: 'uint256',
-        name: 'tokenId',
-        type: 'uint256',
+        internalType: "uint256",
+        name: "tokenId",
+        type: "uint256",
       },
     ],
-    name: 'Locked',
-    type: 'event',
+    name: "Locked",
+    type: "event",
   },
   {
     anonymous: false,
     inputs: [
       {
         indexed: false,
-        internalType: 'uint256',
-        name: 'tokenId',
-        type: 'uint256',
+        internalType: "uint256",
+        name: "tokenId",
+        type: "uint256",
       },
     ],
-    name: 'Unlocked',
-    type: 'event',
+    name: "Unlocked",
+    type: "event",
   },
   {
     inputs: [
       {
-        internalType: 'uint256',
-        name: 'tokenId',
-        type: 'uint256',
+        internalType: "uint256",
+        name: "tokenId",
+        type: "uint256",
       },
     ],
-    name: 'locked',
+    name: "locked",
     outputs: [
       {
-        internalType: 'bool',
-        name: '',
-        type: 'bool',
+        internalType: "bool",
+        name: "",
+        type: "bool",
       },
     ],
-    stateMutability: 'view',
-    type: 'function',
+    stateMutability: "view",
+    type: "function",
   },
 ];
 
@@ -59,7 +59,10 @@ export class IERC5192__factory {
   static createInterface(): IERC5192Interface {
     return new utils.Interface(_abi) as IERC5192Interface;
   }
-  static connect(address: string, signerOrProvider: Signer | Provider): IERC5192 {
+  static connect(
+    address: string,
+    signerOrProvider: Signer | Provider
+  ): IERC5192 {
     return new Contract(address, _abi, signerOrProvider) as IERC5192;
   }
 }
