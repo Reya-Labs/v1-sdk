@@ -1,9 +1,6 @@
 import JSBI from 'jsbi';
-import {providers } from 'ethers';
-import { BigNumber, Signer } from 'ethers';
-import {
-  ONE_YEAR_IN_SECONDS,
-} from '../constants';
+import { providers, BigNumber, Signer } from 'ethers';
+import { ONE_YEAR_IN_SECONDS } from '../constants';
 import {
   BaseRateOracle__factory,
   ICToken__factory as cTokenFactory,
@@ -29,7 +26,7 @@ export type BorrowAMMConstructorArgs = {
 
 export type BorrowSwapInfo = InfoPostSwap & {
   borrowMarginRequirement: number;
-}
+};
 
 class BorrowAMM {
   public readonly id: string;
@@ -44,15 +41,12 @@ class BorrowAMM {
   public cToken: ICToken | undefined;
   public aaveVariableDebtToken: IERC20Minimal | undefined;
 
-  public underlyingDebt: number = 0;
-  public variableDebt: number = 0;
-  public fixedDebt: number = 0;
-  public aggregatedDebt: number = 0;
+  public underlyingDebt = 0;
+  public variableDebt = 0;
+  public fixedDebt = 0;
+  public aggregatedDebt = 0;
 
-  public constructor({
-    id,
-    amm
-  }: BorrowAMMConstructorArgs) {
+  public constructor({ id, amm }: BorrowAMMConstructorArgs) {
     this.id = id;
     this.signer = amm.signer;
     this.provider = amm.provider || amm.signer?.provider;
@@ -63,21 +57,18 @@ class BorrowAMM {
     this.amm = amm;
 
     const protocolId = this.rateOracle.protocolId;
-    if ( protocolId !== 6 && protocolId !== 5 ) {
-        throw new Error("Not a borrow market");
+    if (protocolId !== 6 && protocolId !== 5) {
+      throw new Error('Not a borrow market');
     }
-
   }
 
   // scale/descale according to underlying token
 
   public descale(value: BigNumber): number {
     if (this.underlyingToken.decimals <= 3) {
-      return value.toNumber() / (10 ** this.underlyingToken.decimals);
+      return value.toNumber() / 10 ** this.underlyingToken.decimals;
     }
-    else {
-      return value.div(BigNumber.from(10).pow(this.underlyingToken.decimals - 3)).toNumber() / 1000;
-    }
+    return value.div(BigNumber.from(10).pow(this.underlyingToken.decimals - 3)).toNumber() / 1000;
   }
 
   public scale(value: number): string {
@@ -94,21 +85,21 @@ class BorrowAMM {
 
   public getAllSwaps(position: Position) {
     const allSwaps: {
-      fDelta: BigNumber,
-      vDelta: BigNumber,
-      timestamp: BigNumber
+      fDelta: BigNumber;
+      vDelta: BigNumber;
+      timestamp: BigNumber;
     }[] = [];
 
-    if(position === undefined){
+    if (position === undefined) {
       return allSwaps;
     }
 
-    for (let s of position.swaps) {
+    for (const s of position.swaps) {
       allSwaps.push({
         fDelta: BigNumber.from(s.fixedTokenDeltaUnbalanced.toString()),
         vDelta: BigNumber.from(s.variableTokenDelta.toString()),
-        timestamp: BigNumber.from(s.transactionTimestamp.toString())
-      })
+        timestamp: BigNumber.from(s.transactionTimestamp.toString()),
+      });
     }
 
     allSwaps.sort((a, b) => a.timestamp.sub(b.timestamp).toNumber());
@@ -116,23 +107,26 @@ class BorrowAMM {
     return allSwaps;
   }
 
-  public async getAccruedCashflow(allSwaps: {
-    fDelta: BigNumber,
-    vDelta: BigNumber,
-    timestamp: BigNumber
-  }[], atMaturity: boolean): Promise<[BigNumber, BigNumber]> {
+  public async getAccruedCashflow(
+    allSwaps: {
+      fDelta: BigNumber;
+      vDelta: BigNumber;
+      timestamp: BigNumber;
+    }[],
+    atMaturity: boolean,
+  ): Promise<[BigNumber, BigNumber]> {
     if (!this.provider) {
       throw new Error('Wallet not connected');
     }
 
     let totalVarableCashflow = BigNumber.from(0);
     let totalFixedCashflow = BigNumber.from(0);
-    let lenSwaps = allSwaps.length;
+    const lenSwaps = allSwaps.length;
 
     const lastBlock = await this.provider.getBlockNumber();
     const lastBlockTimestamp = BigNumber.from((await this.provider.getBlock(lastBlock)).timestamp);
 
-    let untilTimestamp = (atMaturity)
+    const untilTimestamp = atMaturity
       ? BigNumber.from(this.termEndTimestamp.toString())
       : lastBlockTimestamp.mul(BigNumber.from(10).pow(18));
 
@@ -141,12 +135,22 @@ class BorrowAMM {
     for (let i = 0; i < lenSwaps; i++) {
       const currentSwapTimestamp = allSwaps[i].timestamp.mul(BigNumber.from(10).pow(18));
 
-      const normalizedTime = (untilTimestamp.sub(currentSwapTimestamp)).div(BigNumber.from(ONE_YEAR_IN_SECONDS));
+      const normalizedTime = untilTimestamp
+        .sub(currentSwapTimestamp)
+        .div(BigNumber.from(ONE_YEAR_IN_SECONDS));
 
-      const variableFactorBetweenSwaps = await rateOracleContract.callStatic.variableFactor(currentSwapTimestamp, untilTimestamp);
+      const variableFactorBetweenSwaps = await rateOracleContract.callStatic.variableFactor(
+        currentSwapTimestamp,
+        untilTimestamp,
+      );
 
-      const fixedCashflow = allSwaps[i].fDelta.mul(normalizedTime).div(BigNumber.from(100)).div(BigNumber.from(10).pow(18));
-      const variableCashflow = allSwaps[i].vDelta.mul(variableFactorBetweenSwaps).div(BigNumber.from(10).pow(18));
+      const fixedCashflow = allSwaps[i].fDelta
+        .mul(normalizedTime)
+        .div(BigNumber.from(100))
+        .div(BigNumber.from(10).pow(18));
+      const variableCashflow = allSwaps[i].vDelta
+        .mul(variableFactorBetweenSwaps)
+        .div(BigNumber.from(10).pow(18));
 
       totalFixedCashflow = totalFixedCashflow.add(fixedCashflow);
       totalVarableCashflow = totalVarableCashflow.add(variableCashflow);
@@ -161,33 +165,37 @@ class BorrowAMM {
     }
     // is past maturity?
     const lastBlock = await this.provider.getBlockNumber();
-    const lastBlockTimestamp = BigNumber.from((await this.provider.getBlock(lastBlock - 1)).timestamp);
-    const pastMaturity = (BigNumber.from(this.termEndTimestamp.toString())).lt(lastBlockTimestamp.mul(BigNumber.from(10).pow(18)));
+    const lastBlockTimestamp = BigNumber.from(
+      (await this.provider.getBlock(lastBlock - 1)).timestamp,
+    );
+    const pastMaturity = BigNumber.from(this.termEndTimestamp.toString()).lt(
+      lastBlockTimestamp.mul(BigNumber.from(10).pow(18)),
+    );
 
     return pastMaturity;
   }
 
   public async getVariableCashFlow(position: Position): Promise<BigNumber> {
-    if(position === undefined){
+    if (position === undefined) {
       return BigNumber.from(0);
     }
     const allSwaps = this.getAllSwaps(position);
     const pastMaturity = await this.atMaturity();
 
-    const [fixedCashFlow, variableCashFlow] = await this.getAccruedCashflow(allSwaps, pastMaturity);
+    const [, variableCashFlow] = await this.getAccruedCashflow(allSwaps, pastMaturity);
 
     return variableCashFlow;
   }
 
   public async getFixedCashFlow(position: Position): Promise<number> {
-    if(position === undefined){
+    if (position === undefined) {
       return 0;
     }
-  
+
     const allSwaps = this.getAllSwaps(position);
     const pastMaturity = await this.atMaturity();
 
-    const [fixedCashFlow, variableCashFlow] = await this.getAccruedCashflow(allSwaps, pastMaturity);
+    const [fixedCashFlow] = await this.getAccruedCashflow(allSwaps, pastMaturity);
 
     return this.descale(fixedCashFlow);
   }
@@ -198,32 +206,38 @@ class BorrowAMM {
     }
 
     const protocolId = this.rateOracle.protocolId;
-    if ( protocolId === 6 && !this.cToken) {
-      const compoundRateOracle = CompoundBorrowRateOracle__factory.connect(this.rateOracle.id, this.signer)
+    if (protocolId === 6 && !this.cToken) {
+      const compoundRateOracle = CompoundBorrowRateOracle__factory.connect(
+        this.rateOracle.id,
+        this.signer,
+      );
       const cTokenAddress = await compoundRateOracle.ctoken();
       this.cToken = cTokenFactory.connect(cTokenAddress, this.signer);
-
-    } else if ( protocolId === 5 && !this.aaveVariableDebtToken) {
-      const aaveRateOracle = AaveBorrowRateOracle__factory.connect(this.rateOracle.id, this.signer)
+    } else if (protocolId === 5 && !this.aaveVariableDebtToken) {
+      const aaveRateOracle = AaveBorrowRateOracle__factory.connect(this.rateOracle.id, this.signer);
 
       const lendingPoolAddress = await aaveRateOracle.aaveLendingPool();
       const lendingPool = IAaveV2LendingPool__factory.connect(lendingPoolAddress, this.signer);
-      if(!this.underlyingToken.id){
+      if (!this.underlyingToken.id) {
         throw new Error('missing underlying token address');
       }
-      const reserve =  await lendingPool.getReserveData(this.underlyingToken.id);
+      const reserve = await lendingPool.getReserveData(this.underlyingToken.id);
       const variableDebtTokenAddress = reserve.variableDebtTokenAddress;
-      this.aaveVariableDebtToken = IERC20Minimal__factory.connect(variableDebtTokenAddress, this.signer);
+      this.aaveVariableDebtToken = IERC20Minimal__factory.connect(
+        variableDebtTokenAddress,
+        this.signer,
+      );
     }
-    
 
     let borrowBalance = BigNumber.from(0);
-    if (this.cToken) { // compound
-        const userAddress = await this.signer.getAddress();
-        borrowBalance = await this.cToken.callStatic.borrowBalanceCurrent(userAddress);
-    } else if ( this.aaveVariableDebtToken ) { // aave
-        const userAddress = await this.signer.getAddress();
-        borrowBalance = await this.aaveVariableDebtToken.balanceOf(userAddress);
+    if (this.cToken) {
+      // compound
+      const userAddress = await this.signer.getAddress();
+      borrowBalance = await this.cToken.callStatic.borrowBalanceCurrent(userAddress);
+    } else if (this.aaveVariableDebtToken) {
+      // aave
+      const userAddress = await this.signer.getAddress();
+      borrowBalance = await this.aaveVariableDebtToken.balanceOf(userAddress);
     }
 
     return borrowBalance;
@@ -255,9 +269,8 @@ class BorrowAMM {
 
     if (underlyingBorrowBalance >= notionalWithVariableCashFlowAndBuffer) {
       return underlyingBorrowBalance - notionalWithVariableCashFlow;
-    } else {
-      return 0;
     }
+    return 0;
   }
 
   public async getBorrowInfo(infoPostSwapArgs: AMMGetInfoPostSwapArgs): Promise<BorrowSwapInfo> {
@@ -268,27 +281,34 @@ class BorrowAMM {
     const infoPostSwap = await this.amm.getInfoPostSwap(infoPostSwapArgs);
 
     const variableAPYToMaturity = await this.amm.getVariableFactor(
-      BigNumber.from(this.termStartTimestamp.toString()), 
-      BigNumber.from(this.termEndTimestamp.toString())
+      BigNumber.from(this.termStartTimestamp.toString()),
+      BigNumber.from(this.termEndTimestamp.toString()),
     );
 
-    const termStartTimestamp = (BigNumber.from(this.termStartTimestamp.toString()).div(BigNumber.from(10).pow(18))).toNumber();
-    const termEndTimestamp = (BigNumber.from(this.termEndTimestamp.toString()).div(BigNumber.from(10).pow(18))).toNumber();
-    const fixedFactor = (termEndTimestamp - termStartTimestamp) / ONE_YEAR_IN_SECONDS * 0.01;
-    
-    let fcMargin = -(infoPostSwap.fixedTokenDeltaBalance * fixedFactor + infoPostSwap.variableTokenDeltaBalance * variableAPYToMaturity);
+    const termStartTimestamp = BigNumber.from(this.termStartTimestamp.toString())
+      .div(BigNumber.from(10).pow(18))
+      .toNumber();
+    const termEndTimestamp = BigNumber.from(this.termEndTimestamp.toString())
+      .div(BigNumber.from(10).pow(18))
+      .toNumber();
+    const fixedFactor = ((termEndTimestamp - termStartTimestamp) / ONE_YEAR_IN_SECONDS) * 0.01;
+
+    let fcMargin = -(
+      infoPostSwap.fixedTokenDeltaBalance * fixedFactor +
+      infoPostSwap.variableTokenDeltaBalance * variableAPYToMaturity
+    );
     fcMargin = (fcMargin + infoPostSwap.fee) * 1.01;
     return {
       borrowMarginRequirement: fcMargin > 0 ? fcMargin : 0,
-      ...infoPostSwap
+      ...infoPostSwap,
     };
   }
-  
+
   public async getFixedBorrowBalanceInUSD(position: Position): Promise<number> {
     const balanceInTokens = await this.getFixedBorrowBalance(position);
     if (this.amm && this.amm.isETH) {
       const EthToUsdPrice = await geckoEthToUsd(process.env.REACT_APP_COINGECKO_API_KEY || '');
-      return balanceInTokens*EthToUsdPrice;
+      return balanceInTokens * EthToUsdPrice;
     }
     return balanceInTokens;
   }
@@ -297,7 +317,7 @@ class BorrowAMM {
     const balanceInTokens = await this.getUnderlyingBorrowBalance();
     if (this.amm && this.amm.isETH) {
       const EthToUsdPrice = await geckoEthToUsd(process.env.REACT_APP_COINGECKO_API_KEY || '');
-      return balanceInTokens*EthToUsdPrice;
+      return balanceInTokens * EthToUsdPrice;
     }
     return balanceInTokens;
   }
@@ -306,11 +326,10 @@ class BorrowAMM {
     const balanceInTokens = await this.getAggregatedBorrowBalance(position);
     if (this.amm && this.amm.isETH) {
       const EthToUsdPrice = await geckoEthToUsd(process.env.REACT_APP_COINGECKO_API_KEY || '');
-      return balanceInTokens*EthToUsdPrice;
+      return balanceInTokens * EthToUsdPrice;
     }
     return balanceInTokens;
   }
-
 }
 
 export default BorrowAMM;

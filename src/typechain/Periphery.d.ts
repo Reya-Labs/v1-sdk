@@ -14,39 +14,39 @@ import {
   Overrides,
   PayableOverrides,
   CallOverrides,
-} from "ethers";
-import { BytesLike } from "@ethersproject/bytes";
-import { Listener, Provider } from "@ethersproject/providers";
-import { FunctionFragment, EventFragment, Result } from "@ethersproject/abi";
-import type { TypedEventFilter, TypedEvent, TypedListener } from "./common";
+} from 'ethers';
+import { BytesLike } from '@ethersproject/bytes';
+import { Listener, Provider } from '@ethersproject/providers';
+import { FunctionFragment, EventFragment, Result } from '@ethersproject/abi';
+import type { TypedEventFilter, TypedEvent, TypedListener } from './common';
 
 interface PeripheryInterface extends ethers.utils.Interface {
   functions: {
-    "fullyCollateralisedVTSwap((address,bool,uint256,uint160,int24,int24,int256),uint256)": FunctionFragment;
-    "getCurrentTick(address)": FunctionFragment;
-    "getLiquidityForNotional(uint160,uint160,uint256)": FunctionFragment;
-    "initialize(address)": FunctionFragment;
-    "lpMarginCaps(address)": FunctionFragment;
-    "lpMarginCumulatives(address)": FunctionFragment;
-    "mintOrBurn((address,int24,int24,uint256,bool,int256))": FunctionFragment;
-    "owner()": FunctionFragment;
-    "proxiableUUID()": FunctionFragment;
-    "renounceOwnership()": FunctionFragment;
-    "rolloverWithMint(address,address,int24,int24,(address,int24,int24,uint256,bool,int256))": FunctionFragment;
-    "rolloverWithSwap(address,address,int24,int24,(address,bool,uint256,uint160,int24,int24,int256))": FunctionFragment;
-    "setLPMarginCap(address,int256)": FunctionFragment;
-    "setLPMarginCumulative(address,int256)": FunctionFragment;
-    "settlePositionAndWithdrawMargin(address,address,int24,int24)": FunctionFragment;
-    "swap((address,bool,uint256,uint160,int24,int24,int256))": FunctionFragment;
-    "transferOwnership(address)": FunctionFragment;
-    "updatePositionMargin(address,int24,int24,int256,bool)": FunctionFragment;
-    "upgradeTo(address)": FunctionFragment;
-    "upgradeToAndCall(address,bytes)": FunctionFragment;
-    "weth()": FunctionFragment;
+    'fullyCollateralisedVTSwap((address,bool,uint256,uint160,int24,int24,int256),uint256)': FunctionFragment;
+    'getCurrentTick(address)': FunctionFragment;
+    'getLiquidityForNotional(uint160,uint160,uint256)': FunctionFragment;
+    'initialize(address)': FunctionFragment;
+    'lpMarginCaps(address)': FunctionFragment;
+    'lpMarginCumulatives(address)': FunctionFragment;
+    'mintOrBurn((address,int24,int24,uint256,bool,int256))': FunctionFragment;
+    'owner()': FunctionFragment;
+    'proxiableUUID()': FunctionFragment;
+    'renounceOwnership()': FunctionFragment;
+    'rolloverWithMint(address,address,int24,int24,(address,int24,int24,uint256,bool,int256))': FunctionFragment;
+    'rolloverWithSwap(address,address,int24,int24,(address,bool,uint256,uint160,int24,int24,int256))': FunctionFragment;
+    'setLPMarginCap(address,int256)': FunctionFragment;
+    'setLPMarginCumulative(address,int256)': FunctionFragment;
+    'settlePositionAndWithdrawMargin(address,address,int24,int24)': FunctionFragment;
+    'swap((address,bool,uint256,uint160,int24,int24,int256))': FunctionFragment;
+    'transferOwnership(address)': FunctionFragment;
+    'updatePositionMargin(address,int24,int24,int256,bool)': FunctionFragment;
+    'upgradeTo(address)': FunctionFragment;
+    'upgradeToAndCall(address,bytes)': FunctionFragment;
+    'weth()': FunctionFragment;
   };
 
   encodeFunctionData(
-    functionFragment: "fullyCollateralisedVTSwap",
+    functionFragment: 'fullyCollateralisedVTSwap',
     values: [
       {
         marginEngine: string;
@@ -57,28 +57,19 @@ interface PeripheryInterface extends ethers.utils.Interface {
         tickUpper: BigNumberish;
         marginDelta: BigNumberish;
       },
-      BigNumberish
-    ]
+      BigNumberish,
+    ],
   ): string;
+  encodeFunctionData(functionFragment: 'getCurrentTick', values: [string]): string;
   encodeFunctionData(
-    functionFragment: "getCurrentTick",
-    values: [string]
+    functionFragment: 'getLiquidityForNotional',
+    values: [BigNumberish, BigNumberish, BigNumberish],
   ): string;
+  encodeFunctionData(functionFragment: 'initialize', values: [string]): string;
+  encodeFunctionData(functionFragment: 'lpMarginCaps', values: [string]): string;
+  encodeFunctionData(functionFragment: 'lpMarginCumulatives', values: [string]): string;
   encodeFunctionData(
-    functionFragment: "getLiquidityForNotional",
-    values: [BigNumberish, BigNumberish, BigNumberish]
-  ): string;
-  encodeFunctionData(functionFragment: "initialize", values: [string]): string;
-  encodeFunctionData(
-    functionFragment: "lpMarginCaps",
-    values: [string]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "lpMarginCumulatives",
-    values: [string]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "mintOrBurn",
+    functionFragment: 'mintOrBurn',
     values: [
       {
         marginEngine: string;
@@ -87,20 +78,14 @@ interface PeripheryInterface extends ethers.utils.Interface {
         notional: BigNumberish;
         isMint: boolean;
         marginDelta: BigNumberish;
-      }
-    ]
+      },
+    ],
   ): string;
-  encodeFunctionData(functionFragment: "owner", values?: undefined): string;
+  encodeFunctionData(functionFragment: 'owner', values?: undefined): string;
+  encodeFunctionData(functionFragment: 'proxiableUUID', values?: undefined): string;
+  encodeFunctionData(functionFragment: 'renounceOwnership', values?: undefined): string;
   encodeFunctionData(
-    functionFragment: "proxiableUUID",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "renounceOwnership",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "rolloverWithMint",
+    functionFragment: 'rolloverWithMint',
     values: [
       string,
       string,
@@ -113,11 +98,11 @@ interface PeripheryInterface extends ethers.utils.Interface {
         notional: BigNumberish;
         isMint: boolean;
         marginDelta: BigNumberish;
-      }
-    ]
+      },
+    ],
   ): string;
   encodeFunctionData(
-    functionFragment: "rolloverWithSwap",
+    functionFragment: 'rolloverWithSwap',
     values: [
       string,
       string,
@@ -131,23 +116,20 @@ interface PeripheryInterface extends ethers.utils.Interface {
         tickLower: BigNumberish;
         tickUpper: BigNumberish;
         marginDelta: BigNumberish;
-      }
-    ]
+      },
+    ],
+  ): string;
+  encodeFunctionData(functionFragment: 'setLPMarginCap', values: [string, BigNumberish]): string;
+  encodeFunctionData(
+    functionFragment: 'setLPMarginCumulative',
+    values: [string, BigNumberish],
   ): string;
   encodeFunctionData(
-    functionFragment: "setLPMarginCap",
-    values: [string, BigNumberish]
+    functionFragment: 'settlePositionAndWithdrawMargin',
+    values: [string, string, BigNumberish, BigNumberish],
   ): string;
   encodeFunctionData(
-    functionFragment: "setLPMarginCumulative",
-    values: [string, BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "settlePositionAndWithdrawMargin",
-    values: [string, string, BigNumberish, BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "swap",
+    functionFragment: 'swap',
     values: [
       {
         marginEngine: string;
@@ -157,106 +139,58 @@ interface PeripheryInterface extends ethers.utils.Interface {
         tickLower: BigNumberish;
         tickUpper: BigNumberish;
         marginDelta: BigNumberish;
-      }
-    ]
+      },
+    ],
   ): string;
+  encodeFunctionData(functionFragment: 'transferOwnership', values: [string]): string;
   encodeFunctionData(
-    functionFragment: "transferOwnership",
-    values: [string]
+    functionFragment: 'updatePositionMargin',
+    values: [string, BigNumberish, BigNumberish, BigNumberish, boolean],
   ): string;
-  encodeFunctionData(
-    functionFragment: "updatePositionMargin",
-    values: [string, BigNumberish, BigNumberish, BigNumberish, boolean]
-  ): string;
-  encodeFunctionData(functionFragment: "upgradeTo", values: [string]): string;
-  encodeFunctionData(
-    functionFragment: "upgradeToAndCall",
-    values: [string, BytesLike]
-  ): string;
-  encodeFunctionData(functionFragment: "weth", values?: undefined): string;
+  encodeFunctionData(functionFragment: 'upgradeTo', values: [string]): string;
+  encodeFunctionData(functionFragment: 'upgradeToAndCall', values: [string, BytesLike]): string;
+  encodeFunctionData(functionFragment: 'weth', values?: undefined): string;
 
+  decodeFunctionResult(functionFragment: 'fullyCollateralisedVTSwap', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'getCurrentTick', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'getLiquidityForNotional', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'initialize', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'lpMarginCaps', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'lpMarginCumulatives', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'mintOrBurn', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'owner', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'proxiableUUID', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'renounceOwnership', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'rolloverWithMint', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'rolloverWithSwap', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'setLPMarginCap', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'setLPMarginCumulative', data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "fullyCollateralisedVTSwap",
-    data: BytesLike
+    functionFragment: 'settlePositionAndWithdrawMargin',
+    data: BytesLike,
   ): Result;
-  decodeFunctionResult(
-    functionFragment: "getCurrentTick",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "getLiquidityForNotional",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(functionFragment: "initialize", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "lpMarginCaps",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "lpMarginCumulatives",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(functionFragment: "mintOrBurn", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "proxiableUUID",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "renounceOwnership",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "rolloverWithMint",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "rolloverWithSwap",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "setLPMarginCap",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "setLPMarginCumulative",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "settlePositionAndWithdrawMargin",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(functionFragment: "swap", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "transferOwnership",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "updatePositionMargin",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(functionFragment: "upgradeTo", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "upgradeToAndCall",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(functionFragment: "weth", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'swap', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'transferOwnership', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'updatePositionMargin', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'upgradeTo', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'upgradeToAndCall', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'weth', data: BytesLike): Result;
 
   events: {
-    "AdminChanged(address,address)": EventFragment;
-    "BeaconUpgraded(address)": EventFragment;
-    "Initialized(uint8)": EventFragment;
-    "MarginCap(address,int256)": EventFragment;
-    "OwnershipTransferred(address,address)": EventFragment;
-    "Upgraded(address)": EventFragment;
+    'AdminChanged(address,address)': EventFragment;
+    'BeaconUpgraded(address)': EventFragment;
+    'Initialized(uint8)': EventFragment;
+    'MarginCap(address,int256)': EventFragment;
+    'OwnershipTransferred(address,address)': EventFragment;
+    'Upgraded(address)': EventFragment;
   };
 
-  getEvent(nameOrSignatureOrTopic: "AdminChanged"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "BeaconUpgraded"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "Initialized"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "MarginCap"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "OwnershipTransferred"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "Upgraded"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: 'AdminChanged'): EventFragment;
+  getEvent(nameOrSignatureOrTopic: 'BeaconUpgraded'): EventFragment;
+  getEvent(nameOrSignatureOrTopic: 'Initialized'): EventFragment;
+  getEvent(nameOrSignatureOrTopic: 'MarginCap'): EventFragment;
+  getEvent(nameOrSignatureOrTopic: 'OwnershipTransferred'): EventFragment;
+  getEvent(nameOrSignatureOrTopic: 'Upgraded'): EventFragment;
 }
 
 export type AdminChangedEvent = TypedEvent<
@@ -283,26 +217,26 @@ export class Periphery extends BaseContract {
   deployed(): Promise<this>;
 
   listeners<EventArgsArray extends Array<any>, EventArgsObject>(
-    eventFilter?: TypedEventFilter<EventArgsArray, EventArgsObject>
+    eventFilter?: TypedEventFilter<EventArgsArray, EventArgsObject>,
   ): Array<TypedListener<EventArgsArray, EventArgsObject>>;
   off<EventArgsArray extends Array<any>, EventArgsObject>(
     eventFilter: TypedEventFilter<EventArgsArray, EventArgsObject>,
-    listener: TypedListener<EventArgsArray, EventArgsObject>
+    listener: TypedListener<EventArgsArray, EventArgsObject>,
   ): this;
   on<EventArgsArray extends Array<any>, EventArgsObject>(
     eventFilter: TypedEventFilter<EventArgsArray, EventArgsObject>,
-    listener: TypedListener<EventArgsArray, EventArgsObject>
+    listener: TypedListener<EventArgsArray, EventArgsObject>,
   ): this;
   once<EventArgsArray extends Array<any>, EventArgsObject>(
     eventFilter: TypedEventFilter<EventArgsArray, EventArgsObject>,
-    listener: TypedListener<EventArgsArray, EventArgsObject>
+    listener: TypedListener<EventArgsArray, EventArgsObject>,
   ): this;
   removeListener<EventArgsArray extends Array<any>, EventArgsObject>(
     eventFilter: TypedEventFilter<EventArgsArray, EventArgsObject>,
-    listener: TypedListener<EventArgsArray, EventArgsObject>
+    listener: TypedListener<EventArgsArray, EventArgsObject>,
   ): this;
   removeAllListeners<EventArgsArray extends Array<any>, EventArgsObject>(
-    eventFilter: TypedEventFilter<EventArgsArray, EventArgsObject>
+    eventFilter: TypedEventFilter<EventArgsArray, EventArgsObject>,
   ): this;
 
   listeners(eventName?: string): Array<Listener>;
@@ -315,7 +249,7 @@ export class Periphery extends BaseContract {
   queryFilter<EventArgsArray extends Array<any>, EventArgsObject>(
     event: TypedEventFilter<EventArgsArray, EventArgsObject>,
     fromBlockOrBlockhash?: string | number | undefined,
-    toBlock?: string | number | undefined
+    toBlock?: string | number | undefined,
   ): Promise<Array<TypedEvent<EventArgsArray & EventArgsObject>>>;
 
   interface: PeripheryInterface;
@@ -332,32 +266,29 @@ export class Periphery extends BaseContract {
         marginDelta: BigNumberish;
       },
       variableFactorFromStartToNowWad: BigNumberish,
-      overrides?: PayableOverrides & { from?: string | Promise<string> }
+      overrides?: PayableOverrides & { from?: string | Promise<string> },
     ): Promise<ContractTransaction>;
 
     getCurrentTick(
       marginEngine: string,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<[number] & { currentTick: number }>;
 
     getLiquidityForNotional(
       sqrtRatioAX96: BigNumberish,
       sqrtRatioBX96: BigNumberish,
       notionalAmount: BigNumberish,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<[BigNumber] & { liquidity: BigNumber }>;
 
     initialize(
       weth_: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<ContractTransaction>;
 
     lpMarginCaps(vamm: string, overrides?: CallOverrides): Promise<[BigNumber]>;
 
-    lpMarginCumulatives(
-      vamm: string,
-      overrides?: CallOverrides
-    ): Promise<[BigNumber]>;
+    lpMarginCumulatives(vamm: string, overrides?: CallOverrides): Promise<[BigNumber]>;
 
     mintOrBurn(
       params: {
@@ -368,7 +299,7 @@ export class Periphery extends BaseContract {
         isMint: boolean;
         marginDelta: BigNumberish;
       },
-      overrides?: PayableOverrides & { from?: string | Promise<string> }
+      overrides?: PayableOverrides & { from?: string | Promise<string> },
     ): Promise<ContractTransaction>;
 
     owner(overrides?: CallOverrides): Promise<[string]>;
@@ -376,7 +307,7 @@ export class Periphery extends BaseContract {
     proxiableUUID(overrides?: CallOverrides): Promise<[string]>;
 
     renounceOwnership(
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<ContractTransaction>;
 
     rolloverWithMint(
@@ -392,7 +323,7 @@ export class Periphery extends BaseContract {
         isMint: boolean;
         marginDelta: BigNumberish;
       },
-      overrides?: PayableOverrides & { from?: string | Promise<string> }
+      overrides?: PayableOverrides & { from?: string | Promise<string> },
     ): Promise<ContractTransaction>;
 
     rolloverWithSwap(
@@ -409,19 +340,19 @@ export class Periphery extends BaseContract {
         tickUpper: BigNumberish;
         marginDelta: BigNumberish;
       },
-      overrides?: PayableOverrides & { from?: string | Promise<string> }
+      overrides?: PayableOverrides & { from?: string | Promise<string> },
     ): Promise<ContractTransaction>;
 
     setLPMarginCap(
       vamm: string,
       lpMarginCapNew: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<ContractTransaction>;
 
     setLPMarginCumulative(
       vamm: string,
       lpMarginCumulative: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<ContractTransaction>;
 
     settlePositionAndWithdrawMargin(
@@ -429,7 +360,7 @@ export class Periphery extends BaseContract {
       owner: string,
       tickLower: BigNumberish,
       tickUpper: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<ContractTransaction>;
 
     swap(
@@ -442,12 +373,12 @@ export class Periphery extends BaseContract {
         tickUpper: BigNumberish;
         marginDelta: BigNumberish;
       },
-      overrides?: PayableOverrides & { from?: string | Promise<string> }
+      overrides?: PayableOverrides & { from?: string | Promise<string> },
     ): Promise<ContractTransaction>;
 
     transferOwnership(
       newOwner: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<ContractTransaction>;
 
     updatePositionMargin(
@@ -456,18 +387,18 @@ export class Periphery extends BaseContract {
       tickUpper: BigNumberish,
       marginDelta: BigNumberish,
       fullyWithdraw: boolean,
-      overrides?: PayableOverrides & { from?: string | Promise<string> }
+      overrides?: PayableOverrides & { from?: string | Promise<string> },
     ): Promise<ContractTransaction>;
 
     upgradeTo(
       newImplementation: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<ContractTransaction>;
 
     upgradeToAndCall(
       newImplementation: string,
       data: BytesLike,
-      overrides?: PayableOverrides & { from?: string | Promise<string> }
+      overrides?: PayableOverrides & { from?: string | Promise<string> },
     ): Promise<ContractTransaction>;
 
     weth(overrides?: CallOverrides): Promise<[string]>;
@@ -484,32 +415,26 @@ export class Periphery extends BaseContract {
       marginDelta: BigNumberish;
     },
     variableFactorFromStartToNowWad: BigNumberish,
-    overrides?: PayableOverrides & { from?: string | Promise<string> }
+    overrides?: PayableOverrides & { from?: string | Promise<string> },
   ): Promise<ContractTransaction>;
 
-  getCurrentTick(
-    marginEngine: string,
-    overrides?: CallOverrides
-  ): Promise<number>;
+  getCurrentTick(marginEngine: string, overrides?: CallOverrides): Promise<number>;
 
   getLiquidityForNotional(
     sqrtRatioAX96: BigNumberish,
     sqrtRatioBX96: BigNumberish,
     notionalAmount: BigNumberish,
-    overrides?: CallOverrides
+    overrides?: CallOverrides,
   ): Promise<BigNumber>;
 
   initialize(
     weth_: string,
-    overrides?: Overrides & { from?: string | Promise<string> }
+    overrides?: Overrides & { from?: string | Promise<string> },
   ): Promise<ContractTransaction>;
 
   lpMarginCaps(vamm: string, overrides?: CallOverrides): Promise<BigNumber>;
 
-  lpMarginCumulatives(
-    vamm: string,
-    overrides?: CallOverrides
-  ): Promise<BigNumber>;
+  lpMarginCumulatives(vamm: string, overrides?: CallOverrides): Promise<BigNumber>;
 
   mintOrBurn(
     params: {
@@ -520,7 +445,7 @@ export class Periphery extends BaseContract {
       isMint: boolean;
       marginDelta: BigNumberish;
     },
-    overrides?: PayableOverrides & { from?: string | Promise<string> }
+    overrides?: PayableOverrides & { from?: string | Promise<string> },
   ): Promise<ContractTransaction>;
 
   owner(overrides?: CallOverrides): Promise<string>;
@@ -528,7 +453,7 @@ export class Periphery extends BaseContract {
   proxiableUUID(overrides?: CallOverrides): Promise<string>;
 
   renounceOwnership(
-    overrides?: Overrides & { from?: string | Promise<string> }
+    overrides?: Overrides & { from?: string | Promise<string> },
   ): Promise<ContractTransaction>;
 
   rolloverWithMint(
@@ -544,7 +469,7 @@ export class Periphery extends BaseContract {
       isMint: boolean;
       marginDelta: BigNumberish;
     },
-    overrides?: PayableOverrides & { from?: string | Promise<string> }
+    overrides?: PayableOverrides & { from?: string | Promise<string> },
   ): Promise<ContractTransaction>;
 
   rolloverWithSwap(
@@ -561,19 +486,19 @@ export class Periphery extends BaseContract {
       tickUpper: BigNumberish;
       marginDelta: BigNumberish;
     },
-    overrides?: PayableOverrides & { from?: string | Promise<string> }
+    overrides?: PayableOverrides & { from?: string | Promise<string> },
   ): Promise<ContractTransaction>;
 
   setLPMarginCap(
     vamm: string,
     lpMarginCapNew: BigNumberish,
-    overrides?: Overrides & { from?: string | Promise<string> }
+    overrides?: Overrides & { from?: string | Promise<string> },
   ): Promise<ContractTransaction>;
 
   setLPMarginCumulative(
     vamm: string,
     lpMarginCumulative: BigNumberish,
-    overrides?: Overrides & { from?: string | Promise<string> }
+    overrides?: Overrides & { from?: string | Promise<string> },
   ): Promise<ContractTransaction>;
 
   settlePositionAndWithdrawMargin(
@@ -581,7 +506,7 @@ export class Periphery extends BaseContract {
     owner: string,
     tickLower: BigNumberish,
     tickUpper: BigNumberish,
-    overrides?: Overrides & { from?: string | Promise<string> }
+    overrides?: Overrides & { from?: string | Promise<string> },
   ): Promise<ContractTransaction>;
 
   swap(
@@ -594,12 +519,12 @@ export class Periphery extends BaseContract {
       tickUpper: BigNumberish;
       marginDelta: BigNumberish;
     },
-    overrides?: PayableOverrides & { from?: string | Promise<string> }
+    overrides?: PayableOverrides & { from?: string | Promise<string> },
   ): Promise<ContractTransaction>;
 
   transferOwnership(
     newOwner: string,
-    overrides?: Overrides & { from?: string | Promise<string> }
+    overrides?: Overrides & { from?: string | Promise<string> },
   ): Promise<ContractTransaction>;
 
   updatePositionMargin(
@@ -608,18 +533,18 @@ export class Periphery extends BaseContract {
     tickUpper: BigNumberish,
     marginDelta: BigNumberish,
     fullyWithdraw: boolean,
-    overrides?: PayableOverrides & { from?: string | Promise<string> }
+    overrides?: PayableOverrides & { from?: string | Promise<string> },
   ): Promise<ContractTransaction>;
 
   upgradeTo(
     newImplementation: string,
-    overrides?: Overrides & { from?: string | Promise<string> }
+    overrides?: Overrides & { from?: string | Promise<string> },
   ): Promise<ContractTransaction>;
 
   upgradeToAndCall(
     newImplementation: string,
     data: BytesLike,
-    overrides?: PayableOverrides & { from?: string | Promise<string> }
+    overrides?: PayableOverrides & { from?: string | Promise<string> },
   ): Promise<ContractTransaction>;
 
   weth(overrides?: CallOverrides): Promise<string>;
@@ -636,17 +561,9 @@ export class Periphery extends BaseContract {
         marginDelta: BigNumberish;
       },
       variableFactorFromStartToNowWad: BigNumberish,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<
-      [
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        number,
-        BigNumber
-      ] & {
+      [BigNumber, BigNumber, BigNumber, BigNumber, BigNumber, number, BigNumber] & {
         _fixedTokenDelta: BigNumber;
         _variableTokenDelta: BigNumber;
         _cumulativeFeeIncurred: BigNumber;
@@ -657,26 +574,20 @@ export class Periphery extends BaseContract {
       }
     >;
 
-    getCurrentTick(
-      marginEngine: string,
-      overrides?: CallOverrides
-    ): Promise<number>;
+    getCurrentTick(marginEngine: string, overrides?: CallOverrides): Promise<number>;
 
     getLiquidityForNotional(
       sqrtRatioAX96: BigNumberish,
       sqrtRatioBX96: BigNumberish,
       notionalAmount: BigNumberish,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<BigNumber>;
 
     initialize(weth_: string, overrides?: CallOverrides): Promise<void>;
 
     lpMarginCaps(vamm: string, overrides?: CallOverrides): Promise<BigNumber>;
 
-    lpMarginCumulatives(
-      vamm: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
+    lpMarginCumulatives(vamm: string, overrides?: CallOverrides): Promise<BigNumber>;
 
     mintOrBurn(
       params: {
@@ -687,7 +598,7 @@ export class Periphery extends BaseContract {
         isMint: boolean;
         marginDelta: BigNumberish;
       },
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<BigNumber>;
 
     owner(overrides?: CallOverrides): Promise<string>;
@@ -709,7 +620,7 @@ export class Periphery extends BaseContract {
         isMint: boolean;
         marginDelta: BigNumberish;
       },
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<BigNumber>;
 
     rolloverWithSwap(
@@ -726,7 +637,7 @@ export class Periphery extends BaseContract {
         tickUpper: BigNumberish;
         marginDelta: BigNumberish;
       },
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<
       [BigNumber, BigNumber, BigNumber, BigNumber, BigNumber, number] & {
         _fixedTokenDelta: BigNumber;
@@ -741,13 +652,13 @@ export class Periphery extends BaseContract {
     setLPMarginCap(
       vamm: string,
       lpMarginCapNew: BigNumberish,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<void>;
 
     setLPMarginCumulative(
       vamm: string,
       lpMarginCumulative: BigNumberish,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<void>;
 
     settlePositionAndWithdrawMargin(
@@ -755,7 +666,7 @@ export class Periphery extends BaseContract {
       owner: string,
       tickLower: BigNumberish,
       tickUpper: BigNumberish,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<void>;
 
     swap(
@@ -768,17 +679,9 @@ export class Periphery extends BaseContract {
         tickUpper: BigNumberish;
         marginDelta: BigNumberish;
       },
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<
-      [
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        BigNumber,
-        number,
-        BigNumber
-      ] & {
+      [BigNumber, BigNumber, BigNumber, BigNumber, BigNumber, number, BigNumber] & {
         _fixedTokenDelta: BigNumber;
         _variableTokenDelta: BigNumber;
         _cumulativeFeeIncurred: BigNumber;
@@ -789,10 +692,7 @@ export class Periphery extends BaseContract {
       }
     >;
 
-    transferOwnership(
-      newOwner: string,
-      overrides?: CallOverrides
-    ): Promise<void>;
+    transferOwnership(newOwner: string, overrides?: CallOverrides): Promise<void>;
 
     updatePositionMargin(
       marginEngine: string,
@@ -800,94 +700,67 @@ export class Periphery extends BaseContract {
       tickUpper: BigNumberish,
       marginDelta: BigNumberish,
       fullyWithdraw: boolean,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<BigNumber>;
 
-    upgradeTo(
-      newImplementation: string,
-      overrides?: CallOverrides
-    ): Promise<void>;
+    upgradeTo(newImplementation: string, overrides?: CallOverrides): Promise<void>;
 
     upgradeToAndCall(
       newImplementation: string,
       data: BytesLike,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<void>;
 
     weth(overrides?: CallOverrides): Promise<string>;
   };
 
   filters: {
-    "AdminChanged(address,address)"(
+    'AdminChanged(address,address)'(
       previousAdmin?: null,
-      newAdmin?: null
-    ): TypedEventFilter<
-      [string, string],
-      { previousAdmin: string; newAdmin: string }
-    >;
+      newAdmin?: null,
+    ): TypedEventFilter<[string, string], { previousAdmin: string; newAdmin: string }>;
 
     AdminChanged(
       previousAdmin?: null,
-      newAdmin?: null
-    ): TypedEventFilter<
-      [string, string],
-      { previousAdmin: string; newAdmin: string }
-    >;
+      newAdmin?: null,
+    ): TypedEventFilter<[string, string], { previousAdmin: string; newAdmin: string }>;
 
-    "BeaconUpgraded(address)"(
-      beacon?: string | null
+    'BeaconUpgraded(address)'(
+      beacon?: string | null,
     ): TypedEventFilter<[string], { beacon: string }>;
 
-    BeaconUpgraded(
-      beacon?: string | null
-    ): TypedEventFilter<[string], { beacon: string }>;
+    BeaconUpgraded(beacon?: string | null): TypedEventFilter<[string], { beacon: string }>;
 
-    "Initialized(uint8)"(
-      version?: null
-    ): TypedEventFilter<[number], { version: number }>;
+    'Initialized(uint8)'(version?: null): TypedEventFilter<[number], { version: number }>;
 
-    Initialized(
-      version?: null
-    ): TypedEventFilter<[number], { version: number }>;
+    Initialized(version?: null): TypedEventFilter<[number], { version: number }>;
 
-    "MarginCap(address,int256)"(
+    'MarginCap(address,int256)'(
       vamm?: null,
-      lpMarginCapNew?: null
-    ): TypedEventFilter<
-      [string, BigNumber],
-      { vamm: string; lpMarginCapNew: BigNumber }
-    >;
+      lpMarginCapNew?: null,
+    ): TypedEventFilter<[string, BigNumber], { vamm: string; lpMarginCapNew: BigNumber }>;
 
     MarginCap(
       vamm?: null,
-      lpMarginCapNew?: null
-    ): TypedEventFilter<
-      [string, BigNumber],
-      { vamm: string; lpMarginCapNew: BigNumber }
-    >;
+      lpMarginCapNew?: null,
+    ): TypedEventFilter<[string, BigNumber], { vamm: string; lpMarginCapNew: BigNumber }>;
 
-    "OwnershipTransferred(address,address)"(
+    'OwnershipTransferred(address,address)'(
       previousOwner?: string | null,
-      newOwner?: string | null
-    ): TypedEventFilter<
-      [string, string],
-      { previousOwner: string; newOwner: string }
-    >;
+      newOwner?: string | null,
+    ): TypedEventFilter<[string, string], { previousOwner: string; newOwner: string }>;
 
     OwnershipTransferred(
       previousOwner?: string | null,
-      newOwner?: string | null
-    ): TypedEventFilter<
-      [string, string],
-      { previousOwner: string; newOwner: string }
-    >;
+      newOwner?: string | null,
+    ): TypedEventFilter<[string, string], { previousOwner: string; newOwner: string }>;
 
-    "Upgraded(address)"(
-      implementation?: string | null
+    'Upgraded(address)'(
+      implementation?: string | null,
     ): TypedEventFilter<[string], { implementation: string }>;
 
     Upgraded(
-      implementation?: string | null
+      implementation?: string | null,
     ): TypedEventFilter<[string], { implementation: string }>;
   };
 
@@ -903,32 +776,26 @@ export class Periphery extends BaseContract {
         marginDelta: BigNumberish;
       },
       variableFactorFromStartToNowWad: BigNumberish,
-      overrides?: PayableOverrides & { from?: string | Promise<string> }
+      overrides?: PayableOverrides & { from?: string | Promise<string> },
     ): Promise<BigNumber>;
 
-    getCurrentTick(
-      marginEngine: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
+    getCurrentTick(marginEngine: string, overrides?: CallOverrides): Promise<BigNumber>;
 
     getLiquidityForNotional(
       sqrtRatioAX96: BigNumberish,
       sqrtRatioBX96: BigNumberish,
       notionalAmount: BigNumberish,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<BigNumber>;
 
     initialize(
       weth_: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<BigNumber>;
 
     lpMarginCaps(vamm: string, overrides?: CallOverrides): Promise<BigNumber>;
 
-    lpMarginCumulatives(
-      vamm: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
+    lpMarginCumulatives(vamm: string, overrides?: CallOverrides): Promise<BigNumber>;
 
     mintOrBurn(
       params: {
@@ -939,7 +806,7 @@ export class Periphery extends BaseContract {
         isMint: boolean;
         marginDelta: BigNumberish;
       },
-      overrides?: PayableOverrides & { from?: string | Promise<string> }
+      overrides?: PayableOverrides & { from?: string | Promise<string> },
     ): Promise<BigNumber>;
 
     owner(overrides?: CallOverrides): Promise<BigNumber>;
@@ -947,7 +814,7 @@ export class Periphery extends BaseContract {
     proxiableUUID(overrides?: CallOverrides): Promise<BigNumber>;
 
     renounceOwnership(
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<BigNumber>;
 
     rolloverWithMint(
@@ -963,7 +830,7 @@ export class Periphery extends BaseContract {
         isMint: boolean;
         marginDelta: BigNumberish;
       },
-      overrides?: PayableOverrides & { from?: string | Promise<string> }
+      overrides?: PayableOverrides & { from?: string | Promise<string> },
     ): Promise<BigNumber>;
 
     rolloverWithSwap(
@@ -980,19 +847,19 @@ export class Periphery extends BaseContract {
         tickUpper: BigNumberish;
         marginDelta: BigNumberish;
       },
-      overrides?: PayableOverrides & { from?: string | Promise<string> }
+      overrides?: PayableOverrides & { from?: string | Promise<string> },
     ): Promise<BigNumber>;
 
     setLPMarginCap(
       vamm: string,
       lpMarginCapNew: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<BigNumber>;
 
     setLPMarginCumulative(
       vamm: string,
       lpMarginCumulative: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<BigNumber>;
 
     settlePositionAndWithdrawMargin(
@@ -1000,7 +867,7 @@ export class Periphery extends BaseContract {
       owner: string,
       tickLower: BigNumberish,
       tickUpper: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<BigNumber>;
 
     swap(
@@ -1013,12 +880,12 @@ export class Periphery extends BaseContract {
         tickUpper: BigNumberish;
         marginDelta: BigNumberish;
       },
-      overrides?: PayableOverrides & { from?: string | Promise<string> }
+      overrides?: PayableOverrides & { from?: string | Promise<string> },
     ): Promise<BigNumber>;
 
     transferOwnership(
       newOwner: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<BigNumber>;
 
     updatePositionMargin(
@@ -1027,18 +894,18 @@ export class Periphery extends BaseContract {
       tickUpper: BigNumberish,
       marginDelta: BigNumberish,
       fullyWithdraw: boolean,
-      overrides?: PayableOverrides & { from?: string | Promise<string> }
+      overrides?: PayableOverrides & { from?: string | Promise<string> },
     ): Promise<BigNumber>;
 
     upgradeTo(
       newImplementation: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<BigNumber>;
 
     upgradeToAndCall(
       newImplementation: string,
       data: BytesLike,
-      overrides?: PayableOverrides & { from?: string | Promise<string> }
+      overrides?: PayableOverrides & { from?: string | Promise<string> },
     ): Promise<BigNumber>;
 
     weth(overrides?: CallOverrides): Promise<BigNumber>;
@@ -1056,35 +923,26 @@ export class Periphery extends BaseContract {
         marginDelta: BigNumberish;
       },
       variableFactorFromStartToNowWad: BigNumberish,
-      overrides?: PayableOverrides & { from?: string | Promise<string> }
+      overrides?: PayableOverrides & { from?: string | Promise<string> },
     ): Promise<PopulatedTransaction>;
 
-    getCurrentTick(
-      marginEngine: string,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
+    getCurrentTick(marginEngine: string, overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     getLiquidityForNotional(
       sqrtRatioAX96: BigNumberish,
       sqrtRatioBX96: BigNumberish,
       notionalAmount: BigNumberish,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<PopulatedTransaction>;
 
     initialize(
       weth_: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<PopulatedTransaction>;
 
-    lpMarginCaps(
-      vamm: string,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
+    lpMarginCaps(vamm: string, overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
-    lpMarginCumulatives(
-      vamm: string,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
+    lpMarginCumulatives(vamm: string, overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     mintOrBurn(
       params: {
@@ -1095,7 +953,7 @@ export class Periphery extends BaseContract {
         isMint: boolean;
         marginDelta: BigNumberish;
       },
-      overrides?: PayableOverrides & { from?: string | Promise<string> }
+      overrides?: PayableOverrides & { from?: string | Promise<string> },
     ): Promise<PopulatedTransaction>;
 
     owner(overrides?: CallOverrides): Promise<PopulatedTransaction>;
@@ -1103,7 +961,7 @@ export class Periphery extends BaseContract {
     proxiableUUID(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     renounceOwnership(
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<PopulatedTransaction>;
 
     rolloverWithMint(
@@ -1119,7 +977,7 @@ export class Periphery extends BaseContract {
         isMint: boolean;
         marginDelta: BigNumberish;
       },
-      overrides?: PayableOverrides & { from?: string | Promise<string> }
+      overrides?: PayableOverrides & { from?: string | Promise<string> },
     ): Promise<PopulatedTransaction>;
 
     rolloverWithSwap(
@@ -1136,19 +994,19 @@ export class Periphery extends BaseContract {
         tickUpper: BigNumberish;
         marginDelta: BigNumberish;
       },
-      overrides?: PayableOverrides & { from?: string | Promise<string> }
+      overrides?: PayableOverrides & { from?: string | Promise<string> },
     ): Promise<PopulatedTransaction>;
 
     setLPMarginCap(
       vamm: string,
       lpMarginCapNew: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<PopulatedTransaction>;
 
     setLPMarginCumulative(
       vamm: string,
       lpMarginCumulative: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<PopulatedTransaction>;
 
     settlePositionAndWithdrawMargin(
@@ -1156,7 +1014,7 @@ export class Periphery extends BaseContract {
       owner: string,
       tickLower: BigNumberish,
       tickUpper: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<PopulatedTransaction>;
 
     swap(
@@ -1169,12 +1027,12 @@ export class Periphery extends BaseContract {
         tickUpper: BigNumberish;
         marginDelta: BigNumberish;
       },
-      overrides?: PayableOverrides & { from?: string | Promise<string> }
+      overrides?: PayableOverrides & { from?: string | Promise<string> },
     ): Promise<PopulatedTransaction>;
 
     transferOwnership(
       newOwner: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<PopulatedTransaction>;
 
     updatePositionMargin(
@@ -1183,18 +1041,18 @@ export class Periphery extends BaseContract {
       tickUpper: BigNumberish,
       marginDelta: BigNumberish,
       fullyWithdraw: boolean,
-      overrides?: PayableOverrides & { from?: string | Promise<string> }
+      overrides?: PayableOverrides & { from?: string | Promise<string> },
     ): Promise<PopulatedTransaction>;
 
     upgradeTo(
       newImplementation: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<PopulatedTransaction>;
 
     upgradeToAndCall(
       newImplementation: string,
       data: BytesLike,
-      overrides?: PayableOverrides & { from?: string | Promise<string> }
+      overrides?: PayableOverrides & { from?: string | Promise<string> },
     ): Promise<PopulatedTransaction>;
 
     weth(overrides?: CallOverrides): Promise<PopulatedTransaction>;

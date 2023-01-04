@@ -1,7 +1,6 @@
-import { MaxUint256 } from '../constants';
 import JSBI from 'jsbi';
 import invariant from 'tiny-invariant';
-import { ONE, ZERO } from '../constants';
+import { MaxUint256, ONE, ZERO } from '../constants';
 import { mostSignificantBit } from './mostSignificantBit';
 
 function mulShift(val: JSBI, mulBy: string): JSBI {
@@ -19,7 +18,7 @@ export abstract class TickMath {
   /**
    * The minimum tick that can be used on any pool.
    */
-  public static MIN_TICK: number = -69100;;
+  public static MIN_TICK = -69100;
   /**
    * The maximum tick that can be used on any pool.
    */
@@ -32,9 +31,7 @@ export abstract class TickMath {
   /**
    * The sqrt ratio corresponding to the maximum tick that could be used on any pool.
    */
-  public static MAX_SQRT_RATIO: JSBI = JSBI.BigInt(
-    '2507794810551837817144115957740',
-  );
+  public static MAX_SQRT_RATIO: JSBI = JSBI.BigInt('2507794810551837817144115957740');
 
   /**
    * Returns the sqrt ratio as a Q64.96 for the given tick. The sqrt ratio is computed as sqrt(1.0001)^tick

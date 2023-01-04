@@ -128,7 +128,7 @@ export class Fraction {
   public toSignificant(
     significantDigits: number,
     // eslint-disable-next-line @typescript-eslint/ban-types
-    format: object = { groupSeparator: '' },
+    format: { groupSeparator: string } = { groupSeparator: '' },
     rounding: Rounding = Rounding.ROUND_HALF_UP,
   ): string {
     invariant(Number.isInteger(significantDigits), `${significantDigits} is not an integer.`);
@@ -144,7 +144,7 @@ export class Fraction {
   public toFixed(
     decimalPlaces: number,
     // eslint-disable-next-line @typescript-eslint/ban-types
-    format: object = { groupSeparator: '' },
+    format: { groupSeparator: string } = { groupSeparator: '' },
   ): string {
     invariant(Number.isInteger(decimalPlaces), `${decimalPlaces} is not an integer.`);
     invariant(decimalPlaces >= 0, `${decimalPlaces} is negative.`);

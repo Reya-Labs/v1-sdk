@@ -13,136 +13,76 @@ import {
   ContractTransaction,
   Overrides,
   CallOverrides,
-} from "ethers";
-import { BytesLike } from "@ethersproject/bytes";
-import { Listener, Provider } from "@ethersproject/providers";
-import { FunctionFragment, EventFragment, Result } from "@ethersproject/abi";
-import type { TypedEventFilter, TypedEvent, TypedListener } from "./common";
+} from 'ethers';
+import { BytesLike } from '@ethersproject/bytes';
+import { Listener, Provider } from '@ethersproject/providers';
+import { FunctionFragment, EventFragment, Result } from '@ethersproject/abi';
+import type { TypedEventFilter, TypedEvent, TypedListener } from './common';
 
 interface FactoryInterface extends ethers.utils.Interface {
   functions: {
-    "deployIrsInstance(address,address,uint256,uint256,int24)": FunctionFragment;
-    "isApproved(address,address)": FunctionFragment;
-    "masterFCMs(uint8)": FunctionFragment;
-    "masterMarginEngine()": FunctionFragment;
-    "masterVAMM()": FunctionFragment;
-    "owner()": FunctionFragment;
-    "periphery()": FunctionFragment;
-    "renounceOwnership()": FunctionFragment;
-    "setApproval(address,bool)": FunctionFragment;
-    "setMasterFCM(address,uint8)": FunctionFragment;
-    "setMasterMarginEngine(address)": FunctionFragment;
-    "setMasterVAMM(address)": FunctionFragment;
-    "setPeriphery(address)": FunctionFragment;
-    "transferOwnership(address)": FunctionFragment;
+    'deployIrsInstance(address,address,uint256,uint256,int24)': FunctionFragment;
+    'isApproved(address,address)': FunctionFragment;
+    'masterFCMs(uint8)': FunctionFragment;
+    'masterMarginEngine()': FunctionFragment;
+    'masterVAMM()': FunctionFragment;
+    'owner()': FunctionFragment;
+    'periphery()': FunctionFragment;
+    'renounceOwnership()': FunctionFragment;
+    'setApproval(address,bool)': FunctionFragment;
+    'setMasterFCM(address,uint8)': FunctionFragment;
+    'setMasterMarginEngine(address)': FunctionFragment;
+    'setMasterVAMM(address)': FunctionFragment;
+    'setPeriphery(address)': FunctionFragment;
+    'transferOwnership(address)': FunctionFragment;
   };
 
   encodeFunctionData(
-    functionFragment: "deployIrsInstance",
-    values: [string, string, BigNumberish, BigNumberish, BigNumberish]
+    functionFragment: 'deployIrsInstance',
+    values: [string, string, BigNumberish, BigNumberish, BigNumberish],
   ): string;
-  encodeFunctionData(
-    functionFragment: "isApproved",
-    values: [string, string]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "masterFCMs",
-    values: [BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "masterMarginEngine",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "masterVAMM",
-    values?: undefined
-  ): string;
-  encodeFunctionData(functionFragment: "owner", values?: undefined): string;
-  encodeFunctionData(functionFragment: "periphery", values?: undefined): string;
-  encodeFunctionData(
-    functionFragment: "renounceOwnership",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
-    functionFragment: "setApproval",
-    values: [string, boolean]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "setMasterFCM",
-    values: [string, BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "setMasterMarginEngine",
-    values: [string]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "setMasterVAMM",
-    values: [string]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "setPeriphery",
-    values: [string]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "transferOwnership",
-    values: [string]
-  ): string;
+  encodeFunctionData(functionFragment: 'isApproved', values: [string, string]): string;
+  encodeFunctionData(functionFragment: 'masterFCMs', values: [BigNumberish]): string;
+  encodeFunctionData(functionFragment: 'masterMarginEngine', values?: undefined): string;
+  encodeFunctionData(functionFragment: 'masterVAMM', values?: undefined): string;
+  encodeFunctionData(functionFragment: 'owner', values?: undefined): string;
+  encodeFunctionData(functionFragment: 'periphery', values?: undefined): string;
+  encodeFunctionData(functionFragment: 'renounceOwnership', values?: undefined): string;
+  encodeFunctionData(functionFragment: 'setApproval', values: [string, boolean]): string;
+  encodeFunctionData(functionFragment: 'setMasterFCM', values: [string, BigNumberish]): string;
+  encodeFunctionData(functionFragment: 'setMasterMarginEngine', values: [string]): string;
+  encodeFunctionData(functionFragment: 'setMasterVAMM', values: [string]): string;
+  encodeFunctionData(functionFragment: 'setPeriphery', values: [string]): string;
+  encodeFunctionData(functionFragment: 'transferOwnership', values: [string]): string;
 
-  decodeFunctionResult(
-    functionFragment: "deployIrsInstance",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(functionFragment: "isApproved", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "masterFCMs", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "masterMarginEngine",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(functionFragment: "masterVAMM", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "periphery", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "renounceOwnership",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "setApproval",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "setMasterFCM",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "setMasterMarginEngine",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "setMasterVAMM",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "setPeriphery",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
-    functionFragment: "transferOwnership",
-    data: BytesLike
-  ): Result;
+  decodeFunctionResult(functionFragment: 'deployIrsInstance', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'isApproved', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'masterFCMs', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'masterMarginEngine', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'masterVAMM', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'owner', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'periphery', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'renounceOwnership', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'setApproval', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'setMasterFCM', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'setMasterMarginEngine', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'setMasterVAMM', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'setPeriphery', data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: 'transferOwnership', data: BytesLike): Result;
 
   events: {
-    "Approval(address,address,bool)": EventFragment;
-    "IrsInstance(address,address,uint256,uint256,int24,address,address,address,uint8,uint8)": EventFragment;
-    "MasterFCM(address,uint8)": EventFragment;
-    "OwnershipTransferred(address,address)": EventFragment;
-    "PeripheryUpdate(address)": EventFragment;
+    'Approval(address,address,bool)': EventFragment;
+    'IrsInstance(address,address,uint256,uint256,int24,address,address,address,uint8,uint8)': EventFragment;
+    'MasterFCM(address,uint8)': EventFragment;
+    'OwnershipTransferred(address,address)': EventFragment;
+    'PeripheryUpdate(address)': EventFragment;
   };
 
-  getEvent(nameOrSignatureOrTopic: "Approval"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "IrsInstance"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "MasterFCM"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "OwnershipTransferred"): EventFragment;
-  getEvent(nameOrSignatureOrTopic: "PeripheryUpdate"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: 'Approval'): EventFragment;
+  getEvent(nameOrSignatureOrTopic: 'IrsInstance'): EventFragment;
+  getEvent(nameOrSignatureOrTopic: 'MasterFCM'): EventFragment;
+  getEvent(nameOrSignatureOrTopic: 'OwnershipTransferred'): EventFragment;
+  getEvent(nameOrSignatureOrTopic: 'PeripheryUpdate'): EventFragment;
 }
 
 export type ApprovalEvent = TypedEvent<
@@ -154,18 +94,7 @@ export type ApprovalEvent = TypedEvent<
 >;
 
 export type IrsInstanceEvent = TypedEvent<
-  [
-    string,
-    string,
-    BigNumber,
-    BigNumber,
-    number,
-    string,
-    string,
-    string,
-    number,
-    number
-  ] & {
+  [string, string, BigNumber, BigNumber, number, string, string, string, number, number] & {
     underlyingToken: string;
     rateOracle: string;
     termStartTimestampWad: BigNumber;
@@ -198,26 +127,26 @@ export class Factory extends BaseContract {
   deployed(): Promise<this>;
 
   listeners<EventArgsArray extends Array<any>, EventArgsObject>(
-    eventFilter?: TypedEventFilter<EventArgsArray, EventArgsObject>
+    eventFilter?: TypedEventFilter<EventArgsArray, EventArgsObject>,
   ): Array<TypedListener<EventArgsArray, EventArgsObject>>;
   off<EventArgsArray extends Array<any>, EventArgsObject>(
     eventFilter: TypedEventFilter<EventArgsArray, EventArgsObject>,
-    listener: TypedListener<EventArgsArray, EventArgsObject>
+    listener: TypedListener<EventArgsArray, EventArgsObject>,
   ): this;
   on<EventArgsArray extends Array<any>, EventArgsObject>(
     eventFilter: TypedEventFilter<EventArgsArray, EventArgsObject>,
-    listener: TypedListener<EventArgsArray, EventArgsObject>
+    listener: TypedListener<EventArgsArray, EventArgsObject>,
   ): this;
   once<EventArgsArray extends Array<any>, EventArgsObject>(
     eventFilter: TypedEventFilter<EventArgsArray, EventArgsObject>,
-    listener: TypedListener<EventArgsArray, EventArgsObject>
+    listener: TypedListener<EventArgsArray, EventArgsObject>,
   ): this;
   removeListener<EventArgsArray extends Array<any>, EventArgsObject>(
     eventFilter: TypedEventFilter<EventArgsArray, EventArgsObject>,
-    listener: TypedListener<EventArgsArray, EventArgsObject>
+    listener: TypedListener<EventArgsArray, EventArgsObject>,
   ): this;
   removeAllListeners<EventArgsArray extends Array<any>, EventArgsObject>(
-    eventFilter: TypedEventFilter<EventArgsArray, EventArgsObject>
+    eventFilter: TypedEventFilter<EventArgsArray, EventArgsObject>,
   ): this;
 
   listeners(eventName?: string): Array<Listener>;
@@ -230,7 +159,7 @@ export class Factory extends BaseContract {
   queryFilter<EventArgsArray extends Array<any>, EventArgsObject>(
     event: TypedEventFilter<EventArgsArray, EventArgsObject>,
     fromBlockOrBlockhash?: string | number | undefined,
-    toBlock?: string | number | undefined
+    toBlock?: string | number | undefined,
   ): Promise<Array<TypedEvent<EventArgsArray & EventArgsObject>>>;
 
   interface: FactoryInterface;
@@ -242,19 +171,12 @@ export class Factory extends BaseContract {
       _termStartTimestampWad: BigNumberish,
       _termEndTimestampWad: BigNumberish,
       _tickSpacing: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<ContractTransaction>;
 
-    isApproved(
-      _owner: string,
-      _intAddress: string,
-      overrides?: CallOverrides
-    ): Promise<[boolean]>;
+    isApproved(_owner: string, _intAddress: string, overrides?: CallOverrides): Promise<[boolean]>;
 
-    masterFCMs(
-      arg0: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<[string]>;
+    masterFCMs(arg0: BigNumberish, overrides?: CallOverrides): Promise<[string]>;
 
     masterMarginEngine(overrides?: CallOverrides): Promise<[string]>;
 
@@ -265,39 +187,39 @@ export class Factory extends BaseContract {
     periphery(overrides?: CallOverrides): Promise<[string]>;
 
     renounceOwnership(
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<ContractTransaction>;
 
     setApproval(
       intAddress: string,
       allowIntegration: boolean,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<ContractTransaction>;
 
     setMasterFCM(
       _masterFCM: string,
       _yieldBearingProtocolID: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<ContractTransaction>;
 
     setMasterMarginEngine(
       _masterMarginEngine: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<ContractTransaction>;
 
     setMasterVAMM(
       _masterVAMM: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<ContractTransaction>;
 
     setPeriphery(
       _periphery: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<ContractTransaction>;
 
     transferOwnership(
       newOwner: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<ContractTransaction>;
   };
 
@@ -307,14 +229,10 @@ export class Factory extends BaseContract {
     _termStartTimestampWad: BigNumberish,
     _termEndTimestampWad: BigNumberish,
     _tickSpacing: BigNumberish,
-    overrides?: Overrides & { from?: string | Promise<string> }
+    overrides?: Overrides & { from?: string | Promise<string> },
   ): Promise<ContractTransaction>;
 
-  isApproved(
-    _owner: string,
-    _intAddress: string,
-    overrides?: CallOverrides
-  ): Promise<boolean>;
+  isApproved(_owner: string, _intAddress: string, overrides?: CallOverrides): Promise<boolean>;
 
   masterFCMs(arg0: BigNumberish, overrides?: CallOverrides): Promise<string>;
 
@@ -327,39 +245,39 @@ export class Factory extends BaseContract {
   periphery(overrides?: CallOverrides): Promise<string>;
 
   renounceOwnership(
-    overrides?: Overrides & { from?: string | Promise<string> }
+    overrides?: Overrides & { from?: string | Promise<string> },
   ): Promise<ContractTransaction>;
 
   setApproval(
     intAddress: string,
     allowIntegration: boolean,
-    overrides?: Overrides & { from?: string | Promise<string> }
+    overrides?: Overrides & { from?: string | Promise<string> },
   ): Promise<ContractTransaction>;
 
   setMasterFCM(
     _masterFCM: string,
     _yieldBearingProtocolID: BigNumberish,
-    overrides?: Overrides & { from?: string | Promise<string> }
+    overrides?: Overrides & { from?: string | Promise<string> },
   ): Promise<ContractTransaction>;
 
   setMasterMarginEngine(
     _masterMarginEngine: string,
-    overrides?: Overrides & { from?: string | Promise<string> }
+    overrides?: Overrides & { from?: string | Promise<string> },
   ): Promise<ContractTransaction>;
 
   setMasterVAMM(
     _masterVAMM: string,
-    overrides?: Overrides & { from?: string | Promise<string> }
+    overrides?: Overrides & { from?: string | Promise<string> },
   ): Promise<ContractTransaction>;
 
   setPeriphery(
     _periphery: string,
-    overrides?: Overrides & { from?: string | Promise<string> }
+    overrides?: Overrides & { from?: string | Promise<string> },
   ): Promise<ContractTransaction>;
 
   transferOwnership(
     newOwner: string,
-    overrides?: Overrides & { from?: string | Promise<string> }
+    overrides?: Overrides & { from?: string | Promise<string> },
   ): Promise<ContractTransaction>;
 
   callStatic: {
@@ -369,7 +287,7 @@ export class Factory extends BaseContract {
       _termStartTimestampWad: BigNumberish,
       _termEndTimestampWad: BigNumberish,
       _tickSpacing: BigNumberish,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<
       [string, string, string] & {
         marginEngineProxy: string;
@@ -378,11 +296,7 @@ export class Factory extends BaseContract {
       }
     >;
 
-    isApproved(
-      _owner: string,
-      _intAddress: string,
-      overrides?: CallOverrides
-    ): Promise<boolean>;
+    isApproved(_owner: string, _intAddress: string, overrides?: CallOverrides): Promise<boolean>;
 
     masterFCMs(arg0: BigNumberish, overrides?: CallOverrides): Promise<string>;
 
@@ -399,38 +313,29 @@ export class Factory extends BaseContract {
     setApproval(
       intAddress: string,
       allowIntegration: boolean,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<void>;
 
     setMasterFCM(
       _masterFCM: string,
       _yieldBearingProtocolID: BigNumberish,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<void>;
 
-    setMasterMarginEngine(
-      _masterMarginEngine: string,
-      overrides?: CallOverrides
-    ): Promise<void>;
+    setMasterMarginEngine(_masterMarginEngine: string, overrides?: CallOverrides): Promise<void>;
 
-    setMasterVAMM(
-      _masterVAMM: string,
-      overrides?: CallOverrides
-    ): Promise<void>;
+    setMasterVAMM(_masterVAMM: string, overrides?: CallOverrides): Promise<void>;
 
     setPeriphery(_periphery: string, overrides?: CallOverrides): Promise<void>;
 
-    transferOwnership(
-      newOwner: string,
-      overrides?: CallOverrides
-    ): Promise<void>;
+    transferOwnership(newOwner: string, overrides?: CallOverrides): Promise<void>;
   };
 
   filters: {
-    "Approval(address,address,bool)"(
+    'Approval(address,address,bool)'(
       owner?: string | null,
       intAddress?: string | null,
-      isApproved?: boolean | null
+      isApproved?: boolean | null,
     ): TypedEventFilter<
       [string, string, boolean],
       { owner: string; intAddress: string; isApproved: boolean }
@@ -439,13 +344,13 @@ export class Factory extends BaseContract {
     Approval(
       owner?: string | null,
       intAddress?: string | null,
-      isApproved?: boolean | null
+      isApproved?: boolean | null,
     ): TypedEventFilter<
       [string, string, boolean],
       { owner: string; intAddress: string; isApproved: boolean }
     >;
 
-    "IrsInstance(address,address,uint256,uint256,int24,address,address,address,uint8,uint8)"(
+    'IrsInstance(address,address,uint256,uint256,int24,address,address,address,uint8,uint8)'(
       underlyingToken?: string | null,
       rateOracle?: string | null,
       termStartTimestampWad?: null,
@@ -455,20 +360,9 @@ export class Factory extends BaseContract {
       vamm?: null,
       fcm?: null,
       yieldBearingProtocolID?: null,
-      underlyingTokenDecimals?: null
+      underlyingTokenDecimals?: null,
     ): TypedEventFilter<
-      [
-        string,
-        string,
-        BigNumber,
-        BigNumber,
-        number,
-        string,
-        string,
-        string,
-        number,
-        number
-      ],
+      [string, string, BigNumber, BigNumber, number, string, string, string, number, number],
       {
         underlyingToken: string;
         rateOracle: string;
@@ -493,20 +387,9 @@ export class Factory extends BaseContract {
       vamm?: null,
       fcm?: null,
       yieldBearingProtocolID?: null,
-      underlyingTokenDecimals?: null
+      underlyingTokenDecimals?: null,
     ): TypedEventFilter<
-      [
-        string,
-        string,
-        BigNumber,
-        BigNumber,
-        number,
-        string,
-        string,
-        string,
-        number,
-        number
-      ],
+      [string, string, BigNumber, BigNumber, number, string, string, string, number, number],
       {
         underlyingToken: string;
         rateOracle: string;
@@ -521,9 +404,9 @@ export class Factory extends BaseContract {
       }
     >;
 
-    "MasterFCM(address,uint8)"(
+    'MasterFCM(address,uint8)'(
       masterFCMAddress?: null,
-      yieldBearingProtocolID?: null
+      yieldBearingProtocolID?: null,
     ): TypedEventFilter<
       [string, number],
       { masterFCMAddress: string; yieldBearingProtocolID: number }
@@ -531,35 +414,25 @@ export class Factory extends BaseContract {
 
     MasterFCM(
       masterFCMAddress?: null,
-      yieldBearingProtocolID?: null
+      yieldBearingProtocolID?: null,
     ): TypedEventFilter<
       [string, number],
       { masterFCMAddress: string; yieldBearingProtocolID: number }
     >;
 
-    "OwnershipTransferred(address,address)"(
+    'OwnershipTransferred(address,address)'(
       previousOwner?: string | null,
-      newOwner?: string | null
-    ): TypedEventFilter<
-      [string, string],
-      { previousOwner: string; newOwner: string }
-    >;
+      newOwner?: string | null,
+    ): TypedEventFilter<[string, string], { previousOwner: string; newOwner: string }>;
 
     OwnershipTransferred(
       previousOwner?: string | null,
-      newOwner?: string | null
-    ): TypedEventFilter<
-      [string, string],
-      { previousOwner: string; newOwner: string }
-    >;
+      newOwner?: string | null,
+    ): TypedEventFilter<[string, string], { previousOwner: string; newOwner: string }>;
 
-    "PeripheryUpdate(address)"(
-      periphery?: null
-    ): TypedEventFilter<[string], { periphery: string }>;
+    'PeripheryUpdate(address)'(periphery?: null): TypedEventFilter<[string], { periphery: string }>;
 
-    PeripheryUpdate(
-      periphery?: null
-    ): TypedEventFilter<[string], { periphery: string }>;
+    PeripheryUpdate(periphery?: null): TypedEventFilter<[string], { periphery: string }>;
   };
 
   estimateGas: {
@@ -569,19 +442,12 @@ export class Factory extends BaseContract {
       _termStartTimestampWad: BigNumberish,
       _termEndTimestampWad: BigNumberish,
       _tickSpacing: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<BigNumber>;
 
-    isApproved(
-      _owner: string,
-      _intAddress: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
+    isApproved(_owner: string, _intAddress: string, overrides?: CallOverrides): Promise<BigNumber>;
 
-    masterFCMs(
-      arg0: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
+    masterFCMs(arg0: BigNumberish, overrides?: CallOverrides): Promise<BigNumber>;
 
     masterMarginEngine(overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -592,39 +458,39 @@ export class Factory extends BaseContract {
     periphery(overrides?: CallOverrides): Promise<BigNumber>;
 
     renounceOwnership(
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<BigNumber>;
 
     setApproval(
       intAddress: string,
       allowIntegration: boolean,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<BigNumber>;
 
     setMasterFCM(
       _masterFCM: string,
       _yieldBearingProtocolID: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<BigNumber>;
 
     setMasterMarginEngine(
       _masterMarginEngine: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<BigNumber>;
 
     setMasterVAMM(
       _masterVAMM: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<BigNumber>;
 
     setPeriphery(
       _periphery: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<BigNumber>;
 
     transferOwnership(
       newOwner: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<BigNumber>;
   };
 
@@ -635,23 +501,18 @@ export class Factory extends BaseContract {
       _termStartTimestampWad: BigNumberish,
       _termEndTimestampWad: BigNumberish,
       _tickSpacing: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<PopulatedTransaction>;
 
     isApproved(
       _owner: string,
       _intAddress: string,
-      overrides?: CallOverrides
+      overrides?: CallOverrides,
     ): Promise<PopulatedTransaction>;
 
-    masterFCMs(
-      arg0: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
+    masterFCMs(arg0: BigNumberish, overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
-    masterMarginEngine(
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
+    masterMarginEngine(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     masterVAMM(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
@@ -660,39 +521,39 @@ export class Factory extends BaseContract {
     periphery(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     renounceOwnership(
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<PopulatedTransaction>;
 
     setApproval(
       intAddress: string,
       allowIntegration: boolean,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<PopulatedTransaction>;
 
     setMasterFCM(
       _masterFCM: string,
       _yieldBearingProtocolID: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<PopulatedTransaction>;
 
     setMasterMarginEngine(
       _masterMarginEngine: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<PopulatedTransaction>;
 
     setMasterVAMM(
       _masterVAMM: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<PopulatedTransaction>;
 
     setPeriphery(
       _periphery: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<PopulatedTransaction>;
 
     transferOwnership(
       newOwner: string,
-      overrides?: Overrides & { from?: string | Promise<string> }
+      overrides?: Overrides & { from?: string | Promise<string> },
     ): Promise<PopulatedTransaction>;
   };
 }

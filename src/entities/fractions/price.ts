@@ -7,8 +7,7 @@ export class Price extends Fraction {
    * @param args
    */
   public constructor(...args: [BigIntish, BigIntish]) {
-    let denominator: BigIntish, numerator: BigIntish;
-    [denominator, numerator] = args;
+    const [denominator, numerator] = args;
     // flip them for the APR entity (fr = 1 / price)
     super(numerator, denominator);
   }
@@ -25,14 +24,14 @@ export class Price extends Fraction {
   }
 
   public toSignificant(
-    significantDigits: number = 6,
-    format?: object,
+    significantDigits = 6,
+    format?: { groupSeparator: string },
     rounding?: Rounding,
   ): string {
     return super.toSignificant(significantDigits, format, rounding);
   }
 
-  public toFixed(decimalPlaces: number = 4, format?: object, rounding?: Rounding): string {
+  public toFixed(decimalPlaces = 4, format?: { groupSeparator: string }): string {
     return super.toFixed(decimalPlaces, format);
   }
 }
