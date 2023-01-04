@@ -14,117 +14,162 @@ import {
   Overrides,
   PayableOverrides,
   CallOverrides,
-} from 'ethers';
-import { BytesLike } from '@ethersproject/bytes';
-import { Listener, Provider } from '@ethersproject/providers';
-import { FunctionFragment, EventFragment, Result } from '@ethersproject/abi';
-import type { TypedEventFilter, TypedEvent, TypedListener } from './common';
+} from "ethers";
+import { BytesLike } from "@ethersproject/bytes";
+import { Listener, Provider } from "@ethersproject/providers";
+import { FunctionFragment, EventFragment, Result } from "@ethersproject/abi";
+import type { TypedEventFilter, TypedEvent, TypedListener } from "./common";
 
 interface MarginEngineInterface extends ethers.utils.Interface {
   functions: {
-    'MAX_CACHE_MAX_AGE_IN_SECONDS()': FunctionFragment;
-    'MAX_FIXED_RATE_WAD()': FunctionFragment;
-    'MAX_LIQUIDATOR_REWARD_WAD()': FunctionFragment;
-    'MAX_LOOKBACK_WINDOW_IN_SECONDS()': FunctionFragment;
-    'MIN_LOOKBACK_WINDOW_IN_SECONDS()': FunctionFragment;
-    'ONE()': FunctionFragment;
-    'ONE_UINT()': FunctionFragment;
-    'SECONDS_IN_YEAR()': FunctionFragment;
-    'cacheMaxAgeInSeconds()': FunctionFragment;
-    'collectProtocol(address,uint256)': FunctionFragment;
-    'factory()': FunctionFragment;
-    'fcm()': FunctionFragment;
-    'getHistoricalApy()': FunctionFragment;
-    'getHistoricalApyReadOnly()': FunctionFragment;
-    'getPosition(address,int24,int24)': FunctionFragment;
-    'getPositionMarginRequirement(address,int24,int24,bool)': FunctionFragment;
-    'initialize(address,address,uint256,uint256)': FunctionFragment;
-    'isAlpha()': FunctionFragment;
-    'liquidatePosition(address,int24,int24)': FunctionFragment;
-    'liquidatorRewardWad()': FunctionFragment;
-    'lookbackWindowInSeconds()': FunctionFragment;
-    'owner()': FunctionFragment;
-    'paused()': FunctionFragment;
-    'proxiableUUID()': FunctionFragment;
-    'rateOracle()': FunctionFragment;
-    'renounceOwnership()': FunctionFragment;
-    'setCacheMaxAgeInSeconds(uint256)': FunctionFragment;
-    'setFCM(address)': FunctionFragment;
-    'setIsAlpha(bool)': FunctionFragment;
-    'setLiquidatorReward(uint256)': FunctionFragment;
-    'setLookbackWindowInSeconds(uint256)': FunctionFragment;
-    'setMarginCalculatorParameters((uint256,uint256,int256,int256,int256,int256,int256,int256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256))': FunctionFragment;
-    'setPausability(bool)': FunctionFragment;
-    'setRateOracle(address)': FunctionFragment;
-    'setVAMM(address)': FunctionFragment;
-    'settlePosition(address,int24,int24)': FunctionFragment;
-    'termEndTimestampWad()': FunctionFragment;
-    'termStartTimestampWad()': FunctionFragment;
-    'transferMarginToFCMTrader(address,uint256)': FunctionFragment;
-    'transferOwnership(address)': FunctionFragment;
-    'underlyingToken()': FunctionFragment;
-    'updatePositionMargin(address,int24,int24,int256)': FunctionFragment;
-    'updatePositionPostVAMMInducedMintBurn((address,int24,int24,int128))': FunctionFragment;
-    'updatePositionPostVAMMInducedSwap(address,int24,int24,int256,int256,uint256,int256)': FunctionFragment;
-    'upgradeTo(address)': FunctionFragment;
-    'upgradeToAndCall(address,bytes)': FunctionFragment;
-    'vamm()': FunctionFragment;
+    "MAX_CACHE_MAX_AGE_IN_SECONDS()": FunctionFragment;
+    "MAX_FIXED_RATE_WAD()": FunctionFragment;
+    "MAX_LIQUIDATOR_REWARD_WAD()": FunctionFragment;
+    "MAX_LOOKBACK_WINDOW_IN_SECONDS()": FunctionFragment;
+    "MIN_LOOKBACK_WINDOW_IN_SECONDS()": FunctionFragment;
+    "ONE()": FunctionFragment;
+    "ONE_UINT()": FunctionFragment;
+    "SECONDS_IN_YEAR()": FunctionFragment;
+    "cacheMaxAgeInSeconds()": FunctionFragment;
+    "collectProtocol(address,uint256)": FunctionFragment;
+    "factory()": FunctionFragment;
+    "fcm()": FunctionFragment;
+    "getHistoricalApy()": FunctionFragment;
+    "getHistoricalApyReadOnly()": FunctionFragment;
+    "getPosition(address,int24,int24)": FunctionFragment;
+    "getPositionMarginRequirement(address,int24,int24,bool)": FunctionFragment;
+    "initialize(address,address,uint256,uint256)": FunctionFragment;
+    "isAlpha()": FunctionFragment;
+    "liquidatePosition(address,int24,int24)": FunctionFragment;
+    "liquidatorRewardWad()": FunctionFragment;
+    "lookbackWindowInSeconds()": FunctionFragment;
+    "owner()": FunctionFragment;
+    "paused()": FunctionFragment;
+    "proxiableUUID()": FunctionFragment;
+    "rateOracle()": FunctionFragment;
+    "renounceOwnership()": FunctionFragment;
+    "setCacheMaxAgeInSeconds(uint256)": FunctionFragment;
+    "setFCM(address)": FunctionFragment;
+    "setIsAlpha(bool)": FunctionFragment;
+    "setLiquidatorReward(uint256)": FunctionFragment;
+    "setLookbackWindowInSeconds(uint256)": FunctionFragment;
+    "setMarginCalculatorParameters((uint256,uint256,int256,int256,int256,int256,int256,int256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256))": FunctionFragment;
+    "setPausability(bool)": FunctionFragment;
+    "setRateOracle(address)": FunctionFragment;
+    "setVAMM(address)": FunctionFragment;
+    "settlePosition(address,int24,int24)": FunctionFragment;
+    "termEndTimestampWad()": FunctionFragment;
+    "termStartTimestampWad()": FunctionFragment;
+    "transferMarginToFCMTrader(address,uint256)": FunctionFragment;
+    "transferOwnership(address)": FunctionFragment;
+    "underlyingToken()": FunctionFragment;
+    "updatePositionMargin(address,int24,int24,int256)": FunctionFragment;
+    "updatePositionPostVAMMInducedMintBurn((address,int24,int24,int128))": FunctionFragment;
+    "updatePositionPostVAMMInducedSwap(address,int24,int24,int256,int256,uint256,int256)": FunctionFragment;
+    "upgradeTo(address)": FunctionFragment;
+    "upgradeToAndCall(address,bytes)": FunctionFragment;
+    "vamm()": FunctionFragment;
   };
 
-  encodeFunctionData(functionFragment: 'MAX_CACHE_MAX_AGE_IN_SECONDS', values?: undefined): string;
-  encodeFunctionData(functionFragment: 'MAX_FIXED_RATE_WAD', values?: undefined): string;
-  encodeFunctionData(functionFragment: 'MAX_LIQUIDATOR_REWARD_WAD', values?: undefined): string;
   encodeFunctionData(
-    functionFragment: 'MAX_LOOKBACK_WINDOW_IN_SECONDS',
-    values?: undefined,
+    functionFragment: "MAX_CACHE_MAX_AGE_IN_SECONDS",
+    values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: 'MIN_LOOKBACK_WINDOW_IN_SECONDS',
-    values?: undefined,
-  ): string;
-  encodeFunctionData(functionFragment: 'ONE', values?: undefined): string;
-  encodeFunctionData(functionFragment: 'ONE_UINT', values?: undefined): string;
-  encodeFunctionData(functionFragment: 'SECONDS_IN_YEAR', values?: undefined): string;
-  encodeFunctionData(functionFragment: 'cacheMaxAgeInSeconds', values?: undefined): string;
-  encodeFunctionData(functionFragment: 'collectProtocol', values: [string, BigNumberish]): string;
-  encodeFunctionData(functionFragment: 'factory', values?: undefined): string;
-  encodeFunctionData(functionFragment: 'fcm', values?: undefined): string;
-  encodeFunctionData(functionFragment: 'getHistoricalApy', values?: undefined): string;
-  encodeFunctionData(functionFragment: 'getHistoricalApyReadOnly', values?: undefined): string;
-  encodeFunctionData(
-    functionFragment: 'getPosition',
-    values: [string, BigNumberish, BigNumberish],
+    functionFragment: "MAX_FIXED_RATE_WAD",
+    values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: 'getPositionMarginRequirement',
-    values: [string, BigNumberish, BigNumberish, boolean],
+    functionFragment: "MAX_LIQUIDATOR_REWARD_WAD",
+    values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: 'initialize',
-    values: [string, string, BigNumberish, BigNumberish],
-  ): string;
-  encodeFunctionData(functionFragment: 'isAlpha', values?: undefined): string;
-  encodeFunctionData(
-    functionFragment: 'liquidatePosition',
-    values: [string, BigNumberish, BigNumberish],
-  ): string;
-  encodeFunctionData(functionFragment: 'liquidatorRewardWad', values?: undefined): string;
-  encodeFunctionData(functionFragment: 'lookbackWindowInSeconds', values?: undefined): string;
-  encodeFunctionData(functionFragment: 'owner', values?: undefined): string;
-  encodeFunctionData(functionFragment: 'paused', values?: undefined): string;
-  encodeFunctionData(functionFragment: 'proxiableUUID', values?: undefined): string;
-  encodeFunctionData(functionFragment: 'rateOracle', values?: undefined): string;
-  encodeFunctionData(functionFragment: 'renounceOwnership', values?: undefined): string;
-  encodeFunctionData(functionFragment: 'setCacheMaxAgeInSeconds', values: [BigNumberish]): string;
-  encodeFunctionData(functionFragment: 'setFCM', values: [string]): string;
-  encodeFunctionData(functionFragment: 'setIsAlpha', values: [boolean]): string;
-  encodeFunctionData(functionFragment: 'setLiquidatorReward', values: [BigNumberish]): string;
-  encodeFunctionData(
-    functionFragment: 'setLookbackWindowInSeconds',
-    values: [BigNumberish],
+    functionFragment: "MAX_LOOKBACK_WINDOW_IN_SECONDS",
+    values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: 'setMarginCalculatorParameters',
+    functionFragment: "MIN_LOOKBACK_WINDOW_IN_SECONDS",
+    values?: undefined
+  ): string;
+  encodeFunctionData(functionFragment: "ONE", values?: undefined): string;
+  encodeFunctionData(functionFragment: "ONE_UINT", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "SECONDS_IN_YEAR",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "cacheMaxAgeInSeconds",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "collectProtocol",
+    values: [string, BigNumberish]
+  ): string;
+  encodeFunctionData(functionFragment: "factory", values?: undefined): string;
+  encodeFunctionData(functionFragment: "fcm", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "getHistoricalApy",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getHistoricalApyReadOnly",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getPosition",
+    values: [string, BigNumberish, BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getPositionMarginRequirement",
+    values: [string, BigNumberish, BigNumberish, boolean]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "initialize",
+    values: [string, string, BigNumberish, BigNumberish]
+  ): string;
+  encodeFunctionData(functionFragment: "isAlpha", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "liquidatePosition",
+    values: [string, BigNumberish, BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "liquidatorRewardWad",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "lookbackWindowInSeconds",
+    values?: undefined
+  ): string;
+  encodeFunctionData(functionFragment: "owner", values?: undefined): string;
+  encodeFunctionData(functionFragment: "paused", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "proxiableUUID",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "rateOracle",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "renounceOwnership",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "setCacheMaxAgeInSeconds",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(functionFragment: "setFCM", values: [string]): string;
+  encodeFunctionData(functionFragment: "setIsAlpha", values: [boolean]): string;
+  encodeFunctionData(
+    functionFragment: "setLiquidatorReward",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "setLookbackWindowInSeconds",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "setMarginCalculatorParameters",
     values: [
       {
         apyUpperMultiplierWad: BigNumberish;
@@ -145,41 +190,59 @@ interface MarginEngineInterface extends ethers.utils.Interface {
         fixedRateDeviationMinRightUnwindIMWad: BigNumberish;
         gammaWad: BigNumberish;
         minMarginToIncentiviseLiquidators: BigNumberish;
-      },
-    ],
-  ): string;
-  encodeFunctionData(functionFragment: 'setPausability', values: [boolean]): string;
-  encodeFunctionData(functionFragment: 'setRateOracle', values: [string]): string;
-  encodeFunctionData(functionFragment: 'setVAMM', values: [string]): string;
-  encodeFunctionData(
-    functionFragment: 'settlePosition',
-    values: [string, BigNumberish, BigNumberish],
-  ): string;
-  encodeFunctionData(functionFragment: 'termEndTimestampWad', values?: undefined): string;
-  encodeFunctionData(functionFragment: 'termStartTimestampWad', values?: undefined): string;
-  encodeFunctionData(
-    functionFragment: 'transferMarginToFCMTrader',
-    values: [string, BigNumberish],
-  ): string;
-  encodeFunctionData(functionFragment: 'transferOwnership', values: [string]): string;
-  encodeFunctionData(functionFragment: 'underlyingToken', values?: undefined): string;
-  encodeFunctionData(
-    functionFragment: 'updatePositionMargin',
-    values: [string, BigNumberish, BigNumberish, BigNumberish],
+      }
+    ]
   ): string;
   encodeFunctionData(
-    functionFragment: 'updatePositionPostVAMMInducedMintBurn',
+    functionFragment: "setPausability",
+    values: [boolean]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "setRateOracle",
+    values: [string]
+  ): string;
+  encodeFunctionData(functionFragment: "setVAMM", values: [string]): string;
+  encodeFunctionData(
+    functionFragment: "settlePosition",
+    values: [string, BigNumberish, BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "termEndTimestampWad",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "termStartTimestampWad",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "transferMarginToFCMTrader",
+    values: [string, BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "transferOwnership",
+    values: [string]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "underlyingToken",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "updatePositionMargin",
+    values: [string, BigNumberish, BigNumberish, BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "updatePositionPostVAMMInducedMintBurn",
     values: [
       {
         owner: string;
         tickLower: BigNumberish;
         tickUpper: BigNumberish;
         liquidityDelta: BigNumberish;
-      },
-    ],
+      }
+    ]
   ): string;
   encodeFunctionData(
-    functionFragment: 'updatePositionPostVAMMInducedSwap',
+    functionFragment: "updatePositionPostVAMMInducedSwap",
     values: [
       string,
       BigNumberish,
@@ -187,110 +250,208 @@ interface MarginEngineInterface extends ethers.utils.Interface {
       BigNumberish,
       BigNumberish,
       BigNumberish,
-      BigNumberish,
-    ],
+      BigNumberish
+    ]
   ): string;
-  encodeFunctionData(functionFragment: 'upgradeTo', values: [string]): string;
-  encodeFunctionData(functionFragment: 'upgradeToAndCall', values: [string, BytesLike]): string;
-  encodeFunctionData(functionFragment: 'vamm', values?: undefined): string;
+  encodeFunctionData(functionFragment: "upgradeTo", values: [string]): string;
+  encodeFunctionData(
+    functionFragment: "upgradeToAndCall",
+    values: [string, BytesLike]
+  ): string;
+  encodeFunctionData(functionFragment: "vamm", values?: undefined): string;
 
-  decodeFunctionResult(functionFragment: 'MAX_CACHE_MAX_AGE_IN_SECONDS', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'MAX_FIXED_RATE_WAD', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'MAX_LIQUIDATOR_REWARD_WAD', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'MAX_LOOKBACK_WINDOW_IN_SECONDS', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'MIN_LOOKBACK_WINDOW_IN_SECONDS', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'ONE', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'ONE_UINT', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'SECONDS_IN_YEAR', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'cacheMaxAgeInSeconds', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'collectProtocol', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'factory', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'fcm', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'getHistoricalApy', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'getHistoricalApyReadOnly', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'getPosition', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'getPositionMarginRequirement', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'initialize', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'isAlpha', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'liquidatePosition', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'liquidatorRewardWad', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'lookbackWindowInSeconds', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'owner', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'paused', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'proxiableUUID', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'rateOracle', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'renounceOwnership', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'setCacheMaxAgeInSeconds', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'setFCM', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'setIsAlpha', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'setLiquidatorReward', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'setLookbackWindowInSeconds', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'setMarginCalculatorParameters', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'setPausability', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'setRateOracle', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'setVAMM', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'settlePosition', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'termEndTimestampWad', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'termStartTimestampWad', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'transferMarginToFCMTrader', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'transferOwnership', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'underlyingToken', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'updatePositionMargin', data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: 'updatePositionPostVAMMInducedMintBurn',
-    data: BytesLike,
+    functionFragment: "MAX_CACHE_MAX_AGE_IN_SECONDS",
+    data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: 'updatePositionPostVAMMInducedSwap',
-    data: BytesLike,
+    functionFragment: "MAX_FIXED_RATE_WAD",
+    data: BytesLike
   ): Result;
-  decodeFunctionResult(functionFragment: 'upgradeTo', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'upgradeToAndCall', data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: 'vamm', data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "MAX_LIQUIDATOR_REWARD_WAD",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "MAX_LOOKBACK_WINDOW_IN_SECONDS",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "MIN_LOOKBACK_WINDOW_IN_SECONDS",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "ONE", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "ONE_UINT", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "SECONDS_IN_YEAR",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "cacheMaxAgeInSeconds",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "collectProtocol",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "factory", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "fcm", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "getHistoricalApy",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getHistoricalApyReadOnly",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getPosition",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getPositionMarginRequirement",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "initialize", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "isAlpha", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "liquidatePosition",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "liquidatorRewardWad",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "lookbackWindowInSeconds",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "paused", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "proxiableUUID",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "rateOracle", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "renounceOwnership",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "setCacheMaxAgeInSeconds",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "setFCM", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "setIsAlpha", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "setLiquidatorReward",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "setLookbackWindowInSeconds",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "setMarginCalculatorParameters",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "setPausability",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "setRateOracle",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "setVAMM", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "settlePosition",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "termEndTimestampWad",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "termStartTimestampWad",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "transferMarginToFCMTrader",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "transferOwnership",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "underlyingToken",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "updatePositionMargin",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "updatePositionPostVAMMInducedMintBurn",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "updatePositionPostVAMMInducedSwap",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "upgradeTo", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "upgradeToAndCall",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "vamm", data: BytesLike): Result;
 
   events: {
-    'AdminChanged(address,address)': EventFragment;
-    'BeaconUpgraded(address)': EventFragment;
-    'CacheMaxAgeSetting(uint256)': EventFragment;
-    'FCMSetting(address)': EventFragment;
-    'HistoricalApy(uint256)': EventFragment;
-    'HistoricalApyWindowSetting(uint256)': EventFragment;
-    'Initialized(uint8)': EventFragment;
-    'IsAlpha(bool)': EventFragment;
-    'LiquidatorRewardSetting(uint256)': EventFragment;
-    'MarginCalculatorParametersSetting(tuple)': EventFragment;
-    'OwnershipTransferred(address,address)': EventFragment;
-    'PositionLiquidation(address,int24,int24,address,int256,uint256)': EventFragment;
-    'PositionMarginUpdate(address,address,int24,int24,int256)': EventFragment;
-    'PositionSettlement(address,int24,int24,int256)': EventFragment;
-    'PositionUpdate(address,int24,int24,uint128,int256,int256,int256,uint256)': EventFragment;
-    'ProtocolCollection(address,address,uint256)': EventFragment;
-    'RateOracle(uint256)': EventFragment;
-    'RateOracleSetting(address)': EventFragment;
-    'Upgraded(address)': EventFragment;
-    'VAMMSetting(address)': EventFragment;
+    "AdminChanged(address,address)": EventFragment;
+    "BeaconUpgraded(address)": EventFragment;
+    "CacheMaxAgeSetting(uint256)": EventFragment;
+    "FCMSetting(address)": EventFragment;
+    "HistoricalApy(uint256)": EventFragment;
+    "HistoricalApyWindowSetting(uint256)": EventFragment;
+    "Initialized(uint8)": EventFragment;
+    "IsAlpha(bool)": EventFragment;
+    "LiquidatorRewardSetting(uint256)": EventFragment;
+    "MarginCalculatorParametersSetting(tuple)": EventFragment;
+    "OwnershipTransferred(address,address)": EventFragment;
+    "PositionLiquidation(address,int24,int24,address,int256,uint256)": EventFragment;
+    "PositionMarginUpdate(address,address,int24,int24,int256)": EventFragment;
+    "PositionSettlement(address,int24,int24,int256)": EventFragment;
+    "PositionUpdate(address,int24,int24,uint128,int256,int256,int256,uint256)": EventFragment;
+    "ProtocolCollection(address,address,uint256)": EventFragment;
+    "RateOracle(uint256)": EventFragment;
+    "RateOracleSetting(address)": EventFragment;
+    "Upgraded(address)": EventFragment;
+    "VAMMSetting(address)": EventFragment;
   };
 
-  getEvent(nameOrSignatureOrTopic: 'AdminChanged'): EventFragment;
-  getEvent(nameOrSignatureOrTopic: 'BeaconUpgraded'): EventFragment;
-  getEvent(nameOrSignatureOrTopic: 'CacheMaxAgeSetting'): EventFragment;
-  getEvent(nameOrSignatureOrTopic: 'FCMSetting'): EventFragment;
-  getEvent(nameOrSignatureOrTopic: 'HistoricalApy'): EventFragment;
-  getEvent(nameOrSignatureOrTopic: 'HistoricalApyWindowSetting'): EventFragment;
-  getEvent(nameOrSignatureOrTopic: 'Initialized'): EventFragment;
-  getEvent(nameOrSignatureOrTopic: 'IsAlpha'): EventFragment;
-  getEvent(nameOrSignatureOrTopic: 'LiquidatorRewardSetting'): EventFragment;
-  getEvent(nameOrSignatureOrTopic: 'MarginCalculatorParametersSetting'): EventFragment;
-  getEvent(nameOrSignatureOrTopic: 'OwnershipTransferred'): EventFragment;
-  getEvent(nameOrSignatureOrTopic: 'PositionLiquidation'): EventFragment;
-  getEvent(nameOrSignatureOrTopic: 'PositionMarginUpdate'): EventFragment;
-  getEvent(nameOrSignatureOrTopic: 'PositionSettlement'): EventFragment;
-  getEvent(nameOrSignatureOrTopic: 'PositionUpdate'): EventFragment;
-  getEvent(nameOrSignatureOrTopic: 'ProtocolCollection'): EventFragment;
-  getEvent(nameOrSignatureOrTopic: 'RateOracle'): EventFragment;
-  getEvent(nameOrSignatureOrTopic: 'RateOracleSetting'): EventFragment;
-  getEvent(nameOrSignatureOrTopic: 'Upgraded'): EventFragment;
-  getEvent(nameOrSignatureOrTopic: 'VAMMSetting'): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "AdminChanged"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "BeaconUpgraded"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "CacheMaxAgeSetting"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "FCMSetting"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "HistoricalApy"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "HistoricalApyWindowSetting"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "Initialized"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "IsAlpha"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "LiquidatorRewardSetting"): EventFragment;
+  getEvent(
+    nameOrSignatureOrTopic: "MarginCalculatorParametersSetting"
+  ): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "OwnershipTransferred"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "PositionLiquidation"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "PositionMarginUpdate"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "PositionSettlement"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "PositionUpdate"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "ProtocolCollection"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "RateOracle"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "RateOracleSetting"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "Upgraded"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "VAMMSetting"): EventFragment;
 }
 
 export type AdminChangedEvent = TypedEvent<
@@ -299,13 +460,17 @@ export type AdminChangedEvent = TypedEvent<
 
 export type BeaconUpgradedEvent = TypedEvent<[string] & { beacon: string }>;
 
-export type CacheMaxAgeSettingEvent = TypedEvent<[BigNumber] & { cacheMaxAgeInSeconds: BigNumber }>;
+export type CacheMaxAgeSettingEvent = TypedEvent<
+  [BigNumber] & { cacheMaxAgeInSeconds: BigNumber }
+>;
 
 export type FCMSettingEvent = TypedEvent<[string] & { fcm: string }>;
 
 export type HistoricalApyEvent = TypedEvent<[BigNumber] & { value: BigNumber }>;
 
-export type HistoricalApyWindowSettingEvent = TypedEvent<[BigNumber] & { secondsAgo: BigNumber }>;
+export type HistoricalApyWindowSettingEvent = TypedEvent<
+  [BigNumber] & { secondsAgo: BigNumber }
+>;
 
 export type InitializedEvent = TypedEvent<[number] & { version: number }>;
 
@@ -335,7 +500,7 @@ export type MarginCalculatorParametersSettingEvent = TypedEvent<
       BigNumber,
       BigNumber,
       BigNumber,
-      BigNumber,
+      BigNumber
     ] & {
       apyUpperMultiplierWad: BigNumber;
       apyLowerMultiplierWad: BigNumber;
@@ -355,7 +520,7 @@ export type MarginCalculatorParametersSettingEvent = TypedEvent<
       fixedRateDeviationMinRightUnwindIMWad: BigNumber;
       gammaWad: BigNumber;
       minMarginToIncentiviseLiquidators: BigNumber;
-    },
+    }
   ] & {
     marginCalculatorParameters: [
       BigNumber,
@@ -375,7 +540,7 @@ export type MarginCalculatorParametersSettingEvent = TypedEvent<
       BigNumber,
       BigNumber,
       BigNumber,
-      BigNumber,
+      BigNumber
     ] & {
       apyUpperMultiplierWad: BigNumber;
       apyLowerMultiplierWad: BigNumber;
@@ -434,7 +599,16 @@ export type PositionSettlementEvent = TypedEvent<
 >;
 
 export type PositionUpdateEvent = TypedEvent<
-  [string, number, number, BigNumber, BigNumber, BigNumber, BigNumber, BigNumber] & {
+  [
+    string,
+    number,
+    number,
+    BigNumber,
+    BigNumber,
+    BigNumber,
+    BigNumber,
+    BigNumber
+  ] & {
     owner: string;
     tickLower: number;
     tickUpper: number;
@@ -454,9 +628,13 @@ export type ProtocolCollectionEvent = TypedEvent<
   }
 >;
 
-export type RateOracleEvent = TypedEvent<[BigNumber] & { cacheMaxAgeInSeconds: BigNumber }>;
+export type RateOracleEvent = TypedEvent<
+  [BigNumber] & { cacheMaxAgeInSeconds: BigNumber }
+>;
 
-export type RateOracleSettingEvent = TypedEvent<[string] & { rateOracle: string }>;
+export type RateOracleSettingEvent = TypedEvent<
+  [string] & { rateOracle: string }
+>;
 
 export type UpgradedEvent = TypedEvent<[string] & { implementation: string }>;
 
@@ -468,26 +646,26 @@ export class MarginEngine extends BaseContract {
   deployed(): Promise<this>;
 
   listeners<EventArgsArray extends Array<any>, EventArgsObject>(
-    eventFilter?: TypedEventFilter<EventArgsArray, EventArgsObject>,
+    eventFilter?: TypedEventFilter<EventArgsArray, EventArgsObject>
   ): Array<TypedListener<EventArgsArray, EventArgsObject>>;
   off<EventArgsArray extends Array<any>, EventArgsObject>(
     eventFilter: TypedEventFilter<EventArgsArray, EventArgsObject>,
-    listener: TypedListener<EventArgsArray, EventArgsObject>,
+    listener: TypedListener<EventArgsArray, EventArgsObject>
   ): this;
   on<EventArgsArray extends Array<any>, EventArgsObject>(
     eventFilter: TypedEventFilter<EventArgsArray, EventArgsObject>,
-    listener: TypedListener<EventArgsArray, EventArgsObject>,
+    listener: TypedListener<EventArgsArray, EventArgsObject>
   ): this;
   once<EventArgsArray extends Array<any>, EventArgsObject>(
     eventFilter: TypedEventFilter<EventArgsArray, EventArgsObject>,
-    listener: TypedListener<EventArgsArray, EventArgsObject>,
+    listener: TypedListener<EventArgsArray, EventArgsObject>
   ): this;
   removeListener<EventArgsArray extends Array<any>, EventArgsObject>(
     eventFilter: TypedEventFilter<EventArgsArray, EventArgsObject>,
-    listener: TypedListener<EventArgsArray, EventArgsObject>,
+    listener: TypedListener<EventArgsArray, EventArgsObject>
   ): this;
   removeAllListeners<EventArgsArray extends Array<any>, EventArgsObject>(
-    eventFilter: TypedEventFilter<EventArgsArray, EventArgsObject>,
+    eventFilter: TypedEventFilter<EventArgsArray, EventArgsObject>
   ): this;
 
   listeners(eventName?: string): Array<Listener>;
@@ -500,21 +678,27 @@ export class MarginEngine extends BaseContract {
   queryFilter<EventArgsArray extends Array<any>, EventArgsObject>(
     event: TypedEventFilter<EventArgsArray, EventArgsObject>,
     fromBlockOrBlockhash?: string | number | undefined,
-    toBlock?: string | number | undefined,
+    toBlock?: string | number | undefined
   ): Promise<Array<TypedEvent<EventArgsArray & EventArgsObject>>>;
 
   interface: MarginEngineInterface;
 
   functions: {
-    MAX_CACHE_MAX_AGE_IN_SECONDS(overrides?: CallOverrides): Promise<[BigNumber]>;
+    MAX_CACHE_MAX_AGE_IN_SECONDS(
+      overrides?: CallOverrides
+    ): Promise<[BigNumber]>;
 
     MAX_FIXED_RATE_WAD(overrides?: CallOverrides): Promise<[BigNumber]>;
 
     MAX_LIQUIDATOR_REWARD_WAD(overrides?: CallOverrides): Promise<[BigNumber]>;
 
-    MAX_LOOKBACK_WINDOW_IN_SECONDS(overrides?: CallOverrides): Promise<[BigNumber]>;
+    MAX_LOOKBACK_WINDOW_IN_SECONDS(
+      overrides?: CallOverrides
+    ): Promise<[BigNumber]>;
 
-    MIN_LOOKBACK_WINDOW_IN_SECONDS(overrides?: CallOverrides): Promise<[BigNumber]>;
+    MIN_LOOKBACK_WINDOW_IN_SECONDS(
+      overrides?: CallOverrides
+    ): Promise<[BigNumber]>;
 
     ONE(overrides?: CallOverrides): Promise<[BigNumber]>;
 
@@ -527,7 +711,7 @@ export class MarginEngine extends BaseContract {
     collectProtocol(
       _recipient: string,
       _amount: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
     factory(overrides?: CallOverrides): Promise<[string]>;
@@ -535,7 +719,7 @@ export class MarginEngine extends BaseContract {
     fcm(overrides?: CallOverrides): Promise<[string]>;
 
     getHistoricalApy(
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
     getHistoricalApyReadOnly(overrides?: CallOverrides): Promise<[BigNumber]>;
@@ -544,7 +728,7 @@ export class MarginEngine extends BaseContract {
       _owner: string,
       _tickLower: BigNumberish,
       _tickUpper: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
     getPositionMarginRequirement(
@@ -552,7 +736,7 @@ export class MarginEngine extends BaseContract {
       _tickLower: BigNumberish,
       _tickUpper: BigNumberish,
       _isLM: boolean,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
     initialize(
@@ -560,7 +744,7 @@ export class MarginEngine extends BaseContract {
       __rateOracle: string,
       __termStartTimestampWad: BigNumberish,
       __termEndTimestampWad: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
     isAlpha(overrides?: CallOverrides): Promise<[boolean]>;
@@ -569,7 +753,7 @@ export class MarginEngine extends BaseContract {
       _owner: string,
       _tickLower: BigNumberish,
       _tickUpper: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
     liquidatorRewardWad(overrides?: CallOverrides): Promise<[BigNumber]>;
@@ -585,32 +769,32 @@ export class MarginEngine extends BaseContract {
     rateOracle(overrides?: CallOverrides): Promise<[string]>;
 
     renounceOwnership(
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
     setCacheMaxAgeInSeconds(
       _newCacheMaxAgeInSeconds: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
     setFCM(
       _newFCM: string,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
     setIsAlpha(
       __isAlpha: boolean,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
     setLiquidatorReward(
       _newLiquidatorRewardWad: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
     setLookbackWindowInSeconds(
       _newSecondsAgo: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
     setMarginCalculatorParameters(
@@ -634,29 +818,29 @@ export class MarginEngine extends BaseContract {
         gammaWad: BigNumberish;
         minMarginToIncentiviseLiquidators: BigNumberish;
       },
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
     setPausability(
       state: boolean,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
     setRateOracle(
       __rateOracle: string,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
     setVAMM(
       _vAMM: string,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
     settlePosition(
       _owner: string,
       _tickLower: BigNumberish,
       _tickUpper: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
     termEndTimestampWad(overrides?: CallOverrides): Promise<[BigNumber]>;
@@ -666,12 +850,12 @@ export class MarginEngine extends BaseContract {
     transferMarginToFCMTrader(
       _account: string,
       _marginDelta: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
     transferOwnership(
       newOwner: string,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
     underlyingToken(overrides?: CallOverrides): Promise<[string]>;
@@ -681,7 +865,7 @@ export class MarginEngine extends BaseContract {
       _tickLower: BigNumberish,
       _tickUpper: BigNumberish,
       _marginDelta: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
     updatePositionPostVAMMInducedMintBurn(
@@ -691,7 +875,7 @@ export class MarginEngine extends BaseContract {
         tickUpper: BigNumberish;
         liquidityDelta: BigNumberish;
       },
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
     updatePositionPostVAMMInducedSwap(
@@ -702,18 +886,18 @@ export class MarginEngine extends BaseContract {
       _variableTokenDelta: BigNumberish,
       _cumulativeFeeIncurred: BigNumberish,
       _fixedTokenDeltaUnbalanced: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
     upgradeTo(
       newImplementation: string,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
     upgradeToAndCall(
       newImplementation: string,
       data: BytesLike,
-      overrides?: PayableOverrides & { from?: string | Promise<string> },
+      overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
     vamm(overrides?: CallOverrides): Promise<[string]>;
@@ -740,7 +924,7 @@ export class MarginEngine extends BaseContract {
   collectProtocol(
     _recipient: string,
     _amount: BigNumberish,
-    overrides?: Overrides & { from?: string | Promise<string> },
+    overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   factory(overrides?: CallOverrides): Promise<string>;
@@ -748,7 +932,7 @@ export class MarginEngine extends BaseContract {
   fcm(overrides?: CallOverrides): Promise<string>;
 
   getHistoricalApy(
-    overrides?: Overrides & { from?: string | Promise<string> },
+    overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   getHistoricalApyReadOnly(overrides?: CallOverrides): Promise<BigNumber>;
@@ -757,7 +941,7 @@ export class MarginEngine extends BaseContract {
     _owner: string,
     _tickLower: BigNumberish,
     _tickUpper: BigNumberish,
-    overrides?: Overrides & { from?: string | Promise<string> },
+    overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   getPositionMarginRequirement(
@@ -765,7 +949,7 @@ export class MarginEngine extends BaseContract {
     _tickLower: BigNumberish,
     _tickUpper: BigNumberish,
     _isLM: boolean,
-    overrides?: Overrides & { from?: string | Promise<string> },
+    overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   initialize(
@@ -773,7 +957,7 @@ export class MarginEngine extends BaseContract {
     __rateOracle: string,
     __termStartTimestampWad: BigNumberish,
     __termEndTimestampWad: BigNumberish,
-    overrides?: Overrides & { from?: string | Promise<string> },
+    overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   isAlpha(overrides?: CallOverrides): Promise<boolean>;
@@ -782,7 +966,7 @@ export class MarginEngine extends BaseContract {
     _owner: string,
     _tickLower: BigNumberish,
     _tickUpper: BigNumberish,
-    overrides?: Overrides & { from?: string | Promise<string> },
+    overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   liquidatorRewardWad(overrides?: CallOverrides): Promise<BigNumber>;
@@ -798,32 +982,32 @@ export class MarginEngine extends BaseContract {
   rateOracle(overrides?: CallOverrides): Promise<string>;
 
   renounceOwnership(
-    overrides?: Overrides & { from?: string | Promise<string> },
+    overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   setCacheMaxAgeInSeconds(
     _newCacheMaxAgeInSeconds: BigNumberish,
-    overrides?: Overrides & { from?: string | Promise<string> },
+    overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   setFCM(
     _newFCM: string,
-    overrides?: Overrides & { from?: string | Promise<string> },
+    overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   setIsAlpha(
     __isAlpha: boolean,
-    overrides?: Overrides & { from?: string | Promise<string> },
+    overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   setLiquidatorReward(
     _newLiquidatorRewardWad: BigNumberish,
-    overrides?: Overrides & { from?: string | Promise<string> },
+    overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   setLookbackWindowInSeconds(
     _newSecondsAgo: BigNumberish,
-    overrides?: Overrides & { from?: string | Promise<string> },
+    overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   setMarginCalculatorParameters(
@@ -847,29 +1031,29 @@ export class MarginEngine extends BaseContract {
       gammaWad: BigNumberish;
       minMarginToIncentiviseLiquidators: BigNumberish;
     },
-    overrides?: Overrides & { from?: string | Promise<string> },
+    overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   setPausability(
     state: boolean,
-    overrides?: Overrides & { from?: string | Promise<string> },
+    overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   setRateOracle(
     __rateOracle: string,
-    overrides?: Overrides & { from?: string | Promise<string> },
+    overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   setVAMM(
     _vAMM: string,
-    overrides?: Overrides & { from?: string | Promise<string> },
+    overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   settlePosition(
     _owner: string,
     _tickLower: BigNumberish,
     _tickUpper: BigNumberish,
-    overrides?: Overrides & { from?: string | Promise<string> },
+    overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   termEndTimestampWad(overrides?: CallOverrides): Promise<BigNumber>;
@@ -879,12 +1063,12 @@ export class MarginEngine extends BaseContract {
   transferMarginToFCMTrader(
     _account: string,
     _marginDelta: BigNumberish,
-    overrides?: Overrides & { from?: string | Promise<string> },
+    overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   transferOwnership(
     newOwner: string,
-    overrides?: Overrides & { from?: string | Promise<string> },
+    overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   underlyingToken(overrides?: CallOverrides): Promise<string>;
@@ -894,7 +1078,7 @@ export class MarginEngine extends BaseContract {
     _tickLower: BigNumberish,
     _tickUpper: BigNumberish,
     _marginDelta: BigNumberish,
-    overrides?: Overrides & { from?: string | Promise<string> },
+    overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   updatePositionPostVAMMInducedMintBurn(
@@ -904,7 +1088,7 @@ export class MarginEngine extends BaseContract {
       tickUpper: BigNumberish;
       liquidityDelta: BigNumberish;
     },
-    overrides?: Overrides & { from?: string | Promise<string> },
+    overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   updatePositionPostVAMMInducedSwap(
@@ -915,18 +1099,18 @@ export class MarginEngine extends BaseContract {
     _variableTokenDelta: BigNumberish,
     _cumulativeFeeIncurred: BigNumberish,
     _fixedTokenDeltaUnbalanced: BigNumberish,
-    overrides?: Overrides & { from?: string | Promise<string> },
+    overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   upgradeTo(
     newImplementation: string,
-    overrides?: Overrides & { from?: string | Promise<string> },
+    overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   upgradeToAndCall(
     newImplementation: string,
     data: BytesLike,
-    overrides?: PayableOverrides & { from?: string | Promise<string> },
+    overrides?: PayableOverrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   vamm(overrides?: CallOverrides): Promise<string>;
@@ -938,9 +1122,13 @@ export class MarginEngine extends BaseContract {
 
     MAX_LIQUIDATOR_REWARD_WAD(overrides?: CallOverrides): Promise<BigNumber>;
 
-    MAX_LOOKBACK_WINDOW_IN_SECONDS(overrides?: CallOverrides): Promise<BigNumber>;
+    MAX_LOOKBACK_WINDOW_IN_SECONDS(
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
 
-    MIN_LOOKBACK_WINDOW_IN_SECONDS(overrides?: CallOverrides): Promise<BigNumber>;
+    MIN_LOOKBACK_WINDOW_IN_SECONDS(
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
 
     ONE(overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -953,7 +1141,7 @@ export class MarginEngine extends BaseContract {
     collectProtocol(
       _recipient: string,
       _amount: BigNumberish,
-      overrides?: CallOverrides,
+      overrides?: CallOverrides
     ): Promise<void>;
 
     factory(overrides?: CallOverrides): Promise<string>;
@@ -968,7 +1156,7 @@ export class MarginEngine extends BaseContract {
       _owner: string,
       _tickLower: BigNumberish,
       _tickUpper: BigNumberish,
-      overrides?: CallOverrides,
+      overrides?: CallOverrides
     ): Promise<
       [
         boolean,
@@ -980,7 +1168,7 @@ export class MarginEngine extends BaseContract {
         BigNumber,
         BigNumber,
         BigNumber,
-        BigNumber,
+        BigNumber
       ] & {
         isSettled: boolean;
         _liquidity: BigNumber;
@@ -1000,7 +1188,7 @@ export class MarginEngine extends BaseContract {
       _tickLower: BigNumberish,
       _tickUpper: BigNumberish,
       _isLM: boolean,
-      overrides?: CallOverrides,
+      overrides?: CallOverrides
     ): Promise<BigNumber>;
 
     initialize(
@@ -1008,7 +1196,7 @@ export class MarginEngine extends BaseContract {
       __rateOracle: string,
       __termStartTimestampWad: BigNumberish,
       __termEndTimestampWad: BigNumberish,
-      overrides?: CallOverrides,
+      overrides?: CallOverrides
     ): Promise<void>;
 
     isAlpha(overrides?: CallOverrides): Promise<boolean>;
@@ -1017,7 +1205,7 @@ export class MarginEngine extends BaseContract {
       _owner: string,
       _tickLower: BigNumberish,
       _tickUpper: BigNumberish,
-      overrides?: CallOverrides,
+      overrides?: CallOverrides
     ): Promise<BigNumber>;
 
     liquidatorRewardWad(overrides?: CallOverrides): Promise<BigNumber>;
@@ -1036,7 +1224,7 @@ export class MarginEngine extends BaseContract {
 
     setCacheMaxAgeInSeconds(
       _newCacheMaxAgeInSeconds: BigNumberish,
-      overrides?: CallOverrides,
+      overrides?: CallOverrides
     ): Promise<void>;
 
     setFCM(_newFCM: string, overrides?: CallOverrides): Promise<void>;
@@ -1045,12 +1233,12 @@ export class MarginEngine extends BaseContract {
 
     setLiquidatorReward(
       _newLiquidatorRewardWad: BigNumberish,
-      overrides?: CallOverrides,
+      overrides?: CallOverrides
     ): Promise<void>;
 
     setLookbackWindowInSeconds(
       _newSecondsAgo: BigNumberish,
-      overrides?: CallOverrides,
+      overrides?: CallOverrides
     ): Promise<void>;
 
     setMarginCalculatorParameters(
@@ -1074,12 +1262,15 @@ export class MarginEngine extends BaseContract {
         gammaWad: BigNumberish;
         minMarginToIncentiviseLiquidators: BigNumberish;
       },
-      overrides?: CallOverrides,
+      overrides?: CallOverrides
     ): Promise<void>;
 
     setPausability(state: boolean, overrides?: CallOverrides): Promise<void>;
 
-    setRateOracle(__rateOracle: string, overrides?: CallOverrides): Promise<void>;
+    setRateOracle(
+      __rateOracle: string,
+      overrides?: CallOverrides
+    ): Promise<void>;
 
     setVAMM(_vAMM: string, overrides?: CallOverrides): Promise<void>;
 
@@ -1087,7 +1278,7 @@ export class MarginEngine extends BaseContract {
       _owner: string,
       _tickLower: BigNumberish,
       _tickUpper: BigNumberish,
-      overrides?: CallOverrides,
+      overrides?: CallOverrides
     ): Promise<void>;
 
     termEndTimestampWad(overrides?: CallOverrides): Promise<BigNumber>;
@@ -1097,10 +1288,13 @@ export class MarginEngine extends BaseContract {
     transferMarginToFCMTrader(
       _account: string,
       _marginDelta: BigNumberish,
-      overrides?: CallOverrides,
+      overrides?: CallOverrides
     ): Promise<void>;
 
-    transferOwnership(newOwner: string, overrides?: CallOverrides): Promise<void>;
+    transferOwnership(
+      newOwner: string,
+      overrides?: CallOverrides
+    ): Promise<void>;
 
     underlyingToken(overrides?: CallOverrides): Promise<string>;
 
@@ -1109,7 +1303,7 @@ export class MarginEngine extends BaseContract {
       _tickLower: BigNumberish,
       _tickUpper: BigNumberish,
       _marginDelta: BigNumberish,
-      overrides?: CallOverrides,
+      overrides?: CallOverrides
     ): Promise<void>;
 
     updatePositionPostVAMMInducedMintBurn(
@@ -1119,7 +1313,7 @@ export class MarginEngine extends BaseContract {
         tickUpper: BigNumberish;
         liquidityDelta: BigNumberish;
       },
-      overrides?: CallOverrides,
+      overrides?: CallOverrides
     ): Promise<BigNumber>;
 
     updatePositionPostVAMMInducedSwap(
@@ -1130,78 +1324,107 @@ export class MarginEngine extends BaseContract {
       _variableTokenDelta: BigNumberish,
       _cumulativeFeeIncurred: BigNumberish,
       _fixedTokenDeltaUnbalanced: BigNumberish,
-      overrides?: CallOverrides,
+      overrides?: CallOverrides
     ): Promise<BigNumber>;
 
-    upgradeTo(newImplementation: string, overrides?: CallOverrides): Promise<void>;
+    upgradeTo(
+      newImplementation: string,
+      overrides?: CallOverrides
+    ): Promise<void>;
 
     upgradeToAndCall(
       newImplementation: string,
       data: BytesLike,
-      overrides?: CallOverrides,
+      overrides?: CallOverrides
     ): Promise<void>;
 
     vamm(overrides?: CallOverrides): Promise<string>;
   };
 
   filters: {
-    'AdminChanged(address,address)'(
+    "AdminChanged(address,address)"(
       previousAdmin?: null,
-      newAdmin?: null,
-    ): TypedEventFilter<[string, string], { previousAdmin: string; newAdmin: string }>;
+      newAdmin?: null
+    ): TypedEventFilter<
+      [string, string],
+      { previousAdmin: string; newAdmin: string }
+    >;
 
     AdminChanged(
       previousAdmin?: null,
-      newAdmin?: null,
-    ): TypedEventFilter<[string, string], { previousAdmin: string; newAdmin: string }>;
+      newAdmin?: null
+    ): TypedEventFilter<
+      [string, string],
+      { previousAdmin: string; newAdmin: string }
+    >;
 
-    'BeaconUpgraded(address)'(
-      beacon?: string | null,
+    "BeaconUpgraded(address)"(
+      beacon?: string | null
     ): TypedEventFilter<[string], { beacon: string }>;
 
-    BeaconUpgraded(beacon?: string | null): TypedEventFilter<[string], { beacon: string }>;
+    BeaconUpgraded(
+      beacon?: string | null
+    ): TypedEventFilter<[string], { beacon: string }>;
 
-    'CacheMaxAgeSetting(uint256)'(
-      cacheMaxAgeInSeconds?: null,
+    "CacheMaxAgeSetting(uint256)"(
+      cacheMaxAgeInSeconds?: null
     ): TypedEventFilter<[BigNumber], { cacheMaxAgeInSeconds: BigNumber }>;
 
     CacheMaxAgeSetting(
-      cacheMaxAgeInSeconds?: null,
+      cacheMaxAgeInSeconds?: null
     ): TypedEventFilter<[BigNumber], { cacheMaxAgeInSeconds: BigNumber }>;
 
-    'FCMSetting(address)'(fcm?: string | null): TypedEventFilter<[string], { fcm: string }>;
+    "FCMSetting(address)"(
+      fcm?: string | null
+    ): TypedEventFilter<[string], { fcm: string }>;
 
-    FCMSetting(fcm?: string | null): TypedEventFilter<[string], { fcm: string }>;
+    FCMSetting(
+      fcm?: string | null
+    ): TypedEventFilter<[string], { fcm: string }>;
 
-    'HistoricalApy(uint256)'(value?: null): TypedEventFilter<[BigNumber], { value: BigNumber }>;
+    "HistoricalApy(uint256)"(
+      value?: null
+    ): TypedEventFilter<[BigNumber], { value: BigNumber }>;
 
-    HistoricalApy(value?: null): TypedEventFilter<[BigNumber], { value: BigNumber }>;
+    HistoricalApy(
+      value?: null
+    ): TypedEventFilter<[BigNumber], { value: BigNumber }>;
 
-    'HistoricalApyWindowSetting(uint256)'(
-      secondsAgo?: null,
+    "HistoricalApyWindowSetting(uint256)"(
+      secondsAgo?: null
     ): TypedEventFilter<[BigNumber], { secondsAgo: BigNumber }>;
 
     HistoricalApyWindowSetting(
-      secondsAgo?: null,
+      secondsAgo?: null
     ): TypedEventFilter<[BigNumber], { secondsAgo: BigNumber }>;
 
-    'Initialized(uint8)'(version?: null): TypedEventFilter<[number], { version: number }>;
+    "Initialized(uint8)"(
+      version?: null
+    ): TypedEventFilter<[number], { version: number }>;
 
-    Initialized(version?: null): TypedEventFilter<[number], { version: number }>;
+    Initialized(
+      version?: null
+    ): TypedEventFilter<[number], { version: number }>;
 
-    'IsAlpha(bool)'(__isAlpha?: null): TypedEventFilter<[boolean], { __isAlpha: boolean }>;
+    "IsAlpha(bool)"(
+      __isAlpha?: null
+    ): TypedEventFilter<[boolean], { __isAlpha: boolean }>;
 
-    IsAlpha(__isAlpha?: null): TypedEventFilter<[boolean], { __isAlpha: boolean }>;
+    IsAlpha(
+      __isAlpha?: null
+    ): TypedEventFilter<[boolean], { __isAlpha: boolean }>;
 
-    'LiquidatorRewardSetting(uint256)'(
-      liquidatorRewardWad?: null,
+    "LiquidatorRewardSetting(uint256)"(
+      liquidatorRewardWad?: null
     ): TypedEventFilter<[BigNumber], { liquidatorRewardWad: BigNumber }>;
 
     LiquidatorRewardSetting(
-      liquidatorRewardWad?: null,
+      liquidatorRewardWad?: null
     ): TypedEventFilter<[BigNumber], { liquidatorRewardWad: BigNumber }>;
 
-    'MarginCalculatorParametersSetting(tuple)'(marginCalculatorParameters?: null): TypedEventFilter<
+    "MarginCalculatorParametersSetting(tuple)"(
+      marginCalculatorParameters?: null
+    ): TypedEventFilter<
       [
         [
           BigNumber,
@@ -1221,7 +1444,7 @@ export class MarginEngine extends BaseContract {
           BigNumber,
           BigNumber,
           BigNumber,
-          BigNumber,
+          BigNumber
         ] & {
           apyUpperMultiplierWad: BigNumber;
           apyLowerMultiplierWad: BigNumber;
@@ -1241,7 +1464,7 @@ export class MarginEngine extends BaseContract {
           fixedRateDeviationMinRightUnwindIMWad: BigNumber;
           gammaWad: BigNumber;
           minMarginToIncentiviseLiquidators: BigNumber;
-        },
+        }
       ],
       {
         marginCalculatorParameters: [
@@ -1262,7 +1485,7 @@ export class MarginEngine extends BaseContract {
           BigNumber,
           BigNumber,
           BigNumber,
-          BigNumber,
+          BigNumber
         ] & {
           apyUpperMultiplierWad: BigNumber;
           apyLowerMultiplierWad: BigNumber;
@@ -1286,7 +1509,9 @@ export class MarginEngine extends BaseContract {
       }
     >;
 
-    MarginCalculatorParametersSetting(marginCalculatorParameters?: null): TypedEventFilter<
+    MarginCalculatorParametersSetting(
+      marginCalculatorParameters?: null
+    ): TypedEventFilter<
       [
         [
           BigNumber,
@@ -1306,7 +1531,7 @@ export class MarginEngine extends BaseContract {
           BigNumber,
           BigNumber,
           BigNumber,
-          BigNumber,
+          BigNumber
         ] & {
           apyUpperMultiplierWad: BigNumber;
           apyLowerMultiplierWad: BigNumber;
@@ -1326,7 +1551,7 @@ export class MarginEngine extends BaseContract {
           fixedRateDeviationMinRightUnwindIMWad: BigNumber;
           gammaWad: BigNumber;
           minMarginToIncentiviseLiquidators: BigNumber;
-        },
+        }
       ],
       {
         marginCalculatorParameters: [
@@ -1347,7 +1572,7 @@ export class MarginEngine extends BaseContract {
           BigNumber,
           BigNumber,
           BigNumber,
-          BigNumber,
+          BigNumber
         ] & {
           apyUpperMultiplierWad: BigNumber;
           apyLowerMultiplierWad: BigNumber;
@@ -1371,23 +1596,29 @@ export class MarginEngine extends BaseContract {
       }
     >;
 
-    'OwnershipTransferred(address,address)'(
+    "OwnershipTransferred(address,address)"(
       previousOwner?: string | null,
-      newOwner?: string | null,
-    ): TypedEventFilter<[string, string], { previousOwner: string; newOwner: string }>;
+      newOwner?: string | null
+    ): TypedEventFilter<
+      [string, string],
+      { previousOwner: string; newOwner: string }
+    >;
 
     OwnershipTransferred(
       previousOwner?: string | null,
-      newOwner?: string | null,
-    ): TypedEventFilter<[string, string], { previousOwner: string; newOwner: string }>;
+      newOwner?: string | null
+    ): TypedEventFilter<
+      [string, string],
+      { previousOwner: string; newOwner: string }
+    >;
 
-    'PositionLiquidation(address,int24,int24,address,int256,uint256)'(
+    "PositionLiquidation(address,int24,int24,address,int256,uint256)"(
       owner?: string | null,
       tickLower?: BigNumberish | null,
       tickUpper?: BigNumberish | null,
       liquidator?: null,
       notionalUnwound?: null,
-      liquidatorReward?: null,
+      liquidatorReward?: null
     ): TypedEventFilter<
       [string, number, number, string, BigNumber, BigNumber],
       {
@@ -1406,7 +1637,7 @@ export class MarginEngine extends BaseContract {
       tickUpper?: BigNumberish | null,
       liquidator?: null,
       notionalUnwound?: null,
-      liquidatorReward?: null,
+      liquidatorReward?: null
     ): TypedEventFilter<
       [string, number, number, string, BigNumber, BigNumber],
       {
@@ -1419,12 +1650,12 @@ export class MarginEngine extends BaseContract {
       }
     >;
 
-    'PositionMarginUpdate(address,address,int24,int24,int256)'(
+    "PositionMarginUpdate(address,address,int24,int24,int256)"(
       sender?: null,
       owner?: string | null,
       tickLower?: BigNumberish | null,
       tickUpper?: BigNumberish | null,
-      marginDelta?: null,
+      marginDelta?: null
     ): TypedEventFilter<
       [string, string, number, number, BigNumber],
       {
@@ -1441,7 +1672,7 @@ export class MarginEngine extends BaseContract {
       owner?: string | null,
       tickLower?: BigNumberish | null,
       tickUpper?: BigNumberish | null,
-      marginDelta?: null,
+      marginDelta?: null
     ): TypedEventFilter<
       [string, string, number, number, BigNumber],
       {
@@ -1453,11 +1684,11 @@ export class MarginEngine extends BaseContract {
       }
     >;
 
-    'PositionSettlement(address,int24,int24,int256)'(
+    "PositionSettlement(address,int24,int24,int256)"(
       owner?: string | null,
       tickLower?: BigNumberish | null,
       tickUpper?: BigNumberish | null,
-      settlementCashflow?: null,
+      settlementCashflow?: null
     ): TypedEventFilter<
       [string, number, number, BigNumber],
       {
@@ -1472,7 +1703,7 @@ export class MarginEngine extends BaseContract {
       owner?: string | null,
       tickLower?: BigNumberish | null,
       tickUpper?: BigNumberish | null,
-      settlementCashflow?: null,
+      settlementCashflow?: null
     ): TypedEventFilter<
       [string, number, number, BigNumber],
       {
@@ -1483,7 +1714,7 @@ export class MarginEngine extends BaseContract {
       }
     >;
 
-    'PositionUpdate(address,int24,int24,uint128,int256,int256,int256,uint256)'(
+    "PositionUpdate(address,int24,int24,uint128,int256,int256,int256,uint256)"(
       owner?: string | null,
       tickLower?: BigNumberish | null,
       tickUpper?: BigNumberish | null,
@@ -1491,9 +1722,18 @@ export class MarginEngine extends BaseContract {
       margin?: null,
       fixedTokenBalance?: null,
       variableTokenBalance?: null,
-      accumulatedFees?: null,
+      accumulatedFees?: null
     ): TypedEventFilter<
-      [string, number, number, BigNumber, BigNumber, BigNumber, BigNumber, BigNumber],
+      [
+        string,
+        number,
+        number,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        BigNumber
+      ],
       {
         owner: string;
         tickLower: number;
@@ -1514,9 +1754,18 @@ export class MarginEngine extends BaseContract {
       margin?: null,
       fixedTokenBalance?: null,
       variableTokenBalance?: null,
-      accumulatedFees?: null,
+      accumulatedFees?: null
     ): TypedEventFilter<
-      [string, number, number, BigNumber, BigNumber, BigNumber, BigNumber, BigNumber],
+      [
+        string,
+        number,
+        number,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        BigNumber
+      ],
       {
         owner: string;
         tickLower: number;
@@ -1529,10 +1778,10 @@ export class MarginEngine extends BaseContract {
       }
     >;
 
-    'ProtocolCollection(address,address,uint256)'(
+    "ProtocolCollection(address,address,uint256)"(
       sender?: null,
       recipient?: string | null,
-      amount?: null,
+      amount?: null
     ): TypedEventFilter<
       [string, string, BigNumber],
       { sender: string; recipient: string; amount: BigNumber }
@@ -1541,39 +1790,43 @@ export class MarginEngine extends BaseContract {
     ProtocolCollection(
       sender?: null,
       recipient?: string | null,
-      amount?: null,
+      amount?: null
     ): TypedEventFilter<
       [string, string, BigNumber],
       { sender: string; recipient: string; amount: BigNumber }
     >;
 
-    'RateOracle(uint256)'(
-      cacheMaxAgeInSeconds?: null,
+    "RateOracle(uint256)"(
+      cacheMaxAgeInSeconds?: null
     ): TypedEventFilter<[BigNumber], { cacheMaxAgeInSeconds: BigNumber }>;
 
     RateOracle(
-      cacheMaxAgeInSeconds?: null,
+      cacheMaxAgeInSeconds?: null
     ): TypedEventFilter<[BigNumber], { cacheMaxAgeInSeconds: BigNumber }>;
 
-    'RateOracleSetting(address)'(
-      rateOracle?: string | null,
+    "RateOracleSetting(address)"(
+      rateOracle?: string | null
     ): TypedEventFilter<[string], { rateOracle: string }>;
 
     RateOracleSetting(
-      rateOracle?: string | null,
+      rateOracle?: string | null
     ): TypedEventFilter<[string], { rateOracle: string }>;
 
-    'Upgraded(address)'(
-      implementation?: string | null,
+    "Upgraded(address)"(
+      implementation?: string | null
     ): TypedEventFilter<[string], { implementation: string }>;
 
     Upgraded(
-      implementation?: string | null,
+      implementation?: string | null
     ): TypedEventFilter<[string], { implementation: string }>;
 
-    'VAMMSetting(address)'(vamm?: string | null): TypedEventFilter<[string], { vamm: string }>;
+    "VAMMSetting(address)"(
+      vamm?: string | null
+    ): TypedEventFilter<[string], { vamm: string }>;
 
-    VAMMSetting(vamm?: string | null): TypedEventFilter<[string], { vamm: string }>;
+    VAMMSetting(
+      vamm?: string | null
+    ): TypedEventFilter<[string], { vamm: string }>;
   };
 
   estimateGas: {
@@ -1583,9 +1836,13 @@ export class MarginEngine extends BaseContract {
 
     MAX_LIQUIDATOR_REWARD_WAD(overrides?: CallOverrides): Promise<BigNumber>;
 
-    MAX_LOOKBACK_WINDOW_IN_SECONDS(overrides?: CallOverrides): Promise<BigNumber>;
+    MAX_LOOKBACK_WINDOW_IN_SECONDS(
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
 
-    MIN_LOOKBACK_WINDOW_IN_SECONDS(overrides?: CallOverrides): Promise<BigNumber>;
+    MIN_LOOKBACK_WINDOW_IN_SECONDS(
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
 
     ONE(overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -1598,7 +1855,7 @@ export class MarginEngine extends BaseContract {
     collectProtocol(
       _recipient: string,
       _amount: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     factory(overrides?: CallOverrides): Promise<BigNumber>;
@@ -1606,7 +1863,7 @@ export class MarginEngine extends BaseContract {
     fcm(overrides?: CallOverrides): Promise<BigNumber>;
 
     getHistoricalApy(
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     getHistoricalApyReadOnly(overrides?: CallOverrides): Promise<BigNumber>;
@@ -1615,7 +1872,7 @@ export class MarginEngine extends BaseContract {
       _owner: string,
       _tickLower: BigNumberish,
       _tickUpper: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     getPositionMarginRequirement(
@@ -1623,7 +1880,7 @@ export class MarginEngine extends BaseContract {
       _tickLower: BigNumberish,
       _tickUpper: BigNumberish,
       _isLM: boolean,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     initialize(
@@ -1631,7 +1888,7 @@ export class MarginEngine extends BaseContract {
       __rateOracle: string,
       __termStartTimestampWad: BigNumberish,
       __termEndTimestampWad: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     isAlpha(overrides?: CallOverrides): Promise<BigNumber>;
@@ -1640,7 +1897,7 @@ export class MarginEngine extends BaseContract {
       _owner: string,
       _tickLower: BigNumberish,
       _tickUpper: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     liquidatorRewardWad(overrides?: CallOverrides): Promise<BigNumber>;
@@ -1656,32 +1913,32 @@ export class MarginEngine extends BaseContract {
     rateOracle(overrides?: CallOverrides): Promise<BigNumber>;
 
     renounceOwnership(
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     setCacheMaxAgeInSeconds(
       _newCacheMaxAgeInSeconds: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     setFCM(
       _newFCM: string,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     setIsAlpha(
       __isAlpha: boolean,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     setLiquidatorReward(
       _newLiquidatorRewardWad: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     setLookbackWindowInSeconds(
       _newSecondsAgo: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     setMarginCalculatorParameters(
@@ -1705,29 +1962,29 @@ export class MarginEngine extends BaseContract {
         gammaWad: BigNumberish;
         minMarginToIncentiviseLiquidators: BigNumberish;
       },
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     setPausability(
       state: boolean,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     setRateOracle(
       __rateOracle: string,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     setVAMM(
       _vAMM: string,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     settlePosition(
       _owner: string,
       _tickLower: BigNumberish,
       _tickUpper: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     termEndTimestampWad(overrides?: CallOverrides): Promise<BigNumber>;
@@ -1737,12 +1994,12 @@ export class MarginEngine extends BaseContract {
     transferMarginToFCMTrader(
       _account: string,
       _marginDelta: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     transferOwnership(
       newOwner: string,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     underlyingToken(overrides?: CallOverrides): Promise<BigNumber>;
@@ -1752,7 +2009,7 @@ export class MarginEngine extends BaseContract {
       _tickLower: BigNumberish,
       _tickUpper: BigNumberish,
       _marginDelta: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     updatePositionPostVAMMInducedMintBurn(
@@ -1762,7 +2019,7 @@ export class MarginEngine extends BaseContract {
         tickUpper: BigNumberish;
         liquidityDelta: BigNumberish;
       },
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     updatePositionPostVAMMInducedSwap(
@@ -1773,33 +2030,43 @@ export class MarginEngine extends BaseContract {
       _variableTokenDelta: BigNumberish,
       _cumulativeFeeIncurred: BigNumberish,
       _fixedTokenDeltaUnbalanced: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     upgradeTo(
       newImplementation: string,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     upgradeToAndCall(
       newImplementation: string,
       data: BytesLike,
-      overrides?: PayableOverrides & { from?: string | Promise<string> },
+      overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     vamm(overrides?: CallOverrides): Promise<BigNumber>;
   };
 
   populateTransaction: {
-    MAX_CACHE_MAX_AGE_IN_SECONDS(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+    MAX_CACHE_MAX_AGE_IN_SECONDS(
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
 
-    MAX_FIXED_RATE_WAD(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+    MAX_FIXED_RATE_WAD(
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
 
-    MAX_LIQUIDATOR_REWARD_WAD(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+    MAX_LIQUIDATOR_REWARD_WAD(
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
 
-    MAX_LOOKBACK_WINDOW_IN_SECONDS(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+    MAX_LOOKBACK_WINDOW_IN_SECONDS(
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
 
-    MIN_LOOKBACK_WINDOW_IN_SECONDS(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+    MIN_LOOKBACK_WINDOW_IN_SECONDS(
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
 
     ONE(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
@@ -1807,12 +2074,14 @@ export class MarginEngine extends BaseContract {
 
     SECONDS_IN_YEAR(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
-    cacheMaxAgeInSeconds(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+    cacheMaxAgeInSeconds(
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
 
     collectProtocol(
       _recipient: string,
       _amount: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     factory(overrides?: CallOverrides): Promise<PopulatedTransaction>;
@@ -1820,16 +2089,18 @@ export class MarginEngine extends BaseContract {
     fcm(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     getHistoricalApy(
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    getHistoricalApyReadOnly(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+    getHistoricalApyReadOnly(
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
 
     getPosition(
       _owner: string,
       _tickLower: BigNumberish,
       _tickUpper: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     getPositionMarginRequirement(
@@ -1837,7 +2108,7 @@ export class MarginEngine extends BaseContract {
       _tickLower: BigNumberish,
       _tickUpper: BigNumberish,
       _isLM: boolean,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     initialize(
@@ -1845,7 +2116,7 @@ export class MarginEngine extends BaseContract {
       __rateOracle: string,
       __termStartTimestampWad: BigNumberish,
       __termEndTimestampWad: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     isAlpha(overrides?: CallOverrides): Promise<PopulatedTransaction>;
@@ -1854,12 +2125,16 @@ export class MarginEngine extends BaseContract {
       _owner: string,
       _tickLower: BigNumberish,
       _tickUpper: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    liquidatorRewardWad(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+    liquidatorRewardWad(
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
 
-    lookbackWindowInSeconds(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+    lookbackWindowInSeconds(
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
 
     owner(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
@@ -1870,32 +2145,32 @@ export class MarginEngine extends BaseContract {
     rateOracle(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     renounceOwnership(
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     setCacheMaxAgeInSeconds(
       _newCacheMaxAgeInSeconds: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     setFCM(
       _newFCM: string,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     setIsAlpha(
       __isAlpha: boolean,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     setLiquidatorReward(
       _newLiquidatorRewardWad: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     setLookbackWindowInSeconds(
       _newSecondsAgo: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     setMarginCalculatorParameters(
@@ -1919,44 +2194,48 @@ export class MarginEngine extends BaseContract {
         gammaWad: BigNumberish;
         minMarginToIncentiviseLiquidators: BigNumberish;
       },
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     setPausability(
       state: boolean,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     setRateOracle(
       __rateOracle: string,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     setVAMM(
       _vAMM: string,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     settlePosition(
       _owner: string,
       _tickLower: BigNumberish,
       _tickUpper: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
-    termEndTimestampWad(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+    termEndTimestampWad(
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
 
-    termStartTimestampWad(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+    termStartTimestampWad(
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
 
     transferMarginToFCMTrader(
       _account: string,
       _marginDelta: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     transferOwnership(
       newOwner: string,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     underlyingToken(overrides?: CallOverrides): Promise<PopulatedTransaction>;
@@ -1966,7 +2245,7 @@ export class MarginEngine extends BaseContract {
       _tickLower: BigNumberish,
       _tickUpper: BigNumberish,
       _marginDelta: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     updatePositionPostVAMMInducedMintBurn(
@@ -1976,7 +2255,7 @@ export class MarginEngine extends BaseContract {
         tickUpper: BigNumberish;
         liquidityDelta: BigNumberish;
       },
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     updatePositionPostVAMMInducedSwap(
@@ -1987,18 +2266,18 @@ export class MarginEngine extends BaseContract {
       _variableTokenDelta: BigNumberish,
       _cumulativeFeeIncurred: BigNumberish,
       _fixedTokenDeltaUnbalanced: BigNumberish,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     upgradeTo(
       newImplementation: string,
-      overrides?: Overrides & { from?: string | Promise<string> },
+      overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     upgradeToAndCall(
       newImplementation: string,
       data: BytesLike,
-      overrides?: PayableOverrides & { from?: string | Promise<string> },
+      overrides?: PayableOverrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     vamm(overrides?: CallOverrides): Promise<PopulatedTransaction>;
