@@ -1,7 +1,4 @@
-/* eslint-disable no-nested-ternary */
-/* eslint-disable no-restricted-syntax */
 import { NonProgramaticBadgeResponse, SubgraphBadgeResponse } from '../src/entities/communitySbt';
-import { SwapAction, MintOrBurnAction } from '../src/utils/communitySbt/getTopBadges';
 
 type SeasonUser = {
   owner: {
@@ -31,9 +28,6 @@ type Position = {
       };
     };
   };
-  mints: MintOrBurnAction[];
-  burns: MintOrBurnAction[];
-  swaps: SwapAction[];
 };
 
 export function createRandomUsers(userIdSuffix: string, userCount: number): Array<SeasonUser> {
@@ -86,12 +80,12 @@ export function createPosition(
       },
     },
   };
-  const ethMints: MintOrBurnAction[] = [];
-  const stableCoinMints: MintOrBurnAction[] = [];
-  const ethBurns: MintOrBurnAction[] = [];
-  const stableCoinBurns: MintOrBurnAction[] = [];
-  const ethSwaps: SwapAction[] = [];
-  const stableCoinSwaps: SwapAction[] = [];
+  const ethMints = [];
+  const stableCoinMints = [];
+  const ethBurns = [];
+  const stableCoinBurns = [];
+  const ethSwaps = [];
+  const stableCoinSwaps = [];
   const mintOrBurns = mints.concat(burns).map((entry, i) => {
     return {
       ...entry,
@@ -133,15 +127,9 @@ export function createPosition(
   }
   positions.push({
     amm: ammEth,
-    mints: ethMints,
-    burns: ethBurns,
-    swaps: ethSwaps,
   });
   positions.push({
     amm: ammStableCoin,
-    mints: stableCoinMints,
-    burns: stableCoinBurns,
-    swaps: stableCoinSwaps,
   });
   return positions;
 }

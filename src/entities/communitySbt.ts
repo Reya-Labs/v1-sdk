@@ -1,8 +1,8 @@
 import { BigNumber, Bytes, Signer, providers } from 'ethers';
-import { gql } from '@apollo/client';
 import axios from 'axios';
 import { DateTime } from 'luxon';
 import { isUndefined } from 'lodash';
+import { getSeasonUsers } from '@voltz-protocol/subgraph-data';
 import { CommunitySBT, CommunitySBT__factory } from '../typechain-sbt';
 import { createLeaves } from '../utils/communitySbt/getIpfsLeaves';
 import { getRootFromSubgraph } from '../utils/communitySbt/getSubgraphRoot';
@@ -22,9 +22,8 @@ import {
 import { getSubgraphBadges } from '../utils/communitySbt/getSubgraphBadges';
 
 import { sentryTracker } from '../utils/sentry';
-import { getApolloClient } from '../utils/communitySbt/getApolloClient';
 import { geckoEthToUsd } from '../utils/priceFetch';
-import { getScores, GetScoresArgs } from '../utils/communitySbt/getScores';
+import { getScores, GetScoresArgs } from '../utils/communitySbt/getScoresViaCommv2';
 
 export type SBTConstructorArgs = {
   id: string;
@@ -68,14 +67,6 @@ export type SubgraphBadgeResponse = {
   badgeType: string;
   awardedTimestamp: string;
   mintedTimestamp: string;
-};
-
-export type GetRankingArgs = {
-  seasonStart: number;
-  seasonEnd: number;
-  subgraphUrl?: string;
-  ethPrice?: number;
-  ignoredWalletIds?: Record<string, boolean>;
 };
 
 export type RankType = {
@@ -545,7 +536,7 @@ class SBT {
    * ranking of all users. Check if given user is in top 5.
    * If so, assign a top trader/LP badge, otherwise return undefined
    */
-  private async getTopBadges(
+  public async getTopBadges(
     userId: string,
     seasonId: number,
     seasonStart: number,
@@ -569,17 +560,14 @@ class SBT {
       this.ethPrice = await geckoEthToUsd(this.coingeckoKey);
     }
 
-    const rankResult = await this.getRanking({
-      seasonStart,
-      seasonEnd,
-    });
+    const rankResult = await this.getRanking(seasonId);
 
     const traderPosition = rankResult.traderRankResults.find(
       (rank) => rank.address.toLowerCase() === userId.toLowerCase(),
     );
 
     const topTraderBadge = !isUndefined(traderPosition)
-      ? await this.constructTopBadge(
+      ? await SBT.constructTopBadge(
           userId,
           seasonId,
           seasonEnd,
@@ -593,7 +581,7 @@ class SBT {
     );
 
     const topLpBadge = !isUndefined(lpPosition)
-      ? await this.constructTopBadge(
+      ? await SBT.constructTopBadge(
           userId,
           seasonId,
           seasonEnd,
@@ -608,26 +596,20 @@ class SBT {
     };
   }
 
-  public async getRanking(args: GetRankingArgs): Promise<{
+  public async getRanking(seasonId: number): Promise<{
     traderRankResults: RankType[];
     lpRankResults: RankType[];
   }> {
-    if (!this.subgraphUrl || !this.coingeckoKey || !this.ignoredWalletIds) {
+    if (!this.subgraphUrl || !this.ignoredWalletIds) {
       return {
         traderRankResults: [],
         lpRankResults: [],
       };
     }
 
-    if (!this.ethPrice) {
-      this.ethPrice = await geckoEthToUsd(this.coingeckoKey);
-    }
-
     const scoreArgs: GetScoresArgs = {
-      seasonStart: args.seasonStart,
-      seasonEnd: args.seasonEnd,
-      subgraphUrl: this.subgraphUrl,
-      ethPrice: this.ethPrice,
+      season: seasonId,
+      subgraphUrl: this.nextBadgesSubgraphUrl || '',
       ignoredWalletIds: this.ignoredWalletIds,
     };
 
@@ -640,6 +622,9 @@ class SBT {
         points: scores.traderScores[walletId] || 0,
         rank: index,
       }));
+
+    // eslint-disable-next-line no-console
+    console.log('traderRankResults:', traderRankResults.slice(0, 10));
 
     const lpRankResults: RankType[] = Object.keys(scores.lpScores)
       .sort((a, b) => scores.lpScores[b] - scores.lpScores[a])
@@ -661,39 +646,34 @@ class SBT {
    * the awarded time as end of season and claimed time
    * as eithr zero if not claimed or subgrap's minted timestamp
    */
-  async constructTopBadge(
+  static async constructTopBadge(
     userId: string,
     seasonId: number,
     seasonEnd: number,
     badgeType: string,
     selectedBadgesSubgraphUrl?: string,
   ): Promise<BadgeResponse> {
-    const badgeQuery = `
-            query( $id: String) {
-                badge(id: $id){
-                    id
-                    mintedTimestamp
-                }
-            }
-        `;
-    const client = getApolloClient(selectedBadgesSubgraphUrl ?? '');
-
-    const idBadge = `${userId.toLowerCase()}#${badgeType}#${seasonId}`;
-    const badgeData = await client.query<{
-      badge: SubgraphBadgeResponse;
-    }>({
-      query: gql(badgeQuery),
-      variables: {
-        id: idBadge,
-      },
+    const seasonUsers = await getSeasonUsers(selectedBadgesSubgraphUrl || '', {
+      season: seasonId,
+      users: [userId],
     });
+
+    let mintedTimestampInMS = 0;
+
+    if (seasonUsers.length > 0) {
+      const badges = seasonUsers[0].badges;
+      const specificBadge = badges.find((badge) => badge.badgeType === badgeType);
+
+      if (specificBadge) {
+        mintedTimestampInMS = specificBadge.mintedTimestampInMS;
+      }
+    }
+
     const badge: BadgeResponse = {
       id: `${userId}#${seasonId}#${badgeType}`,
       badgeType,
       awardedTimestampMs: toMillis(seasonEnd),
-      mintedTimestampMs: toMillis(
-        parseInt(badgeData?.data?.badge ? badgeData.data.badge.mintedTimestamp : '0'),
-      ),
+      mintedTimestampMs: mintedTimestampInMS,
     };
     return badge;
   }
@@ -747,47 +727,23 @@ class SBT {
       [] as Array<string>,
     );
 
-    const refereesQuery = `
-            query( $ids: [String], $season: BigInt) {
-                seasonUsers( where: {owner_in: $ids, seasonNumber: $season}) {
-                    id
-                    owner {
-                        id
-                    }
-                    totalWeightedNotionalTraded
-                }
-            }
-        `;
-
-    const client = getApolloClient(selectedBadgesSubgraphUrl ?? '');
-    const data = await client.query<{
-      seasonUsers: {
-        totalWeightedNotionalTraded: string;
-        owner: { id: string };
-      }[];
-    }>({
-      query: gql(refereesQuery),
-      variables: {
-        ids: lowerCaseReferees,
-        season: seasonId,
-      },
+    const seasonUsers = await getSeasonUsers(selectedBadgesSubgraphUrl, {
+      season: seasonId,
+      users: lowerCaseReferees,
     });
-
-    if (!data?.data?.seasonUsers) {
-      throw new Error('Unable to get referees from subgraph');
-    }
 
     let refereesWith100kNotionalTraded = 0;
     let refereesWith2mNotionalTraded = 0;
-    for (const seasonUser of data.data.seasonUsers) {
-      const totalPointz = parseFloat(seasonUser.totalWeightedNotionalTraded);
-      if (totalPointz >= get100KRefereeBenchmark(selectedBadgesSubgraphUrl)) {
+
+    seasonUsers.forEach((user) => {
+      const pointz = user.timeWeightedTradedNotional;
+      if (pointz >= get100KRefereeBenchmark(selectedBadgesSubgraphUrl)) {
         refereesWith100kNotionalTraded++;
-        if (totalPointz >= get2MRefereeBenchmark(selectedBadgesSubgraphUrl)) {
+        if (pointz >= get2MRefereeBenchmark(selectedBadgesSubgraphUrl)) {
           refereesWith2mNotionalTraded++;
         }
       }
-    }
+    });
 
     if (refereesWith100kNotionalTraded >= 1) {
       let badgeType = REFERROR_BADGES_VARIANT[seasonId].referror;
@@ -881,7 +837,7 @@ class SBT {
       this.currentBadgesSubgraphUrl,
       this.nextBadgesSubgraphUrl,
     );
-    const subgraphClaimedBadges = await this.claimedBadgesInSubgraph(
+    const subgraphClaimedBadges = await SBT.claimedBadgesInSubgraph(
       userAddress,
       args.season,
       selectedBadgesSubgraphUrl,
@@ -912,42 +868,31 @@ class SBT {
     return badgeStatuses;
   }
 
-  async claimedBadgesInSubgraph(
+  static async claimedBadgesInSubgraph(
     userAddress: string,
     season: number,
     selectedBadgesSubgraphUrl?: string,
-  ): Promise<Array<BadgeWithStatus>> {
-    const badgeQuery = `
-            query( $id: String) {
-                badges(first: 50, where: {seasonUser_contains: $id}) {
-                    id
-                    badgeType
-                    awardedTimestamp
-                    mintedTimestamp
-                }
-            }
-        `;
-    const client = getApolloClient(selectedBadgesSubgraphUrl ?? '');
-    const id = `${userAddress.toLowerCase()}#${season}`;
-    const data = await client.query<{
-      badges: SubgraphBadgeResponse[];
-    }>({
-      query: gql(badgeQuery),
-      variables: {
-        id,
-      },
+  ): Promise<BadgeWithStatus[]> {
+    const seasonUsers = await getSeasonUsers(selectedBadgesSubgraphUrl || '', {
+      season,
+      users: [userAddress],
     });
 
-    const badgesClaimed = new Array<BadgeWithStatus>();
-    for (const badge of data.data.badges) {
-      badgesClaimed.push({
+    if (seasonUsers.length === 0) {
+      return [];
+    }
+
+    const badges = seasonUsers[0].badges;
+
+    const badgesClaimed = badges.map((badge): BadgeWithStatus => {
+      return {
         badgeType: parseInt(badge.badgeType, 10),
         claimingStatus:
-          parseInt(badge.mintedTimestamp, 10) === 0
+          badge.mintedTimestampInMS === 0
             ? BadgeClaimingStatus.NOT_CLAIMED
             : BadgeClaimingStatus.CLAIMED, // only from subgraph's perspective
-      });
-    }
+      };
+    });
 
     return badgesClaimed;
   }

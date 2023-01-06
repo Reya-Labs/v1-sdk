@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { getPositions } from '@voltz-protocol/subgraph-data';
 import { ONE_YEAR_IN_SECONDS } from '../../constants';
 
@@ -94,8 +93,6 @@ export async function getScores({
       });
     }
   });
-
-  console.log(lpScores);
 
   return {
     traderScores,
