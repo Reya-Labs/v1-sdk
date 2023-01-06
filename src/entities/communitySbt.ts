@@ -24,6 +24,7 @@ import { getSubgraphBadges } from '../utils/communitySbt/getSubgraphBadges';
 import { sentryTracker } from '../utils/sentry';
 import { getApolloClient } from '../utils/communitySbt/getApolloClient';
 import { geckoEthToUsd } from '../utils/priceFetch';
+import { getTraderScores } from '../utils/communitySbt/getTraderScores';
 
 export type SBTConstructorArgs = {
   id: string;
@@ -616,7 +617,7 @@ class SBT {
       isLP: args.isLP ?? false,
     };
 
-    const scores = await getScores(scoreArgs);
+    const scores = args.isLP ? await getTraderScores(scoreArgs) : await getScores(scoreArgs);
 
     const rankResult: RankType[] = Object.keys(scores)
       .sort((a, b) => scores[b] - scores[a])
