@@ -64,7 +64,6 @@
     "jest": "^29.3.1",
     "lint-staged": "11.1.2",
     "mocha": "^10.1.0",
-    "mock-apollo-client": "^1.2.1",
     "prettier": "2.4.1",
     "semantic-release": "^18.0.0",
     "semantic-release-cli": "^5.4.4",
@@ -74,9 +73,7 @@
     "yalc": "^1.0.0-pre.53"
   },
   "dependencies": {
-    "@apollo/client": "^3.7.1",
     "@ethersproject/address": "^5.7.0",
-    "@graphprotocol/graph-cli": "^0.35.0",
     "@metamask/detect-provider": "^1.2.0",
     "@sentry/browser": "7.25.0",
     "@sentry/tracing": "7.25.0",
