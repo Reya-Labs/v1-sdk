@@ -23,7 +23,7 @@ import { getSubgraphBadges } from '../utils/communitySbt/getSubgraphBadges';
 
 import { sentryTracker } from '../utils/sentry';
 import { geckoEthToUsd } from '../utils/priceFetch';
-import { getScores, GetScoresArgs } from '../utils/communitySbt/getScoresViaCommv2';
+import { getScores, GetScoresArgs } from '../utils/communitySbt/getScores';
 
 export type SBTConstructorArgs = {
   id: string;
