@@ -3,7 +3,6 @@
 import axios from 'axios';
 import { jest } from '@jest/globals';
 import { ethers } from 'hardhat';
-import { getApolloClient } from '../../src/utils/communitySbt/getApolloClient';
 import SBT, {
   NonProgramaticBadgeResponse,
   SubgraphBadgeResponse,
@@ -23,15 +22,14 @@ import { getScores } from '../../src/utils/communitySbt/getScores';
 
 jest.useFakeTimers();
 
+jest.mock('@voltz-protocol/subgraph-data');
 jest.mock('axios');
-jest.mock('../../src/utils/communitySbt/getApolloClient.ts', () => {
-  const mApolloClient = { query: jest.fn() };
-  return { getApolloClient: jest.fn(() => mApolloClient) };
-});
 jest.mock('../../src/utils/sentry/index.ts', () => {
   return { sentryTracker: { captureException: jest.fn(), captureMessage: jest.fn() } };
 });
-const mockGetApolloClient = getApolloClient as jest.Mocked<(network: string) => any>;
+
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types, @typescript-eslint/no-unused-vars
+export const mockSubgraphData = (data: any): void => {};
 
 describe('getSeasonBadges: general', () => {
   const ogSeasonStart = 1654037999;
@@ -40,7 +38,6 @@ describe('getSeasonBadges: general', () => {
   const s1SeasonEnd = 1672531199;
   const s2SeasonStart = 1672531200;
   const s2SeasonEnd = 1677628799;
-  const network = 'mainnet';
   let communitySbt: SBT;
   beforeEach(() => {
     communitySbt = new SBT({
@@ -66,8 +63,7 @@ describe('getSeasonBadges: general', () => {
     ] as SubgraphBadgeResponse[];
     const seasonUser = createSeasonUserWithBadges('account1', 0, badges);
     const mGraphQLResponse = { data: { seasonUser } };
-    const client = mockGetApolloClient(network);
-    client.query.mockResolvedValueOnce(mGraphQLResponse);
+    mockSubgraphData(mGraphQLResponse);
 
     const data: Array<IpfsBadge> = [];
     data.push(createIpfsBadge('account1', 8)); // non prog, not minted
@@ -107,8 +103,7 @@ describe('getSeasonBadges: general', () => {
     ] as SubgraphBadgeResponse[];
     const seasonUser = createSeasonUserWithBadges('account1', 0, badges);
     const mGraphQLResponse = { data: { seasonUser } };
-    const client = mockGetApolloClient(network);
-    client.query.mockResolvedValueOnce(mGraphQLResponse);
+    mockSubgraphData(mGraphQLResponse);
 
     const badgesList = await getSubgraphBadges({
       userId: 'account1',
@@ -178,8 +173,7 @@ describe('getSeasonBadges: general', () => {
   test('get referrer badges', async () => {
     const seasonUsers = createSeasonUsers(1, 0, 1);
     const mGraphQLResponse = { data: { seasonUsers } };
-    const client = mockGetApolloClient(network);
-    client.query.mockResolvedValueOnce(mGraphQLResponse);
+    mockSubgraphData(mGraphQLResponse);
 
     const data: Array<string> = ['under100k0', 'over2m0'];
     const mockedAxios = axios as jest.Mocked<typeof axios>;
@@ -248,8 +242,7 @@ describe('getSeasonBadges: general', () => {
       { id: 'wallet6', positions: positionsWallet6 },
     ];
     const mGraphQLResponse = { data: { wallets } };
-    const client = mockGetApolloClient(network);
-    client.query.mockResolvedValueOnce(mGraphQLResponse);
+    mockSubgraphData(mGraphQLResponse);
 
     const mockedAxios = axios as jest.Mocked<typeof axios>;
     mockedAxios.get.mockResolvedValueOnce({
@@ -265,7 +258,7 @@ describe('getSeasonBadges: general', () => {
       'current_badges_subgraph',
     );
     expect(badge?.badgeType).toBe('28');
-    client.query.mockResolvedValueOnce(mGraphQLResponse);
+    mockSubgraphData(mGraphQLResponse);
     badge = (
       await communitySbt.getTopBadges(
         'wallet2',
@@ -276,7 +269,7 @@ describe('getSeasonBadges: general', () => {
       )
     ).topLpBadge;
     expect(badge?.badgeType).toBe('28');
-    client.query.mockResolvedValueOnce(mGraphQLResponse);
+    mockSubgraphData(mGraphQLResponse);
     badge = (
       await communitySbt.getTopBadges(
         'wallet3',
@@ -287,7 +280,7 @@ describe('getSeasonBadges: general', () => {
       )
     ).topLpBadge;
     expect(badge?.badgeType).toBe('28');
-    client.query.mockResolvedValueOnce(mGraphQLResponse);
+    mockSubgraphData(mGraphQLResponse);
     badge = (
       await communitySbt.getTopBadges(
         'wallet4',
@@ -298,7 +291,7 @@ describe('getSeasonBadges: general', () => {
       )
     ).topLpBadge;
     expect(badge).toBe(undefined);
-    client.query.mockResolvedValueOnce(mGraphQLResponse);
+    mockSubgraphData(mGraphQLResponse);
     badge = (
       await communitySbt.getTopBadges(
         'wallet5',
@@ -309,7 +302,7 @@ describe('getSeasonBadges: general', () => {
       )
     ).topLpBadge;
     expect(badge?.badgeType).toBe('28');
-    client.query.mockResolvedValueOnce(mGraphQLResponse);
+    mockSubgraphData(mGraphQLResponse);
     badge = (
       await communitySbt.getTopBadges(
         'wallet6',
@@ -371,8 +364,7 @@ describe('getSeasonBadges: general', () => {
       { id: 'wallet6', positions: positionsWallet6 },
     ];
     const mGraphQLResponse = { data: { wallets } };
-    const client = mockGetApolloClient(network);
-    client.query.mockResolvedValueOnce(mGraphQLResponse);
+    mockSubgraphData(mGraphQLResponse);
 
     const mockedAxios = axios as jest.Mocked<typeof axios>;
     mockedAxios.get.mockResolvedValueOnce({
@@ -388,7 +380,7 @@ describe('getSeasonBadges: general', () => {
       'current_badges_subgraph',
     );
     expect(badge?.badgeType).toBe('31');
-    client.query.mockResolvedValueOnce(mGraphQLResponse);
+    mockSubgraphData(mGraphQLResponse);
     badge = (
       await communitySbt.getTopBadges(
         'wallet2',
@@ -399,7 +391,7 @@ describe('getSeasonBadges: general', () => {
       )
     ).topTraderBadge;
     expect(badge).toBe(undefined);
-    client.query.mockResolvedValueOnce(mGraphQLResponse);
+    mockSubgraphData(mGraphQLResponse);
     badge = (
       await communitySbt.getTopBadges(
         'wallet3',
@@ -410,7 +402,7 @@ describe('getSeasonBadges: general', () => {
       )
     ).topTraderBadge;
     expect(badge?.badgeType).toBe('31');
-    client.query.mockResolvedValueOnce(mGraphQLResponse);
+    mockSubgraphData(mGraphQLResponse);
     badge = (
       await communitySbt.getTopBadges(
         'wallet4',
@@ -421,7 +413,7 @@ describe('getSeasonBadges: general', () => {
       )
     ).topTraderBadge;
     expect(badge?.badgeType).toBe('31');
-    client.query.mockResolvedValueOnce(mGraphQLResponse);
+    mockSubgraphData(mGraphQLResponse);
     badge = (
       await communitySbt.getTopBadges(
         'wallet5',
@@ -432,7 +424,7 @@ describe('getSeasonBadges: general', () => {
       )
     ).topTraderBadge;
     expect(badge?.badgeType).toBe('31');
-    client.query.mockResolvedValueOnce(mGraphQLResponse);
+    mockSubgraphData(mGraphQLResponse);
     badge = (
       await communitySbt.getTopBadges(
         'wallet6',
@@ -470,8 +462,7 @@ describe('getSeasonBadges: general', () => {
       { id: 'wallet2', positions: positionsWallet2 },
     ];
     const mGraphQLResponse = { data: { wallets } };
-    const client = mockGetApolloClient(network);
-    client.query.mockResolvedValueOnce(mGraphQLResponse);
+    mockSubgraphData(mGraphQLResponse);
 
     const mockedAxios = axios as jest.Mocked<typeof axios>;
     mockedAxios.get.mockResolvedValueOnce({
@@ -489,7 +480,7 @@ describe('getSeasonBadges: general', () => {
       )
     ).topTraderBadge;
     expect(badge?.badgeType).toBe('31');
-    client.query.mockResolvedValueOnce(mGraphQLResponse);
+    mockSubgraphData(mGraphQLResponse);
     badge = (
       await communitySbt.getTopBadges(
         'wallet2',
@@ -506,7 +497,6 @@ describe('getSeasonBadges: general', () => {
 describe('get top trader/LP badges', () => {
   const s1SeasonStart = 1664578800;
   const s1SeasonEnd = 1672531199;
-  const network = 'mainnet';
 
   test('get scores traders USDC', async () => {
     const positionsWallet1 = createPosition(
@@ -530,14 +520,11 @@ describe('get top trader/LP badges', () => {
       { id: 'wallet2', positions: positionsWallet2 },
     ];
     const mGraphQLResponse = { data: { wallets } };
-    const client = mockGetApolloClient(network);
-    client.query.mockResolvedValueOnce(mGraphQLResponse);
+    mockSubgraphData(mGraphQLResponse);
 
     const { traderScores: scores } = await getScores({
-      seasonStart: s1SeasonStart,
-      seasonEnd: s1SeasonEnd,
+      season: 1,
       subgraphUrl: 'someUrl',
-      ethPrice: 1400,
       ignoredWalletIds: {},
     });
 
@@ -568,14 +555,11 @@ describe('get top trader/LP badges', () => {
       { id: 'wallet2', positions: positionsWallet2 },
     ];
     const mGraphQLResponse = { data: { wallets } };
-    const client = mockGetApolloClient(network);
-    client.query.mockResolvedValueOnce(mGraphQLResponse);
+    mockSubgraphData(mGraphQLResponse);
 
     const { traderScores: scores } = await getScores({
-      seasonStart: s1SeasonStart,
-      seasonEnd: s1SeasonEnd,
+      season: 1,
       subgraphUrl: 'someUrl',
-      ethPrice: 14,
       ignoredWalletIds: {},
     });
 
@@ -606,14 +590,11 @@ describe('get top trader/LP badges', () => {
       { id: 'wallet2', positions: positionsWallet2 },
     ];
     const mGraphQLResponse = { data: { wallets } };
-    const client = mockGetApolloClient(network);
-    client.query.mockResolvedValueOnce(mGraphQLResponse);
+    mockSubgraphData(mGraphQLResponse);
 
     const { traderScores: scores } = await getScores({
-      seasonStart: s1SeasonStart,
-      seasonEnd: s1SeasonEnd,
+      season: 1,
       subgraphUrl: 'someUrl',
-      ethPrice: 14,
       ignoredWalletIds: {},
     });
 
@@ -644,14 +625,11 @@ describe('get top trader/LP badges', () => {
       { id: 'wallet2', positions: positionsWallet2 },
     ];
     const mGraphQLResponse = { data: { wallets } };
-    const client = mockGetApolloClient(network);
-    client.query.mockResolvedValueOnce(mGraphQLResponse);
+    mockSubgraphData(mGraphQLResponse);
 
     const { lpScores: scores } = await getScores({
-      seasonStart: s1SeasonStart,
-      seasonEnd: s1SeasonEnd,
+      season: 1,
       subgraphUrl: 'someUrl',
-      ethPrice: 1400,
       ignoredWalletIds: {},
     });
 
@@ -682,14 +660,11 @@ describe('get top trader/LP badges', () => {
       { id: 'wallet2', positions: positionsWallet2 },
     ];
     const mGraphQLResponse = { data: { wallets } };
-    const client = mockGetApolloClient(network);
-    client.query.mockResolvedValueOnce(mGraphQLResponse);
+    mockSubgraphData(mGraphQLResponse);
 
     const { lpScores: scores } = await getScores({
-      seasonStart: s1SeasonStart,
-      seasonEnd: s1SeasonEnd,
+      season: 1,
       subgraphUrl: 'someUrl',
-      ethPrice: 14,
       ignoredWalletIds: {},
     });
 
@@ -726,14 +701,11 @@ describe('get top trader/LP badges', () => {
       { id: 'wallet2', positions: positionsWallet2 },
     ];
     const mGraphQLResponse = { data: { wallets } };
-    const client = mockGetApolloClient(network);
-    client.query.mockResolvedValueOnce(mGraphQLResponse);
+    mockSubgraphData(mGraphQLResponse);
 
     const { lpScores: scores } = await getScores({
-      seasonStart: s1SeasonStart,
-      seasonEnd: s1SeasonEnd,
+      season: 1,
       subgraphUrl: 'someUrl',
-      ethPrice: 14,
       ignoredWalletIds: {},
     });
 
@@ -766,14 +738,11 @@ describe('get top trader/LP badges', () => {
       { id: 'wallet2', positions: positionsWallet2 },
     ];
     const mGraphQLResponse = { data: { wallets } };
-    const client = mockGetApolloClient(network);
-    client.query.mockResolvedValueOnce(mGraphQLResponse);
+    mockSubgraphData(mGraphQLResponse);
 
     const { lpScores: scores } = await getScores({
-      seasonStart: s1SeasonStart,
-      seasonEnd: thirdPoolTime + 1,
+      season: 1,
       subgraphUrl: 'someUrl',
-      ethPrice: 14,
       ignoredWalletIds: {},
     });
 
@@ -806,14 +775,11 @@ describe('get top trader/LP badges', () => {
       { id: 'wallet2', positions: positionsWallet2 },
     ];
     const mGraphQLResponse = { data: { wallets } };
-    const client = mockGetApolloClient(network);
-    client.query.mockResolvedValueOnce(mGraphQLResponse);
+    mockSubgraphData(mGraphQLResponse);
 
     const { traderScores: scores } = await getScores({
-      seasonStart: s1SeasonStart,
-      seasonEnd: thirdPoolTime + 1,
+      season: 1,
       subgraphUrl: 'someUrl',
-      ethPrice: 14,
       ignoredWalletIds: {},
     });
 
@@ -836,24 +802,19 @@ describe('get top trader/LP badges', () => {
     );
     const wallets = [{ id: 'wallet1', positions: positionsWallet1 }];
     const mGraphQLResponse = { data: { wallets } };
-    const client = mockGetApolloClient(network);
-    client.query.mockResolvedValueOnce(mGraphQLResponse);
+    mockSubgraphData(mGraphQLResponse);
 
     const { lpScores: scoresLp } = await getScores({
-      seasonStart: s1SeasonStart,
-      seasonEnd: s1SeasonEnd,
+      season: 1,
       subgraphUrl: 'someUrl',
-      ethPrice: 14,
       ignoredWalletIds: {},
     });
     expect(scoresLp.wallet1).toBeCloseTo(9, 0);
 
-    client.query.mockResolvedValueOnce(mGraphQLResponse);
+    mockSubgraphData(mGraphQLResponse);
     const { traderScores: scoresTrader } = await getScores({
-      seasonStart: s1SeasonStart,
-      seasonEnd: s1SeasonEnd,
+      season: 1,
       subgraphUrl: 'someUrl',
-      ethPrice: 14,
       ignoredWalletIds: {},
     });
     expect(scoresTrader.wallet1).toBeCloseTo(20, 0);
@@ -881,8 +842,7 @@ describe('getReferrorBadges', () => {
   test('check referror badge assigned and no whale influenecer', async () => {
     const seasonUsers = createSeasonUsers(2, 1, 4);
     const mGraphQLResponse = { data: { seasonUsers } };
-    const client = mockGetApolloClient('goerli');
-    client.query.mockResolvedValueOnce(mGraphQLResponse);
+    mockSubgraphData(mGraphQLResponse);
 
     const data: Array<string> = ['over100k0', 'over2M1', 'over2M2', 'over2M3', 'over2M0'];
     const mockedAxios = axios as jest.Mocked<typeof axios>;
@@ -905,8 +865,7 @@ describe('getReferrorBadges', () => {
   test('check whale whisperer but no notional influencer', async () => {
     const seasonUsers = createSeasonUsers(1, 0, 9);
     const mGraphQLResponse = { data: { seasonUsers } };
-    const client = mockGetApolloClient('goerli');
-    client.query.mockResolvedValueOnce(mGraphQLResponse);
+    mockSubgraphData(mGraphQLResponse);
 
     const data: Array<string> = [
       'over2M0',
@@ -943,8 +902,7 @@ describe('getReferrorBadges', () => {
   test('check notional influencer but no whale whisperer', async () => {
     const seasonUsers = createSeasonUsers(0, 6, 4);
     const mGraphQLResponse = { data: { seasonUsers } };
-    const client = mockGetApolloClient('goerli');
-    client.query.mockResolvedValueOnce(mGraphQLResponse);
+    mockSubgraphData(mGraphQLResponse);
 
     const data: Array<string> = [
       'over2M0',
@@ -982,8 +940,7 @@ describe('getReferrorBadges', () => {
   test('check no badge', async () => {
     const seasonUsers = createSeasonUsers(1, 0, 0);
     const mGraphQLResponse = { data: { seasonUsers } };
-    const client = mockGetApolloClient('goerli');
-    client.query.mockResolvedValueOnce(mGraphQLResponse);
+    mockSubgraphData(mGraphQLResponse);
 
     const data: Array<string> = [];
     const mockedAxios = axios as jest.Mocked<typeof axios>;
@@ -1004,8 +961,7 @@ describe('getReferrorBadges', () => {
   test("check referror with even if one referee didn't trade", async () => {
     const seasonUsers = createSeasonUsers(0, 0, 1);
     const mGraphQLResponse = { data: { seasonUsers } };
-    const client = mockGetApolloClient('goerli');
-    client.query.mockResolvedValueOnce(mGraphQLResponse);
+    mockSubgraphData(mGraphQLResponse);
 
     const data: Array<string> = ['didntTrade', 'over2M0'];
     const mockedAxios = axios as jest.Mocked<typeof axios>;
@@ -1029,8 +985,7 @@ describe('getReferrorBadges', () => {
   test('check all badges achieved', async () => {
     const seasonUsers = createSeasonUsers(0, 5, 6);
     const mGraphQLResponse = { data: { seasonUsers } };
-    const client = mockGetApolloClient('goerli');
-    client.query.mockResolvedValueOnce(mGraphQLResponse);
+    mockSubgraphData(mGraphQLResponse);
 
     const data: Array<string> = [
       'over2M0',
@@ -1075,7 +1030,6 @@ describe('end of season automation', () => {
   const ogSeasonEnd = 1664578799;
   const s1SeasonStart = 1664578800;
   const s1SeasonEnd = 1672141480;
-  const network = 'mainnet';
   let communitySbt: SBT;
   beforeEach(() => {
     communitySbt = new SBT({
@@ -1127,8 +1081,7 @@ describe('end of season automation', () => {
     const badges = [] as SubgraphBadgeResponse[];
     const seasonUser = createSeasonUserWithBadges('account1', 0, badges);
     const mGraphQLResponse = { data: { seasonUser } };
-    const client = mockGetApolloClient(network);
-    client.query.mockResolvedValueOnce(mGraphQLResponse);
+    mockSubgraphData(mGraphQLResponse);
 
     const data: Array<IpfsBadge> = [];
     data.push(createIpfsBadge('account1', 8)); // non prog, not minted
@@ -1151,8 +1104,7 @@ describe('end of season automation', () => {
     const badges = [] as SubgraphBadgeResponse[];
     const seasonUser = createSeasonUserWithBadges('account1', 1, badges);
     const mGraphQLResponse = { data: { seasonUser } };
-    const client = mockGetApolloClient(network);
-    client.query.mockResolvedValueOnce(mGraphQLResponse);
+    mockSubgraphData(mGraphQLResponse);
 
     const data: Array<IpfsBadge> = [];
     data.push(createIpfsBadge('account1', 8)); // non prog, not minted
