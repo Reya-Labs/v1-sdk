@@ -1,18 +1,5 @@
-import { gql } from '@apollo/client';
+import { getRoots } from '@voltz-protocol/subgraph-data';
 import { Bytes } from 'ethers';
-import { getApolloClient } from './getApolloClient';
-
-const rootsQuery = `
-  query($timestamp: BigInt) {
-    roots(where: {startTimestamp_lte: $timestamp, endTimestamp_gte: $timestamp}) {
-        id
-        root
-        startTimestamp
-        endTimestamp
-        metadataURIBase
-    }
-  }
-`;
 
 export type RootEntity = {
   merkleRoot: Bytes;
@@ -25,25 +12,23 @@ export async function getRootFromSubgraph(
   timestamp: number,
   subgraphUrl: string,
 ): Promise<RootEntity | undefined> {
-  const client = getApolloClient(subgraphUrl);
+  const roots = await getRoots(subgraphUrl);
+  const timestampInMS = timestamp * 1000;
+  const seasonRoots = roots.filter(
+    (root) => root.startTimestampInMS <= timestampInMS && timestampInMS <= root.endTimestampInMS,
+  );
 
-  const data = await client.query({
-    query: gql(rootsQuery),
-    variables: {
-      timestamp,
-    },
-  });
-
-  // TODO: add support for multiple roots, [0] is not enough
-  const rootEntity = (data.data.roots || [])[0];
-  if (!rootEntity) {
+  if (seasonRoots.length === 0) {
     return undefined;
   }
+
+  // TODO: add support for multiple roots, [0] is not enough
+  const rootEntity = seasonRoots[0];
 
   return {
     merkleRoot: rootEntity.root,
     baseMetadataUri: rootEntity.metadataURIBase,
-    startTimestamp: rootEntity.startTimestamp,
-    endTimestamp: rootEntity.endTimestamp,
+    startTimestamp: rootEntity.startTimestampInMS / 1000,
+    endTimestamp: rootEntity.endTimestampInMS / 1000,
   };
 }

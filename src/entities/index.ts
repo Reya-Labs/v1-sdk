@@ -18,7 +18,6 @@ export {
   BadgeWithStatus,
   BadgeResponse,
   RankType,
-  GetRankingArgs,
   SBTConstructorArgs,
 } from './communitySbt';
 export * from './mellow';

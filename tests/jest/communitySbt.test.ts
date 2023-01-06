@@ -10,7 +10,6 @@ import SBT, {
 } from '../../src/entities/communitySbt';
 import { getSelectedSeasonBadgesUrl, toMillis } from '../../src/utils/communitySbt/helpers';
 import { getSubgraphBadges } from '../../src/utils/communitySbt/getSubgraphBadges';
-import { getScores } from '../../src/utils/communitySbt/getTopBadges';
 import {
   createBadgeResponse,
   createSeasonUserWithBadges,
@@ -20,6 +19,7 @@ import {
   createPosition,
   IpfsBadge,
 } from '../utilsCommunitySbt';
+import { getScores } from '../../src/utils/communitySbt/getScores';
 
 jest.useFakeTimers();
 
@@ -257,64 +257,68 @@ describe('getSeasonBadges: general', () => {
       data: { ethereum: { usd: 1400 } },
     });
 
-    let badge = await communitySbt.getTopBadge(
+    let { topLpBadge: badge } = await communitySbt.getTopBadges(
       'wallet1',
       1,
-      true,
       s1SeasonStart,
       s1SeasonEnd,
       'current_badges_subgraph',
     );
     expect(badge?.badgeType).toBe('28');
     client.query.mockResolvedValueOnce(mGraphQLResponse);
-    badge = await communitySbt.getTopBadge(
-      'wallet2',
-      1,
-      true,
-      s1SeasonStart,
-      s1SeasonEnd,
-      'current_badges_subgraph',
-    );
+    badge = (
+      await communitySbt.getTopBadges(
+        'wallet2',
+        1,
+        s1SeasonStart,
+        s1SeasonEnd,
+        'current_badges_subgraph',
+      )
+    ).topLpBadge;
     expect(badge?.badgeType).toBe('28');
     client.query.mockResolvedValueOnce(mGraphQLResponse);
-    badge = await communitySbt.getTopBadge(
-      'wallet3',
-      1,
-      true,
-      s1SeasonStart,
-      s1SeasonEnd,
-      'current_badges_subgraph',
-    );
+    badge = (
+      await communitySbt.getTopBadges(
+        'wallet3',
+        1,
+        s1SeasonStart,
+        s1SeasonEnd,
+        'current_badges_subgraph',
+      )
+    ).topLpBadge;
     expect(badge?.badgeType).toBe('28');
     client.query.mockResolvedValueOnce(mGraphQLResponse);
-    badge = await communitySbt.getTopBadge(
-      'wallet4',
-      1,
-      true,
-      s1SeasonStart,
-      s1SeasonEnd,
-      'current_badges_subgraph',
-    );
+    badge = (
+      await communitySbt.getTopBadges(
+        'wallet4',
+        1,
+        s1SeasonStart,
+        s1SeasonEnd,
+        'current_badges_subgraph',
+      )
+    ).topLpBadge;
     expect(badge).toBe(undefined);
     client.query.mockResolvedValueOnce(mGraphQLResponse);
-    badge = await communitySbt.getTopBadge(
-      'wallet5',
-      1,
-      true,
-      s1SeasonStart,
-      s1SeasonEnd,
-      'current_badges_subgraph',
-    );
+    badge = (
+      await communitySbt.getTopBadges(
+        'wallet5',
+        1,
+        s1SeasonStart,
+        s1SeasonEnd,
+        'current_badges_subgraph',
+      )
+    ).topLpBadge;
     expect(badge?.badgeType).toBe('28');
     client.query.mockResolvedValueOnce(mGraphQLResponse);
-    badge = await communitySbt.getTopBadge(
-      'wallet6',
-      1,
-      true,
-      s1SeasonStart,
-      s1SeasonEnd,
-      'current_badges_subgraph',
-    );
+    badge = (
+      await communitySbt.getTopBadges(
+        'wallet6',
+        1,
+        s1SeasonStart,
+        s1SeasonEnd,
+        'current_badges_subgraph',
+      )
+    ).topLpBadge;
     expect(badge?.badgeType).toBe('28');
   });
 
@@ -376,64 +380,68 @@ describe('getSeasonBadges: general', () => {
       data: { ethereum: { usd: 1400 } },
     });
 
-    let badge = await communitySbt.getTopBadge(
+    let { topTraderBadge: badge } = await communitySbt.getTopBadges(
       'wallet1',
       1,
-      false,
       s1SeasonStart,
       s1SeasonEnd,
       'current_badges_subgraph',
     );
     expect(badge?.badgeType).toBe('31');
     client.query.mockResolvedValueOnce(mGraphQLResponse);
-    badge = await communitySbt.getTopBadge(
-      'wallet2',
-      1,
-      false,
-      s1SeasonStart,
-      s1SeasonEnd,
-      'current_badges_subgraph',
-    );
+    badge = (
+      await communitySbt.getTopBadges(
+        'wallet2',
+        1,
+        s1SeasonStart,
+        s1SeasonEnd,
+        'current_badges_subgraph',
+      )
+    ).topTraderBadge;
     expect(badge).toBe(undefined);
     client.query.mockResolvedValueOnce(mGraphQLResponse);
-    badge = await communitySbt.getTopBadge(
-      'wallet3',
-      1,
-      false,
-      s1SeasonStart,
-      s1SeasonEnd,
-      'current_badges_subgraph',
-    );
+    badge = (
+      await communitySbt.getTopBadges(
+        'wallet3',
+        1,
+        s1SeasonStart,
+        s1SeasonEnd,
+        'current_badges_subgraph',
+      )
+    ).topTraderBadge;
     expect(badge?.badgeType).toBe('31');
     client.query.mockResolvedValueOnce(mGraphQLResponse);
-    badge = await communitySbt.getTopBadge(
-      'wallet4',
-      1,
-      false,
-      s1SeasonStart,
-      s1SeasonEnd,
-      'current_badges_subgraph',
-    );
+    badge = (
+      await communitySbt.getTopBadges(
+        'wallet4',
+        1,
+        s1SeasonStart,
+        s1SeasonEnd,
+        'current_badges_subgraph',
+      )
+    ).topTraderBadge;
     expect(badge?.badgeType).toBe('31');
     client.query.mockResolvedValueOnce(mGraphQLResponse);
-    badge = await communitySbt.getTopBadge(
-      'wallet5',
-      1,
-      false,
-      s1SeasonStart,
-      s1SeasonEnd,
-      'current_badges_subgraph',
-    );
+    badge = (
+      await communitySbt.getTopBadges(
+        'wallet5',
+        1,
+        s1SeasonStart,
+        s1SeasonEnd,
+        'current_badges_subgraph',
+      )
+    ).topTraderBadge;
     expect(badge?.badgeType).toBe('31');
     client.query.mockResolvedValueOnce(mGraphQLResponse);
-    badge = await communitySbt.getTopBadge(
-      'wallet6',
-      1,
-      false,
-      s1SeasonStart,
-      s1SeasonEnd,
-      'current_badges_subgraph',
-    );
+    badge = (
+      await communitySbt.getTopBadges(
+        'wallet6',
+        1,
+        s1SeasonStart,
+        s1SeasonEnd,
+        'current_badges_subgraph',
+      )
+    ).topTraderBadge;
     expect(badge?.badgeType).toBe('31');
   });
 
@@ -471,24 +479,26 @@ describe('getSeasonBadges: general', () => {
       data: { ethereum: { usd: 1400 } },
     });
 
-    let badge = await communitySbt.getTopBadge(
-      'wallet1',
-      1,
-      false,
-      s1SeasonStart,
-      s1SeasonEnd,
-      'current_badges_subgraph',
-    );
+    let badge = (
+      await communitySbt.getTopBadges(
+        'wallet1',
+        1,
+        s1SeasonStart,
+        s1SeasonEnd,
+        'current_badges_subgraph',
+      )
+    ).topTraderBadge;
     expect(badge?.badgeType).toBe('31');
     client.query.mockResolvedValueOnce(mGraphQLResponse);
-    badge = await communitySbt.getTopBadge(
-      'wallet2',
-      1,
-      false,
-      s1SeasonStart,
-      s1SeasonEnd,
-      'current_badges_subgraph',
-    );
+    badge = (
+      await communitySbt.getTopBadges(
+        'wallet2',
+        1,
+        s1SeasonStart,
+        s1SeasonEnd,
+        'current_badges_subgraph',
+      )
+    ).topTraderBadge;
     expect(badge?.badgeType).toBe('31');
   });
 });
@@ -523,13 +533,12 @@ describe('get top trader/LP badges', () => {
     const client = mockGetApolloClient(network);
     client.query.mockResolvedValueOnce(mGraphQLResponse);
 
-    const scores = await getScores({
+    const { traderScores: scores } = await getScores({
       seasonStart: s1SeasonStart,
       seasonEnd: s1SeasonEnd,
       subgraphUrl: 'someUrl',
       ethPrice: 1400,
       ignoredWalletIds: {},
-      isLP: false,
     });
 
     expect(scores.wallet1).toBeCloseTo(50, 0);
@@ -562,13 +571,12 @@ describe('get top trader/LP badges', () => {
     const client = mockGetApolloClient(network);
     client.query.mockResolvedValueOnce(mGraphQLResponse);
 
-    const scores = await getScores({
+    const { traderScores: scores } = await getScores({
       seasonStart: s1SeasonStart,
       seasonEnd: s1SeasonEnd,
       subgraphUrl: 'someUrl',
       ethPrice: 14,
       ignoredWalletIds: {},
-      isLP: false,
     });
 
     expect(scores.wallet1).toBeCloseTo(70, 0);
@@ -601,13 +609,12 @@ describe('get top trader/LP badges', () => {
     const client = mockGetApolloClient(network);
     client.query.mockResolvedValueOnce(mGraphQLResponse);
 
-    const scores = await getScores({
+    const { traderScores: scores } = await getScores({
       seasonStart: s1SeasonStart,
       seasonEnd: s1SeasonEnd,
       subgraphUrl: 'someUrl',
       ethPrice: 14,
       ignoredWalletIds: {},
-      isLP: false,
     });
 
     expect(scores.wallet1).toBeCloseTo(34, 0);
@@ -640,13 +647,12 @@ describe('get top trader/LP badges', () => {
     const client = mockGetApolloClient(network);
     client.query.mockResolvedValueOnce(mGraphQLResponse);
 
-    const scores = await getScores({
+    const { lpScores: scores } = await getScores({
       seasonStart: s1SeasonStart,
       seasonEnd: s1SeasonEnd,
       subgraphUrl: 'someUrl',
       ethPrice: 1400,
       ignoredWalletIds: {},
-      isLP: true,
     });
 
     expect(scores.wallet1).toBeCloseTo(5, 0);
@@ -679,13 +685,12 @@ describe('get top trader/LP badges', () => {
     const client = mockGetApolloClient(network);
     client.query.mockResolvedValueOnce(mGraphQLResponse);
 
-    const scores = await getScores({
+    const { lpScores: scores } = await getScores({
       seasonStart: s1SeasonStart,
       seasonEnd: s1SeasonEnd,
       subgraphUrl: 'someUrl',
       ethPrice: 14,
       ignoredWalletIds: {},
-      isLP: true,
     });
 
     expect(scores.wallet1).toBeCloseTo(70, 0);
@@ -724,13 +729,12 @@ describe('get top trader/LP badges', () => {
     const client = mockGetApolloClient(network);
     client.query.mockResolvedValueOnce(mGraphQLResponse);
 
-    const scores = await getScores({
+    const { lpScores: scores } = await getScores({
       seasonStart: s1SeasonStart,
       seasonEnd: s1SeasonEnd,
       subgraphUrl: 'someUrl',
       ethPrice: 14,
       ignoredWalletIds: {},
-      isLP: true,
     });
 
     expect(scores.wallet1).toBeCloseTo(76, 0);
@@ -765,13 +769,12 @@ describe('get top trader/LP badges', () => {
     const client = mockGetApolloClient(network);
     client.query.mockResolvedValueOnce(mGraphQLResponse);
 
-    const scores = await getScores({
+    const { lpScores: scores } = await getScores({
       seasonStart: s1SeasonStart,
       seasonEnd: thirdPoolTime + 1,
       subgraphUrl: 'someUrl',
       ethPrice: 14,
       ignoredWalletIds: {},
-      isLP: true,
     });
 
     expect(scores.wallet1).toBeCloseTo(23, 0);
@@ -806,13 +809,12 @@ describe('get top trader/LP badges', () => {
     const client = mockGetApolloClient(network);
     client.query.mockResolvedValueOnce(mGraphQLResponse);
 
-    const scores = await getScores({
+    const { traderScores: scores } = await getScores({
       seasonStart: s1SeasonStart,
       seasonEnd: thirdPoolTime + 1,
       subgraphUrl: 'someUrl',
       ethPrice: 14,
       ignoredWalletIds: {},
-      isLP: false,
     });
 
     expect(scores.wallet1).toBeCloseTo(109, 0);
@@ -837,24 +839,22 @@ describe('get top trader/LP badges', () => {
     const client = mockGetApolloClient(network);
     client.query.mockResolvedValueOnce(mGraphQLResponse);
 
-    const scoresLp = await getScores({
+    const { lpScores: scoresLp } = await getScores({
       seasonStart: s1SeasonStart,
       seasonEnd: s1SeasonEnd,
       subgraphUrl: 'someUrl',
       ethPrice: 14,
       ignoredWalletIds: {},
-      isLP: true,
     });
     expect(scoresLp.wallet1).toBeCloseTo(9, 0);
 
     client.query.mockResolvedValueOnce(mGraphQLResponse);
-    const scoresTrader = await getScores({
+    const { traderScores: scoresTrader } = await getScores({
       seasonStart: s1SeasonStart,
       seasonEnd: s1SeasonEnd,
       subgraphUrl: 'someUrl',
       ethPrice: 14,
       ignoredWalletIds: {},
-      isLP: false,
     });
     expect(scoresTrader.wallet1).toBeCloseTo(20, 0);
   });
