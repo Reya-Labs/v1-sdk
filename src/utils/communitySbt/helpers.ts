@@ -1,4 +1,5 @@
 import { Bytes, ethers } from 'ethers';
+import { isUndefined } from 'lodash';
 import {
   GOERLI_ONE_HUNDRED_THOUSAND,
   GOERLI_TWO_MILLON,
@@ -43,9 +44,16 @@ export function getEtherscanURL(network: string, apiKey: string, userAddress: st
   }
 }
 
-export function getTopBadgeType(season: number, isTrader: boolean): string | undefined {
+export function getTopBadgeType(season: number, isTrader: boolean): string {
   const actor = isTrader ? 'trader' : 'liquidityProvider';
-  return NON_SUBGRAPH_BADGES_SEASONS[season].find((b) => TOP_BADGES_VARIANT[actor].includes(b));
+  const badgeType = NON_SUBGRAPH_BADGES_SEASONS[season].find((b) =>
+    TOP_BADGES_VARIANT[actor].includes(b),
+  );
+
+  if (isUndefined(badgeType)) {
+    throw new Error('Badge type not found.');
+  }
+  return badgeType;
 }
 
 /**

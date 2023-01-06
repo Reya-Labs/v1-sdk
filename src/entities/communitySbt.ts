@@ -2,6 +2,7 @@ import { BigNumber, Bytes, Signer, providers } from 'ethers';
 import { gql } from '@apollo/client';
 import axios from 'axios';
 import { DateTime } from 'luxon';
+import { isUndefined } from 'lodash';
 import { CommunitySBT, CommunitySBT__factory } from '../typechain-sbt';
 import { createLeaves } from '../utils/communitySbt/getIpfsLeaves';
 import { getRootFromSubgraph } from '../utils/communitySbt/getSubgraphRoot';
@@ -18,13 +19,12 @@ import {
   getTopBadgeType,
   toMillis,
 } from '../utils/communitySbt/helpers';
-import { getScores, GetScoresArgs } from '../utils/communitySbt/getTopBadges';
 import { getSubgraphBadges } from '../utils/communitySbt/getSubgraphBadges';
 
 import { sentryTracker } from '../utils/sentry';
 import { getApolloClient } from '../utils/communitySbt/getApolloClient';
 import { geckoEthToUsd } from '../utils/priceFetch';
-import { getTraderScores } from '../utils/communitySbt/getTraderScores';
+import { getScores, GetScoresArgs } from '../utils/communitySbt/getScores';
 
 export type SBTConstructorArgs = {
   id: string;
@@ -76,7 +76,6 @@ export type GetRankingArgs = {
   subgraphUrl?: string;
   ethPrice?: number;
   ignoredWalletIds?: Record<string, boolean>;
-  isLP?: boolean;
 };
 
 export type RankType = {
@@ -522,24 +521,16 @@ class SBT {
         this.coingeckoKey &&
         DateTime.now().toSeconds() > seasonEnd
       ) {
-        const topLpBadge = await this.getTopBadge(
+        const { topLpBadge, topTraderBadge } = await this.getTopBadges(
           userId,
           seasonId,
-          false,
           seasonStart,
           seasonEnd,
           selectedBadgesSubgraphUrl,
         );
-        const topTraderBadge = await this.getTopBadge(
-          userId,
-          seasonId,
-          true,
-          seasonStart,
-          seasonEnd,
-          selectedBadgesSubgraphUrl,
-        );
-        if (topLpBadge) badgesResponse.push(topLpBadge);
-        if (topTraderBadge) badgesResponse.push(topTraderBadge);
+
+        if (!isUndefined(topLpBadge)) badgesResponse.push(topLpBadge);
+        if (!isUndefined(topTraderBadge)) badgesResponse.push(topTraderBadge);
       }
 
       return badgesResponse;
@@ -554,19 +545,24 @@ class SBT {
    * ranking of all users. Check if given user is in top 5.
    * If so, assign a top trader/LP badge, otherwise return undefined
    */
-  public async getTopBadge(
+  private async getTopBadges(
     userId: string,
     seasonId: number,
-    isLP: boolean,
     seasonStart: number,
     seasonEnd: number,
     selectedBadgesSubgraphUrl?: string,
-  ): Promise<BadgeResponse | undefined> {
-    const badgeType = getTopBadgeType(seasonId, !isLP);
-    if (!badgeType) return undefined;
+  ): Promise<{
+    topTraderBadge: BadgeResponse | undefined;
+    topLpBadge: BadgeResponse | undefined;
+  }> {
+    const traderBadgeType = getTopBadgeType(seasonId, false);
+    const lpBadgeType = getTopBadgeType(seasonId, true);
 
     if (!selectedBadgesSubgraphUrl || !this.coingeckoKey || !this.ignoredWalletIds) {
-      return undefined;
+      return {
+        topTraderBadge: undefined,
+        topLpBadge: undefined,
+      };
     }
 
     if (!this.ethPrice) {
@@ -576,32 +572,51 @@ class SBT {
     const rankResult = await this.getRanking({
       seasonStart,
       seasonEnd,
-      isLP,
     });
 
-    for (let rank = 0; rank < 5; rank++) {
-      if (!rankResult[rank]) {
-        return undefined;
-      }
-      const entry = rankResult[rank];
-      if (entry.address === userId) {
-        const badge = await this.constructTopBadge(
+    const traderPosition = rankResult.traderRankResults.find(
+      (rank) => rank.address.toLowerCase() === userId.toLowerCase(),
+    );
+
+    const topTraderBadge = !isUndefined(traderPosition)
+      ? await this.constructTopBadge(
           userId,
           seasonId,
           seasonEnd,
-          badgeType,
+          traderBadgeType,
           selectedBadgesSubgraphUrl,
-        );
-        return badge;
-      }
-    }
+        )
+      : undefined;
 
-    return undefined;
+    const lpPosition = rankResult.lpRankResults.find(
+      (rank) => rank.address.toLowerCase() === userId.toLowerCase(),
+    );
+
+    const topLpBadge = !isUndefined(lpPosition)
+      ? await this.constructTopBadge(
+          userId,
+          seasonId,
+          seasonEnd,
+          lpBadgeType,
+          selectedBadgesSubgraphUrl,
+        )
+      : undefined;
+
+    return {
+      topTraderBadge,
+      topLpBadge,
+    };
   }
 
-  public async getRanking(args: GetRankingArgs): Promise<RankType[]> {
+  public async getRanking(args: GetRankingArgs): Promise<{
+    traderRankResults: RankType[];
+    lpRankResults: RankType[];
+  }> {
     if (!this.subgraphUrl || !this.coingeckoKey || !this.ignoredWalletIds) {
-      return [];
+      return {
+        traderRankResults: [],
+        lpRankResults: [],
+      };
     }
 
     if (!this.ethPrice) {
@@ -614,20 +629,30 @@ class SBT {
       subgraphUrl: this.subgraphUrl,
       ethPrice: this.ethPrice,
       ignoredWalletIds: this.ignoredWalletIds,
-      isLP: args.isLP ?? false,
     };
 
-    const scores = args.isLP ? await getTraderScores(scoreArgs) : await getScores(scoreArgs);
+    const scores = await getScores(scoreArgs);
 
-    const rankResult: RankType[] = Object.keys(scores)
-      .sort((a, b) => scores[b] - scores[a])
+    const traderRankResults: RankType[] = Object.keys(scores.traderScores)
+      .sort((a, b) => scores.traderScores[b] - scores.traderScores[a])
       .map((walletId, index) => ({
         address: walletId,
-        points: scores[walletId] ?? 0,
+        points: scores.traderScores[walletId] || 0,
         rank: index,
       }));
 
-    return rankResult;
+    const lpRankResults: RankType[] = Object.keys(scores.lpScores)
+      .sort((a, b) => scores.lpScores[b] - scores.lpScores[a])
+      .map((walletId, index) => ({
+        address: walletId,
+        points: scores.lpScores[walletId] || 0,
+        rank: index,
+      }));
+
+    return {
+      traderRankResults,
+      lpRankResults,
+    };
   }
 
   /**
