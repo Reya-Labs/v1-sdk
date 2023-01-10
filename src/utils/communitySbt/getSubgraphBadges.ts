@@ -33,8 +33,10 @@ export async function getSubgraphBadges({
           return {
             id: badge.id,
             badgeType: badge.badgeType,
-            awardedTimestampMs: badge.awardedTimestampInMS,
-            mintedTimestampMs: badge.mintedTimestampInMS,
+            awardedTimestampMs:
+              badge.awardedTimestampInMS > 0 ? badge.awardedTimestampInMS : undefined,
+            mintedTimestampMs:
+              badge.mintedTimestampInMS > 0 ? badge.mintedTimestampInMS : undefined,
           };
         });
 

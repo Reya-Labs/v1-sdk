@@ -549,8 +549,8 @@ class SBT {
     topTraderBadge: BadgeResponse | undefined;
     topLpBadge: BadgeResponse | undefined;
   }> {
-    const traderBadgeType = getTopBadgeType(seasonId, false);
-    const lpBadgeType = getTopBadgeType(seasonId, true);
+    const traderBadgeType = getTopBadgeType(seasonId, true);
+    const lpBadgeType = getTopBadgeType(seasonId, false);
 
     if (!selectedBadgesSubgraphUrl || !this.coingeckoKey || !this.ignoredWalletIds) {
       return {
@@ -565,9 +565,9 @@ class SBT {
 
     const rankResult = await this.getRanking(seasonId);
 
-    const traderPosition = rankResult.traderRankResults.find(
-      (rank) => rank.address.toLowerCase() === userId.toLowerCase(),
-    );
+    const traderPosition = rankResult.traderRankResults
+      .slice(0, 5)
+      .find((rank) => rank.address.toLowerCase() === userId.toLowerCase());
 
     const topTraderBadge = !isUndefined(traderPosition)
       ? await SBT.constructTopBadge(
@@ -579,9 +579,9 @@ class SBT {
         )
       : undefined;
 
-    const lpPosition = rankResult.lpRankResults.find(
-      (rank) => rank.address.toLowerCase() === userId.toLowerCase(),
-    );
+    const lpPosition = rankResult.lpRankResults
+      .slice(0, 5)
+      .find((rank) => rank.address.toLowerCase() === userId.toLowerCase());
 
     const topLpBadge = !isUndefined(lpPosition)
       ? await SBT.constructTopBadge(
@@ -625,9 +625,6 @@ class SBT {
         points: scores.traderScores[walletId] || 0,
         rank: index,
       }));
-
-    // eslint-disable-next-line no-console
-    console.log('traderRankResults:', traderRankResults.slice(0, 10));
 
     const lpRankResults: RankType[] = Object.keys(scores.lpScores)
       .sort((a, b) => scores.lpScores[b] - scores.lpScores[a])
@@ -676,7 +673,7 @@ class SBT {
       id: `${userId}#${seasonId}#${badgeType}`,
       badgeType,
       awardedTimestampMs: toMillis(seasonEnd),
-      mintedTimestampMs: mintedTimestampInMS,
+      mintedTimestampMs: mintedTimestampInMS > 0 ? mintedTimestampInMS : undefined,
     };
     return badge;
   }
