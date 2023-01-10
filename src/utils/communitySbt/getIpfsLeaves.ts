@@ -8,7 +8,7 @@ export async function createLeaves(
 ): Promise<Array<LeafInfo>> {
   const data = await axios.get(getLeavesIpfsUri(seasonId, leavesCids), {
     headers: {
-      Accept: '*/*',
+      Accept: 'text/plain',
     },
   });
 
