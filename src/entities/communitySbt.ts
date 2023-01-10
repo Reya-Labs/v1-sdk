@@ -427,7 +427,7 @@ class SBT {
 
     const data = await axios.get(getLeavesIpfsUri(seasonId, this.badgesCids), {
       headers: {
-        Accept: '*/*',
+        Accept: 'text/plain',
       },
     });
 

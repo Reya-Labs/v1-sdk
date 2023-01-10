@@ -1,6 +1,6 @@
 {
   "name": "@voltz-protocol/v1-sdk",
-  "version": "1.31.0",
+  "version": "1.31.2",
   "description": "A TypeScript wrapper for the Voltz smart contract",
   "main": "dist/index.js",
   "types": "dist/types",
@@ -20,6 +20,7 @@
     "prettier:check": "prettier --check 'src/**/*.ts'",
     "lint:check": "eslint 'src/**/*.{ts,tsx}'",
     "lint:fix": "eslint --fix 'src/**/*.ts'",
+    "yalc:push-changes": "yarn build-release && npx yalc publish && npx yalc push --sig",
     "test": "npx jest tests/jest/*.ts && npx hardhat test",
     "release": "semantic-release",
     "irs-setup": "ts-node scripts/setup.ts",

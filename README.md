@@ -47,10 +47,16 @@ To run the tests execute `yarn test`. This runs all the tests inside the `/tests
 
 # Testing local version in UI using `yalc`
 
+## Creating the link between repos
 1. SDK -> Run `yarn build-release` (this prepares the JS build files)
 2. SDK -> Run `npx yalc publish`
 3. UI repo, to test local version(link) -> run `npx yalc add @voltz-protocol/v1-sdk`
-4. UI repo, to update local version(link) -> run `npx yalc update @voltz-protocol/v1-sdk`
+
+## Pushing changes on code changes in SDK
+1. SDK -> Perform code changes
+2. SDK -> Run `yarn yalc:push-changes`
+3. If you have the `UI` repo running, changes will be refreshed automatically or via refresh in browser
+4. Repeat `1->3` on new code changes
 
 # Terms & Conditions
 
