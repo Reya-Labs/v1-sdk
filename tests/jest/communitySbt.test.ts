@@ -1,4 +1,5 @@
 // Run with: npx jest tests/jest/communitySbt.test.ts
+
 import { jest } from '@jest/globals';
 import { ethers } from 'hardhat';
 import { Badge, SeasonUser } from '@voltz-protocol/subgraph-data';
