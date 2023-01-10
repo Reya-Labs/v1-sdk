@@ -31,8 +31,13 @@ export async function getScores({
   seasonUsers
     .filter((user) => !ignoredWalletIds[user.owner])
     .forEach((user) => {
-      traderScores[user.owner] = user.timeWeightedTradedNotional;
-      lpScores[user.owner] = user.timeWeightedTradedNotional;
+      if (user.timeWeightedTradedNotional > 0) {
+        traderScores[user.owner] = user.timeWeightedTradedNotional;
+      }
+
+      if (user.timeWeightedProvidedLiquidity > 0) {
+        lpScores[user.owner] = user.timeWeightedProvidedLiquidity;
+      }
     });
 
   return {

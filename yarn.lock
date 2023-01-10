@@ -2842,10 +2842,10 @@
     "@typescript-eslint/types" "4.31.2"
     eslint-visitor-keys "^2.0.0"
 
-"@voltz-protocol/subgraph-data@1.7.0":
-  version "1.7.0"
-  resolved "https://registry.yarnpkg.com/@voltz-protocol/subgraph-data/-/subgraph-data-1.7.0.tgz#ac6767ef853d4db58cb23c5f8019e6ccac24dd01"
-  integrity sha512-oTvdZNi96s9894NkFT1LhgY9AoSGuK88U9/NMpmvxi3Yl8uk4TqgkEZemdXIK9QBkH+dwgyxda5XZkwDTbTkyg==
+"@voltz-protocol/subgraph-data@1.8.0":
+  version "1.8.0"
+  resolved "https://registry.yarnpkg.com/@voltz-protocol/subgraph-data/-/subgraph-data-1.8.0.tgz#eaee8c314c037db5bf8bf073f624f8f426580069"
+  integrity sha512-B0O1n1oIi1/SRCeNQQA1Pob+a/Cld7LyYNMNtLutv9mh4QHVlTuy5vg6fvgwG+lPAZGj6kC2DUzOoEpNDEZIJA==
   dependencies:
     "@sentry/browser" "7.25.0"
     "@sentry/tracing" "7.25.0"
