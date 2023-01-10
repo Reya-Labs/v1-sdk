@@ -3,6 +3,8 @@
 import axios from 'axios';
 import { jest } from '@jest/globals';
 import { ethers } from 'hardhat';
+import { Badge, SeasonUser } from '@voltz-protocol/subgraph-data';
+import { ONE_DAY_IN_SECONDS } from '../../src/constants';
 import SBT, {
   NonProgramaticBadgeResponse,
   SubgraphBadgeResponse,
@@ -22,8 +24,23 @@ import { getScores } from '../../src/utils/communitySbt/getScores';
 
 jest.useFakeTimers();
 
-jest.mock('@voltz-protocol/subgraph-data');
-jest.mock('axios');
+let mockSeasonUsers: SeasonUser[] = [];
+jest.mock('@voltz-protocol/subgraph-data', () => {
+  return { getSeasonUsers: jest.fn(() => mockSeasonUsers) };
+});
+
+let mockIpfsBadges: IpfsBadge[] = [];
+jest.mock('axios', () => {
+  return {
+    get: jest.fn(() => {
+      return {
+        status: 200,
+        data: { snapshot: mockIpfsBadges },
+      };
+    }),
+  };
+});
+
 jest.mock('../../src/utils/sentry/index.ts', () => {
   return { sentryTracker: { captureException: jest.fn(), captureMessage: jest.fn() } };
 });
@@ -55,37 +72,69 @@ describe('getSeasonBadges: general', () => {
     });
   });
 
-  test('get badges from ipfs', async () => {
-    const badges = [
-      createBadgeResponse(1, ogSeasonStart + 1, ogSeasonEnd + 1, 'account1', 0),
-      createBadgeResponse(7, ogSeasonStart + 1, 0, 'account1', 0),
-      createBadgeResponse(12, 0, ogSeasonEnd + 1, 'account1', 0), // non prog, but minted
-    ] as SubgraphBadgeResponse[];
-    const seasonUser = createSeasonUserWithBadges('account1', 0, badges);
-    const mGraphQLResponse = { data: { seasonUser } };
-    mockSubgraphData(mGraphQLResponse);
+  test.only('get badges from ipfs', async () => {
+    const userId = 'account1';
+    const seasonId = 0;
+    const seasonUserId = `${userId}#${seasonId}`;
 
-    const data: Array<IpfsBadge> = [];
-    data.push(createIpfsBadge('account1', 8)); // non prog, not minted
-    data.push(createIpfsBadge('account1', 12));
-    data.push(createIpfsBadge('account1', 1));
-    data.push(createIpfsBadge('account1', 7));
-    const mockedAxios = axios as jest.Mocked<typeof axios>;
-    mockedAxios.get.mockResolvedValueOnce({
-      status: 200,
-      data: { snapshot: data },
-    });
+    {
+      // Mock getSeasonUsers query
+
+      const badges: Badge[] = [
+        {
+          id: `${userId}#1#${seasonId}`,
+          awardedTimestampInMS: (ogSeasonStart + 1) * 1000,
+          mintedTimestampInMS: (ogSeasonEnd + 1) * 1000,
+          badgeType: '1',
+        },
+        {
+          id: `${userId}#7#${seasonId}`,
+          awardedTimestampInMS: (ogSeasonStart + 1) * 1000,
+          mintedTimestampInMS: 0,
+          badgeType: '7',
+        },
+        {
+          id: `${userId}#12#${seasonId}`,
+          awardedTimestampInMS: 0,
+          mintedTimestampInMS: (ogSeasonEnd + 1) * 1000,
+          badgeType: '12',
+        },
+      ];
+
+      const seasonUsers: SeasonUser[] = [
+        {
+          id: seasonUserId,
+          season: seasonId,
+          owner: userId,
+          timeWeightedTradedNotional: 0,
+          timeWeightedProvidedLiquidity: 0,
+          badges,
+        },
+      ];
+
+      mockSeasonUsers = seasonUsers;
+    }
+
+    // Mock axios IPFS badges
+    mockIpfsBadges = [
+      createIpfsBadge(userId, 8),
+      createIpfsBadge(userId, 12),
+      createIpfsBadge(userId, 1),
+      createIpfsBadge(userId, 7),
+    ];
+
     const badgesList = await communitySbt.getSeasonBadges({
-      userId: 'account1',
-      seasonId: 0,
+      userId,
+      seasonId,
       seasonStart: ogSeasonStart,
       seasonEnd: ogSeasonEnd,
     });
+
     expect(badgesList[0].badgeType).toBe('8');
-    expect(badgesList[0].awardedTimestampMs).toBe(toMillis(ogSeasonEnd));
+    expect(badgesList[0].awardedTimestampMs).toBe(toMillis(ogSeasonEnd - ONE_DAY_IN_SECONDS));
     expect(badgesList[0].mintedTimestampMs).toBe(undefined);
     expect(badgesList[1].badgeType).toBe('12');
-    expect(badgesList[1].awardedTimestampMs).toBe(toMillis(ogSeasonEnd));
+    expect(badgesList[1].awardedTimestampMs).toBe(toMillis(ogSeasonEnd - ONE_DAY_IN_SECONDS));
     expect(badgesList[1].mintedTimestampMs).toBe(toMillis(ogSeasonEnd + 1));
     expect(badgesList[2].badgeType).toBe('1');
     expect(badgesList[2].awardedTimestampMs).toBe(toMillis(ogSeasonStart + 1));

@@ -442,13 +442,16 @@ class SBT {
     snasphots.forEach((entry) => {
       if (entry.owner.toLowerCase() === userId.toLowerCase()) {
         const id = `${entry.owner.toLowerCase()}#${entry.badgeType}#${seasonId}`;
-        subgraphSnapshots.push({
+
+        const snapshot = {
           id,
           badgeType: entry.badgeType.toString(),
           awardedTimestampMs:
             mapBadges.get(id)?.awardedTimestampMs || toMillis(seasonEnd - ONE_DAY_IN_SECONDS),
           mintedTimestampMs: mapBadges.get(id)?.mintedTimestampMs || undefined,
-        });
+        };
+
+        subgraphSnapshots.push(snapshot);
       }
     });
 
