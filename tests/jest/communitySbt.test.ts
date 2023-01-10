@@ -193,7 +193,6 @@ describe('getSeasonBadges: general', () => {
       seasonEnd: ogSeasonEnd,
       badgesSubgraphUrl: 'badges_subgraph',
     });
-    console.log("badge list:", badgesList);
 
     expect(badgesList[2].badgeType).toBe('12');
     expect(badgesList[2].awardedTimestampMs).toBe(0);
