@@ -12,7 +12,6 @@ import SBT, {
 import { getSelectedSeasonBadgesUrl, toMillis } from '../../src/utils/communitySbt/helpers';
 import { getSubgraphBadges } from '../../src/utils/communitySbt/getSubgraphBadges';
 import {
-  createBadgeResponse,
   createSeasonUserWithBadges,
   createIpfsBadge,
   createNonProgBadgeResponse,
@@ -72,7 +71,7 @@ describe('getSeasonBadges: general', () => {
     });
   });
 
-  test.only('get badges from ipfs', async () => {
+  test('get badges from ipfs', async () => {
     const userId = 'account1';
     const seasonId = 0;
     const seasonUserId = `${userId}#${seasonId}`;
@@ -144,32 +143,67 @@ describe('getSeasonBadges: general', () => {
     expect(badgesList[3].mintedTimestampMs).toBe(undefined);
   });
 
-  test('get subgraph badges', async () => {
-    const badges = [
-      createBadgeResponse(1, ogSeasonStart + 1, ogSeasonEnd + 1, 'account1', 0),
-      createBadgeResponse(7, ogSeasonStart + 1, 0, 'account1', 0),
-      createBadgeResponse(12, 0, ogSeasonEnd + 1, 'account1', 0),
-    ] as SubgraphBadgeResponse[];
-    const seasonUser = createSeasonUserWithBadges('account1', 0, badges);
-    const mGraphQLResponse = { data: { seasonUser } };
-    mockSubgraphData(mGraphQLResponse);
+  test.only('get subgraph badges', async () => {
+    const userId = 'account1';
+    const seasonId = 0;
+    const seasonUserId = `${userId}#${seasonId}`;
+
+    {
+      // Mock getSeasonUsers query
+
+      const badges: Badge[] = [
+        {
+          id: `${userId}#1#${seasonId}`,
+          awardedTimestampInMS: (ogSeasonStart + 1) * 1000,
+          mintedTimestampInMS: (ogSeasonEnd + 1) * 1000,
+          badgeType: '1',
+        },
+        {
+          id: `${userId}#7#${seasonId}`,
+          awardedTimestampInMS: (ogSeasonStart + 1) * 1000,
+          mintedTimestampInMS: 0,
+          badgeType: '7',
+        },
+        {
+          id: `${userId}#12#${seasonId}`,
+          awardedTimestampInMS: 0,
+          mintedTimestampInMS: (ogSeasonEnd + 1) * 1000,
+          badgeType: '12',
+        },
+      ];
+
+      const seasonUsers: SeasonUser[] = [
+        {
+          id: seasonUserId,
+          season: seasonId,
+          owner: userId,
+          timeWeightedTradedNotional: 0,
+          timeWeightedProvidedLiquidity: 0,
+          badges,
+        },
+      ];
+
+      mockSeasonUsers = seasonUsers;
+    }
 
     const badgesList = await getSubgraphBadges({
-      userId: 'account1',
-      seasonId: 0,
+      userId,
+      seasonId,
       seasonStart: ogSeasonStart,
       seasonEnd: ogSeasonEnd,
       badgesSubgraphUrl: 'badges_subgraph',
     });
+    console.log("badge list:", badgesList);
+
     expect(badgesList[2].badgeType).toBe('12');
-    expect(badgesList[2].awardedTimestampMs).toBe(toMillis(0));
+    expect(badgesList[2].awardedTimestampMs).toBe(0);
     expect(badgesList[2].mintedTimestampMs).toBe(toMillis(ogSeasonEnd + 1));
     expect(badgesList[0].badgeType).toBe('1');
     expect(badgesList[0].awardedTimestampMs).toBe(toMillis(ogSeasonStart + 1));
     expect(badgesList[0].mintedTimestampMs).toBe(toMillis(ogSeasonEnd + 1));
     expect(badgesList[1].badgeType).toBe('7');
     expect(badgesList[1].awardedTimestampMs).toBe(toMillis(ogSeasonStart + 1));
-    expect(badgesList[1].mintedTimestampMs).toBe(undefined);
+    expect(badgesList[1].mintedTimestampMs).toBe(0);
   });
 
   test('get community badges, check no out-of-season badges are parsed', async () => {
