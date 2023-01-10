@@ -1,11 +1,5 @@
+import { SeasonUser } from '@voltz-protocol/subgraph-data';
 import { NonProgramaticBadgeResponse, SubgraphBadgeResponse } from '../src/entities/communitySbt';
-
-type SeasonUser = {
-  owner: {
-    id: string;
-  };
-  totalWeightedNotionalTraded: number;
-};
 
 export type IpfsBadge = {
   owner: string;
@@ -30,15 +24,17 @@ type Position = {
   };
 };
 
-export function createRandomUsers(userIdSuffix: string, userCount: number): Array<SeasonUser> {
+export function createRandomUsers(userIdSuffix: string, userCount: number): SeasonUser[] {
   const seasonUsers: SeasonUser[] = [];
   const amount = userIdSuffix === 'over2m' ? 2000001 : userIdSuffix === 'over100k' ? 100001 : 67;
   for (let i = 0; i < userCount; i += 1) {
     seasonUsers.push({
-      owner: {
-        id: `${userIdSuffix}${i}`,
-      },
-      totalWeightedNotionalTraded: amount,
+      id: '',
+      season: 0,
+      owner: `${userIdSuffix}${i}`,
+      timeWeightedTradedNotional: amount,
+      timeWeightedProvidedLiquidity: 0,
+      badges: [],
     });
   }
   return seasonUsers;
@@ -48,7 +44,7 @@ export function createSeasonUsers(
   under100k: number,
   over100k: number,
   over2M: number,
-): Array<SeasonUser> {
+): SeasonUser[] {
   const over100kSeasonUsers = createRandomUsers('over100k', over100k);
   const under100kSeasonUsers = createRandomUsers('under100k', under100k);
   const over2MSeasonUsers = createRandomUsers('over2m', over2M);
