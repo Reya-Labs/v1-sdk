@@ -5,7 +5,7 @@ export type RateOracleConstructorArgs = {
   protocolId: number;
 };
 
-class RateOracle {
+export class RateOracle {
   public readonly id: string;
 
   public readonly protocol: string;
@@ -18,5 +18,3 @@ class RateOracle {
     this.protocolId = protocolId;
   }
 }
-
-export default RateOracle;

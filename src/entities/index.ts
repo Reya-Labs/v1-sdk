@@ -2,7 +2,7 @@ export { default as BorrowAMM } from './borrowAMM';
 export { BorrowAMMConstructorArgs, BorrowSwapInfo } from './borrowAMM';
 export { default as Position } from './position';
 export { default as Token } from './token';
-export { default as RateOracle } from './rateOracle';
+export { RateOracle } from './rateOracle';
 export { default as Mint } from './mint';
 export { default as Burn } from './burn';
 export { default as Swap } from './swap';

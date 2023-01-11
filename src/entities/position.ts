@@ -1,5 +1,5 @@
 import { DateTime } from 'luxon';
-import { ethers } from 'ethers';
+import { BigNumber, utils } from 'ethers';
 import { AMM, HealthFactorStatus } from './amm';
 import Burn from './burn';
 import Liquidation from './liquidation';
@@ -140,7 +140,7 @@ class Position {
     return tickToFixedRate(this.tickLower);
   }
 
-  public getNotionalFromLiquidity(liquidity: ethers.BigNumber): number {
+  public getNotionalFromLiquidity(liquidity: BigNumber): number {
     const sqrtPriceLowerX96 = new Price(Q96, TickMath.getSqrtRatioAtTick(this.tickLower));
     const sqrtPriceUpperX96 = new Price(Q96, TickMath.getSqrtRatioAtTick(this.tickUpper));
 
@@ -308,15 +308,15 @@ class Position {
     );
 
     const variableFactorWad = await rateOracleContract.callStatic.variableFactor(
-      this.amm.termStartTimestamp.toString(),
-      this.amm.termEndTimestamp.toString(),
+      utils.parseUnits(this.amm.termStartTimestampInMS.toString(), 15),
+      utils.parseUnits(this.amm.termEndTimestampInMS.toString(), 15),
     );
 
     const fixedFactor =
       (this.amm.endDateTime.toMillis() - this.amm.startDateTime.toMillis()) /
       ONE_YEAR_IN_SECONDS /
       1000;
-    const variableFactor = Number(ethers.utils.formatEther(variableFactorWad));
+    const variableFactor = Number(utils.formatEther(variableFactorWad));
 
     const settlementCashflow =
       this.fixedTokenBalance * fixedFactor * 0.01 + this.variableTokenBalance * variableFactor;
