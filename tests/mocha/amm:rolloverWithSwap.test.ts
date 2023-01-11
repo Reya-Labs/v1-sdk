@@ -1,10 +1,12 @@
 import { network, waffle } from 'hardhat';
-import JSBI from 'jsbi';
 import { expect } from 'chai';
 import { ethers } from 'ethers';
+import * as sinon from 'sinon';
+import { BrowserClient } from '@sentry/browser';
 import { AMM, RateOracle, Token } from '../../src/entities';
 import { advanceTimeAndBlock } from '../time';
 import { fail, withSigner } from '../utils';
+import * as initSDK from '../../src/init';
 
 import {
   MarginEngine__factory as marginEngineFactory,
@@ -33,6 +35,19 @@ describe('amm:rolloverWithSwap', () => {
   beforeEach('Set timers', async () => {
     const block = 16298400;
     await resetNetwork(block);
+
+    sinon.stub(initSDK, 'getSentryTracker').callsFake(
+      () =>
+        ({
+          captureException: () => undefined,
+          captureMessage: () => undefined,
+        } as unknown as BrowserClient),
+    );
+  });
+
+  afterEach(() => {
+    // restore the original implementation of initSDK.getSentryTracker
+    (initSDK.getSentryTracker as sinon.SinonStub).restore();
   });
 
   describe('LP positions', () => {
@@ -59,8 +74,8 @@ describe('amm:rolloverWithSwap', () => {
               decimals: 18,
             }),
 
-            termStartTimestamp: JSBI.BigInt('1659254400000000000000000000'),
-            termEndTimestamp: JSBI.BigInt('1664539200000000000000000000'),
+            termStartTimestampInMS: 1659254400000,
+            termEndTimestampInMS: 1664539200000,
 
             tickSpacing: 60,
             wethAddress: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
@@ -125,8 +140,8 @@ describe('amm:rolloverWithSwap', () => {
               decimals: 18,
             }),
 
-            termStartTimestamp: JSBI.BigInt('1659254400000000000000000000'),
-            termEndTimestamp: JSBI.BigInt('1664539200000000000000000000'),
+            termStartTimestampInMS: 1659254400000,
+            termEndTimestampInMS: 1664539200000,
 
             tickSpacing: 60,
             wethAddress: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
@@ -193,8 +208,8 @@ describe('amm:rolloverWithSwap', () => {
               decimals: 18,
             }),
 
-            termStartTimestamp: JSBI.BigInt('1656662400000000000000000000'),
-            termEndTimestamp: JSBI.BigInt('1672491600000000000000000000'),
+            termStartTimestampInMS: 1656662400000,
+            termEndTimestampInMS: 1672491600000,
 
             tickSpacing: 60,
             wethAddress: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
@@ -244,8 +259,8 @@ describe('amm:rolloverWithSwap', () => {
               decimals: 18,
             }),
 
-            termStartTimestamp: JSBI.BigInt('1656662400000000000000000000'),
-            termEndTimestamp: JSBI.BigInt('1672491600000000000000000000'),
+            termStartTimestampInMS: 1656662400000,
+            termEndTimestampInMS: 1672491600000,
 
             tickSpacing: 60,
             wethAddress: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
@@ -322,8 +337,8 @@ describe('amm:rolloverWithSwap', () => {
               decimals: 18,
             }),
 
-            termStartTimestamp: JSBI.BigInt('1656662400000000000000000000'),
-            termEndTimestamp: JSBI.BigInt('1672491600000000000000000000'),
+            termStartTimestampInMS: 1656662400000,
+            termEndTimestampInMS: 1672491600000,
 
             tickSpacing: 60,
             wethAddress: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',

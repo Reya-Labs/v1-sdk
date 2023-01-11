@@ -1,8 +1,8 @@
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-lonely-if */
+import { Swap } from '@voltz-protocol/subgraph-data';
 import { BigNumber, utils } from 'ethers';
 import { ONE_YEAR_IN_SECONDS } from '../constants';
-import { Swap } from '../entities';
 import { BaseRateOracle } from '../typechain';
 
 const getAnnualizedTime = (start: number, end: number): number => {
@@ -35,17 +35,8 @@ export function transformSwaps(swaps: Swap[], decimals: number): TransformedSwap
         notional: Number(
           utils.formatUnits(BigNumber.from(s.variableTokenDelta.toString()), decimals),
         ),
-        time: Number(s.transactionTimestamp.toString()),
-        avgFixedRate: Math.abs(
-          Number(
-            utils.formatUnits(
-              BigNumber.from(s.fixedTokenDeltaUnbalanced.toString())
-                .mul(BigNumber.from(10).pow(18))
-                .div(BigNumber.from(s.variableTokenDelta.toString())),
-              20,
-            ),
-          ),
-        ),
+        time: s.creationTimestampInMS / 1000,
+        avgFixedRate: Math.abs(s.unbalancedFixedTokenDelta / s.variableTokenDelta / 100),
       };
     })
     .sort((a, b) => a.time - b.time);

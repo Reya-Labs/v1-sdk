@@ -1,8 +1,26 @@
 import { expect } from 'chai';
+import * as sinon from 'sinon';
+import { BrowserClient } from '@sentry/browser';
 import { CRITICAL_ERROR_MESSAGE } from '../../src/utils/errors/constants';
 import { getReadableErrorMessage } from '../../src/utils/errors/errorHandling';
+import * as initSDK from '../../src/init';
 
 describe('getReadableErrorMessage', () => {
+  beforeEach(() => {
+    sinon.stub(initSDK, 'getSentryTracker').callsFake(
+      () =>
+        ({
+          captureException: () => undefined,
+          captureMessage: () => undefined,
+        } as unknown as BrowserClient),
+    );
+  });
+
+  afterEach(() => {
+    // restore the original implementation of initSDK.getSentryTracker
+    (initSDK.getSentryTracker as sinon.SinonStub).restore();
+  });
+
   describe('Default Metamask - Infura errors', async () => {
     it('Custom error', async () => {
       const error = {

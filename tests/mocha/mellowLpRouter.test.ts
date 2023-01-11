@@ -1,11 +1,10 @@
-/* eslint-disable no-await-in-loop */
-/* eslint-disable no-restricted-syntax */
-
 import { BigNumber, Contract, ethers, Wallet } from 'ethers';
 import { describe, it } from 'mocha';
 import { expect } from 'chai';
 import { network, waffle } from 'hardhat';
 import { isUndefined } from 'lodash';
+import * as sinon from 'sinon';
+import { BrowserClient } from '@sentry/browser';
 import MellowLpRouter from '../../src/entities/mellow/mellowLpRouter';
 import { abi as MellowMultiVaultRouterABI } from '../../src/ABIs/MellowMultiVaultRouterABI.json';
 import { abi as Erc20RootVaultABI } from '../../src/ABIs/Erc20RootVault.json';
@@ -16,6 +15,7 @@ import { advanceTimeAndBlock } from '../time';
 import { convertGasUnitsToUSD } from '../../src/utils/mellowHelpers/convertGasUnitsToUSD';
 import { getGasPriceGwei } from '../../src/utils/mellowHelpers/getGasPriceGwei';
 import { geckoEthToUsd } from '../../src/utils/priceFetch';
+import * as initSDK from '../../src/init';
 
 const { provider } = waffle;
 let ethMellowLpRouter: MellowLpRouter;
@@ -32,6 +32,21 @@ const signer = new Wallet(
 const userWallet = signer;
 
 describe('Mellow Router Test Suite', () => {
+  beforeEach(() => {
+    sinon.stub(initSDK, 'getSentryTracker').callsFake(
+      () =>
+        ({
+          captureException: () => undefined,
+          captureMessage: () => undefined,
+        } as unknown as BrowserClient),
+    );
+  });
+
+  afterEach(() => {
+    // restore the original implementation of initSDK.getSentryTracker
+    (initSDK.getSentryTracker as sinon.SinonStub).restore();
+  });
+
   const resetNetwork = async (blockNumber: number) => {
     await network.provider.request({
       method: 'hardhat_reset',

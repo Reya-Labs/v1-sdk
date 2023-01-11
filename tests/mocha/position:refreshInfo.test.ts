@@ -1,6 +1,8 @@
 import { network, waffle } from 'hardhat';
 import JSBI from 'jsbi';
 import { expect } from 'chai';
+import * as sinon from 'sinon';
+import { BrowserClient } from '@sentry/browser';
 import {
   AMM,
   MarginUpdate,
@@ -12,6 +14,7 @@ import {
   Token,
 } from '../../src/entities';
 import { advanceTimeAndBlock } from '../time';
+import * as initSDK from '../../src/init';
 
 const { provider } = waffle;
 const DELTA = 0.0001;
@@ -35,6 +38,19 @@ describe('position:refreshInfo', () => {
   beforeEach('Set timers', async () => {
     const block = 16247070;
     await resetNetwork(block);
+
+    sinon.stub(initSDK, 'getSentryTracker').callsFake(
+      () =>
+        ({
+          captureException: () => undefined,
+          captureMessage: () => undefined,
+        } as unknown as BrowserClient),
+    );
+  });
+
+  afterEach(() => {
+    // restore the original implementation of initSDK.getSentryTracker
+    (initSDK.getSentryTracker as sinon.SinonStub).restore();
   });
 
   describe('Stable coin positions', () => {
@@ -56,8 +72,8 @@ describe('position:refreshInfo', () => {
             decimals: 6,
           }),
 
-          termStartTimestamp: JSBI.BigInt('1664539200000000000000000000'),
-          termEndTimestamp: JSBI.BigInt('1672488000000000000000000000'),
+          termStartTimestampInMS: 1664539200000,
+          termEndTimestampInMS: 1672488000000,
 
           tickSpacing: 60,
           wethAddress: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
@@ -177,8 +193,8 @@ describe('position:refreshInfo', () => {
             decimals: 18,
           }),
 
-          termStartTimestamp: JSBI.BigInt('1659254400000000000000000000'),
-          termEndTimestamp: JSBI.BigInt('1664539200000000000000000000'),
+          termStartTimestampInMS: 1659254400000,
+          termEndTimestampInMS: 1664539200000,
 
           tickSpacing: 60,
           wethAddress: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
@@ -279,8 +295,8 @@ describe('position:refreshInfo', () => {
             decimals: 18,
           }),
 
-          termStartTimestamp: JSBI.BigInt('1654070400000000000000000000'),
-          termEndTimestamp: JSBI.BigInt('1659254400000000000000000000'),
+          termStartTimestampInMS: 1654070400000,
+          termEndTimestampInMS: 1659254400000,
 
           tickSpacing: 60,
           wethAddress: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
@@ -321,7 +337,7 @@ describe('position:refreshInfo', () => {
               ammId: amm.id,
               positionId,
               depositer: '',
-              marginDelta: JSBI.BigInt('70000000000000000000'),
+              marginDelta: JSBI.BigInt('70000'),
             }),
             new MarginUpdate({
               id: '',
@@ -402,8 +418,8 @@ describe('position:refreshInfo', () => {
             decimals: 6,
           }),
 
-          termStartTimestamp: JSBI.BigInt('1661155200000000000000000000'),
-          termEndTimestamp: JSBI.BigInt('1680264000000000000000000000'),
+          termStartTimestampInMS: 1661155200000,
+          termEndTimestampInMS: 1680264000000,
 
           tickSpacing: 60,
           wethAddress: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
@@ -549,8 +565,8 @@ describe('position:refreshInfo', () => {
             decimals: 6,
           }),
 
-          termStartTimestamp: JSBI.BigInt('1661155200000000000000000000'),
-          termEndTimestamp: JSBI.BigInt('1680264000000000000000000000'),
+          termStartTimestampInMS: 1661155200000,
+          termEndTimestampInMS: 1680264000000,
 
           tickSpacing: 60,
           wethAddress: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
@@ -697,8 +713,8 @@ describe('position:refreshInfo', () => {
             decimals: 18,
           }),
 
-          termStartTimestamp: JSBI.BigInt('1656662400000000000000000000'),
-          termEndTimestamp: JSBI.BigInt('1672491600000000000000000000'),
+          termStartTimestampInMS: 1656662400000,
+          termEndTimestampInMS: 1672491600000,
 
           tickSpacing: 60,
           wethAddress: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
@@ -802,8 +818,8 @@ describe('position:refreshInfo', () => {
             decimals: 18,
           }),
 
-          termStartTimestamp: JSBI.BigInt('1656662400000000000000000000'),
-          termEndTimestamp: JSBI.BigInt('1672491600000000000000000000'),
+          termStartTimestampInMS: 1656662400000,
+          termEndTimestampInMS: 1672491600000,
 
           tickSpacing: 60,
           wethAddress: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',

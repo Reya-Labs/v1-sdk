@@ -1,4 +1,4 @@
-import { sentryTracker } from '../utils/sentry';
+import { getSentryTracker } from '../init';
 
 export const getProtocolPrefix = (protocolId: number): string => {
   switch (protocolId) {
@@ -97,6 +97,7 @@ export const getTokenInfo = (tokenAddress: string): { name: string; decimals: nu
     return { name: 'USDT', decimals: 6 };
   }
 
+  const sentryTracker = getSentryTracker();
   sentryTracker.captureMessage(`Token address ${tokenAddress} not supported.`);
   throw new Error(`Token address ${tokenAddress} not supported.`);
 };

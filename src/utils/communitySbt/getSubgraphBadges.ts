@@ -1,6 +1,6 @@
 import { getSeasonUsers } from '@voltz-protocol/subgraph-data';
 import { BadgeResponse } from '../../entities';
-import { sentryTracker } from '../sentry';
+import { getSentryTracker } from '../../init';
 
 export async function getSubgraphBadges({
   userId,
@@ -45,6 +45,7 @@ export async function getSubgraphBadges({
 
     return [];
   } catch (error) {
+    const sentryTracker = getSentryTracker();
     sentryTracker.captureException(error);
     return [];
   }

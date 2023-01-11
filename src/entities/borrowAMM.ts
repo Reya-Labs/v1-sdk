@@ -1,8 +1,6 @@
-import JSBI from 'jsbi';
 import { providers, BigNumber, Signer } from 'ethers';
 import { ONE_YEAR_IN_SECONDS } from '../constants';
 import {
-  BaseRateOracle__factory,
   ICToken__factory as cTokenFactory,
   IAaveV2LendingPool__factory,
   IERC20Minimal__factory,
@@ -11,8 +9,6 @@ import {
   CompoundBorrowRateOracle__factory,
   AaveBorrowRateOracle__factory,
 } from '../typechain';
-import RateOracle from './rateOracle';
-import Token from './token';
 import { Price } from './fractions/price';
 import { TokenAmount } from './fractions/tokenAmount';
 import Position from './position';
@@ -32,10 +28,6 @@ class BorrowAMM {
   public readonly id: string;
   public readonly signer: Signer | null;
   public readonly provider?: providers.Provider;
-  public readonly rateOracle: RateOracle;
-  public readonly termStartTimestamp: JSBI;
-  public readonly termEndTimestamp: JSBI;
-  public readonly underlyingToken: Token;
   public readonly amm: AMM;
 
   public cToken: ICToken | undefined;
@@ -50,13 +42,9 @@ class BorrowAMM {
     this.id = id;
     this.signer = amm.signer;
     this.provider = amm.provider || amm.signer?.provider;
-    this.rateOracle = amm.rateOracle;
-    this.termStartTimestamp = amm.termStartTimestamp;
-    this.termEndTimestamp = amm.termEndTimestamp;
-    this.underlyingToken = amm.underlyingToken;
     this.amm = amm;
 
-    const protocolId = this.rateOracle.protocolId;
+    const protocolId = this.amm.rateOracle.protocolId;
     if (protocolId !== 6 && protocolId !== 5) {
       throw new Error('Not a borrow market');
     }
@@ -65,16 +53,18 @@ class BorrowAMM {
   // scale/descale according to underlying token
 
   public descale(value: BigNumber): number {
-    if (this.underlyingToken.decimals <= 3) {
-      return value.toNumber() / 10 ** this.underlyingToken.decimals;
+    if (this.amm.underlyingToken.decimals <= 3) {
+      return value.toNumber() / 10 ** this.amm.underlyingToken.decimals;
     }
-    return value.div(BigNumber.from(10).pow(this.underlyingToken.decimals - 3)).toNumber() / 1000;
+    return (
+      value.div(BigNumber.from(10).pow(this.amm.underlyingToken.decimals - 3)).toNumber() / 1000
+    );
   }
 
   public scale(value: number): string {
     const price = Price.fromNumber(value);
     const tokenAmount = TokenAmount.fromFractionalAmount(
-      this.underlyingToken,
+      this.amm.underlyingToken,
       price.numerator,
       price.denominator,
     );
@@ -83,77 +73,62 @@ class BorrowAMM {
     return scaledValue;
   }
 
-  public getAllSwaps(position: Position) {
-    const allSwaps: {
-      fDelta: BigNumber;
-      vDelta: BigNumber;
-      timestamp: BigNumber;
-    }[] = [];
-
+  private static getAllSwaps(position: Position): {
+    fDelta: number;
+    vDelta: number;
+    timestamp: number;
+  }[] {
     if (position === undefined) {
-      return allSwaps;
+      return [];
     }
 
-    for (const s of position.swaps) {
-      allSwaps.push({
-        fDelta: BigNumber.from(s.fixedTokenDeltaUnbalanced.toString()),
-        vDelta: BigNumber.from(s.variableTokenDelta.toString()),
-        timestamp: BigNumber.from(s.transactionTimestamp.toString()),
-      });
-    }
-
-    allSwaps.sort((a, b) => a.timestamp.sub(b.timestamp).toNumber());
+    const allSwaps = position.swaps
+      .map((s) => ({
+        fDelta: s.unbalancedFixedTokenDelta,
+        vDelta: s.variableTokenDelta,
+        timestamp: s.creationTimestampInMS / 1000,
+      }))
+      .sort((a, b) => a.timestamp - b.timestamp);
 
     return allSwaps;
   }
 
-  public async getAccruedCashflow(
+  private async getAccruedCashflow(
     allSwaps: {
-      fDelta: BigNumber;
-      vDelta: BigNumber;
-      timestamp: BigNumber;
+      fDelta: number;
+      vDelta: number;
+      timestamp: number;
     }[],
     atMaturity: boolean,
-  ): Promise<[BigNumber, BigNumber]> {
+  ): Promise<[number, number]> {
     if (!this.provider) {
       throw new Error('Wallet not connected');
     }
 
-    let totalVarableCashflow = BigNumber.from(0);
-    let totalFixedCashflow = BigNumber.from(0);
+    let totalVarableCashflow = 0;
+    let totalFixedCashflow = 0;
     const lenSwaps = allSwaps.length;
 
     const lastBlock = await this.provider.getBlockNumber();
-    const lastBlockTimestamp = BigNumber.from((await this.provider.getBlock(lastBlock)).timestamp);
+    const lastBlockTimestamp = (await this.provider.getBlock(lastBlock)).timestamp;
 
-    const untilTimestamp = atMaturity
-      ? BigNumber.from(this.termEndTimestamp.toString())
-      : lastBlockTimestamp.mul(BigNumber.from(10).pow(18));
-
-    const rateOracleContract = BaseRateOracle__factory.connect(this.rateOracle.id, this.provider);
+    const untilTimestamp = atMaturity ? this.amm.termEndTimestampInMS / 1000 : lastBlockTimestamp;
 
     for (let i = 0; i < lenSwaps; i++) {
-      const currentSwapTimestamp = allSwaps[i].timestamp.mul(BigNumber.from(10).pow(18));
+      const currentSwapTimestamp = allSwaps[i].timestamp;
 
-      const normalizedTime = untilTimestamp
-        .sub(currentSwapTimestamp)
-        .div(BigNumber.from(ONE_YEAR_IN_SECONDS));
+      const normalizedTime = (untilTimestamp - currentSwapTimestamp) / ONE_YEAR_IN_SECONDS;
 
-      const variableFactorBetweenSwaps = await rateOracleContract.callStatic.variableFactor(
-        currentSwapTimestamp,
-        untilTimestamp,
+      const variableFactorBetweenSwaps = await this.amm.variableFactor(
+        currentSwapTimestamp * 1000,
+        untilTimestamp * 1000,
       );
 
-      const fixedCashflow = allSwaps[i].fDelta
-        .mul(normalizedTime)
-        .div(BigNumber.from(100))
-        .div(BigNumber.from(10).pow(18));
-      const variableCashflow = allSwaps[i].vDelta
-        .mul(variableFactorBetweenSwaps)
-        .div(BigNumber.from(10).pow(18));
+      const fixedCashflow = (allSwaps[i].fDelta * normalizedTime) / 100;
+      const variableCashflow = allSwaps[i].vDelta * variableFactorBetweenSwaps;
 
-      totalFixedCashflow = totalFixedCashflow.add(fixedCashflow);
-      totalVarableCashflow = totalVarableCashflow.add(variableCashflow);
+      totalFixedCashflow += fixedCashflow;
+      totalVarableCashflow += variableCashflow;
     }
 
     return [totalFixedCashflow, totalVarableCashflow];
@@ -168,18 +143,16 @@ class BorrowAMM {
     const lastBlockTimestamp = BigNumber.from(
       (await this.provider.getBlock(lastBlock - 1)).timestamp,
     );
-    const pastMaturity = BigNumber.from(this.termEndTimestamp.toString()).lt(
-      lastBlockTimestamp.mul(BigNumber.from(10).pow(18)),
-    );
+    const pastMaturity = this.amm.termEndTimestampInMS < lastBlockTimestamp.toNumber() * 1000;
 
     return pastMaturity;
   }
 
-  public async getVariableCashFlow(position: Position): Promise<BigNumber> {
+  public async getVariableCashFlow(position: Position): Promise<number> {
     if (position === undefined) {
-      return BigNumber.from(0);
+      return 0;
     }
-    const allSwaps = this.getAllSwaps(position);
+    const allSwaps = BorrowAMM.getAllSwaps(position);
     const pastMaturity = await this.atMaturity();
 
     const [, variableCashFlow] = await this.getAccruedCashflow(allSwaps, pastMaturity);
@@ -192,12 +165,12 @@ class BorrowAMM {
       return 0;
     }
 
-    const allSwaps = this.getAllSwaps(position);
+    const allSwaps = BorrowAMM.getAllSwaps(position);
     const pastMaturity = await this.atMaturity();
 
     const [fixedCashFlow] = await this.getAccruedCashflow(allSwaps, pastMaturity);
 
-    return this.descale(fixedCashFlow);
+    return fixedCashFlow;
   }
 
   public async getScaledUnderlyingBorrowBalance(): Promise<BigNumber> {
@@ -205,23 +178,26 @@ class BorrowAMM {
       throw new Error('Wallet not connected');
     }
 
-    const protocolId = this.rateOracle.protocolId;
+    const protocolId = this.amm.rateOracle.protocolId;
     if (protocolId === 6 && !this.cToken) {
       const compoundRateOracle = CompoundBorrowRateOracle__factory.connect(
-        this.rateOracle.id,
+        this.amm.rateOracle.id,
         this.signer,
       );
       const cTokenAddress = await compoundRateOracle.ctoken();
       this.cToken = cTokenFactory.connect(cTokenAddress, this.signer);
     } else if (protocolId === 5 && !this.aaveVariableDebtToken) {
-      const aaveRateOracle = AaveBorrowRateOracle__factory.connect(this.rateOracle.id, this.signer);
+      const aaveRateOracle = AaveBorrowRateOracle__factory.connect(
+        this.amm.rateOracle.id,
+        this.signer,
+      );
 
       const lendingPoolAddress = await aaveRateOracle.aaveLendingPool();
       const lendingPool = IAaveV2LendingPool__factory.connect(lendingPoolAddress, this.signer);
-      if (!this.underlyingToken.id) {
+      if (!this.amm.underlyingToken.id) {
         throw new Error('missing underlying token address');
       }
-      const reserve = await lendingPool.getReserveData(this.underlyingToken.id);
+      const reserve = await lendingPool.getReserveData(this.amm.underlyingToken.id);
       const variableDebtTokenAddress = reserve.variableDebtTokenAddress;
       this.aaveVariableDebtToken = IERC20Minimal__factory.connect(
         variableDebtTokenAddress,
@@ -261,7 +237,7 @@ class BorrowAMM {
     const variableCashFlow = await this.getVariableCashFlow(position);
     await position.refreshInfo();
     const notional = position.variableTokenBalance;
-    const notionalWithVariableCashFlow = notional + this.amm.descale(variableCashFlow);
+    const notionalWithVariableCashFlow = notional + variableCashFlow;
 
     const notionalWithVariableCashFlowAndBuffer = notionalWithVariableCashFlow * 1.001;
 
@@ -280,17 +256,14 @@ class BorrowAMM {
 
     const infoPostSwap = await this.amm.getInfoPostSwap(infoPostSwapArgs);
 
-    const variableAPYToMaturity = await this.amm.getVariableFactor(
-      BigNumber.from(this.termStartTimestamp.toString()),
-      BigNumber.from(this.termEndTimestamp.toString()),
+    const variableAPYToMaturity = await this.amm.variableFactor(
+      this.amm.termStartTimestampInMS,
+      this.amm.termEndTimestampInMS,
     );
 
-    const termStartTimestamp = BigNumber.from(this.termStartTimestamp.toString())
-      .div(BigNumber.from(10).pow(18))
-      .toNumber();
-    const termEndTimestamp = BigNumber.from(this.termEndTimestamp.toString())
-      .div(BigNumber.from(10).pow(18))
-      .toNumber();
+    const termStartTimestamp = this.amm.termStartTimestampInMS / 1000;
+    const termEndTimestamp = this.amm.termEndTimestampInMS / 1000;
+
     const fixedFactor = ((termEndTimestamp - termStartTimestamp) / ONE_YEAR_IN_SECONDS) * 0.01;
 
     let fcMargin = -(
