@@ -1,6 +1,6 @@
 import { BigNumber, ethers, utils } from 'ethers';
 import { abi as FactoryABI } from '../../ABIs/Factory.json';
-import { sentryTracker } from '../sentry';
+import { getSentryTracker } from '../../init';
 import { CRITICAL_ERROR_MESSAGE } from './constants';
 import * as errorJson from './errorMapping.json';
 
@@ -44,6 +44,7 @@ const getErrorData = (error: any): string => {
   } catch (_) {}
 
   console.error(`Unknown error type. ${error}`);
+  const sentryTracker = getSentryTracker();
   sentryTracker.captureException(error);
   sentryTracker.captureMessage(`Unknown error type. ${error}`);
   throw new Error(CRITICAL_ERROR_MESSAGE);
@@ -62,6 +63,7 @@ const getErrorSignature = (error: any): string => {
     return errSig;
   } catch {
     console.error(`Failing to get error signature. ${error}`);
+    const sentryTracker = getSentryTracker();
     sentryTracker.captureException(error);
     sentryTracker.captureMessage(`Failing to get error signature. ${error}`);
     throw new Error(CRITICAL_ERROR_MESSAGE);
@@ -97,6 +99,7 @@ const getReadableErrorMessageWithoutSentry = (error: any): string => {
 
 export const getReadableErrorMessage = (error: any): string => {
   const message = getReadableErrorMessageWithoutSentry(error);
+  const sentryTracker = getSentryTracker();
   sentryTracker.captureException(error);
   sentryTracker.captureMessage(`Error message: ${message}`);
   return message;
@@ -117,6 +120,7 @@ export const decodeInfoPostMint = (error: any): RawInfoPostMint => {
     };
   }
 
+  const sentryTracker = getSentryTracker();
   sentryTracker.captureException(error);
   sentryTracker.captureMessage(`Failing to get info post mint.`);
   throw new Error(getReadableErrorMessage(error));
@@ -147,6 +151,7 @@ export const decodeInfoPostSwap = (error: any): RawInfoPostSwap => {
     };
   }
 
+  const sentryTracker = getSentryTracker();
   sentryTracker.captureException(error);
   sentryTracker.captureMessage(`Failing to get info post swap.`);
   throw new Error(getReadableErrorMessage(error));

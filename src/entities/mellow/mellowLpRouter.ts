@@ -22,7 +22,7 @@ import { abi as Erc20RootVaultABI } from '../../ABIs/Erc20RootVault.json';
 import { abi as Erc20RootVaultGovernanceABI } from '../../ABIs/Erc20RootVaultGovernance.json';
 import { abi as IERC20MinimalABI } from '../../ABIs/IERC20Minimal.json';
 import { abi as MellowMultiVaultRouterABI } from '../../ABIs/MellowMultiVaultRouterABI.json';
-import { sentryTracker } from '../../utils/sentry';
+import { getSentryTracker } from '../../init';
 import { closeOrPastMaturity, MellowProductMetadata } from './config';
 import { convertGasUnitsToUSD } from '../../utils/mellowHelpers/convertGasUnitsToUSD';
 
@@ -416,6 +416,7 @@ class MellowLpRouter {
       const receipt = await tx.wait();
       return receipt;
     } catch (error) {
+      const sentryTracker = getSentryTracker();
       sentryTracker.captureException(error);
       sentryTracker.captureMessage('Unsuccessful approval confirmation.');
       throw new Error('Unsuccessful approval confirmation.');
@@ -468,6 +469,7 @@ class MellowLpRouter {
         }
       } catch (error) {
         console.error('Error when simulating depositAndRegisterForAutoRollover.', error);
+        const sentryTracker = getSentryTracker();
         sentryTracker.captureException(error);
         sentryTracker.captureMessage('Unsuccessful depositAndRegisterForAutoRollover simulation.');
         throw new Error('Unsuccessful depositAndRegisterForAutoRollover simulation.');
@@ -511,6 +513,7 @@ class MellowLpRouter {
         try {
           await this.refreshUserDeposit();
         } catch (error) {
+          const sentryTracker = getSentryTracker();
           sentryTracker.captureException(error);
           sentryTracker.captureMessage(
             'User deposit failed to refresh after depositAndRegisterForAutoRollover',
@@ -524,6 +527,7 @@ class MellowLpRouter {
         try {
           await this.refreshWalletBalance();
         } catch (error) {
+          const sentryTracker = getSentryTracker();
           sentryTracker.captureException(error);
           sentryTracker.captureMessage(
             'Wallet user balance failed to refresh after depositAndRegisterForAutoRollover',
@@ -537,6 +541,7 @@ class MellowLpRouter {
         return receipt;
       } catch (error) {
         console.error('Unsuccessful depositAndRegisterForAutoRollover confirmation.', error);
+        const sentryTracker = getSentryTracker();
         sentryTracker.captureException(error);
         sentryTracker.captureMessage(
           'Unsuccessful depositAndRegisterForAutoRollover confirmation.',
@@ -552,6 +557,7 @@ class MellowLpRouter {
         }
       } catch (error) {
         console.error('Error when simulating deposit.', error);
+        const sentryTracker = getSentryTracker();
         sentryTracker.captureException(error);
         sentryTracker.captureMessage('Unsuccessful deposit simulation.');
         throw new Error('Unsuccessful deposit simulation.');
@@ -582,6 +588,7 @@ class MellowLpRouter {
         try {
           await this.refreshUserDeposit();
         } catch (error) {
+          const sentryTracker = getSentryTracker();
           sentryTracker.captureException(error);
           sentryTracker.captureMessage('User deposit failed to refresh after deposit');
           console.error('User deposit failed to refresh after deposit.', error);
@@ -590,6 +597,7 @@ class MellowLpRouter {
         try {
           await this.refreshWalletBalance();
         } catch (error) {
+          const sentryTracker = getSentryTracker();
           sentryTracker.captureException(error);
           sentryTracker.captureMessage('Wallet user balance failed to refresh after deposit');
           console.error('Wallet user balance failed to refresh after deposit.', error);
@@ -598,6 +606,7 @@ class MellowLpRouter {
         return receipt;
       } catch (error) {
         console.error('Unsuccessful deposit confirmation.', error);
+        const sentryTracker = getSentryTracker();
         sentryTracker.captureException(error);
         sentryTracker.captureMessage('Unsuccessful deposit confirmation.');
         throw new Error('Unsuccessful deposit confirmation.');
@@ -631,6 +640,7 @@ class MellowLpRouter {
       );
     } catch (err) {
       console.error('Error during claimLPTokens:', err);
+      const sentryTracker = getSentryTracker();
       sentryTracker.captureException(err);
       sentryTracker.captureMessage('Unsuccessful claimLPTokens simulation.');
       throw new Error('Unsuccessful claimLPTokens simulation.');
@@ -657,6 +667,7 @@ class MellowLpRouter {
       try {
         await this.refreshWalletBalance();
       } catch (err) {
+        const sentryTracker = getSentryTracker();
         sentryTracker.captureException(err);
         sentryTracker.captureMessage('Wallet user balance failed to refresh after withdrawal');
         console.error('Wallet user balance failed to refresh after withdraw');
@@ -665,6 +676,7 @@ class MellowLpRouter {
       try {
         await this.refreshUserDeposit();
       } catch (err) {
+        const sentryTracker = getSentryTracker();
         sentryTracker.captureException(err);
         sentryTracker.captureMessage('User deposit failed to refresh after withdrawal');
         console.error('User deposit failed to refresh after withdraw');
@@ -672,6 +684,7 @@ class MellowLpRouter {
 
       return receipt;
     } catch (err) {
+      const sentryTracker = getSentryTracker();
       sentryTracker.captureException(err);
       sentryTracker.captureMessage('Unsucessful withdrawal confirmation.');
       throw new Error('Unsucessful withdraw confirmation.');
@@ -744,6 +757,7 @@ class MellowLpRouter {
       try {
         await this.refreshWalletBalance();
       } catch (err) {
+        const sentryTracker = getSentryTracker();
         sentryTracker.captureException(err);
         sentryTracker.captureMessage('Wallet user balance failed to refresh after rollover');
         console.error('Wallet user balance failed to refresh after rollover');
@@ -752,6 +766,7 @@ class MellowLpRouter {
       try {
         await this.refreshUserDeposit();
       } catch (err) {
+        const sentryTracker = getSentryTracker();
         sentryTracker.captureException(err);
         sentryTracker.captureMessage('User deposit failed to refresh after rollover');
         console.error('User deposit failed to refresh after rollover');
@@ -759,6 +774,7 @@ class MellowLpRouter {
 
       return receipt;
     } catch (err) {
+      const sentryTracker = getSentryTracker();
       sentryTracker.captureException(err);
       sentryTracker.captureMessage('Unsucessful rollover confirmation.');
       throw new Error('Unsucessful rollover confirmation.');
@@ -773,6 +789,7 @@ class MellowLpRouter {
     try {
       await this.writeContracts.mellowRouter.callStatic.registerForAutoRollover(registration);
     } catch (err) {
+      const sentryTracker = getSentryTracker();
       sentryTracker.captureException(err);
       sentryTracker.captureMessage('Unsuccessful auto-rollover registration simulation');
       console.error('Error during registration for auto-rollover', err);
@@ -792,6 +809,7 @@ class MellowLpRouter {
 
       return receipt;
     } catch (err) {
+      const sentryTracker = getSentryTracker();
       sentryTracker.captureException(err);
       sentryTracker.captureMessage('Unsucessful auto-rollover registration confirmation.');
       throw new Error('Unsucessful auto-rollover registration confirmation.');
@@ -806,6 +824,7 @@ class MellowLpRouter {
     try {
       await this.writeContracts.mellowRouter.callStatic.registerForAutoRollover(registration);
     } catch (err) {
+      const sentryTracker = getSentryTracker();
       sentryTracker.captureException(err);
       sentryTracker.captureMessage('Unsuccessful auto-rollover registration simulation');
       console.error('Error during registration for auto-rollover', err);
@@ -833,6 +852,7 @@ class MellowLpRouter {
         );
       return isWalletAutorolloverRegistered;
     } catch (err) {
+      const sentryTracker = getSentryTracker();
       sentryTracker.captureException(err);
       sentryTracker.captureMessage(
         'Unsuccessful auto-rollover registration verificaiton simulation',

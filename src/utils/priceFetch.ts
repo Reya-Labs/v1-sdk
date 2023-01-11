@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { sentryTracker } from './sentry';
+import { getSentryTracker } from '../init';
 
 export const geckoEthToUsd = async (apiKey: string): Promise<number> => {
   const attempts = 5;
@@ -12,6 +12,7 @@ export const geckoEthToUsd = async (apiKey: string): Promise<number> => {
       return data.data.ethereum.usd;
     } catch (error) {
       if (attempt + 1 === attempts) {
+        const sentryTracker = getSentryTracker();
         sentryTracker.captureException(error);
         sentryTracker.captureMessage('Unable to fetch ETH price after 5 attempts');
       }

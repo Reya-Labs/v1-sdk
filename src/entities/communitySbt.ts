@@ -21,7 +21,7 @@ import {
 } from '../utils/communitySbt/helpers';
 import { getSubgraphBadges } from '../utils/communitySbt/getSubgraphBadges';
 
-import { sentryTracker } from '../utils/sentry';
+import { getSentryTracker } from '../init';
 import { geckoEthToUsd } from '../utils/priceFetch';
 import { getScores, GetScoresArgs } from '../utils/communitySbt/getScores';
 
@@ -271,6 +271,7 @@ class SBT {
       await tx.wait();
       return tokenId;
     } catch (error) {
+      const sentryTracker = getSentryTracker();
       sentryTracker.captureException(error);
       sentryTracker.captureMessage('Unable to claim');
       throw new Error('Unable to claim');
@@ -346,6 +347,7 @@ class SBT {
         claimedBadgeTypes,
       };
     } catch (error) {
+      const sentryTracker = getSentryTracker();
       sentryTracker.captureException(error);
       sentryTracker.captureMessage('Unable to claim multiple badges');
       throw new Error('Unable to claim multiple badges');
@@ -389,6 +391,7 @@ class SBT {
       });
       return badges;
     } catch (error) {
+      const sentryTracker = getSentryTracker();
       sentryTracker.captureException(error);
       sentryTracker.captureMessage('Failed to get season badges');
       throw new Error('Failed to get season badges');
@@ -529,6 +532,7 @@ class SBT {
 
       return badgesResponse;
     } catch (error) {
+      const sentryTracker = getSentryTracker();
       sentryTracker.captureException(error);
       return [];
     }

@@ -1,4 +1,6 @@
 import { expect } from 'chai';
+import * as sinon from 'sinon';
+import { BrowserClient } from '@sentry/browser';
 import { Price } from '../../src/entities/fractions/price';
 import {
   priceToClosestTick,
@@ -8,8 +10,24 @@ import {
   fixedRateToClosestTick,
   priceToFixedRate,
 } from '../../src/utils/priceTickConversions';
+import * as initSDK from '../../src/init';
 
 describe('priceTickConversions', () => {
+  beforeEach(() => {
+    sinon.stub(initSDK, 'getSentryTracker').callsFake(
+      () =>
+        ({
+          captureException: () => undefined,
+          captureMessage: () => undefined,
+        } as unknown as BrowserClient),
+    );
+  });
+
+  afterEach(() => {
+    // restore the original implementation of initSDK.getSentryTracker
+    (initSDK.getSentryTracker as sinon.SinonStub).restore();
+  });
+
   describe('#tickToPrice', () => {
     it('price is 1', () => {
       expect(tickToPrice(0).toSignificant(5)).to.be.eq('1');

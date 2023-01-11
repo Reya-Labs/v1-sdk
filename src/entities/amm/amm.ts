@@ -39,7 +39,7 @@ import { getAccruedCashflow, transformSwaps } from '../../services/getAccruedCas
 
 import { getProtocolPrefix } from '../../services/getTokenInfo';
 
-import { sentryTracker } from '../../utils/sentry';
+import { getSentryTracker } from '../../init';
 import {
   AMMConstructorArgs,
   AMMRolloverWithSwapArgs,
@@ -59,12 +59,12 @@ import {
   AMMMintWithWethArgs,
 } from './types';
 import { geckoEthToUsd } from '../../utils/priceFetch';
-import { RateOracle } from '../rateOracle';
+import { getVariableFactor, RateOracle } from '../rateOracle';
 
 export class AMM {
   public readonly id: string;
   public readonly signer: Signer | null;
-  public readonly provider?: providers.Provider;
+  public readonly provider: providers.Provider;
   public readonly factoryAddress: string;
   public readonly marginEngineAddress: string;
   public readonly rateOracle: RateOracle;
@@ -75,6 +75,7 @@ export class AMM {
   public readonly isETH: boolean;
   public readonly wethAddress: string;
   public readonly ethPrice: () => Promise<number>;
+  public readonly variableFactor: (fromInMS: number, toInMS: number) => Promise<number>;
 
   public constructor({
     id,
@@ -92,7 +93,6 @@ export class AMM {
   }: AMMConstructorArgs) {
     this.id = id;
     this.signer = signer;
-    this.provider = provider || signer?.provider;
     this.factoryAddress = factoryAddress;
     this.marginEngineAddress = marginEngineAddress;
     this.rateOracle = rateOracle;
@@ -104,12 +104,22 @@ export class AMM {
     this.isETH = this.underlyingToken.name === 'ETH';
     this.ethPrice =
       ethPrice || (() => geckoEthToUsd(process.env.REACT_APP_COINGECKO_API_KEY || ''));
+
+    const chosenProvider = provider || signer?.provider;
+    if (!chosenProvider) {
+      const sentryTracker = getSentryTracker();
+      sentryTracker.captureMessage("Provider doesn't exist");
+      throw Error("Provider doesn't exist");
+    }
+    this.provider = chosenProvider;
+
+    this.variableFactor = getVariableFactor(this.provider, this.rateOracle.id);
   }
 
   // expected apy
   expectedApy = async (
-    ft: BigNumber,
-    vt: BigNumber,
+    ft: number,
+    vt: number,
     margin: number,
     rate: number,
   ): Promise<[number, number]> => {
@@ -117,20 +127,7 @@ export class AMM {
 
     const end = this.termEndTimestampInMS / 1000;
 
-    let scaledFt = 0;
-    let scaledVt = 0;
-
-    if (this.underlyingToken.decimals <= 6) {
-      scaledFt = ft.toNumber() / 10 ** this.underlyingToken.decimals;
-      scaledVt = vt.toNumber() / 10 ** this.underlyingToken.decimals;
-    } else {
-      scaledFt =
-        ft.div(BigNumber.from(10).pow(this.underlyingToken.decimals - 6)).toNumber() / 1000000;
-      scaledVt =
-        vt.div(BigNumber.from(10).pow(this.underlyingToken.decimals - 6)).toNumber() / 1000000;
-    }
-
-    const [pnl, ecs] = getExpectedApy(now, end, scaledFt, scaledVt, margin, rate);
+    const [pnl, ecs] = getExpectedApy(now, end, ft, vt, margin, rate);
 
     return [100 * pnl, ecs];
   };
@@ -253,6 +250,7 @@ export class AMM {
         tempOverrides,
       )
       .catch((error) => {
+        const sentryTracker = getSentryTracker();
         sentryTracker.captureException(error);
         sentryTracker.captureMessage('Transaction Confirmation Error');
         throw new Error('Transaction Confirmation Error');
@@ -262,6 +260,7 @@ export class AMM {
       const receipt = await swapTransaction.wait();
       return receipt;
     } catch (error) {
+      const sentryTracker = getSentryTracker();
       sentryTracker.captureException(error);
       sentryTracker.captureMessage('Transaction Confirmation Error');
       throw new Error('Transaction Confirmation Error');
@@ -375,6 +374,7 @@ export class AMM {
         tempOverrides,
       )
       .catch((error) => {
+        const sentryTracker = getSentryTracker();
         sentryTracker.captureException(error);
         sentryTracker.captureMessage('Transaction Confirmation Error');
         throw new Error('Transaction Confirmation Error');
@@ -384,6 +384,7 @@ export class AMM {
       const receipt = await mintTransaction.wait();
       return receipt;
     } catch (error) {
+      const sentryTracker = getSentryTracker();
       sentryTracker.captureException(error);
       sentryTracker.captureMessage('Transaction Confirmation Error');
       throw new Error('Transaction Confirmation Error');
@@ -592,19 +593,12 @@ export class AMM {
 
     let positionMargin = 0;
     let accruedCashflow = 0;
-    let positionUft = BigNumber.from(0);
-    let positionVt = BigNumber.from(0);
+    let positionUft = 0;
+    let positionVt = 0;
 
     if (position) {
-      positionUft = position.swaps.reduce(
-        (acc, swap) => acc.add(swap.fixedTokenDeltaUnbalanced.toString()),
-        BigNumber.from(0),
-      );
-
-      positionVt = position.swaps.reduce(
-        (acc, swap) => acc.add(swap.variableTokenDelta.toString()),
-        BigNumber.from(0),
-      );
+      positionUft = position.swaps.reduce((acc, swap) => acc + swap.unbalancedFixedTokenDelta, 0);
+      positionVt = position.swaps.reduce((acc, swap) => acc + swap.variableTokenDelta, 0);
 
       positionMargin = scaledCurrentMargin;
 
@@ -619,13 +613,14 @@ export class AMM {
           accruedCashflow = accruedCashflowInfo.accruedCashflow;
         }
       } catch (error) {
+        const sentryTracker = getSentryTracker();
         sentryTracker.captureException(error);
       }
     }
 
     const [expectedApy, expectedCashflow] = await this.expectedApy(
-      positionUft.add(this.scale(fixedTokenDeltaUnbalanced)),
-      positionVt.add(this.scale(availableNotional)),
+      positionUft + fixedTokenDeltaUnbalanced,
+      positionVt + availableNotional,
       margin + positionMargin + accruedCashflow,
       predictedVariableApy,
     );
@@ -744,15 +739,15 @@ export class AMM {
       swapTransaction = await peripheryContract
         .swap(swapPeripheryParams, tempOverrides)
         .catch((error) => {
+          const sentryTracker = getSentryTracker();
           sentryTracker.captureException(error);
           sentryTracker.captureMessage('Transaction Confirmation Error');
           throw new Error('Transaction Confirmation Error');
         });
     } else {
-      const rateOracleContract = baseRateOracleFactory.connect(this.rateOracle.id, this.provider);
-      const variableFactorFromStartToNowWad = await rateOracleContract.callStatic.variableFactor(
-        utils.parseUnits(this.termStartTimestampInMS.toString(), 15),
-        utils.parseUnits(this.termEndTimestampInMS.toString(), 15),
+      const variableFactorFromStartToNowWad = await this.variableFactor(
+        this.termStartTimestampInMS,
+        this.termEndTimestampInMS,
       );
 
       // move rate oracle queries to another folder and make them stateless
@@ -788,6 +783,7 @@ export class AMM {
           tempOverrides,
         )
         .catch((error) => {
+          const sentryTracker = getSentryTracker();
           sentryTracker.captureException(error);
           sentryTracker.captureMessage('Transaction Confirmation Error');
           throw new Error('Transaction Confirmation Error');
@@ -798,6 +794,7 @@ export class AMM {
       const receipt = await swapTransaction.wait();
       return receipt;
     } catch (error) {
+      const sentryTracker = getSentryTracker();
       sentryTracker.captureException(error);
       sentryTracker.captureMessage('Transaction Confirmation Error');
       throw new Error('Transaction Confirmation Error');
@@ -904,6 +901,7 @@ export class AMM {
         throw new Error(errorMessage);
       })
       .catch((error) => {
+        const sentryTracker = getSentryTracker();
         sentryTracker.captureException(error);
         sentryTracker.captureMessage('Transaction Confirmation Error');
         throw new Error('Transaction Confirmation Error');
@@ -913,6 +911,7 @@ export class AMM {
       const receipt = await swapTransaction.wait();
       return receipt;
     } catch (error) {
+      const sentryTracker = getSentryTracker();
       sentryTracker.captureException(error);
       sentryTracker.captureMessage('Transaction Confirmation Error');
       throw new Error('Transaction Confirmation Error');
@@ -1078,6 +1077,7 @@ export class AMM {
     const mintTransaction = await peripheryContract
       .mintOrBurn(mintOrBurnParams, tempOverrides)
       .catch((error) => {
+        const sentryTracker = getSentryTracker();
         sentryTracker.captureException(error);
         sentryTracker.captureMessage('Transaction Confirmation Error');
         throw new Error('Transaction Confirmation Error');
@@ -1087,6 +1087,7 @@ export class AMM {
       const receipt = await mintTransaction.wait();
       return receipt;
     } catch (error) {
+      const sentryTracker = getSentryTracker();
       sentryTracker.captureException(error);
       sentryTracker.captureMessage('Transaction Confirmation Error');
       throw new Error('Transaction Confirmation Error');
@@ -1176,6 +1177,7 @@ export class AMM {
     const mintTransaction = await peripheryContract
       .mintOrBurn(mintOrBurnParams, tempOverrides)
       .catch((error) => {
+        const sentryTracker = getSentryTracker();
         sentryTracker.captureException(error);
         sentryTracker.captureMessage('Transaction Confirmation Error');
         throw new Error('Transaction Confirmation Error');
@@ -1185,6 +1187,7 @@ export class AMM {
       const receipt = await mintTransaction.wait();
       return receipt;
     } catch (error) {
+      const sentryTracker = getSentryTracker();
       sentryTracker.captureException(error);
       sentryTracker.captureMessage('Transaction Confirmation Error');
       throw new Error('Transaction Confirmation Error');
@@ -1245,6 +1248,7 @@ export class AMM {
         gasLimit: getGasBuffer(estimatedGas),
       })
       .catch((error) => {
+        const sentryTracker = getSentryTracker();
         sentryTracker.captureException(error);
         sentryTracker.captureMessage('Transaction Confirmation Error');
         throw new Error('Transaction Confirmation Error');
@@ -1254,6 +1258,7 @@ export class AMM {
       const receipt = await burnTransaction.wait();
       return receipt;
     } catch (error) {
+      const sentryTracker = getSentryTracker();
       sentryTracker.captureException(error);
       sentryTracker.captureMessage('Transaction Confirmation Error');
       throw new Error('Transaction Confirmation Error');
@@ -1336,6 +1341,7 @@ export class AMM {
         tempOverrides,
       )
       .catch((error) => {
+        const sentryTracker = getSentryTracker();
         sentryTracker.captureException(error);
         sentryTracker.captureMessage('Transaction Confirmation Error');
         throw new Error('Transaction Confirmation Error');
@@ -1345,6 +1351,7 @@ export class AMM {
       const receipt = await updatePositionMarginTransaction.wait();
       return receipt;
     } catch (error) {
+      const sentryTracker = getSentryTracker();
       sentryTracker.captureException(error);
       sentryTracker.captureMessage('Transaction Confirmation Error');
       throw new Error('Transaction Confirmation Error');
@@ -1402,6 +1409,7 @@ export class AMM {
         },
       )
       .catch((error) => {
+        const sentryTracker = getSentryTracker();
         sentryTracker.captureException(error);
         sentryTracker.captureMessage('Transaction Confirmation Error');
         throw new Error('Transaction Confirmation Error');
@@ -1411,6 +1419,7 @@ export class AMM {
       const receipt = await settlePositionTransaction.wait();
       return receipt;
     } catch (error) {
+      const sentryTracker = getSentryTracker();
       sentryTracker.captureException(error);
       sentryTracker.captureMessage('Transaction Confirmation Error');
       throw new Error('Transaction Confirmation Error');
@@ -1486,6 +1495,7 @@ export class AMM {
     try {
       estimatedGas = await token.estimateGas.approve(peripheryAddress, MaxUint256Bn);
     } catch (error) {
+      const sentryTracker = getSentryTracker();
       sentryTracker.captureException(error);
       sentryTracker.captureMessage(
         `Could not increase periphery allowance (${tokenAddress}, ${await this.signer.getAddress()}, ${MaxUint256Bn.toString()})`,
@@ -1500,6 +1510,7 @@ export class AMM {
         gasLimit: getGasBuffer(estimatedGas),
       })
       .catch((error) => {
+        const sentryTracker = getSentryTracker();
         sentryTracker.captureException(error);
         sentryTracker.captureMessage('Transaction Confirmation Error');
         throw new Error('Transaction Confirmation Error');
@@ -1508,6 +1519,7 @@ export class AMM {
     try {
       await approvalTransaction.wait();
     } catch (error) {
+      const sentryTracker = getSentryTracker();
       sentryTracker.captureException(error);
       sentryTracker.captureMessage('Token approval failed');
       throw new Error('Token approval failed');
@@ -1546,28 +1558,6 @@ export class AMM {
     const apr = tickToFixedRate(currentTick).toNumber();
 
     return apr;
-  }
-
-  public async getVariableFactor(
-    termStartTimestamp: BigNumber,
-    termEndTimestamp: BigNumber,
-  ): Promise<number> {
-    if (!this.provider) {
-      throw new Error('Blockchain not connected');
-    }
-    const rateOracleContract = baseRateOracleFactory.connect(this.rateOracle.id, this.provider);
-    try {
-      const result = await rateOracleContract.callStatic.variableFactor(
-        termStartTimestamp,
-        termEndTimestamp,
-      );
-      const resultScaled = result.div(BigNumber.from(10).pow(12)).toNumber() / 1000000;
-      return resultScaled;
-    } catch (error) {
-      sentryTracker.captureException(error);
-      sentryTracker.captureMessage('Cannot get variable factor');
-      throw new Error('Cannot get variable factor');
-    }
   }
 
   // tick functionalities

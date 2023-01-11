@@ -19,7 +19,7 @@ import { abi as Erc20RootVaultABI } from '../../ABIs/Erc20RootVault.json';
 import { abi as Erc20RootVaultGovernanceABI } from '../../ABIs/Erc20RootVaultGovernance.json';
 import { abi as IERC20MinimalABI } from '../../ABIs/IERC20Minimal.json';
 import { abi as MellowDepositWrapperABI } from '../../ABIs/MellowDepositWrapper.json';
-import { sentryTracker } from '../../utils/sentry';
+import { getSentryTracker } from '../../init';
 import { MellowProductMetadata } from './config/types';
 import { closeOrPastMaturity } from './config';
 
@@ -352,6 +352,7 @@ class MellowLpVault {
       return receipt;
     } catch (error) {
       console.error('Unsuccessful approval confirmation.', error);
+      const sentryTracker = getSentryTracker();
       sentryTracker.captureException(error);
       sentryTracker.captureMessage('Unsuccessful approval confirmation.');
       throw new Error('Unsuccessful approval confirmation.');
@@ -393,6 +394,7 @@ class MellowLpVault {
       }
     } catch (error) {
       console.error('Unsuccessful deposit simulation.', error);
+      const sentryTracker = getSentryTracker();
       sentryTracker.captureException(error);
       sentryTracker.captureMessage('Unsuccessful deposit simulation.');
       throw new Error('Unsuccessful deposit simulation.');
@@ -435,6 +437,7 @@ class MellowLpVault {
       try {
         await this.refreshWalletBalance();
       } catch (error) {
+        const sentryTracker = getSentryTracker();
         sentryTracker.captureException(error);
         sentryTracker.captureMessage('Wallet user balance failed to refresh after deposit');
         console.error('Wallet user balance failed to refresh after deposit.', error);
@@ -443,6 +446,7 @@ class MellowLpVault {
       try {
         await this.refreshUserDeposit();
       } catch (error) {
+        const sentryTracker = getSentryTracker();
         sentryTracker.captureException(error);
         sentryTracker.captureMessage('User deposit failed to refresh after deposit');
         console.error('User deposit failed to refresh after deposit.', error);
@@ -451,6 +455,7 @@ class MellowLpVault {
       try {
         await this.refreshVaultCumulative();
       } catch (error) {
+        const sentryTracker = getSentryTracker();
         sentryTracker.captureException(error);
         sentryTracker.captureMessage('Vault accumulative failed to refresh after deposit');
         console.error('Vault accumulative failed to refresh after deposit.', error);
@@ -459,6 +464,7 @@ class MellowLpVault {
       return receipt;
     } catch (err) {
       console.error('Unsucessful deposit confirmation.', err);
+      const sentryTracker = getSentryTracker();
       sentryTracker.captureException(err);
       sentryTracker.captureMessage('Unsucessful deposit confirmation.');
       throw new Error('Unsucessful deposit confirmation.');
@@ -500,6 +506,7 @@ class MellowLpVault {
       );
     } catch (error) {
       console.error('Error in withdrawal simulation:', error);
+      const sentryTracker = getSentryTracker();
       sentryTracker.captureException(error);
       sentryTracker.captureMessage('Unsuccessful withdrawal simulation.');
       throw new Error('Unsuccessful withdrawal simulation.');
@@ -531,6 +538,7 @@ class MellowLpVault {
       try {
         await this.refreshWalletBalance();
       } catch (err) {
+        const sentryTracker = getSentryTracker();
         sentryTracker.captureException(err);
         sentryTracker.captureMessage('Wallet user balance failed to refresh after withdrawal');
         console.error('Wallet user balance failed to refresh after withdrawal.', err);
@@ -539,6 +547,7 @@ class MellowLpVault {
       try {
         await this.refreshUserDeposit();
       } catch (err) {
+        const sentryTracker = getSentryTracker();
         sentryTracker.captureException(err);
         sentryTracker.captureMessage('User deposit failed to refresh after withdrawal');
         console.error('User deposit failed to refresh after withdrawal.', err);
@@ -546,6 +555,7 @@ class MellowLpVault {
 
       return receipt;
     } catch (err) {
+      const sentryTracker = getSentryTracker();
       sentryTracker.captureException(err);
       sentryTracker.captureMessage('Unsucessful withdrawal confirmation.');
       throw new Error('Unsucessful withdraw confirmation.');

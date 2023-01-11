@@ -2,8 +2,11 @@ import { BigNumber, BigNumberish } from 'ethers';
 import { toBn } from 'evm-bn';
 import { expect } from 'chai';
 import { before, describe, it } from 'mocha';
+import * as sinon from 'sinon';
+import { BrowserClient } from '@sentry/browser';
 import { getAccruedCashflow } from '../../src/services/getAccruedCashflow';
 import { BaseRateOracle } from '../../src/typechain';
+import * as initSDK from '../../src/init';
 
 class MockBaseRateOracle {
   public apy: BigNumber = toBn('0');
@@ -12,6 +15,7 @@ class MockBaseRateOracle {
     this.apy = toBn(to.toString());
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async getApyFromTo(from: BigNumberish, to: BigNumberish) {
     return this.apy;
   }
@@ -24,6 +28,22 @@ describe('accrued cashflow tests', () => {
     rateOracle = new MockBaseRateOracle();
     await rateOracle.setAPY(0.03);
   });
+
+  beforeEach(() => {
+    sinon.stub(initSDK, 'getSentryTracker').callsFake(
+      () =>
+        ({
+          captureException: () => undefined,
+          captureMessage: () => undefined,
+        } as unknown as BrowserClient),
+    );
+  });
+
+  afterEach(() => {
+    // restore the original implementation of initSDK.getSentryTracker
+    (initSDK.getSentryTracker as sinon.SinonStub).restore();
+  });
+
   it('FT and extend FT', async () => {
     const result = await getAccruedCashflow({
       swaps: [

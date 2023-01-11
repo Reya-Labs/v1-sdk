@@ -1,12 +1,14 @@
 import { DateTime } from 'luxon';
 import { BigNumber, utils } from 'ethers';
+import {
+  Burn,
+  Liquidation,
+  MarginUpdate,
+  Mint,
+  Settlement,
+  Swap,
+} from '@voltz-protocol/subgraph-data';
 import { AMM, HealthFactorStatus } from './amm';
-import Burn from './burn';
-import Liquidation from './liquidation';
-import MarginUpdate from './marginUpdate';
-import Mint from './mint';
-import Settlement from './settlement';
-import Swap from './swap';
 import { ONE_YEAR_IN_SECONDS, Q96 } from '../constants';
 import { tickToPrice, tickToFixedRate } from '../utils/priceTickConversions';
 import { TickMath } from '../utils/tickMath';
@@ -17,7 +19,7 @@ import {
   BaseRateOracle__factory as baseRateOracleFactory,
 } from '../typechain';
 import { getAccruedCashflow, transformSwaps } from '../services/getAccruedCashflow';
-import { sentryTracker } from '../utils/sentry';
+import { getSentryTracker } from '../init';
 import { getRangeHealthFactor } from '../utils/rangeHealthFactor';
 
 export type PositionConstructorArgs = {
@@ -32,12 +34,12 @@ export type PositionConstructorArgs = {
 
   positionType: number;
 
-  mints: Array<Mint>;
-  burns: Array<Burn>;
-  swaps: Array<Swap>;
-  marginUpdates: Array<MarginUpdate>;
-  liquidations: Array<Liquidation>;
-  settlements: Array<Settlement>;
+  mints: Mint[];
+  burns: Burn[];
+  swaps: Swap[];
+  marginUpdates: MarginUpdate[];
+  liquidations: Liquidation[];
+  settlements: Settlement[];
 };
 
 class Position {
@@ -225,6 +227,7 @@ class Position {
                 ? [avgFixedRate, avgVariableRate]
                 : [avgVariableRate, avgFixedRate];
           } catch (error) {
+            const sentryTracker = getSentryTracker();
             sentryTracker.captureException(error);
           }
         } else {
@@ -243,6 +246,7 @@ class Position {
           );
           this.liquidationThreshold = this.amm.descale(scaledLiqT);
         } catch (error) {
+          const sentryTracker = getSentryTracker();
           sentryTracker.captureMessage('Failed to compute the liquidation threshold');
           sentryTracker.captureException(error);
         }
@@ -257,6 +261,7 @@ class Position {
           );
           this.safetyThreshold = this.amm.descale(scaledSafeT);
         } catch (error) {
+          const sentryTracker = getSentryTracker();
           sentryTracker.captureMessage('Failed to compute the safety threshold');
           sentryTracker.captureException(error);
         }

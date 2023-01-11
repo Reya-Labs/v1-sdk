@@ -32,8 +32,10 @@ jest.mock('axios', () => {
   };
 });
 
-jest.mock('../../src/utils/sentry/index.ts', () => {
-  return { sentryTracker: { captureException: jest.fn(), captureMessage: jest.fn() } };
+jest.mock('../../src/init.ts', () => {
+  return {
+    getSentryTracker: jest.fn(() => ({ captureException: jest.fn(), captureMessage: jest.fn() })),
+  };
 });
 
 describe('getSeasonBadges: general', () => {

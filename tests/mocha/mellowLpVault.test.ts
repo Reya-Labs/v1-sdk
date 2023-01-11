@@ -1,13 +1,13 @@
-/* eslint-disable no-await-in-loop */
-/* eslint-disable no-restricted-syntax */
-
 import { BigNumber, ethers, Wallet } from 'ethers';
 import { describe } from 'mocha';
 import { network, waffle } from 'hardhat';
 import { expect } from 'chai';
+import { BrowserClient } from '@sentry/browser';
+import * as sinon from 'sinon';
 import MellowLpVault from '../../src/entities/mellow/mellowLpVault';
 import { abi as IERC20MinimalABI } from '../../src/ABIs/IERC20Minimal.json';
 import { advanceTimeAndBlock } from '../time';
+import * as initSDK from '../../src/init';
 
 const { provider } = waffle;
 let ethMellowLpVault: MellowLpVault;
@@ -37,6 +37,21 @@ describe('Mellow Router Test Suite', () => {
       ],
     });
   };
+
+  beforeEach(() => {
+    sinon.stub(initSDK, 'getSentryTracker').callsFake(
+      () =>
+        ({
+          captureException: () => undefined,
+          captureMessage: () => undefined,
+        } as unknown as BrowserClient),
+    );
+  });
+
+  afterEach(() => {
+    // restore the original implementation of initSDK.getSentryTracker
+    (initSDK.getSentryTracker as sinon.SinonStub).restore();
+  });
 
   describe('Invalid vault initialisation scenarios', async () => {
     beforeEach('Setting up the Router Object', async () => {

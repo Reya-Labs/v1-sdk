@@ -1,9 +1,27 @@
 import { expect } from 'chai';
+import * as sinon from 'sinon';
+import { BrowserClient } from '@sentry/browser';
 import { nearestUsableTick } from '../../src/utils/nearestUsableTick';
 import { TickMath } from '../../src/utils/tickMath';
 import { fail } from '../utils';
+import * as initSDK from '../../src/init';
 
 describe('#nearestUsableTick', () => {
+  beforeEach(() => {
+    sinon.stub(initSDK, 'getSentryTracker').callsFake(
+      () =>
+        ({
+          captureException: () => undefined,
+          captureMessage: () => undefined,
+        } as unknown as BrowserClient),
+    );
+  });
+
+  afterEach(() => {
+    // restore the original implementation of initSDK.getSentryTracker
+    (initSDK.getSentryTracker as sinon.SinonStub).restore();
+  });
+
   it('throws if tickSpacing is 0', () => {
     try {
       nearestUsableTick(1, 0);
