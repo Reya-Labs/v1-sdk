@@ -1,5 +1,4 @@
 import { providers, Signer } from 'ethers';
-import JSBI from 'jsbi';
 import { Price } from '../fractions/price';
 import Position from '../position';
 import RateOracle from '../rateOracle';
@@ -15,8 +14,8 @@ export type AMMConstructorArgs = {
   rateOracle: RateOracle;
   underlyingToken: Token;
 
-  termStartTimestamp: JSBI;
-  termEndTimestamp: JSBI;
+  termStartTimestampInMS: number;
+  termEndTimestampInMS: number;
 
   tickSpacing: number;
   wethAddress: string;

@@ -1,5 +1,4 @@
-import JSBI from 'jsbi';
-import { ethers, providers, BigNumber, ContractReceipt, Signer, utils } from 'ethers';
+import { providers, BigNumber, ContractReceipt, Signer, utils } from 'ethers';
 import { DateTime } from 'luxon';
 
 import { SwapPeripheryParams, MintOrBurnParams } from '../../types';
@@ -24,9 +23,7 @@ import {
   IAaveV2LendingPool__factory as iAaveV2LendingPoolFactory,
   CompoundBorrowRateOracle__factory as compoundBorrowRateOracleFactory,
 } from '../../typechain';
-import RateOracle from '../rateOracle';
 import { TickMath } from '../../utils/tickMath';
-import timestampWadToDateTime from '../../utils/timestampWadToDateTime';
 import { fixedRateToClosestTick, tickToFixedRate } from '../../utils/priceTickConversions';
 import { nearestUsableTick } from '../../utils/nearestUsableTick';
 import Token from '../token';
@@ -62,6 +59,7 @@ import {
   AMMMintWithWethArgs,
 } from './types';
 import { geckoEthToUsd } from '../../utils/priceFetch';
+import { RateOracle } from '../rateOracle';
 
 export class AMM {
   public readonly id: string;
@@ -70,8 +68,8 @@ export class AMM {
   public readonly factoryAddress: string;
   public readonly marginEngineAddress: string;
   public readonly rateOracle: RateOracle;
-  public readonly termStartTimestamp: JSBI;
-  public readonly termEndTimestamp: JSBI;
+  public readonly termStartTimestampInMS: number;
+  public readonly termEndTimestampInMS: number;
   public readonly underlyingToken: Token;
   public readonly tickSpacing: number;
   public readonly isETH: boolean;
@@ -85,8 +83,8 @@ export class AMM {
     factoryAddress,
     marginEngineAddress,
     rateOracle,
-    termStartTimestamp,
-    termEndTimestamp,
+    termStartTimestampInMS,
+    termEndTimestampInMS,
     underlyingToken,
     tickSpacing,
     wethAddress,
@@ -98,8 +96,8 @@ export class AMM {
     this.factoryAddress = factoryAddress;
     this.marginEngineAddress = marginEngineAddress;
     this.rateOracle = rateOracle;
-    this.termStartTimestamp = termStartTimestamp;
-    this.termEndTimestamp = termEndTimestamp;
+    this.termStartTimestampInMS = termStartTimestampInMS;
+    this.termEndTimestampInMS = termEndTimestampInMS;
     this.underlyingToken = underlyingToken;
     this.tickSpacing = tickSpacing;
     this.wethAddress = wethAddress;
@@ -117,9 +115,7 @@ export class AMM {
   ): Promise<[number, number]> => {
     const now = Math.round(new Date().getTime() / 1000);
 
-    const end =
-      BigNumber.from(this.termEndTimestamp.toString()).div(BigNumber.from(10).pow(12)).toNumber() /
-      1000000;
+    const end = this.termEndTimestampInMS / 1000;
 
     let scaledFt = 0;
     let scaledVt = 0;
@@ -618,7 +614,7 @@ export class AMM {
             swaps: transformSwaps(position.swaps, this.underlyingToken.decimals),
             rateOracle: rateOracleContract,
             currentTime: Number(lastBlockTimestamp.toString()),
-            endTime: Number(utils.formatUnits(this.termEndTimestamp.toString(), 18)),
+            endTime: this.termEndTimestampInMS / 1000,
           });
           accruedCashflow = accruedCashflowInfo.accruedCashflow;
         }
@@ -712,7 +708,7 @@ export class AMM {
         marginDelta: 0, //
       };
 
-      tempOverrides.value = ethers.utils.parseEther(margin.toFixed(18).toString());
+      tempOverrides.value = utils.parseEther(margin.toFixed(18).toString());
     } else {
       const scaledMarginDelta = this.scale(margin);
 
@@ -755,9 +751,11 @@ export class AMM {
     } else {
       const rateOracleContract = baseRateOracleFactory.connect(this.rateOracle.id, this.provider);
       const variableFactorFromStartToNowWad = await rateOracleContract.callStatic.variableFactor(
-        BigNumber.from(this.termStartTimestamp.toString()),
-        BigNumber.from(this.termEndTimestamp.toString()),
+        utils.parseUnits(this.termStartTimestampInMS.toString(), 15),
+        utils.parseUnits(this.termEndTimestampInMS.toString(), 15),
       );
+
+      // move rate oracle queries to another folder and make them stateless
 
       await peripheryContract.callStatic
         .fullyCollateralisedVTSwap(
@@ -868,7 +866,7 @@ export class AMM {
     const tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
 
     if (this.isETH && marginEth) {
-      tempOverrides.value = ethers.utils.parseEther(marginEth.toFixed(18).toString());
+      tempOverrides.value = utils.parseEther(marginEth.toFixed(18).toString());
     }
 
     const scaledMarginDelta = this.scale(margin);
@@ -1047,7 +1045,7 @@ export class AMM {
         marginDelta: 0,
       };
 
-      tempOverrides.value = ethers.utils.parseEther(margin.toFixed(18).toString());
+      tempOverrides.value = utils.parseEther(margin.toFixed(18).toString());
     } else {
       const scaledMarginDelta = this.scale(margin);
 
@@ -1145,7 +1143,7 @@ export class AMM {
     const tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
 
     if (this.isETH && marginEth) {
-      tempOverrides.value = ethers.utils.parseEther(marginEth.toFixed(18).toString());
+      tempOverrides.value = utils.parseEther(marginEth.toFixed(18).toString());
     }
 
     const scaledMarginDelta = this.scale(margin);
@@ -1292,7 +1290,7 @@ export class AMM {
     let scaledMarginDelta: string;
 
     if (this.isETH && marginDelta > 0) {
-      tempOverrides.value = ethers.utils.parseEther(marginDelta.toFixed(18).toString());
+      tempOverrides.value = utils.parseEther(marginDelta.toFixed(18).toString());
       scaledMarginDelta = '0';
     } else {
       scaledMarginDelta = this.scale(marginDelta);
@@ -1433,7 +1431,7 @@ export class AMM {
   }
 
   public descale(value: BigNumber): number {
-    return Number(ethers.utils.formatUnits(value, this.underlyingToken.decimals));
+    return Number(utils.formatUnits(value, this.underlyingToken.decimals));
   }
 
   // token approval for periphery
@@ -1529,11 +1527,11 @@ export class AMM {
   // start and end dates
 
   public get startDateTime(): DateTime {
-    return timestampWadToDateTime(this.termStartTimestamp);
+    return DateTime.fromMillis(this.termStartTimestampInMS);
   }
 
   public get endDateTime(): DateTime {
-    return timestampWadToDateTime(this.termEndTimestamp);
+    return DateTime.fromMillis(this.termEndTimestampInMS);
   }
 
   public async getFixedApr(): Promise<number> {
