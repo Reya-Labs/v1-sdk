@@ -23,7 +23,7 @@ const isBorrowingPosition = (p: Position) => {
 };
 
 const isTraderPosition = (p: Position) => {
-  return (p.positionType === 1 || p.positionType === 2) && !isBorrowingPosition(p);
+  return p.positionType === 1 || p.positionType === 2;
 };
 
 const isLPPosition = (p: Position) => {
@@ -56,10 +56,10 @@ const getUninitialisedPositions = async ({
     error = 'Failed to fetch positions from the subgraph';
   }
 
-  const positions: Position[] = [];
+  let positions: Position[] = [];
 
   try {
-    rawPositions.map((rawPos) => {
+    positions = rawPositions.map((rawPos) => {
       const correspondingAmm = amms.find((amm) => amm.id === rawPos.amm.id);
       if (correspondingAmm) {
         return new Position({
