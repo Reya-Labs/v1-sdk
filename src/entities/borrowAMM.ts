@@ -9,8 +9,6 @@ import {
   CompoundBorrowRateOracle__factory,
   AaveBorrowRateOracle__factory,
 } from '../typechain';
-import { Price } from './fractions/price';
-import { TokenAmount } from './fractions/tokenAmount';
 import Position from './position';
 import { geckoEthToUsd } from '../utils/priceFetch';
 import { AMM, InfoPostSwap, AMMGetInfoPostSwapArgs } from './amm';
@@ -48,29 +46,6 @@ class BorrowAMM {
     if (protocolId !== 6 && protocolId !== 5) {
       throw new Error('Not a borrow market');
     }
-  }
-
-  // scale/descale according to underlying token
-
-  public descale(value: BigNumber): number {
-    if (this.amm.underlyingToken.decimals <= 3) {
-      return value.toNumber() / 10 ** this.amm.underlyingToken.decimals;
-    }
-    return (
-      value.div(BigNumber.from(10).pow(this.amm.underlyingToken.decimals - 3)).toNumber() / 1000
-    );
-  }
-
-  public scale(value: number): string {
-    const price = Price.fromNumber(value);
-    const tokenAmount = TokenAmount.fromFractionalAmount(
-      this.amm.underlyingToken,
-      price.numerator,
-      price.denominator,
-    );
-    const scaledValue = tokenAmount.scale();
-
-    return scaledValue;
   }
 
   private static getAllSwaps(position: Position): {
@@ -221,7 +196,7 @@ class BorrowAMM {
 
   public async getUnderlyingBorrowBalance(): Promise<number> {
     const borrowBalance = await this.getScaledUnderlyingBorrowBalance();
-    return this.descale(borrowBalance);
+    return this.amm.descale(borrowBalance);
   }
 
   public async getFixedBorrowBalance(position: Position): Promise<number> {

@@ -28,7 +28,6 @@ import { fixedRateToClosestTick, tickToFixedRate } from '../../utils/priceTickCo
 import { nearestUsableTick } from '../../utils/nearestUsableTick';
 import Token from '../token';
 import { Price } from '../fractions/price';
-import { TokenAmount } from '../fractions/tokenAmount';
 import {
   decodeInfoPostMint,
   decodeInfoPostSwap,
@@ -1428,15 +1427,7 @@ export class AMM {
 
   // scale/descale according to underlying token
   public scale(value: number): string {
-    const price = Price.fromNumber(value);
-    const tokenAmount = TokenAmount.fromFractionalAmount(
-      this.underlyingToken,
-      price.numerator,
-      price.denominator,
-    );
-    const scaledValue = tokenAmount.scale();
-
-    return scaledValue;
+    return utils.parseUnits(value.toString(), this.underlyingToken.decimals).toString();
   }
 
   public descale(value: BigNumber): number {
