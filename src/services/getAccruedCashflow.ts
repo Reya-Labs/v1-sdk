@@ -1,7 +1,7 @@
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-lonely-if */
 import { Swap } from '@voltz-protocol/subgraph-data';
-import { BigNumber, utils } from 'ethers';
+import { utils } from 'ethers';
 import { ONE_YEAR_IN_SECONDS } from '../constants';
 import { BaseRateOracle } from '../typechain';
 
@@ -28,13 +28,11 @@ export type AccruedCashflowArgs = {
 };
 
 // get all swaps of some position, descale the values to numbers and sort by time
-export function transformSwaps(swaps: Swap[], decimals: number): TransformedSwap[] {
+export function transformSwaps(swaps: Swap[]): TransformedSwap[] {
   return swaps
     .map((s) => {
       return {
-        notional: Number(
-          utils.formatUnits(BigNumber.from(s.variableTokenDelta.toString()), decimals),
-        ),
+        notional: s.variableTokenDelta,
         time: s.creationTimestampInMS / 1000,
         avgFixedRate: Math.abs(s.unbalancedFixedTokenDelta / s.variableTokenDelta / 100),
       };

@@ -605,7 +605,7 @@ export class AMM {
       try {
         if (position.swaps.length > 0) {
           const accruedCashflowInfo = await getAccruedCashflow({
-            swaps: transformSwaps(position.swaps, this.underlyingToken.decimals),
+            swaps: transformSwaps(position.swaps),
             rateOracle: rateOracleContract,
             currentTime: Number(lastBlockTimestamp.toString()),
             endTime: this.termEndTimestampInMS / 1000,

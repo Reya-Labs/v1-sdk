@@ -1,18 +1,26 @@
-import { getAMMs as getRawAMMs } from '@voltz-protocol/subgraph-data';
+import { getAMMs as getRawAMMs, AMM as RawAMM } from '@voltz-protocol/subgraph-data';
+import { getSentryTracker } from '../../init';
 import { RateOracle } from '../rateOracle';
 import Token from '../token';
 import { AMM } from './amm';
 import { getConfig } from './voltz-config/getConfig';
 
+type GetAMMsArgs = {
+  network: string;
+  providerURL: string;
+  subgraphURL: string;
+};
+
+type GetAMMsResponse = {
+  amms: AMM[];
+  error: string | undefined;
+};
+
 export const getAMMs = async ({
   network,
   providerURL,
   subgraphURL,
-}: {
-  network: string;
-  providerURL: string;
-  subgraphURL: string;
-}): Promise<AMM[]> => {
+}: GetAMMsArgs): Promise<GetAMMsResponse> => {
   const config = getConfig({
     network,
     providerURL,
@@ -23,9 +31,20 @@ export const getAMMs = async ({
     .filter((pool) => pool.show.general)
     .map((pool) => pool.id.toLowerCase());
 
-  const rawAMMs = await getRawAMMs(subgraphURL, Date.now().valueOf(), {
-    ammIDs: config.apply ? whitelistedPoolIds : undefined,
-  });
+  const rawAMMs: RawAMM[] = [];
+  let error: string | undefined;
+
+  try {
+    await getRawAMMs(subgraphURL, Date.now().valueOf(), {
+      ammIDs: config.apply ? whitelistedPoolIds : undefined,
+    });
+  } catch (err) {
+    const sentryTracker = getSentryTracker();
+    sentryTracker.captureException(err);
+    sentryTracker.captureMessage('Transaction Confirmation Error');
+
+    error = 'Failed to fetch AMMs from the subgraph';
+  }
 
   const sortedRawAMMs = rawAMMs.slice().sort((a, b) => {
     const aIndex = poolIds.findIndex((p) => p.toLowerCase() === a.id.toLowerCase());
@@ -57,5 +76,8 @@ export const getAMMs = async ({
     });
   });
 
-  return amms;
+  return {
+    amms,
+    error,
+  };
 };

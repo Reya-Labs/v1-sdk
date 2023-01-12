@@ -2858,13 +2858,11 @@
     "@typescript-eslint/types" "4.31.2"
     eslint-visitor-keys "^2.0.0"
 
-"@voltz-protocol/subgraph-data@1.15.0":
-  version "1.15.0"
-  resolved "https://registry.yarnpkg.com/@voltz-protocol/subgraph-data/-/subgraph-data-1.15.0.tgz#0721be4f5d248ea68412b7406a796aeb109f513a"
-  integrity sha512-TIYbC06GiWF2zNnUJBrcD4WXxfWqpbizIWxCEQunzJ9fnVrZfoj7sz09VY7Z6BvNGefJ7/fCx+WrEKLhSgJ1AQ==
+"@voltz-protocol/subgraph-data@1.16.0":
+  version "1.16.0"
+  resolved "https://registry.yarnpkg.com/@voltz-protocol/subgraph-data/-/subgraph-data-1.16.0.tgz#a2dfe2b1721705cddde030481e8b2e80d90c39b4"
+  integrity sha512-bd8e5I7ogkXIi4wMDUkqjpgq++QqIHUDoHF9nvtF1qiUNYDuU2kZrEQ9fFTu84TPZdevnk2upKRnkLPL7Wu9dA==
   dependencies:
-    "@sentry/browser" "7.25.0"
-    "@sentry/tracing" "7.25.0"
     ethers "5.5.4"
     graphql "16.3.0"
     graphql-request "5.0.0"
