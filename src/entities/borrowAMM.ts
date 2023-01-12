@@ -1,4 +1,4 @@
-import { providers, BigNumber, Signer } from 'ethers';
+import { providers, Signer } from 'ethers';
 import { ONE_YEAR_IN_SECONDS } from '../constants';
 import {
   ICToken__factory as cTokenFactory,
@@ -115,10 +115,8 @@ class BorrowAMM {
     }
     // is past maturity?
     const lastBlock = await this.provider.getBlockNumber();
-    const lastBlockTimestamp = BigNumber.from(
-      (await this.provider.getBlock(lastBlock - 1)).timestamp,
-    );
-    const pastMaturity = this.amm.termEndTimestampInMS < lastBlockTimestamp.toNumber() * 1000;
+    const lastBlockTimestamp = (await this.provider.getBlock(lastBlock - 1)).timestamp;
+    const pastMaturity = this.amm.termEndTimestampInMS < lastBlockTimestamp * 1000;
 
     return pastMaturity;
   }
@@ -148,7 +146,7 @@ class BorrowAMM {
     return fixedCashFlow;
   }
 
-  public async getScaledUnderlyingBorrowBalance(): Promise<BigNumber> {
+  public async getUnderlyingBorrowBalance(): Promise<number> {
     if (!this.signer) {
       throw new Error('Wallet not connected');
     }
@@ -180,23 +178,21 @@ class BorrowAMM {
       );
     }
 
-    let borrowBalance = BigNumber.from(0);
     if (this.cToken) {
       // compound
       const userAddress = await this.signer.getAddress();
-      borrowBalance = await this.cToken.callStatic.borrowBalanceCurrent(userAddress);
-    } else if (this.aaveVariableDebtToken) {
-      // aave
-      const userAddress = await this.signer.getAddress();
-      borrowBalance = await this.aaveVariableDebtToken.balanceOf(userAddress);
+      const borrowBalance = await this.cToken.callStatic.borrowBalanceCurrent(userAddress);
+      return this.amm.descale(borrowBalance);
     }
 
-    return borrowBalance;
-  }
+    if (this.aaveVariableDebtToken) {
+      // aave
+      const userAddress = await this.signer.getAddress();
+      const borrowBalance = await this.aaveVariableDebtToken.balanceOf(userAddress);
+      return this.amm.descale(borrowBalance);
+    }
 
-  public async getUnderlyingBorrowBalance(): Promise<number> {
-    const borrowBalance = await this.getScaledUnderlyingBorrowBalance();
-    return this.amm.descale(borrowBalance);
+    return 0;
   }
 
   public async getFixedBorrowBalance(position: Position): Promise<number> {
@@ -216,7 +212,7 @@ class BorrowAMM {
 
     const notionalWithVariableCashFlowAndBuffer = notionalWithVariableCashFlow * 1.001;
 
-    const underlyingBorrowBalance = this.amm.descale(await this.getScaledUnderlyingBorrowBalance());
+    const underlyingBorrowBalance = await this.getUnderlyingBorrowBalance();
 
     if (underlyingBorrowBalance >= notionalWithVariableCashFlowAndBuffer) {
       return underlyingBorrowBalance - notionalWithVariableCashFlow;
