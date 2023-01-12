@@ -555,10 +555,6 @@ export class AMM {
       throw new Error('Wallet not connected');
     }
 
-    if (!this.provider) {
-      throw new Error('Blockchain not connected');
-    }
-
     if (fixedLow >= fixedHigh) {
       throw new Error('Lower Rate must be smaller than Upper Rate');
     }
@@ -641,10 +637,6 @@ export class AMM {
     fixedHigh,
     fullyCollateralisedVTSwap,
   }: AMMSwapArgs): Promise<ContractReceipt> {
-    if (!this.provider) {
-      throw new Error('Blockchain not connected');
-    }
-
     if (!this.signer) {
       throw new Error('Wallet not connected');
     }
@@ -1538,9 +1530,6 @@ export class AMM {
   }
 
   public async getFixedApr(): Promise<number> {
-    if (!this.provider) {
-      throw new Error('Blockchain not connected');
-    }
     const factoryContract = factoryFactory.connect(this.factoryAddress, this.provider);
     const peripheryAddress = await factoryContract.periphery();
 
@@ -1584,10 +1573,6 @@ export class AMM {
 
     let currentBalance: BigNumber;
     if (this.isETH) {
-      if (!this.provider) {
-        throw new Error('Provider not connected');
-      }
-
       currentBalance = await this.provider.getBalance(signerAddress);
     } else {
       if (!this.underlyingToken.id) {
@@ -1606,10 +1591,6 @@ export class AMM {
   // one week look-back window apy
 
   async getInstantApy(): Promise<number> {
-    if (!this.provider) {
-      throw new Error('Blockchain not connected');
-    }
-
     const blocksPerDay = 6570; // 13.15 seconds per block
     const blockPerHour = 274;
 

@@ -1,4 +1,3 @@
-import { providers, Signer } from 'ethers';
 import { ONE_YEAR_IN_SECONDS } from '../constants';
 import {
   ICToken__factory as cTokenFactory,
@@ -24,8 +23,6 @@ export type BorrowSwapInfo = InfoPostSwap & {
 
 class BorrowAMM {
   public readonly id: string;
-  public readonly signer: Signer | null;
-  public readonly provider?: providers.Provider;
   public readonly amm: AMM;
 
   public cToken: ICToken | undefined;
@@ -38,8 +35,6 @@ class BorrowAMM {
 
   public constructor({ id, amm }: BorrowAMMConstructorArgs) {
     this.id = id;
-    this.signer = amm.signer;
-    this.provider = amm.provider || amm.signer?.provider;
     this.amm = amm;
 
     const protocolId = this.amm.rateOracle.protocolId;
@@ -76,16 +71,12 @@ class BorrowAMM {
     }[],
     atMaturity: boolean,
   ): Promise<[number, number]> {
-    if (!this.provider) {
-      throw new Error('Wallet not connected');
-    }
-
     let totalVarableCashflow = 0;
     let totalFixedCashflow = 0;
     const lenSwaps = allSwaps.length;
 
-    const lastBlock = await this.provider.getBlockNumber();
-    const lastBlockTimestamp = (await this.provider.getBlock(lastBlock)).timestamp;
+    const lastBlock = await this.amm.provider.getBlockNumber();
+    const lastBlockTimestamp = (await this.amm.provider.getBlock(lastBlock)).timestamp;
 
     const untilTimestamp = atMaturity ? this.amm.termEndTimestampInMS / 1000 : lastBlockTimestamp;
 
@@ -110,12 +101,9 @@ class BorrowAMM {
   }
 
   public async atMaturity(): Promise<boolean> {
-    if (!this.provider) {
-      throw new Error('Blockchain not connected');
-    }
     // is past maturity?
-    const lastBlock = await this.provider.getBlockNumber();
-    const lastBlockTimestamp = (await this.provider.getBlock(lastBlock - 1)).timestamp;
+    const lastBlock = await this.amm.provider.getBlockNumber();
+    const lastBlockTimestamp = (await this.amm.provider.getBlock(lastBlock - 1)).timestamp;
     const pastMaturity = this.amm.termEndTimestampInMS < lastBlockTimestamp * 1000;
 
     return pastMaturity;
@@ -147,7 +135,7 @@ class BorrowAMM {
   }
 
   public async getUnderlyingBorrowBalance(): Promise<number> {
-    if (!this.signer) {
+    if (!this.amm.signer) {
       throw new Error('Wallet not connected');
     }
 
@@ -155,39 +143,36 @@ class BorrowAMM {
     if (protocolId === 6 && !this.cToken) {
       const compoundRateOracle = CompoundBorrowRateOracle__factory.connect(
         this.amm.rateOracle.id,
-        this.signer,
+        this.amm.signer,
       );
       const cTokenAddress = await compoundRateOracle.ctoken();
-      this.cToken = cTokenFactory.connect(cTokenAddress, this.signer);
+      this.cToken = cTokenFactory.connect(cTokenAddress, this.amm.signer);
     } else if (protocolId === 5 && !this.aaveVariableDebtToken) {
       const aaveRateOracle = AaveBorrowRateOracle__factory.connect(
         this.amm.rateOracle.id,
-        this.signer,
+        this.amm.signer,
       );
 
       const lendingPoolAddress = await aaveRateOracle.aaveLendingPool();
-      const lendingPool = IAaveV2LendingPool__factory.connect(lendingPoolAddress, this.signer);
-      if (!this.amm.underlyingToken.id) {
-        throw new Error('missing underlying token address');
-      }
+      const lendingPool = IAaveV2LendingPool__factory.connect(lendingPoolAddress, this.amm.signer);
       const reserve = await lendingPool.getReserveData(this.amm.underlyingToken.id);
       const variableDebtTokenAddress = reserve.variableDebtTokenAddress;
       this.aaveVariableDebtToken = IERC20Minimal__factory.connect(
         variableDebtTokenAddress,
-        this.signer,
+        this.amm.signer,
       );
     }
 
     if (this.cToken) {
       // compound
-      const userAddress = await this.signer.getAddress();
+      const userAddress = await this.amm.signer.getAddress();
       const borrowBalance = await this.cToken.callStatic.borrowBalanceCurrent(userAddress);
       return this.amm.descale(borrowBalance);
     }
 
     if (this.aaveVariableDebtToken) {
       // aave
-      const userAddress = await this.signer.getAddress();
+      const userAddress = await this.amm.signer.getAddress();
       const borrowBalance = await this.aaveVariableDebtToken.balanceOf(userAddress);
       return this.amm.descale(borrowBalance);
     }
@@ -221,7 +206,7 @@ class BorrowAMM {
   }
 
   public async getBorrowInfo(infoPostSwapArgs: AMMGetInfoPostSwapArgs): Promise<BorrowSwapInfo> {
-    if (!this.signer) {
+    if (!this.amm.signer) {
       throw new Error('Wallet not connected');
     }
 

@@ -113,10 +113,6 @@ class MellowLpRouter {
       return;
     }
 
-    if (isUndefined(this.provider)) {
-      return;
-    }
-
     // Instantiate the mellowRouterContract
     const mellowRouterContract = new ethers.Contract(
       this.mellowRouterAddress,
@@ -359,7 +355,6 @@ class MellowLpRouter {
     if (
       isUndefined(this.userAddress) ||
       isUndefined(this.readOnlyContracts) ||
-      isUndefined(this.provider) ||
       isUndefined(this.tokenDecimals)
     ) {
       this.userWalletBalance = 0;
