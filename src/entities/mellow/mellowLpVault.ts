@@ -107,10 +107,6 @@ class MellowLpVault {
       return;
     }
 
-    if (isUndefined(this.provider)) {
-      return;
-    }
-
     const erc20RootVaultContract = new ethers.Contract(
       this.erc20RootVaultAddress,
       Erc20RootVaultABI,
@@ -294,7 +290,6 @@ class MellowLpVault {
     if (
       isUndefined(this.userAddress) ||
       isUndefined(this.readOnlyContracts) ||
-      isUndefined(this.provider) ||
       isUndefined(this.tokenDecimals)
     ) {
       this.userWalletBalance = 0;

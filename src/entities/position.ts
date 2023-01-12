@@ -162,10 +162,6 @@ class Position {
       return;
     }
 
-    if (!this.amm.provider) {
-      throw new Error('Blockchain not connected');
-    }
-
     // Build the contract
     const marginEngineContract = marginEngineFactory.connect(
       this.amm.marginEngineAddress,
@@ -303,10 +299,6 @@ class Position {
   }
 
   private async getSettlementCashflow(): Promise<number> {
-    if (!this.amm.provider) {
-      throw new Error('Blockchain not connected');
-    }
-
     const rateOracleContract = baseRateOracleFactory.connect(
       this.amm.rateOracle.id,
       this.amm.provider,
