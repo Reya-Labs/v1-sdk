@@ -58,7 +58,7 @@ function uploadSentrySourcemaps(version) {
 
 function replaceVersionInSentry(version) {
     try {
-        const path = './src/utils/sentry/index.ts';
+        const path = './src/init.ts';
         const file = fs.readFileSync(path).toString('utf8');
         fs.writeFileSync(path, file.replace('<VERSION>',version),{encoding:'utf8',flag:'w'})
         return file;
@@ -71,7 +71,7 @@ function replaceVersionInSentry(version) {
 
 function restoreOldFile(oldContent) {
     try {
-        const path = './src/utils/sentry/index.ts';
+        const path = './src/init.ts';
         fs.writeFileSync(path, oldContent,{encoding:'utf8',flag:'w'})
     } catch (e) {
         console.error(e);
