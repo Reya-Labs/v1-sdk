@@ -5,13 +5,9 @@ import {
   defaultIntegrations,
 } from '@sentry/browser';
 
-import { init as initSubgraphDataSentry } from '@voltz-protocol/subgraph-data';
-
 let sentryTracker: BrowserClient | null = null;
 
 export const init = (): void => {
-  initSubgraphDataSentry();
-
   sentryTracker = new BrowserClient({
     dsn: 'https://c170b1643b064f2cb57b2204e1e3bf5f@o4504239616294912.ingest.sentry.io/4504247590060032',
     transport: makeFetchTransport,

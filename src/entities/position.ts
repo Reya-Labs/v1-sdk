@@ -211,7 +211,7 @@ class Position {
         if (!this.isPoolMatured) {
           try {
             const accruedCashflowInfo = await getAccruedCashflow({
-              swaps: transformSwaps(this.swaps, this.amm.underlyingToken.decimals),
+              swaps: transformSwaps(this.swaps),
               rateOracle: rateOracleContract,
               currentTime,
               endTime: this.amm.endDateTime.toSeconds(),
