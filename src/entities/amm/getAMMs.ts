@@ -31,17 +31,17 @@ export const getAMMs = async ({
     .filter((pool) => pool.show.general)
     .map((pool) => pool.id.toLowerCase());
 
-  const rawAMMs: RawAMM[] = [];
+  let rawAMMs: RawAMM[] = [];
   let error: string | undefined;
 
   try {
-    await getRawAMMs(subgraphURL, Date.now().valueOf(), {
+    rawAMMs = await getRawAMMs(subgraphURL, Date.now().valueOf(), {
       ammIDs: config.apply ? whitelistedPoolIds : undefined,
     });
   } catch (err) {
     const sentryTracker = getSentryTracker();
     sentryTracker.captureException(err);
-    sentryTracker.captureMessage('Transaction Confirmation Error');
+    sentryTracker.captureMessage('Failed to fetch AMMs from the subgraph');
 
     error = 'Failed to fetch AMMs from the subgraph';
   }
