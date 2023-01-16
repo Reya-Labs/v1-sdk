@@ -1,19 +1,31 @@
-import { BigNumber } from 'ethers';
+import { BigNumber, providers } from 'ethers';
+import { getSentryTracker } from '../../init';
 import { geckoEthToUsd } from '../priceFetch';
-import { getGasPriceGwei } from './getGasPriceGwei';
 
-export async function convertGasUnitsToUSD(gasUnits: BigNumber): Promise<number> {
-  const gasPriceGweiRaw = await getGasPriceGwei();
-  const gasPriceGwei = gasPriceGweiRaw.toFixed();
+export async function convertGasUnitsToUSD(
+  provider: providers.Provider,
+  gasUnits: number,
+): Promise<number> {
+  let gasPriceWei = BigNumber.from(0);
 
-  const ethToUSDPrice = await geckoEthToUsd(process.env.REACT_APP_COINGECKO_API_KEY || '');
-  const ethToUSDPriceScaled = ethToUSDPrice * 100;
+  const attempts = 5;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      gasPriceWei = await provider.getGasPrice();
+      break;
+    } catch (error) {
+      if (attempt + 1 === attempts) {
+        const sentryTracker = getSentryTracker();
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage('Unable to fetch ETH price after 5 attempts');
+      }
+    }
+  }
 
-  const gasPriceUSDScaledBN = gasUnits
-    .mul(BigNumber.from(gasPriceGwei))
-    .mul(BigNumber.from(ethToUSDPriceScaled));
+  const ethPrice = await geckoEthToUsd(process.env.REACT_APP_COINGECKO_API_KEY || '');
 
-  const gasPriceUSDScaled = parseFloat(gasPriceUSDScaledBN.toString());
-  const gasPriceUSD = gasPriceUSDScaled / 1000000000000;
-  return gasPriceUSD;
+  const gasPriceGwei = gasPriceWei.toNumber() / 1e9;
+  const gasUnitsToUSD = (gasPriceGwei * gasUnits * ethPrice) / 1e9;
+
+  return gasUnitsToUSD;
 }
