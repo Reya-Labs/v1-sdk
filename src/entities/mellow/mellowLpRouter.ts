@@ -78,6 +78,11 @@ class MellowLpRouter {
 
   public vaultsCount = 0;
 
+  public isRegisteredForAutoRollover?: boolean;
+
+  private gasUnitPriceUSD = 0;
+  private autoRolloverRegistrationGasUnits = 0;
+
   public constructor({ mellowRouterAddress, id, provider, metadata }: MellowLpRouterArgs) {
     this.mellowRouterAddress = mellowRouterAddress;
     this.id = id;
@@ -156,6 +161,8 @@ class MellowLpRouter {
     this.userIndividualCommittedDeposits = new Array(this.vaultsCount).fill(0x0);
     this.userIndividualPendingDeposit = new Array(this.vaultsCount).fill(0x0);
 
+    await this.refreshGasUnitPriceUSD();
+
     this.vaultInitialized = true;
   };
 
@@ -190,6 +197,19 @@ class MellowLpRouter {
 
     await this.refreshUserDeposit();
     await this.refreshWalletBalance();
+
+    try {
+      this.isRegisteredForAutoRollover =
+        await this.readOnlyContracts.mellowRouterContract.isRegisteredForAutoRollover(
+          this.userAddress,
+        );
+
+      this.autoRolloverRegistrationGasUnits = (
+        await this.writeContracts.mellowRouter.estimateGas.registerForAutoRollover(
+          !this.isRegisteredForAutoRollover,
+        )
+      ).toNumber();
+    } catch (error) {}
 
     this.userInitialized = true;
   };
@@ -801,6 +821,7 @@ class MellowLpRouter {
 
     try {
       const receipt = await tx.wait();
+      this.isRegisteredForAutoRollover = registration;
 
       return receipt;
     } catch (err) {
@@ -811,51 +832,13 @@ class MellowLpRouter {
     }
   };
 
-  gasRegisterForAutoRollover = async (registration: boolean): Promise<number> => {
-    if (isUndefined(this.writeContracts) || isUndefined(this.userAddress)) {
-      throw new Error('Uninitialized contracts.');
-    }
-
-    try {
-      await this.writeContracts.mellowRouter.callStatic.registerForAutoRollover(registration);
-    } catch (err) {
-      const sentryTracker = getSentryTracker();
-      sentryTracker.captureException(err);
-      sentryTracker.captureMessage('Unsuccessful auto-rollover registration simulation');
-      console.error('Error during registration for auto-rollover', err);
-      throw new Error('Unsuccessful auto-rollover registration simulation');
-    }
-
-    // returns gas estimate in gas units
-    const gasUnitsEstimate =
-      await this.writeContracts.mellowRouter.estimateGas.registerForAutoRollover(registration);
-
-    // convert gas estimate from gas units into usd
-    const gasPriceUSD = await convertGasUnitsToUSD(gasUnitsEstimate);
-    return gasPriceUSD;
+  refreshGasUnitPriceUSD = async (): Promise<void> => {
+    this.gasUnitPriceUSD = await convertGasUnitsToUSD(this.provider, 1);
   };
 
-  getAutorolloverRegistrationFlag = async (): Promise<boolean> => {
-    if (isUndefined(this.readOnlyContracts) || isUndefined(this.userAddress)) {
-      throw new Error('Uninitialized contracts.');
-    }
-
-    try {
-      const isWalletAutorolloverRegistered =
-        await this.readOnlyContracts.mellowRouterContract.isRegisteredForAutoRollover(
-          this.userAddress,
-        );
-      return isWalletAutorolloverRegistered;
-    } catch (err) {
-      const sentryTracker = getSentryTracker();
-      sentryTracker.captureException(err);
-      sentryTracker.captureMessage(
-        'Unsuccessful auto-rollover registration verificaiton simulation',
-      );
-      console.error('Error during auto-rollover registration verificaiton simulation', err);
-      throw new Error('Unsuccessful auto-rollover registration verificaiton simulation');
-    }
-  };
+  public get autoRolloverRegistrationGasFeeUSD() {
+    return this.autoRolloverRegistrationGasUnits * this.gasUnitPriceUSD;
+  }
 }
 
 export default MellowLpRouter;

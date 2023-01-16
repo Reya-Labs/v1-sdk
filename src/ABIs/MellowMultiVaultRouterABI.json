@@ -83,6 +83,43 @@
             "type": "event"
         },
         {
+            "inputs": [],
+            "name": "WAD",
+            "outputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                },
+                {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "name": "_autoRolloverExchangeRatesWad",
+            "outputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
             "inputs": [
                 {
                     "internalType": "contract IERC20RootVault",
@@ -93,6 +130,30 @@
             "name": "addVault",
             "outputs": [],
             "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "vaultIndex",
+                    "type": "uint256"
+                },
+                {
+                    "internalType": "address",
+                    "name": "owner",
+                    "type": "address"
+                }
+            ],
+            "name": "canWithdrawOrRollover",
+            "outputs": [
+                {
+                    "internalType": "bool",
+                    "name": "",
+                    "type": "bool"
+                }
+            ],
+            "stateMutability": "view",
             "type": "function"
         },
         {
@@ -139,12 +200,53 @@
         {
             "inputs": [
                 {
+                    "internalType": "uint256",
+                    "name": "amount",
+                    "type": "uint256"
+                },
+                {
+                    "internalType": "uint256[]",
+                    "name": "weights",
+                    "type": "uint256[]"
+                },
+                {
+                    "internalType": "bool",
+                    "name": "registration",
+                    "type": "bool"
+                }
+            ],
+            "name": "depositErc20AndRegisterForAutoRollover",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
                     "internalType": "uint256[]",
                     "name": "weights",
                     "type": "uint256[]"
                 }
             ],
             "name": "depositEth",
+            "outputs": [],
+            "stateMutability": "payable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "uint256[]",
+                    "name": "weights",
+                    "type": "uint256[]"
+                },
+                {
+                    "internalType": "bool",
+                    "name": "registration",
+                    "type": "bool"
+                }
+            ],
+            "name": "depositEthAndRegisterForAutoRollover",
             "outputs": [],
             "stateMutability": "payable",
             "type": "function"
@@ -160,6 +262,37 @@
             "name": "deprecateVault",
             "outputs": [],
             "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "index",
+                    "type": "uint256"
+                }
+            ],
+            "name": "getBatchedAutoRollovers",
+            "outputs": [
+                {
+                    "components": [
+                        {
+                            "internalType": "uint256",
+                            "name": "fromVault",
+                            "type": "uint256"
+                        },
+                        {
+                            "internalType": "uint256",
+                            "name": "lpTokensAutoRolledOver",
+                            "type": "uint256"
+                        }
+                    ],
+                    "internalType": "struct IMellowMultiVaultRouter.BatchedAutoRollover[]",
+                    "name": "",
+                    "type": "tuple[]"
+                }
+            ],
+            "stateMutability": "view",
             "type": "function"
         },
         {
@@ -251,6 +384,25 @@
         {
             "inputs": [
                 {
+                    "internalType": "address",
+                    "name": "owner",
+                    "type": "address"
+                }
+            ],
+            "name": "isRegisteredForAutoRollover",
+            "outputs": [
+                {
+                    "internalType": "bool",
+                    "name": "",
+                    "type": "bool"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
                     "internalType": "uint256",
                     "name": "index",
                     "type": "uint256"
@@ -307,6 +459,19 @@
             "type": "function"
         },
         {
+            "inputs": [
+                {
+                    "internalType": "bool",
+                    "name": "registration",
+                    "type": "bool"
+                }
+            ],
+            "name": "registerForAutoRollover",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
             "inputs": [],
             "name": "renounceOwnership",
             "outputs": [],
@@ -337,6 +502,19 @@
                 }
             ],
             "name": "rolloverLPTokens",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "uint256[]",
+                    "name": "autoRolloverWeights",
+                    "type": "uint256[]"
+                }
+            ],
+            "name": "setAutoRolloverWeights",
             "outputs": [],
             "stateMutability": "nonpayable",
             "type": "function"
@@ -375,12 +553,44 @@
         {
             "inputs": [
                 {
+                    "internalType": "uint256",
+                    "name": "vaultIndex",
+                    "type": "uint256"
+                }
+            ],
+            "name": "totalAutoRolloverLPTokens",
+            "outputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "",
+                    "type": "uint256"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
                     "internalType": "address",
                     "name": "newOwner",
                     "type": "address"
                 }
             ],
             "name": "transferOwnership",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "vaultIndex",
+                    "type": "uint256"
+                }
+            ],
+            "name": "triggerAutoRollover",
             "outputs": [],
             "stateMutability": "nonpayable",
             "type": "function"

@@ -10,7 +10,7 @@ import { abi as MellowMultiVaultRouterABI } from '../../src/ABIs/MellowMultiVaul
 import { abi as Erc20RootVaultABI } from '../../src/ABIs/Erc20RootVault.json';
 import { abi as WethABI } from '../../src/ABIs/WethABI.json';
 import { abi as IERC20MinimalABI } from '../../src/ABIs/IERC20Minimal.json';
-import { withSigner } from '../utils';
+import { withSigner, fail } from '../utils';
 import { advanceTimeAndBlock } from '../time';
 import { convertGasUnitsToUSD } from '../../src/utils/mellowHelpers/convertGasUnitsToUSD';
 import { getGasPriceGwei } from '../../src/utils/mellowHelpers/getGasPriceGwei';
@@ -960,66 +960,109 @@ describe('Mellow Router Test Suite', () => {
       const finalBalance: BigNumber = await wethContract.balanceOf(ethMellowLpRouter.userAddress);
       expect(ethMellowLpRouter.descale(finalBalance.sub(midBalance), 18)).to.be.eq(0);
     });
+  });
 
-    it.skip('Unregistered user opts INTO auto-rollover', async () => {
+  describe('Auto-rollover', async () => {
+    beforeEach('Setting up the Router Object', async () => {
+      await resetNetwork(8321776);
+      await extendRouter();
+
+      ethMellowLpRouter = new MellowLpRouter({
+        mellowRouterAddress: MellowRouterAddress,
+        id: 'Test - ETH',
+        provider,
+        metadata: {
+          title: 'Test - Router',
+          token: 'ETH',
+          description: 'Test',
+          show: true,
+          soon: false,
+          deprecated: false,
+          vaults: [
+            {
+              weight: 50,
+              pools: ['Compound - ETH'],
+              maturityTimestampMS: 1670427875000,
+              estimatedHistoricApy: [0.0, 0.0],
+              withdrawable: true,
+            },
+            {
+              weight: 50,
+              pools: ['Compound - ETH'],
+              maturityTimestampMS: 1670427875000,
+              estimatedHistoricApy: [0.0, 0.0],
+              withdrawable: true,
+            },
+          ],
+          underlyingPools: [],
+        },
+      });
+
+      await ethMellowLpRouter.vaultInit();
+
+      // Initialise the user so the router contract is connected with user to keep track of them as a signer for the deposits
+      await ethMellowLpRouter.userInit(userWallet);
+    });
+
+    it('Unregistered user opts INTO auto-rollover', async () => {
       await ethMellowLpRouter.registerForAutoRollover(true);
       expect(
         await ethMellowLpRouter.readOnlyContracts?.mellowRouterContract.isRegisteredForAutoRollover(
           userWallet.address,
         ),
       ).to.be.eq(true);
+      expect(ethMellowLpRouter.isRegisteredForAutoRollover).to.be.eq(true);
     });
 
-    it.skip('Unregistered user opts OUT of auto-rollover', async () => {
-      await expect(ethMellowLpRouter.registerForAutoRollover(false)).to.be.revertedWith(
-        'Already registered',
-      );
+    it('Unregistered user opts OUT of auto-rollover', async () => {
+      try {
+        await ethMellowLpRouter.registerForAutoRollover(false);
+        fail();
+      } catch (error) {
+        if (!(error instanceof Error)) {
+          fail();
+        }
+
+        expect((error as Error).message).to.be.eq("Unsuccessful auto-rollover registration simulation");
+      }
     });
 
-    it.skip('Registered user opts OUT of auto-rollover', async () => {
-      // 1. Register user for auto-rollover
+    it('Registered user opts OUT of auto-rollover', async () => {
       await ethMellowLpRouter.registerForAutoRollover(true);
-      // 2. Deregister user for auto-rollover
       await ethMellowLpRouter.registerForAutoRollover(false);
-      // 3. Check if user is registered for autorollover
       expect(
         await ethMellowLpRouter.readOnlyContracts?.mellowRouterContract.isRegisteredForAutoRollover(
           userWallet.address,
         ),
-      ).to.be.eq(true);
+      ).to.be.eq(false);
+      expect(ethMellowLpRouter.isRegisteredForAutoRollover).to.be.eq(false);
     });
 
-    it.skip('Registered user opts INTO auto-rollover again', async () => {
-      // 1. Register user for auto-rollover
+    it('Registered user opts INTO auto-rollover again', async () => {
       await ethMellowLpRouter.registerForAutoRollover(true);
-      // 2. Register user for auto-rollover again
-      await expect(ethMellowLpRouter.registerForAutoRollover(true)).to.be.revertedWith(
-        'Already registered',
-      );
+
+      try {
+        await ethMellowLpRouter.registerForAutoRollover(true);
+        fail();
+      } catch (error) {
+        if (!(error instanceof Error)) {
+          fail();
+        }
+
+        expect((error as Error).message).to.be.eq("Unsuccessful auto-rollover registration simulation");
+      }
     });
 
-    it.skip('Check if getAutorolloverRegistrationFlag retrieves correct flag for registered user', async () => {
-      // 1. Register user for auto-rollover
+    it('Check if getAutorolloverRegistrationFlag retrieves correct flag for registered user', async () => {
       await ethMellowLpRouter.registerForAutoRollover(true);
-      expect(await ethMellowLpRouter.getAutorolloverRegistrationFlag()).to.be.eq(true);
-      // 2. Un-register user for auto-rollover
+      expect(await ethMellowLpRouter.isRegisteredForAutoRollover).to.be.eq(true);
+
       await ethMellowLpRouter.registerForAutoRollover(false);
-      expect(await ethMellowLpRouter.getAutorolloverRegistrationFlag()).to.be.eq(false);
+      expect(await ethMellowLpRouter.isRegisteredForAutoRollover).to.be.eq(false);
     });
 
-    it.skip('Calculate correct transaction fee in USD for autorollover registration', async () => {
-      // 1. Simulate registration within the autorolloverRegistrationFee function; TODO refine the result
-      expect(await ethMellowLpRouter.gasRegisterForAutoRollover(true)).to.be.approximately(10, 5);
-    });
-
-    it('Gas Units to USD conversion function', async () => {
-      const ethUsdPrice = await geckoEthToUsd(process.env.REACT_APP_COINGECKO_API_KEY || '');
-      const gasPriceGwei = await getGasPriceGwei();
-
-      expect(await convertGasUnitsToUSD(BigNumber.from('100000'))).to.be.approximately(
-        0.00001 * ethUsdPrice * gasPriceGwei,
-        0.1,
-      );
+    it('Calculate correct transaction fee in USD for autorollover registration', async () => {
+      expect(ethMellowLpRouter.autoRolloverRegistrationGasFeeUSD).to.be.closeTo(3.659, 0.001);
     });
   });
 });
