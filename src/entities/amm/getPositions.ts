@@ -79,16 +79,8 @@ const getUninitialisedPositions = async ({
     error = 'Position AMM not found';
   }
 
-  const sortedPositions = positions
-    .sort((a, b) => {
-      return b.createdTimestamp - a.createdTimestamp; // sort positions by timestamp
-    })
-    .sort((a, b) => {
-      return Number(a.isSettled) - Number(b.isSettled); // sort settled positions to the bottom
-    });
-
   return {
-    positions: sortedPositions,
+    positions,
     error,
   };
 };
@@ -123,6 +115,14 @@ export const getPositions = async (params: GetPositionsArgs): Promise<GetPositio
 
     error = 'Positions failed to be initialised';
   }
+
+  positions = positions
+    .sort((a, b) => {
+      return b.createdTimestamp - a.createdTimestamp; // sort positions by timestamp
+    })
+    .sort((a, b) => {
+      return Number(a.isSettled) - Number(b.isSettled); // sort settled positions to the bottom
+    });
 
   return {
     positions,
