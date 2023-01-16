@@ -49,21 +49,21 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
               withdrawable: true,
             },
             {
-              weight: 10,
+              weight: 20,
               pools: ['AAVE - USDC BORROW'],
               maturityTimestampMS: 1680264000000,
               estimatedHistoricApy: [0, 20],
               withdrawable: false,
             },
             {
-              weight: 50,
+              weight: 20,
               pools: ['AAVE - USDC LEND'],
               maturityTimestampMS: 1675166400000,
               estimatedHistoricApy: [0, 20],
               withdrawable: false,
             },
             {
-              weight: 40,
+              weight: 60,
               pools: ['AAVE - USDC LEND'],
               maturityTimestampMS: 1680264000000,
               estimatedHistoricApy: [0, 20],
@@ -140,14 +140,14 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
           deprecated: false,
           vaults: [
             {
-              weight: 20,
+              weight: 80,
               maturityTimestampMS: 1680264000000,
               pools: ['COMPOUND - USDT BORROW'],
               estimatedHistoricApy: [3, 32],
               withdrawable: false,
             },
             {
-              weight: 80,
+              weight: 20,
               maturityTimestampMS: 1680264000000,
               pools: ['AAVE - USDT BORROW'],
               estimatedHistoricApy: [3, 32],
