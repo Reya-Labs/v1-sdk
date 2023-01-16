@@ -21,6 +21,7 @@ export const geckoEthToUsd = async (apiKey: string): Promise<number> => {
       );
       price = data.data.ethereum.usd;
       timestampInMS = Date.now().valueOf();
+      break;
     } catch (error) {
       if (attempt + 1 === ATTEMPTS) {
         const sentryTracker = getSentryTracker();
