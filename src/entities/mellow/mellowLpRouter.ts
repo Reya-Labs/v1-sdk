@@ -524,6 +524,7 @@ class MellowLpRouter {
 
       try {
         const receipt = await tx.wait();
+        this.isRegisteredForAutoRollover = registration;
 
         try {
           await this.refreshUserDeposit();
