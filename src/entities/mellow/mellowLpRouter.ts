@@ -90,7 +90,7 @@ class MellowLpRouter {
   };
 
   scale = (amount: number): BigNumber => {
-    return ethers.utils.parseUnits(amount.toString(), this.tokenDecimals);
+    return ethers.utils.parseUnits(amount.toFixed(this.tokenDecimals), this.tokenDecimals);
   };
 
   validateWeights = (weights: number[]): boolean => {

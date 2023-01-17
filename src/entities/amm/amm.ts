@@ -74,7 +74,13 @@ export class AMM {
   public readonly isETH: boolean;
   public readonly wethAddress: string;
   public readonly ethPrice: () => Promise<number>;
-  public readonly variableFactor: (fromInMS: number, toInMS: number) => Promise<number>;
+  public readonly variableFactor: (
+    fromInMS: number,
+    toInMS: number,
+  ) => Promise<{
+    scaled: number;
+    wad: BigNumber;
+  }>;
 
   public constructor({
     id,
@@ -736,7 +742,7 @@ export class AMM {
           throw new Error('Transaction Confirmation Error');
         });
     } else {
-      const variableFactorFromStartToNowWad = await this.variableFactor(
+      const { wad: variableFactorFromStartToNowWad } = await this.variableFactor(
         this.termStartTimestampInMS,
         this.termEndTimestampInMS,
       );
@@ -1419,7 +1425,9 @@ export class AMM {
 
   // scale/descale according to underlying token
   public scale(value: number): string {
-    return utils.parseUnits(value.toString(), this.underlyingToken.decimals).toString();
+    return utils
+      .parseUnits(value.toFixed(this.underlyingToken.decimals), this.underlyingToken.decimals)
+      .toString();
   }
 
   public descale(value: BigNumber): number {
