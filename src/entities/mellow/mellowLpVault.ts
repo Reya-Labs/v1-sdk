@@ -10,13 +10,11 @@ import {
   Contract,
 } from 'ethers';
 import { isUndefined } from 'lodash';
-import { toBn } from 'evm-bn';
 
 import { getTokenInfo } from '../../services/getTokenInfo';
 import { getGasBuffer, MaxUint256Bn, TresholdApprovalBn } from '../../constants';
 
 import { abi as Erc20RootVaultABI } from '../../ABIs/Erc20RootVault.json';
-import { abi as Erc20RootVaultGovernanceABI } from '../../ABIs/Erc20RootVaultGovernance.json';
 import { abi as IERC20MinimalABI } from '../../ABIs/IERC20Minimal.json';
 import { abi as MellowDepositWrapperABI } from '../../ABIs/MellowDepositWrapper.json';
 import { getSentryTracker } from '../../init';
@@ -46,7 +44,6 @@ class MellowLpVault {
   public readOnlyContracts?: {
     token: Contract;
     erc20RootVault: Contract[];
-    erc20RootVaultGovernance: Contract[];
   };
 
   public writeContracts?: {
@@ -56,9 +53,6 @@ class MellowLpVault {
   };
 
   public signer?: Signer;
-
-  public vaultCumulative?: number;
-  public vaultCap?: number;
 
   public userIndividualCommittedDeposits: number[] = [];
   public userIndividualPendingDeposit: number[] = [];
@@ -118,20 +112,10 @@ class MellowLpVault {
     const tokenAddress = (await erc20RootVaultContract.vaultTokens())[0];
     const tokenContract = new Contract(tokenAddress, IERC20MinimalABI, this.provider);
 
-    const erc20RootVaultGovernanceAddress = await erc20RootVaultContract.vaultGovernance();
-    const erc20RootVaultGovernanceContract = new ethers.Contract(
-      erc20RootVaultGovernanceAddress,
-      Erc20RootVaultGovernanceABI,
-      this.provider,
-    );
-
     this.readOnlyContracts = {
       token: tokenContract,
       erc20RootVault: [erc20RootVaultContract],
-      erc20RootVaultGovernance: [erc20RootVaultGovernanceContract],
     };
-
-    await this.refreshVaultCumulative();
 
     this.vaultInitialized = true;
   };
@@ -235,35 +219,6 @@ class MellowLpVault {
   public get userDeposit(): number {
     return this.userIndividualDeposits.reduce((total, deposit) => total + deposit, 0);
   }
-
-  refreshVaultCumulative = async (): Promise<void> => {
-    if (isUndefined(this.readOnlyContracts)) {
-      this.vaultCumulative = 0;
-      this.vaultCap = 0;
-      return;
-    }
-
-    const totalLpTokens = await this.readOnlyContracts.erc20RootVault[0].totalSupply();
-
-    if (totalLpTokens.eq(0)) {
-      this.vaultCumulative = 0;
-      this.vaultCap = 0;
-      return;
-    }
-
-    const tvl = await this.readOnlyContracts.erc20RootVault[0].tvl();
-
-    const nft = await this.readOnlyContracts.erc20RootVault[0].nft();
-    const strategyParams = await this.readOnlyContracts.erc20RootVaultGovernance[0].strategyParams(
-      nft,
-    );
-
-    this.vaultCumulative = this.descale(tvl.minTokenAmounts[0], this.tokenDecimals);
-    this.vaultCap = this.descale(
-      totalLpTokens.mul(toBn('1', 18)).div(strategyParams.tokenLimit),
-      16,
-    );
-  };
 
   refreshUserDeposit = async (): Promise<void> => {
     this.userIndividualCommittedDeposits = [0];
@@ -447,15 +402,6 @@ class MellowLpVault {
         sentryTracker.captureException(error);
         sentryTracker.captureMessage('User deposit failed to refresh after deposit');
         console.error('User deposit failed to refresh after deposit.', error);
-      }
-
-      try {
-        await this.refreshVaultCumulative();
-      } catch (error) {
-        const sentryTracker = getSentryTracker();
-        sentryTracker.captureException(error);
-        sentryTracker.captureMessage('Vault accumulative failed to refresh after deposit');
-        console.error('Vault accumulative failed to refresh after deposit.', error);
       }
 
       return receipt;

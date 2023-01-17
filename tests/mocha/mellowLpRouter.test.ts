@@ -7,14 +7,10 @@ import * as sinon from 'sinon';
 import { BrowserClient } from '@sentry/browser';
 import MellowLpRouter from '../../src/entities/mellow/mellowLpRouter';
 import { abi as MellowMultiVaultRouterABI } from '../../src/ABIs/MellowMultiVaultRouterABI.json';
-import { abi as Erc20RootVaultABI } from '../../src/ABIs/Erc20RootVault.json';
 import { abi as WethABI } from '../../src/ABIs/WethABI.json';
 import { abi as IERC20MinimalABI } from '../../src/ABIs/IERC20Minimal.json';
 import { withSigner, fail } from '../utils';
 import { advanceTimeAndBlock } from '../time';
-import { convertGasUnitsToUSD } from '../../src/utils/mellowHelpers/convertGasUnitsToUSD';
-import { getGasPriceGwei } from '../../src/utils/mellowHelpers/getGasPriceGwei';
-import { geckoEthToUsd } from '../../src/utils/priceFetch';
 import * as initSDK from '../../src/init';
 
 const { provider } = waffle;
@@ -138,17 +134,6 @@ describe('Mellow Router Test Suite', () => {
       const erc20RootVaultAddresses = await localMellowRouterContract.getVaults();
       expect(ethMellowLpRouter.readOnlyContracts?.erc20RootVault[0].address).to.be.eq(
         erc20RootVaultAddresses[0],
-      );
-
-      const erc20RootVaultGovernanceContract = new ethers.Contract(
-        erc20RootVaultAddresses[0],
-        Erc20RootVaultABI,
-        provider,
-      );
-      const erc20RootVaultGovernanceAddress =
-        await erc20RootVaultGovernanceContract.vaultGovernance();
-      expect(ethMellowLpRouter.readOnlyContracts?.erc20RootVaultGovernance[0].address).to.be.eq(
-        erc20RootVaultGovernanceAddress,
       );
 
       expect(ethMellowLpRouter.readOnlyContracts?.mellowRouterContract.address).to.be.eq(
@@ -1023,7 +1008,9 @@ describe('Mellow Router Test Suite', () => {
           fail();
         }
 
-        expect((error as Error).message).to.be.eq("Unsuccessful auto-rollover registration simulation");
+        expect((error as Error).message).to.be.eq(
+          'Unsuccessful auto-rollover registration simulation',
+        );
       }
     });
 
@@ -1049,7 +1036,9 @@ describe('Mellow Router Test Suite', () => {
           fail();
         }
 
-        expect((error as Error).message).to.be.eq("Unsuccessful auto-rollover registration simulation");
+        expect((error as Error).message).to.be.eq(
+          'Unsuccessful auto-rollover registration simulation',
+        );
       }
     });
 

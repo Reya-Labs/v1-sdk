@@ -12,14 +12,12 @@ import {
   Contract,
 } from 'ethers';
 import { isUndefined } from 'lodash';
-import { toBn } from 'evm-bn';
 
 import { getTokenInfo } from '../../services/getTokenInfo';
 
 import { getGasBuffer, MaxUint256Bn, TresholdApprovalBn } from '../../constants';
 
 import { abi as Erc20RootVaultABI } from '../../ABIs/Erc20RootVault.json';
-import { abi as Erc20RootVaultGovernanceABI } from '../../ABIs/Erc20RootVaultGovernance.json';
 import { abi as IERC20MinimalABI } from '../../ABIs/IERC20Minimal.json';
 import { abi as MellowMultiVaultRouterABI } from '../../ABIs/MellowMultiVaultRouterABI.json';
 import { getSentryTracker } from '../../init';
@@ -52,7 +50,6 @@ class MellowLpRouter {
     token: Contract;
     mellowRouterContract: Contract;
     erc20RootVault: Contract[];
-    erc20RootVaultGovernance: Contract[];
   };
 
   public writeContracts?: {
@@ -62,9 +59,6 @@ class MellowLpRouter {
   };
 
   public signer?: Signer;
-
-  public vaultCumulative?: number;
-  public vaultCap?: number;
 
   public userIndividualCommittedDeposits: number[] = [];
   public userIndividualPendingDeposit: number[] = [];
@@ -138,25 +132,11 @@ class MellowLpRouter {
       (address: string) => new ethers.Contract(address, Erc20RootVaultABI, this.provider),
     );
 
-    // Instantiate an empty array of addresses
-    const erc20RootVaultGovernanceAddresses = [];
-    for (const erc20RootVaultContract of erc20RootVaultContracts) {
-      erc20RootVaultGovernanceAddresses.push(await erc20RootVaultContract.vaultGovernance());
-    }
-
-    // ERC20RootVaultGovernanceContracts stores every governance contract associated with this router
-    const erc20RootVaultGovernanceContracts = erc20RootVaultGovernanceAddresses.map(
-      (address: string) => new ethers.Contract(address, Erc20RootVaultGovernanceABI, this.provider),
-    );
-
     this.readOnlyContracts = {
       token: tokenContract,
       erc20RootVault: erc20RootVaultContracts,
-      erc20RootVaultGovernance: erc20RootVaultGovernanceContracts,
       mellowRouterContract,
     };
-
-    await this.refreshVaultCumulative();
 
     this.userIndividualCommittedDeposits = new Array(this.vaultsCount).fill(0x0);
     this.userIndividualPendingDeposit = new Array(this.vaultsCount).fill(0x0);
@@ -277,36 +257,6 @@ class MellowLpRouter {
   public get userDeposit(): number {
     return this.userIndividualDeposits.reduce((total, deposit) => total + deposit, 0);
   }
-
-  refreshVaultCumulative = async (): Promise<void> => {
-    this.vaultCumulative = 0;
-    this.vaultCap = 0;
-
-    if (isUndefined(this.readOnlyContracts)) {
-      return;
-    }
-
-    for (const erc20RootVaultContract of this.readOnlyContracts.erc20RootVault) {
-      const totalLpTokens = await erc20RootVaultContract.totalSupply();
-      const tvl = await erc20RootVaultContract.tvl();
-
-      const nft = await erc20RootVaultContract.nft();
-
-      for (const erc20RootVaultGovernanceContract of this.readOnlyContracts
-        .erc20RootVaultGovernance) {
-        const strategyParams = await erc20RootVaultGovernanceContract.strategyParams(nft);
-
-        const vaultCumulative = this.descale(tvl.minTokenAmounts[0], this.tokenDecimals);
-        const vaultCap = this.descale(
-          totalLpTokens.mul(toBn('1', 18)).div(strategyParams.tokenLimit),
-          16,
-        );
-
-        this.vaultCumulative += vaultCumulative;
-        this.vaultCap += vaultCap;
-      }
-    }
-  };
 
   refreshUserComittedDeposit = async (): Promise<void> => {
     this.userIndividualCommittedDeposits = this.userIndividualCommittedDeposits.map(() => 0);
