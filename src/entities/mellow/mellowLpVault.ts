@@ -72,6 +72,8 @@ class MellowLpVault {
 
   public vaultsCount = 1;
 
+  public isRegisteredForAutoRollover?: boolean;
+
   public constructor({
     id,
     ethWrapperAddress,
@@ -98,7 +100,7 @@ class MellowLpVault {
   };
 
   scale = (amount: number): BigNumber => {
-    return ethers.utils.parseUnits(amount.toString(), this.tokenDecimals);
+    return ethers.utils.parseUnits(amount.toFixed(this.tokenDecimals), this.tokenDecimals);
   };
 
   // NEXT: to offload this to subgraph
@@ -565,13 +567,13 @@ class MellowLpVault {
     throw new Error('This is not supported');
   };
 
-  gasRegisterForAutoRollover = async (): Promise<number> => {
-    return 0;
+  refreshGasUnitPriceUSD = async (): Promise<void> => {
+    throw new Error('This is not supported');
   };
 
-  getAutorolloverRegistrationFlag = async (): Promise<boolean> => {
-    return false;
-  };
+  public get autoRolloverRegistrationGasFeeUSD() {
+    throw new Error('This is not supported');
+  }
 }
 
 export default MellowLpVault;

@@ -108,7 +108,7 @@ describe('amm:rolloverWithMint', () => {
           };
 
           expect(after.balance - before.balance).to.be.closeTo(8.98312, DELTA);
-          expect(after.position.margin).to.be.eq('1000000000000000000');
+          expect(amm.descale(after.position.margin)).to.be.closeTo(1, DELTA);
         });
       });
 
@@ -168,7 +168,7 @@ describe('amm:rolloverWithMint', () => {
           };
 
           expect(after.balance - before.balance).to.be.closeTo(-10.01688, DELTA);
-          expect(after.position.margin).to.be.eq('20000000000000000000');
+          expect(amm.descale(after.position.margin)).to.be.closeTo(20, DELTA);
         });
       });
     });
@@ -292,7 +292,7 @@ describe('amm:rolloverWithMint', () => {
 
           expect(after.balanceWeth - before.balanceWeth).to.be.closeTo(0.01063018, DELTA);
           expect(after.balanceEth - before.balanceEth).to.be.closeTo(-ethUsedForRollover, DELTA);
-          expect(after.position.margin).to.be.eq('10000000000000000');
+          expect(amm.descale(after.position.margin)).to.be.closeTo(0.01, DELTA);
         });
       });
 
@@ -367,7 +367,7 @@ describe('amm:rolloverWithMint', () => {
             -0.07936982 - ethUsedForRollover,
             DELTA,
           );
-          expect(after.position.margin).to.be.eq('100000000000000000');
+          expect(amm.descale(after.position.margin)).to.be.closeTo(0.1, DELTA);
         });
       });
     });

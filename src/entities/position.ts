@@ -1,5 +1,5 @@
 import { DateTime } from 'luxon';
-import { BigNumber, utils } from 'ethers';
+import { BigNumber } from 'ethers';
 import {
   Burn,
   Liquidation,
@@ -299,21 +299,15 @@ class Position {
   }
 
   private async getSettlementCashflow(): Promise<number> {
-    const rateOracleContract = baseRateOracleFactory.connect(
-      this.amm.rateOracle.id,
-      this.amm.provider,
-    );
-
-    const variableFactorWad = await rateOracleContract.callStatic.variableFactor(
-      utils.parseUnits(this.amm.termStartTimestampInMS.toString(), 15),
-      utils.parseUnits(this.amm.termEndTimestampInMS.toString(), 15),
-    );
-
     const fixedFactor =
       (this.amm.endDateTime.toMillis() - this.amm.startDateTime.toMillis()) /
       ONE_YEAR_IN_SECONDS /
       1000;
-    const variableFactor = Number(utils.formatEther(variableFactorWad));
+
+    const { scaled: variableFactor } = await this.amm.variableFactor(
+      this.amm.termStartTimestampInMS,
+      this.amm.termEndTimestampInMS,
+    );
 
     const settlementCashflow =
       this.fixedTokenBalance * fixedFactor * 0.01 + this.variableTokenBalance * variableFactor;
