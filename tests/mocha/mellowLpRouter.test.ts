@@ -1163,7 +1163,7 @@ describe('Mellow Router Test Suite', () => {
       }
     });
 
-    it.only('Can manage vault positions - edge cases', async () => {
+    it('Can manage vault positions - edge cases', async () => {
       expect(ethMellowLpRouter.canManageVaultPosition(-1)).to.be.eq(false);
       expect(ethMellowLpRouter.canManageVaultPosition(100)).to.be.eq(false);
   
@@ -1185,7 +1185,5 @@ describe('Mellow Router Test Suite', () => {
   
       expect(ethMellowLpRouter.canManageVaultPosition(0)).to.be.eq(false);
     });
-  });
-
-  
+  });  
 });
