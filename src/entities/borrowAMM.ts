@@ -85,7 +85,7 @@ class BorrowAMM {
 
       const normalizedTime = (untilTimestamp - currentSwapTimestamp) / ONE_YEAR_IN_SECONDS;
 
-      const variableFactorBetweenSwaps = await this.amm.variableFactor(
+      const { scaled: variableFactorBetweenSwaps } = await this.amm.variableFactor(
         currentSwapTimestamp * 1000,
         untilTimestamp * 1000,
       );
@@ -212,7 +212,7 @@ class BorrowAMM {
 
     const infoPostSwap = await this.amm.getInfoPostSwap(infoPostSwapArgs);
 
-    const variableAPYToMaturity = await this.amm.variableFactor(
+    const { scaled: variableAPYToMaturity } = await this.amm.variableFactor(
       this.amm.termStartTimestampInMS,
       this.amm.termEndTimestampInMS,
     );

@@ -1,4 +1,4 @@
-import { providers, utils } from 'ethers';
+import { BigNumber, providers, utils } from 'ethers';
 import mapProtocolIdToProtocol from '../utils/mapProtocolIdToProtocol';
 import { BaseRateOracle__factory as baseRateOracleFactory } from '../typechain';
 
@@ -24,10 +24,22 @@ export class RateOracle {
 export const getVariableFactor = (
   provider: providers.Provider,
   rateOracleId: string,
-): ((fromInMS: number, toInMS: number) => Promise<number>) => {
+): ((
+  fromInMS: number,
+  toInMS: number,
+) => Promise<{
+  scaled: number;
+  wad: BigNumber;
+}>) => {
   const rateOracleContract = baseRateOracleFactory.connect(rateOracleId, provider);
 
-  const func = async (fromInMS: number, toInMS: number): Promise<number> => {
+  const func = async (
+    fromInMS: number,
+    toInMS: number,
+  ): Promise<{
+    scaled: number;
+    wad: BigNumber;
+  }> => {
     const fromWad = utils.parseUnits(fromInMS.toString(), 15);
     const toWad = utils.parseUnits(toInMS.toString(), 15);
 
@@ -35,7 +47,10 @@ export const getVariableFactor = (
 
     const variableFactor = Number(utils.formatUnits(variableFactorWad, 18));
 
-    return variableFactor;
+    return {
+      scaled: variableFactor,
+      wad: variableFactorWad,
+    };
   };
 
   return func;

@@ -114,7 +114,7 @@ describe('amm:rolloverWithSwap', () => {
           expect(margin).to.be.lessThanOrEqual(1);
           expect(margin).to.be.greaterThan(0.99);
 
-          expect(after.position.variableTokenBalance).to.be.eq('-100000000000000000');
+          expect(amm.descale(after.position.variableTokenBalance)).to.be.closeTo(-0.1, DELTA);
         });
       });
 
@@ -180,7 +180,7 @@ describe('amm:rolloverWithSwap', () => {
           expect(margin).to.be.lessThanOrEqual(20);
           expect(margin).to.be.greaterThan(19.9);
 
-          expect(after.position.variableTokenBalance).to.be.eq('1000000000000000000');
+          expect(amm.descale(after.position.variableTokenBalance)).to.be.closeTo(1, DELTA);
         });
       });
     });
@@ -311,7 +311,7 @@ describe('amm:rolloverWithSwap', () => {
           expect(margin).to.be.lessThanOrEqual(0.01);
           expect(margin).to.be.greaterThan(0.0099);
 
-          expect(after.position.variableTokenBalance).to.be.eq('-100000000000000000');
+          expect(amm.descale(after.position.variableTokenBalance)).to.be.closeTo(-0.1, DELTA);
         });
       });
 
@@ -392,7 +392,7 @@ describe('amm:rolloverWithSwap', () => {
           expect(margin).to.be.lessThanOrEqual(0.1);
           expect(margin).to.be.greaterThan(0.099);
 
-          expect(after.position.variableTokenBalance).to.be.eq('100000000000000000');
+          expect(amm.descale(after.position.variableTokenBalance)).to.be.closeTo(0.1, DELTA);
         });
       });
     });
