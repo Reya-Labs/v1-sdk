@@ -80,6 +80,8 @@ class MellowLpRouter {
 
   public isRegisteredForAutoRollover = false;
 
+  public canManageVaultPositions?: boolean[];
+
   private gasUnitPriceUSD = 0;
   private autoRolloverRegistrationGasUnits = 0;
 
@@ -198,18 +200,34 @@ class MellowLpRouter {
     await this.refreshUserDeposit();
     await this.refreshWalletBalance();
 
+    // try-catch block to be removed once all routers have been upgraded on GOERLI & MAINNET
     try {
       this.isRegisteredForAutoRollover =
         await this.readOnlyContracts.mellowRouterContract.isRegisteredForAutoRollover(
           this.userAddress,
         );
 
+      this.canManageVaultPositions = [];
+      for (let vaultIndex = 0; vaultIndex < this.vaultsCount; vaultIndex += 1) {
+        this.canManageVaultPositions.push(
+          await this.readOnlyContracts.mellowRouterContract.canWithdrawOrRollover(
+            vaultIndex,
+            this.userAddress,
+          ),
+        );
+      }
+    } catch (error) {}
+
+    // try-catch to not be removed
+    try {
       this.autoRolloverRegistrationGasUnits = (
         await this.writeContracts.mellowRouter.estimateGas.registerForAutoRollover(
           !this.isRegisteredForAutoRollover,
         )
       ).toNumber();
-    } catch (error) {}
+    } catch (error) {
+      this.autoRolloverRegistrationGasUnits = 0;
+    }
 
     this.userInitialized = true;
   };

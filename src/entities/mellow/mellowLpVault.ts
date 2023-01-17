@@ -74,6 +74,8 @@ class MellowLpVault {
 
   public isRegisteredForAutoRollover = false;
 
+  public canManageVaultPositions: boolean[] = [];
+
   public constructor({
     id,
     ethWrapperAddress,
