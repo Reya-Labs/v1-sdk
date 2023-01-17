@@ -1,4 +1,6 @@
 /* eslint-disable no-console */
+/* eslint-disable no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 import {
   Signer,
@@ -67,6 +69,8 @@ class MellowLpVault {
   public vaultsCount = 1;
 
   public isRegisteredForAutoRollover = false;
+
+  public canManageVaultPositions: boolean[] = [];
 
   public constructor({
     id,
@@ -520,6 +524,10 @@ class MellowLpVault {
   public get autoRolloverRegistrationGasFeeUSD() {
     return 0;
   }
+
+  public canManageVaultPosition = (vaultIndex: number): boolean => {
+    return false;
+  };
 }
 
 export default MellowLpVault;

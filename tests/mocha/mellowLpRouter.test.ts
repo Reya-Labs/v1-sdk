@@ -950,7 +950,6 @@ describe('Mellow Router Test Suite', () => {
   describe('Auto-rollover', async () => {
     beforeEach('Setting up the Router Object', async () => {
       await resetNetwork(8321776);
-      await extendRouter();
 
       ethMellowLpRouter = new MellowLpRouter({
         mellowRouterAddress: MellowRouterAddress,
@@ -963,22 +962,7 @@ describe('Mellow Router Test Suite', () => {
           show: true,
           soon: false,
           deprecated: false,
-          vaults: [
-            {
-              weight: 50,
-              pools: ['Compound - ETH'],
-              maturityTimestampMS: 1670427875000,
-              estimatedHistoricApy: [0.0, 0.0],
-              withdrawable: true,
-            },
-            {
-              weight: 50,
-              pools: ['Compound - ETH'],
-              maturityTimestampMS: 1670427875000,
-              estimatedHistoricApy: [0.0, 0.0],
-              withdrawable: true,
-            },
-          ],
+          vaults: [],
           underlyingPools: [],
         },
       });
@@ -1051,7 +1035,144 @@ describe('Mellow Router Test Suite', () => {
     });
 
     it('Calculate correct transaction fee in USD for autorollover registration', async () => {
-      expect(ethMellowLpRouter.autoRolloverRegistrationGasFeeUSD).to.be.closeTo(3.659, 0.001);
+      const currentEthPrice = await geckoEthToUsd(process.env.REACT_APP_COINGECKO_API_KEY || '');
+      expect(ethMellowLpRouter.autoRolloverRegistrationGasFeeUSD / currentEthPrice).to.be.closeTo(0.00239, 0.00001);
     });
-  });
+
+    it('Can manage vault positions - init', async () => {
+      await withSigner(
+        network,
+        await ethMellowLpRouter.readOnlyContracts?.mellowRouterContract.owner(),
+        async (routerOwnerSigner) => {
+          await ethMellowLpRouter.readOnlyContracts?.mellowRouterContract
+            .connect(routerOwnerSigner)
+            .deprecateVault(4);
+        },
+      );
+
+      ethMellowLpRouter = new MellowLpRouter({
+        mellowRouterAddress: MellowRouterAddress,
+        id: 'Test - ETH',
+        provider,
+        metadata: {
+          title: 'Test - Router',
+          token: 'ETH',
+          description: 'Test',
+          show: true,
+          soon: false,
+          deprecated: false,
+          vaults: [],
+          underlyingPools: [],
+        },
+      });
+      await ethMellowLpRouter.vaultInit();
+      await ethMellowLpRouter.userInit(userWallet);
+
+      for (let vaultIndex = 0; vaultIndex < ethMellowLpRouter.vaultsCount; vaultIndex += 1) {
+        expect(ethMellowLpRouter.canManageVaultPosition(vaultIndex)).to.be.eq(true);
+      }
+    });
+
+    it('Can manage vault positions - autorollover triggered', async () => {
+      // User deposits funds into the router
+      await ethMellowLpRouter.deposit(10, [0, 0, 0, 0, 100]);
+      await ethMellowLpRouter.registerForAutoRollover(true);
+
+      await ethMellowLpRouter.writeContracts?.mellowRouter.submitBatch(4, 0);
+
+      await advanceTimeAndBlock(30 * 24 * 60 * 60, 1);
+
+      await withSigner(
+        network,
+        await ethMellowLpRouter.readOnlyContracts?.mellowRouterContract.owner(),
+        async (routerOwnerSigner) => {
+          await ethMellowLpRouter.readOnlyContracts?.mellowRouterContract
+              .connect(routerOwnerSigner)
+              .deprecateVault(4);
+        }
+      );
+
+      ethMellowLpRouter = new MellowLpRouter({
+        mellowRouterAddress: MellowRouterAddress,
+        id: 'Test - ETH',
+        provider,
+        metadata: {
+          title: 'Test - Router',
+          token: 'ETH',
+          description: 'Test',
+          show: true,
+          soon: false,
+          deprecated: false,
+          vaults: [],
+          underlyingPools: [],
+        },
+      });
+      await ethMellowLpRouter.vaultInit();
+      await ethMellowLpRouter.userInit(userWallet);
+
+      for (let vaultIndex = 0; vaultIndex < ethMellowLpRouter.vaultsCount; vaultIndex += 1) {
+        expect(ethMellowLpRouter.canManageVaultPosition(vaultIndex)).to.be.eq(true);
+      }
+
+      await withSigner(
+        network,
+        await ethMellowLpRouter.readOnlyContracts?.mellowRouterContract.owner(),
+        async (routerOwnerSigner) => {
+          await ethMellowLpRouter.readOnlyContracts?.mellowRouterContract
+              .connect(routerOwnerSigner)
+              .addVault((await ethMellowLpRouter.readOnlyContracts?.mellowRouterContract.getVaults())[4]);
+          await ethMellowLpRouter.readOnlyContracts?.mellowRouterContract
+            .connect(routerOwnerSigner)
+            .setAutoRolloverWeights([0, 0, 0, 0, 0, 100]);
+        },
+      );
+
+      await ethMellowLpRouter.writeContracts?.mellowRouter.triggerAutoRollover(4);
+
+      ethMellowLpRouter = new MellowLpRouter({
+        mellowRouterAddress: MellowRouterAddress,
+        id: 'Test - ETH',
+        provider,
+        metadata: {
+          title: 'Test - Router',
+          token: 'ETH',
+          description: 'Test',
+          show: true,
+          soon: false,
+          deprecated: false,
+          vaults: [],
+          underlyingPools: [],
+        },
+      });
+      await ethMellowLpRouter.vaultInit();
+      await ethMellowLpRouter.userInit(userWallet);
+
+      for (let vaultIndex = 0; vaultIndex < ethMellowLpRouter.vaultsCount; vaultIndex += 1) {
+        expect(ethMellowLpRouter.canManageVaultPosition(vaultIndex)).to.be.eq(vaultIndex < 4);
+      }
+    });
+
+    it('Can manage vault positions - edge cases', async () => {
+      expect(ethMellowLpRouter.canManageVaultPosition(-1)).to.be.eq(false);
+      expect(ethMellowLpRouter.canManageVaultPosition(100)).to.be.eq(false);
+  
+      ethMellowLpRouter = new MellowLpRouter({
+        mellowRouterAddress: MellowRouterAddress,
+        id: 'Test - ETH',
+        provider,
+        metadata: {
+          title: 'Test - Router',
+          token: 'ETH',
+          description: 'Test',
+          show: true,
+          soon: false,
+          deprecated: false,
+          vaults: [],
+          underlyingPools: [],
+        },
+      });
+  
+      expect(ethMellowLpRouter.canManageVaultPosition(0)).to.be.eq(false);
+    });
+  });  
 });

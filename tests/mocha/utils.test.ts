@@ -1,6 +1,7 @@
 import { expect } from "chai";
 import { waffle, network } from "hardhat";
 import { convertGasUnitsToUSD } from "../../src/utils/mellowHelpers/convertGasUnitsToUSD";
+import { geckoEthToUsd } from "../../src/utils/priceFetch";
 
 const { provider } = waffle;
 
@@ -25,14 +26,15 @@ describe('Test utils', () => {
   });
 
   it('Gas Units to USD conversion function', async () => {
-    expect(await convertGasUnitsToUSD(provider, 100000)).to.be.approximately(
-      3.12,
-      0.1,
+    const currentEthPrice = await geckoEthToUsd(process.env.REACT_APP_COINGECKO_API_KEY || '');
+    expect((await convertGasUnitsToUSD(provider, 100000)) / currentEthPrice).to.be.approximately(
+      0.00198,
+      0.00001,
     );
 
-    expect(100000 * (await convertGasUnitsToUSD(provider, 1))).to.be.approximately(
-      3.12,
-      0.1,
+    expect(100000 * (await convertGasUnitsToUSD(provider, 1)) / currentEthPrice).to.be.approximately(
+      0.00198,
+      0.00001,
     );
   });
 });
