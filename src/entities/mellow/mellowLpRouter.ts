@@ -80,7 +80,7 @@ class MellowLpRouter {
 
   public isRegisteredForAutoRollover = false;
 
-  public canManageVaultPositions?: boolean[];
+  private canManageVaultPositions?: boolean[];
 
   private gasUnitPriceUSD = 0;
   private autoRolloverRegistrationGasUnits = 0;
@@ -858,6 +858,18 @@ class MellowLpRouter {
   public get autoRolloverRegistrationGasFeeUSD() {
     return this.autoRolloverRegistrationGasUnits * this.gasUnitPriceUSD;
   }
+
+  public canManageVaultPosition = (vaultIndex: number): boolean => {
+    if (this.canManageVaultPositions === undefined) {
+      return false;
+    }
+
+    if (!(vaultIndex < this.vaultsCount)) {
+      return false;
+    }
+
+    return this.canManageVaultPositions[vaultIndex];
+  };
 }
 
 export default MellowLpRouter;

@@ -1079,14 +1079,8 @@ describe('Mellow Router Test Suite', () => {
       await ethMellowLpRouter.vaultInit();
       await ethMellowLpRouter.userInit(userWallet);
 
-      const canManageVaultPositions = ethMellowLpRouter.canManageVaultPositions;
-      if (canManageVaultPositions == undefined) {
-        fail();
-        return;
-      }
-
       for (let vaultIndex = 0; vaultIndex < ethMellowLpRouter.vaultsCount; vaultIndex += 1) {
-        expect(canManageVaultPositions[vaultIndex]).to.be.eq(true);
+        expect(ethMellowLpRouter.canManageVaultPosition(vaultIndex)).to.be.eq(true);
       }
     });
 
@@ -1127,16 +1121,8 @@ describe('Mellow Router Test Suite', () => {
       await ethMellowLpRouter.vaultInit();
       await ethMellowLpRouter.userInit(userWallet);
 
-      {
-        const canManageVaultPositions = ethMellowLpRouter.canManageVaultPositions;
-        if (canManageVaultPositions == undefined) {
-          fail();
-          return;
-        }
-
-        for (let vaultIndex = 0; vaultIndex < ethMellowLpRouter.vaultsCount; vaultIndex += 1) {
-          expect(canManageVaultPositions[vaultIndex]).to.be.eq(true);
-        }
+      for (let vaultIndex = 0; vaultIndex < ethMellowLpRouter.vaultsCount; vaultIndex += 1) {
+        expect(ethMellowLpRouter.canManageVaultPosition(vaultIndex)).to.be.eq(true);
       }
 
       await withSigner(
@@ -1172,16 +1158,8 @@ describe('Mellow Router Test Suite', () => {
       await ethMellowLpRouter.vaultInit();
       await ethMellowLpRouter.userInit(userWallet);
 
-      {
-        const canManageVaultPositions = ethMellowLpRouter.canManageVaultPositions;
-        if (canManageVaultPositions == undefined) {
-          fail();
-          return;
-        }
-
-        for (let vaultIndex = 0; vaultIndex < ethMellowLpRouter.vaultsCount; vaultIndex += 1) {
-          expect(canManageVaultPositions[vaultIndex]).to.be.eq(vaultIndex < 4);
-        }
+      for (let vaultIndex = 0; vaultIndex < ethMellowLpRouter.vaultsCount; vaultIndex += 1) {
+        expect(ethMellowLpRouter.canManageVaultPosition(vaultIndex)).to.be.eq(vaultIndex < 4);
       }
     });
   });
