@@ -54,8 +54,6 @@ import {
   AMMSettlePositionArgs,
   ClosestTickAndFixedRate,
   ExpectedApyArgs,
-  AMMSwapWithWethArgs,
-  AMMMintWithWethArgs,
 } from './types';
 import { geckoEthToUsd } from '../../utils/priceFetch';
 import { getVariableFactor, RateOracle } from '../rateOracle';
@@ -689,7 +687,7 @@ export class AMM {
     let swapPeripheryParams: SwapPeripheryParams;
     const tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
 
-    if (this.isETH) {
+    if (this.isETH && margin > 0) {
       swapPeripheryParams = {
         marginEngine: this.marginEngineAddress,
         isFT,
@@ -697,7 +695,7 @@ export class AMM {
         sqrtPriceLimitX96,
         tickLower,
         tickUpper,
-        marginDelta: 0, //
+        marginDelta: 0, // passed as ETH
       };
 
       tempOverrides.value = utils.parseEther(margin.toFixed(18).toString());
@@ -786,123 +784,6 @@ export class AMM {
           throw new Error('Transaction Confirmation Error');
         });
     }
-
-    try {
-      const receipt = await swapTransaction.wait();
-      return receipt;
-    } catch (error) {
-      const sentryTracker = getSentryTracker();
-      sentryTracker.captureException(error);
-      sentryTracker.captureMessage('Transaction Confirmation Error');
-      throw new Error('Transaction Confirmation Error');
-    }
-  }
-
-  public async swapWithWeth({
-    isFT,
-    notional,
-    margin,
-    marginEth,
-    fixedRateLimit,
-    fixedLow,
-    fixedHigh,
-  }: AMMSwapWithWethArgs): Promise<ContractReceipt> {
-    if (!this.signer) {
-      throw new Error('Wallet not connected');
-    }
-
-    if (fixedLow >= fixedHigh) {
-      throw new Error('Lower Rate must be smaller than Upper Rate');
-    }
-
-    if (fixedLow < MIN_FIXED_RATE) {
-      throw new Error('Lower Rate is too low');
-    }
-
-    if (fixedHigh > MAX_FIXED_RATE) {
-      throw new Error('Upper Rate is too high');
-    }
-
-    if (notional <= 0) {
-      throw new Error('Amount of notional must be greater than 0');
-    }
-
-    if (margin < 0) {
-      throw new Error('Amount of margin cannot be negative');
-    }
-
-    if (marginEth && marginEth < 0) {
-      throw new Error('Amount of margin in ETH cannot be negative');
-    }
-
-    if (!this.underlyingToken.id) {
-      throw new Error('No underlying error');
-    }
-
-    const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
-    const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
-
-    let sqrtPriceLimitX96;
-    if (fixedRateLimit) {
-      const { closestUsableTick: tickLimit } = this.closestTickAndFixedRate(fixedRateLimit);
-      sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(tickLimit).toString();
-    } else if (isFT) {
-      sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MAX_TICK - 1).toString();
-    } else {
-      sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MIN_TICK + 1).toString();
-    }
-
-    const factoryContract = factoryFactory.connect(this.factoryAddress, this.signer);
-    const peripheryAddress = await factoryContract.periphery();
-    const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
-    const scaledNotional = this.scale(notional);
-
-    const tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
-
-    if (this.isETH && marginEth) {
-      tempOverrides.value = utils.parseEther(marginEth.toFixed(18).toString());
-    }
-
-    const scaledMarginDelta = this.scale(margin);
-
-    const swapPeripheryParams = {
-      marginEngine: this.marginEngineAddress,
-      isFT,
-      notional: scaledNotional,
-      sqrtPriceLimitX96,
-      tickLower,
-      tickUpper,
-      marginDelta: scaledMarginDelta,
-    };
-
-    await peripheryContract.callStatic
-      .swap(swapPeripheryParams, tempOverrides)
-      .catch(async (error: any) => {
-        const errorMessage = getReadableErrorMessage(error);
-        throw new Error(errorMessage);
-      });
-
-    const estimatedGas = await peripheryContract.estimateGas
-      .swap(swapPeripheryParams, tempOverrides)
-      .catch((error) => {
-        const errorMessage = getReadableErrorMessage(error);
-        throw new Error(errorMessage);
-      });
-
-    tempOverrides.gasLimit = getGasBuffer(estimatedGas);
-
-    const swapTransaction = await peripheryContract
-      .swap(swapPeripheryParams, tempOverrides)
-      .catch((error) => {
-        const errorMessage = getReadableErrorMessage(error);
-        throw new Error(errorMessage);
-      })
-      .catch((error) => {
-        const sentryTracker = getSentryTracker();
-        sentryTracker.captureException(error);
-        sentryTracker.captureMessage('Transaction Confirmation Error');
-        throw new Error('Transaction Confirmation Error');
-      });
 
     try {
       const receipt = await swapTransaction.wait();
@@ -1031,14 +912,14 @@ export class AMM {
     let mintOrBurnParams: MintOrBurnParams;
     const tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
 
-    if (this.isETH) {
+    if (this.isETH && margin > 0) {
       mintOrBurnParams = {
         marginEngine: this.marginEngineAddress,
         tickLower,
         tickUpper,
         notional: scaledNotional,
         isMint: true,
-        marginDelta: 0,
+        marginDelta: 0, // passed as ETH
       };
 
       tempOverrides.value = utils.parseEther(margin.toFixed(18).toString());
@@ -1054,106 +935,6 @@ export class AMM {
         marginDelta: scaledMarginDelta,
       };
     }
-
-    await peripheryContract.callStatic
-      .mintOrBurn(mintOrBurnParams, tempOverrides)
-      .catch((error) => {
-        const errorMessage = getReadableErrorMessage(error);
-        throw new Error(errorMessage);
-      });
-
-    const estimatedGas = await peripheryContract.estimateGas
-      .mintOrBurn(mintOrBurnParams, tempOverrides)
-      .catch((error) => {
-        const errorMessage = getReadableErrorMessage(error);
-        throw new Error(errorMessage);
-      });
-
-    tempOverrides.gasLimit = getGasBuffer(estimatedGas);
-
-    const mintTransaction = await peripheryContract
-      .mintOrBurn(mintOrBurnParams, tempOverrides)
-      .catch((error) => {
-        const sentryTracker = getSentryTracker();
-        sentryTracker.captureException(error);
-        sentryTracker.captureMessage('Transaction Confirmation Error');
-        throw new Error('Transaction Confirmation Error');
-      });
-
-    try {
-      const receipt = await mintTransaction.wait();
-      return receipt;
-    } catch (error) {
-      const sentryTracker = getSentryTracker();
-      sentryTracker.captureException(error);
-      sentryTracker.captureMessage('Transaction Confirmation Error');
-      throw new Error('Transaction Confirmation Error');
-    }
-  }
-
-  public async mintWithWeth({
-    fixedLow,
-    fixedHigh,
-    notional,
-    margin,
-    marginEth,
-  }: AMMMintWithWethArgs): Promise<ContractReceipt> {
-    if (!this.signer) {
-      throw new Error('Wallet not connected');
-    }
-
-    if (fixedLow >= fixedHigh) {
-      throw new Error('Lower Rate must be smaller than Upper Rate');
-    }
-
-    if (fixedLow < MIN_FIXED_RATE) {
-      throw new Error('Lower Rate is too low');
-    }
-
-    if (fixedHigh > MAX_FIXED_RATE) {
-      throw new Error('Upper Rate is too high');
-    }
-
-    if (notional <= 0) {
-      throw new Error('Amount of notional must be greater than 0');
-    }
-
-    if (margin < 0) {
-      throw new Error('Amount of margin cannot be negative');
-    }
-
-    if (marginEth && marginEth < 0) {
-      throw new Error('Amount of margin in ETH cannot be negative');
-    }
-
-    if (!this.underlyingToken.id) {
-      throw new Error('No underlying error');
-    }
-
-    const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
-    const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
-
-    const factoryContract = factoryFactory.connect(this.factoryAddress, this.signer);
-    const peripheryAddress = await factoryContract.periphery();
-    const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
-    const scaledNotional = this.scale(notional);
-
-    const tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
-
-    if (this.isETH && marginEth) {
-      tempOverrides.value = utils.parseEther(marginEth.toFixed(18).toString());
-    }
-
-    const scaledMarginDelta = this.scale(margin);
-
-    const mintOrBurnParams = {
-      marginEngine: this.marginEngineAddress,
-      tickLower,
-      tickUpper,
-      notional: scaledNotional,
-      isMint: true,
-      marginDelta: scaledMarginDelta,
-    };
 
     await peripheryContract.callStatic
       .mintOrBurn(mintOrBurnParams, tempOverrides)
