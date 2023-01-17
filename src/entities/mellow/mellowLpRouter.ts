@@ -78,7 +78,7 @@ class MellowLpRouter {
 
   public vaultsCount = 0;
 
-  public isRegisteredForAutoRollover?: boolean;
+  public isRegisteredForAutoRollover = false;
 
   private gasUnitPriceUSD = 0;
   private autoRolloverRegistrationGasUnits = 0;

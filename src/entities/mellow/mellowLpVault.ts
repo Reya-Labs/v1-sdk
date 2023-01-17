@@ -72,7 +72,7 @@ class MellowLpVault {
 
   public vaultsCount = 1;
 
-  public isRegisteredForAutoRollover?: boolean;
+  public isRegisteredForAutoRollover = false;
 
   public constructor({
     id,
@@ -572,7 +572,7 @@ class MellowLpVault {
   };
 
   public get autoRolloverRegistrationGasFeeUSD() {
-    throw new Error('This is not supported');
+    return 0;
   }
 }
 
