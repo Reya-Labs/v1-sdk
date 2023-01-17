@@ -1162,5 +1162,30 @@ describe('Mellow Router Test Suite', () => {
         expect(ethMellowLpRouter.canManageVaultPosition(vaultIndex)).to.be.eq(vaultIndex < 4);
       }
     });
+
+    it.only('Can manage vault positions - edge cases', async () => {
+      expect(ethMellowLpRouter.canManageVaultPosition(-1)).to.be.eq(false);
+      expect(ethMellowLpRouter.canManageVaultPosition(100)).to.be.eq(false);
+  
+      ethMellowLpRouter = new MellowLpRouter({
+        mellowRouterAddress: MellowRouterAddress,
+        id: 'Test - ETH',
+        provider,
+        metadata: {
+          title: 'Test - Router',
+          token: 'ETH',
+          description: 'Test',
+          show: true,
+          soon: false,
+          deprecated: false,
+          vaults: [],
+          underlyingPools: [],
+        },
+      });
+  
+      expect(ethMellowLpRouter.canManageVaultPosition(0)).to.be.eq(false);
+    });
   });
+
+  
 });

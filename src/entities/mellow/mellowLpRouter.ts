@@ -864,7 +864,7 @@ class MellowLpRouter {
       return false;
     }
 
-    if (vaultIndex >= this.vaultsCount) {
+    if (vaultIndex < 0 || vaultIndex >= this.vaultsCount) {
       return false;
     }
 
