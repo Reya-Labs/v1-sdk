@@ -45,16 +45,6 @@ export type AMMSwapArgs = {
   fullyCollateralisedVTSwap?: boolean;
 };
 
-export type AMMSwapWithWethArgs = {
-  isFT: boolean;
-  notional: number;
-  margin: number;
-  marginEth?: number;
-  fixedRateLimit?: number;
-  fixedLow: number;
-  fixedHigh: number;
-};
-
 export type InfoPostSwap = {
   marginRequirement: number;
   availableNotional: number;
@@ -105,14 +95,6 @@ export type AMMMintArgs = {
   fixedLow: number;
   fixedHigh: number;
   notional: number;
-  margin: number;
-};
-
-export type AMMMintWithWethArgs = {
-  fixedLow: number;
-  fixedHigh: number;
-  notional: number;
-  marginEth?: number;
   margin: number;
 };
 
