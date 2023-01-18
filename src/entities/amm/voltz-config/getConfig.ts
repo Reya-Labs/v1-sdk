@@ -2,13 +2,7 @@ import { providers } from 'ethers';
 import { NetworkConfiguration } from './types';
 import { networkConfigurations } from './config';
 
-let cachedConfig:
-  | (NetworkConfiguration & {
-      PROVIDER: providers.BaseProvider;
-    })
-  | null = null;
-
-export const getConfig = ({
+export const getVoltzPoolConfig = ({
   network,
   providerURL,
 }: {
@@ -17,10 +11,6 @@ export const getConfig = ({
 }): NetworkConfiguration & {
   PROVIDER: providers.BaseProvider;
 } => {
-  if (cachedConfig) {
-    return cachedConfig;
-  }
-
   if (!network) {
     throw new Error(`Network not specified as an environment variable.`);
   }
@@ -35,9 +25,8 @@ export const getConfig = ({
   const config = networkConfigurations[network as keyof typeof networkConfigurations];
   const provider = providers.getDefaultProvider(providerURL);
 
-  cachedConfig = {
+  return {
     ...config,
     PROVIDER: provider,
   };
-  return cachedConfig;
 };

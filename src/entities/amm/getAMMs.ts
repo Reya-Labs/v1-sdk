@@ -3,7 +3,7 @@ import { getSentryTracker } from '../../init';
 import { RateOracle } from '../rateOracle';
 import Token from '../token';
 import { AMM } from './amm';
-import { getConfig } from './voltz-config/getConfig';
+import { getVoltzPoolConfig } from './voltz-config';
 
 type GetAMMsArgs = {
   network: string;
@@ -21,7 +21,7 @@ export const getAMMs = async ({
   providerURL,
   subgraphURL,
 }: GetAMMsArgs): Promise<GetAMMsResponse> => {
-  const config = getConfig({
+  const config = getVoltzPoolConfig({
     network,
     providerURL,
   });

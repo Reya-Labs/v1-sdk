@@ -21,7 +21,8 @@ import { abi as Erc20RootVaultABI } from '../../ABIs/Erc20RootVault.json';
 import { abi as IERC20MinimalABI } from '../../ABIs/IERC20Minimal.json';
 import { abi as MellowMultiVaultRouterABI } from '../../ABIs/MellowMultiVaultRouterABI.json';
 import { getSentryTracker } from '../../init';
-import { closeOrPastMaturity, MellowProductMetadata } from './config';
+import { MellowProductMetadata } from './config/types';
+import { closeOrPastMaturity } from './config/utils';
 import { convertGasUnitsToUSD } from '../../utils/mellowHelpers/convertGasUnitsToUSD';
 
 export type MellowLpRouterArgs = {

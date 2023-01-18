@@ -1,6 +1,6 @@
 import MellowLpRouter from '../mellowLpRouter';
 import MellowLpVault from '../mellowLpVault';
-import { getConfig } from './config';
+import { getMellowConfig } from './config';
 import { MellowProduct } from './types';
 
 export const getMellowLPVaults = ({
@@ -10,7 +10,7 @@ export const getMellowLPVaults = ({
   network: string;
   providerURL: string;
 }): MellowProduct[] => {
-  const config = getConfig({
+  const config = getMellowConfig({
     network,
     providerURL,
   });
