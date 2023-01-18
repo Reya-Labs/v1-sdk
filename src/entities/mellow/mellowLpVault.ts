@@ -56,8 +56,8 @@ class MellowLpVault {
 
   public signer?: Signer;
 
-  public userIndividualCommittedDeposits: number[] = [];
-  public userIndividualPendingDeposit: number[] = [];
+  private userIndividualCommittedDeposits: number[] = [];
+  private userIndividualPendingDeposits: number[] = [];
 
   public userWalletBalance?: number;
 
@@ -90,7 +90,7 @@ class MellowLpVault {
     }
 
     this.userIndividualCommittedDeposits = [0];
-    this.userIndividualPendingDeposit = [0];
+    this.userIndividualPendingDeposits = [0];
   }
 
   descale = (amount: BigNumberish, decimals: number): number => {
@@ -200,28 +200,37 @@ class MellowLpVault {
     return false;
   }
 
-  public get userComittedDeposit(): number {
+  public userComittedDeposit(): number {
     return this.userIndividualCommittedDeposits.reduce((total, deposit) => total + deposit, 0);
   }
 
-  public get userPendingDeposit(): number {
-    return this.userIndividualPendingDeposit.reduce((total, deposit) => total + deposit, 0);
+  public userPendingDeposit(): number {
+    return this.userIndividualPendingDeposits.reduce((total, deposit) => total + deposit, 0);
   }
 
-  public get userIndividualDeposits(): number[] {
-    if (
-      !(this.userIndividualPendingDeposit.length === this.userIndividualCommittedDeposits.length)
-    ) {
-      return [];
-    }
+  public userDeposit(): number {
+    return this.userComittedDeposit() + this.userPendingDeposit();
+  }
 
-    return this.userIndividualPendingDeposit.map(
-      (pendingDeposit, index) => pendingDeposit + this.userIndividualCommittedDeposits[index],
+  public userIndividualDeposit(vaultIndex: number): number {
+    return (
+      this.userIndividualCommittedDeposit(vaultIndex) +
+      this.userIndividualPendingDeposit(vaultIndex)
     );
   }
 
-  public get userDeposit(): number {
-    return this.userIndividualDeposits.reduce((total, deposit) => total + deposit, 0);
+  public userIndividualPendingDeposit(vaultIndex: number): number {
+    if (vaultIndex < this.userIndividualPendingDeposits.length) {
+      return this.userIndividualPendingDeposits[vaultIndex];
+    }
+    return 0;
+  }
+
+  public userIndividualCommittedDeposit(vaultIndex: number): number {
+    if (vaultIndex < this.userIndividualCommittedDeposits.length) {
+      return this.userIndividualCommittedDeposits[vaultIndex];
+    }
+    return 0;
   }
 
   refreshUserDeposit = async (): Promise<void> => {

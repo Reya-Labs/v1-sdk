@@ -43,6 +43,7 @@ export const getMellowLPVaults = ({
       const vault = new MellowLpRouter({
         id: `mellow-${item.metadata.token.toLowerCase()}`,
         mellowRouterAddress: item.router,
+        mellowLensContractAddress: config.MELLOW_LENS,
         provider: config.PROVIDER,
         metadata: {
           ...item.metadata,
