@@ -226,7 +226,14 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
               withdrawable: true,
             },
             {
-              weight: 100,
+              weight: 50,
+              pools: ['Compound - ETH'],
+              maturityTimestampMS: 1676542449000,
+              estimatedHistoricApy: [30, 30],
+              withdrawable: false,
+            },
+            {
+              weight: 50,
               pools: ['Compound - ETH'],
               maturityTimestampMS: 1676542449000,
               estimatedHistoricApy: [30, 30],
