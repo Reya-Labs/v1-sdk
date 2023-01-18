@@ -1,0 +1,1 @@
+export { getVoltzPoolConfig } from './getConfig';

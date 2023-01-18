@@ -21,7 +21,7 @@ import { abi as IERC20MinimalABI } from '../../ABIs/IERC20Minimal.json';
 import { abi as MellowDepositWrapperABI } from '../../ABIs/MellowDepositWrapper.json';
 import { getSentryTracker } from '../../init';
 import { MellowProductMetadata } from './config/types';
-import { closeOrPastMaturity } from './config';
+import { closeOrPastMaturity } from './config/utils';
 
 export type MellowLpVaultArgs = {
   id: string;

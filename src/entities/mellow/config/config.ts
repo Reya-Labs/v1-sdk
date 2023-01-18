@@ -321,7 +321,7 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
   },
 };
 
-export const getConfig = ({
+export const getMellowConfig = ({
   network,
   providerURL,
 }: {
