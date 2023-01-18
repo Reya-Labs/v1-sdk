@@ -1,0 +1,92 @@
+{
+    "abi": [
+        {
+            "inputs": [
+                {
+                    "internalType": "contract IMellowMultiVaultRouter[]",
+                    "name": "routers",
+                    "type": "address[]"
+                },
+                {
+                    "internalType": "bool",
+                    "name": "userInfo",
+                    "type": "bool"
+                },
+                {
+                    "internalType": "address",
+                    "name": "userAddress",
+                    "type": "address"
+                }
+            ],
+            "name": "getOptimisersInfo",
+            "outputs": [
+                {
+                    "components": [
+                        {
+                            "internalType": "contract IERC20Minimal",
+                            "name": "token",
+                            "type": "address"
+                        },
+                        {
+                            "internalType": "uint256",
+                            "name": "tokenBalance",
+                            "type": "uint256"
+                        },
+                        {
+                            "internalType": "uint256",
+                            "name": "ethBalance",
+                            "type": "uint256"
+                        },
+                        {
+                            "internalType": "bool",
+                            "name": "isRegisteredForAutoRollover",
+                            "type": "bool"
+                        },
+                        {
+                            "components": [
+                                {
+                                    "internalType": "contract IERC20RootVault",
+                                    "name": "rootVault",
+                                    "type": "address"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "latestMaturity",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "bool",
+                                    "name": "vaultDeprecated",
+                                    "type": "bool"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "pendingUserDeposit",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "uint256",
+                                    "name": "committedUserDeposit",
+                                    "type": "uint256"
+                                },
+                                {
+                                    "internalType": "bool",
+                                    "name": "canWithdrawOrRollover",
+                                    "type": "bool"
+                                }
+                            ],
+                            "internalType": "struct MellowContractLens.RootVaultInfo[]",
+                            "name": "erc20RootVaults",
+                            "type": "tuple[]"
+                        }
+                    ],
+                    "internalType": "struct MellowContractLens.RouterInfo[]",
+                    "name": "",
+                    "type": "tuple[]"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        }
+    ]
+}

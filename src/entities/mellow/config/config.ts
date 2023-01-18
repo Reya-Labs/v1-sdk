@@ -5,6 +5,7 @@ import { disableMaturedWeights } from './utils';
 const networkConfigurations: { [key: string]: NetworkConfiguration } = {
   mainnet: {
     MELLOW_ETH_WRAPPER: '0x07D6D75CA125a252AEf4d5647198446e5EDc5BBa',
+    MELLOW_LENS: '0x0000000000000000000000000000000000000000',
     MELLOW_VAULTS: [
       {
         voltzVault: '0xBBC446081cb7515a524D31e4afDB19dfc6BAa124',
@@ -160,6 +161,7 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
   },
   goerli: {
     MELLOW_ETH_WRAPPER: '0xcF2f79d8DF97E09BF5c4DBF3F953aeEF4f4a204d',
+    MELLOW_LENS: '0xb8cD303f0AB8fBA8Da50e2CC76cc7d0c891d9aE0',
     MELLOW_VAULTS: [
       {
         voltzVault: '0x1b876d1b5A8636EFe9835D8ed0231c1429cBfc40',
@@ -313,11 +315,6 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
         },
       },
     ],
-  },
-  default: {
-    MELLOW_ETH_WRAPPER: '0x0000000000000000000000000000000000000000',
-    MELLOW_VAULTS: [],
-    MELLOW_ROUTERS: [],
   },
 };
 
