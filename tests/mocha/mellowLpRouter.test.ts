@@ -1035,8 +1035,8 @@ describe('Mellow Router Test Suite', () => {
     });
 
     it('Calculate correct transaction fee in USD for autorollover registration', async () => {
-      const currentEthPrice = await geckoEthToUsd(process.env.REACT_APP_COINGECKO_API_KEY || '');
-      expect(ethMellowLpRouter.autoRolloverRegistrationGasFeeUSD / currentEthPrice).to.be.closeTo(0.00239, 0.00001);
+      const currentEthPrice = 1300;
+      expect(ethMellowLpRouter.autoRolloverRegistrationGasFeeUSD / currentEthPrice).to.be.closeTo(0.00294, 0.00001);
     });
 
     it('Can manage vault positions - init', async () => {

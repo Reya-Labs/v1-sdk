@@ -24,5 +24,3 @@ jobs:
         run: make code-quality-check
       - name: Run tests
         run: make test
-      - name: Post test coverage comment
-        uses: MishaKav/jest-coverage-comment@main

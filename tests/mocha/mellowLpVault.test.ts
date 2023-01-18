@@ -22,7 +22,7 @@ const signer = new Wallet(
 
 const userWallet = signer;
 
-describe('Mellow Router Test Suite', () => {
+describe('Mellow Vault Test Suite', () => {
   const resetNetwork = async (blockNumber: number) => {
     await network.provider.request({
       method: 'hardhat_reset',
