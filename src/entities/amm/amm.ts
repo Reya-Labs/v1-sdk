@@ -79,6 +79,7 @@ export class AMM {
     scaled: number;
     wad: BigNumber;
   }>;
+  public readonly minLeverageAllowed: number;
 
   public constructor({
     id,
@@ -93,6 +94,7 @@ export class AMM {
     tickSpacing,
     wethAddress,
     ethPrice,
+    minLeverageAllowed,
   }: AMMConstructorArgs) {
     this.id = id;
     this.signer = signer;
@@ -117,6 +119,8 @@ export class AMM {
     this.provider = chosenProvider;
 
     this.variableFactor = getVariableFactor(this.provider, this.rateOracle.id);
+
+    this.minLeverageAllowed = minLeverageAllowed;
   }
 
   // expected apy
