@@ -21,6 +21,8 @@ export type AMMConstructorArgs = {
   wethAddress: string;
 
   ethPrice?: () => Promise<number>;
+
+  minLeverageAllowed: number;
 };
 
 // swap
