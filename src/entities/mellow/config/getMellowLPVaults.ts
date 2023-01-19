@@ -1,3 +1,4 @@
+import { ethers } from 'ethers';
 import MellowLpRouter from '../mellowLpRouter';
 import MellowLpVault from '../mellowLpVault';
 import { getMellowConfig } from './config';
@@ -10,10 +11,8 @@ export const getMellowLPVaults = ({
   network: string;
   providerURL: string;
 }): MellowProduct[] => {
-  const config = getMellowConfig({
-    network,
-    providerURL,
-  });
+  const config = getMellowConfig(network);
+  const provider = new ethers.providers.JsonRpcProvider(providerURL);
 
   const vaults: MellowProduct[] = config.MELLOW_VAULTS.filter((item) => item.metadata.show).map(
     (item) => {
@@ -21,7 +20,7 @@ export const getMellowLPVaults = ({
         id: item.voltzVault,
         ethWrapperAddress: config.MELLOW_ETH_WRAPPER,
         erc20RootVaultAddress: item.erc20RootVault,
-        provider: config.PROVIDER,
+        provider,
         metadata: {
           ...item.metadata,
           underlyingPools: item.metadata.vaults.reduce((allPools, currentVault) => {
@@ -44,7 +43,7 @@ export const getMellowLPVaults = ({
         id: `mellow-${item.metadata.token.toLowerCase()}`,
         mellowRouterAddress: item.router,
         mellowLensContractAddress: config.MELLOW_LENS,
-        provider: config.PROVIDER,
+        provider,
         metadata: {
           ...item.metadata,
           underlyingPools: item.metadata.vaults.reduce((allPools, currentVault) => {

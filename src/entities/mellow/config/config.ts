@@ -1,4 +1,3 @@
-import { providers } from 'ethers';
 import { NetworkConfiguration } from './types';
 import { disableMaturedWeights } from './utils';
 
@@ -318,19 +317,7 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
   },
 };
 
-export const getMellowConfig = ({
-  network,
-  providerURL,
-}: {
-  network: string;
-  providerURL: string;
-}): NetworkConfiguration & {
-  PROVIDER: providers.BaseProvider;
-} => {
-  if (!network) {
-    throw new Error(`Network not specified as an environment variable.`);
-  }
-
+export const getMellowConfig = (network: string): NetworkConfiguration => {
   const allNetworks = Object.keys(networkConfigurations);
   if (!allNetworks.includes(network)) {
     throw new Error(
@@ -341,10 +328,5 @@ export const getMellowConfig = ({
   let config = networkConfigurations[network as keyof typeof networkConfigurations];
   config = disableMaturedWeights(config);
 
-  const provider = providers.getDefaultProvider(providerURL);
-
-  return {
-    ...config,
-    PROVIDER: provider,
-  };
+  return config;
 };
