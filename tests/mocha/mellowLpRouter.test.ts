@@ -20,8 +20,8 @@ let fee: BigNumber;
 
 let localMellowRouterContract: Contract;
 
-const MellowRouterAddress = '0x6A7c3f9b6e3B908f277dd136efe47c2ffe8B0358';
-// const MellowRouterAddress = '0x6A7c3f9b6e3B908f277dd136efe47c2ffe8B0358'; // test submit batch
+const MellowRouterAddress = '0x704F6E9cB4f7e041CC89B6a49DF8EE2027a55164';
+const MellowRouterAddress_submitBatch = '0x6A7c3f9b6e3B908f277dd136efe47c2ffe8B0358'; // test submit batch
 
 const signer = new Wallet(
   '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
@@ -1185,18 +1185,18 @@ describe('Mellow Router Test Suite', () => {
     });
   });  
 
-  describe.skip('Submit Batch Scenarios', async () => {
+  describe('Submit Batch Scenarios', async () => {
     beforeEach('Setting up the Router Object', async () => {
       await resetNetwork(8335530);
       //await extendRouter();
       localMellowRouterContract = new ethers.Contract(
-        MellowRouterAddress,
+        MellowRouterAddress_submitBatch,
         MellowMultiVaultRouterABI,
         signer,
       );
 
       ethMellowLpRouter = new MellowLpRouter({
-        mellowRouterAddress: MellowRouterAddress,
+        mellowRouterAddress: MellowRouterAddress_submitBatch,
         id: 'test',
         provider,
         metadata: {
@@ -1227,7 +1227,7 @@ describe('Mellow Router Test Suite', () => {
       });
 
       ethMellowLpRouter2 = new MellowLpRouter({
-        mellowRouterAddress: MellowRouterAddress,
+        mellowRouterAddress: MellowRouterAddress_submitBatch,
         id: 'test',
         provider,
         metadata: {
@@ -1264,14 +1264,8 @@ describe('Mellow Router Test Suite', () => {
       await ethMellowLpRouter.userInit(userWallet);
       await ethMellowLpRouter2.userInit(userWallet2);
 
+      // set deposit fee
       fee = utils.parseEther('1');
-    });
-
-    it('Get fee before and after fee change', async () => {
-
-      let obtainedFee = await ethMellowLpRouter.getDepositFee();
-      expect(obtainedFee).to.be.eq('0');
-
       await withSigner(
         network,
         await localMellowRouterContract.owner(),
@@ -1281,11 +1275,28 @@ describe('Mellow Router Test Suite', () => {
             .setFee(fee);
         },
       );
-
-      obtainedFee = await ethMellowLpRouter.getDepositFee();
-      expect(obtainedFee).to.be.eq(fee);
     });
 
+    it('Get fee before and after fee change', async () => {
+
+      let obtainedFee = await ethMellowLpRouter.getDepositFee();
+      expect(obtainedFee).to.be.eq(fee);
+
+      await withSigner(
+        network,
+        await localMellowRouterContract.owner(),
+        async (routerOwnerSigner) => {
+          await localMellowRouterContract
+            .connect(routerOwnerSigner)
+            .setFee(0);
+        },
+      );
+
+      obtainedFee = await ethMellowLpRouter.getDepositFee();
+      expect(obtainedFee).to.be.eq('0');
+    });
+
+    // fix
     it('Get batch budget', async () => {
       const weights1 = [60, 40]; // Needs to sum to 100
       const weights2 = [30, 70]; // Needs to sum to 100
