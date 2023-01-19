@@ -833,7 +833,7 @@ class MellowLpRouter {
     return this.canManageVaultPositions[vaultIndex];
   };
 
-  submitBatch = async (vaultIndex: number, batchSize?: number): Promise<ContractReceipt> => {
+  submitBatch = async (): Promise<ContractReceipt> => {
     if (
       isUndefined(this.readOnlyContracts) ||
       isUndefined(this.writeContracts) ||
@@ -843,30 +843,19 @@ class MellowLpRouter {
     }
 
     try {
-      await this.writeContracts.mellowRouter.callStatic.submitBatchForFee(
-        vaultIndex,
-        batchSize ?? 0,
-      );
+      await this.writeContracts.mellowRouter.callStatic.submitAllBatchesForFee();
     } catch (err) {
       const sentryTracker = getSentryTracker();
       sentryTracker.captureException(err);
       sentryTracker.captureMessage('Unsuccessful batch submittion simulation');
-      console.error('Error during batch submittion', err);
       throw new Error('Unsuccessful batch submittion simulation');
     }
 
-    const gasLimit = await this.writeContracts.mellowRouter.estimateGas.submitBatchForFee(
-      vaultIndex,
-      batchSize ?? 0,
-    );
+    const gasLimit = await this.writeContracts.mellowRouter.estimateGas.submitAllBatchesForFee();
 
-    const tx = await this.writeContracts.mellowRouter.callStatic.submitBatchForFee(
-      vaultIndex,
-      batchSize ?? 0,
-      {
-        gasLimit: getGasBuffer(gasLimit),
-      },
-    );
+    const tx = await this.writeContracts.mellowRouter.submitAllBatchesForFee({
+      gasLimit: getGasBuffer(gasLimit),
+    });
 
     try {
       const receipt = await tx.wait();
@@ -880,16 +869,14 @@ class MellowLpRouter {
     }
   };
 
-  getSubmitBatchGasCost = async (vaultIndex: number, batchSize?: number): Promise<BigNumber> => {
+  getSubmitBatchGasCost = async (): Promise<BigNumber> => {
     if (isUndefined(this.writeContracts)) {
       throw new Error('Uninitialized contracts.');
     }
 
     try {
-      const gasUnitsEstimate = await this.writeContracts.mellowRouter.estimateGas.submitBatchForFee(
-        vaultIndex,
-        batchSize ?? 0,
-      );
+      const gasUnitsEstimate =
+        await this.writeContracts.mellowRouter.estimateGas.submitAllBatchesForFee();
       // convert gas estimate from gas units into usd
       const gasUnitPriceUSD = await convertGasUnitsToUSD(this.provider, 1);
 
@@ -904,35 +891,63 @@ class MellowLpRouter {
     }
   };
 
-  getBatchBudget = async (vaultIndex: number, batchSize?: number): Promise<number> => {
+  getBatchBudgetUsd = async (): Promise<number> => {
     if (isUndefined(this.writeContracts)) {
       throw new Error('Uninitialized contracts.');
     }
 
     try {
-      const remainingDeposits = await this.writeContracts.mellowRouter.getBatchedDeposits(
-        vaultIndex,
-      );
-      let actualBatchSize = batchSize ?? 0;
-      actualBatchSize =
-        actualBatchSize > remainingDeposits.length || batchSize === 0
-          ? remainingDeposits.length
-          : actualBatchSize;
-
-      const budgetPerDeposit = await this.writeContracts.mellowRouter.getBatchBudgetPerDeposit();
-      const budgetForBatchDescaled = this.descale(
-        budgetPerDeposit * actualBatchSize,
-        this.tokenDecimals,
-      );
+      const budgetEth = await this.getBatchBudgetEth();
+      const budgetForBatchDescaled = this.descale(budgetEth, this.tokenDecimals);
 
       const usdExchangeRate = this.isETH ? await this.ethPrice() : 1;
       return budgetForBatchDescaled * usdExchangeRate;
     } catch (err) {
       const sentryTracker = getSentryTracker();
       sentryTracker.captureException(err);
-      sentryTracker.captureMessage('Unsuccessful batch submittion simulation');
-      console.error('Error during batch submittion', err);
-      throw new Error('Unsuccessful batch submittion simulation');
+      sentryTracker.captureMessage('Failed to get batch budget');
+      console.error('Error while getting batch budget', err);
+      throw new Error('Failed to get batch budget');
+    }
+  };
+
+  getBatchBudgetEth = async (): Promise<BigNumber> => {
+    if (isUndefined(this.writeContracts)) {
+      throw new Error('Uninitialized contracts.');
+    }
+
+    try {
+      let remainingDeposits = 0;
+      for (let i = 0; i < this.vaultsCount; i++) {
+        remainingDeposits += (await this.writeContracts.mellowRouter.getBatchedDeposits(i)).length;
+      }
+
+      const budgetPerDeposit = await this.writeContracts.mellowRouter.getBatchBudgetPerDeposit();
+
+      return budgetPerDeposit.mul(remainingDeposits);
+    } catch (err) {
+      const sentryTracker = getSentryTracker();
+      sentryTracker.captureException(err);
+      sentryTracker.captureMessage('Failed to get batch budget');
+      console.error('Error while getting batch budget', err);
+      throw new Error('Failed to get batch budget');
+    }
+  };
+
+  getDepositFee = async (): Promise<BigNumber> => {
+    if (isUndefined(this.writeContracts)) {
+      throw new Error('Uninitialized contracts.');
+    }
+
+    try {
+      const fee = await this.writeContracts.mellowRouter.getFee();
+
+      return fee;
+    } catch (err) {
+      const sentryTracker = getSentryTracker();
+      sentryTracker.captureException(err);
+      sentryTracker.captureMessage('Failed to get deposit fee');
+      throw new Error('Failed to get deposit fee');
     }
   };
 }
