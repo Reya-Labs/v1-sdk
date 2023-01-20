@@ -1,22 +1,13 @@
 import { ethers, BigNumber } from 'ethers';
 import { Erc20RootVaultABI, MellowMultiVaultRouterABI } from '../../../ABIs';
 import { getGasBuffer } from '../../../constants';
+import { getProvider } from '../../../init';
 import { getMellowConfig } from '../config/config';
-import { getMellowProduct } from '../getters/getMellowProduct';
-import { RouterInfo } from '../getters/types';
-import { getRouterConfig } from '../utils/getRouterConfig';
 
 type WithdrawArgs = {
   routerId: string;
   vaultId: string;
   signer: ethers.Signer;
-};
-
-type WithdrawResponse = {
-  transaction: {
-    receipt: ethers.ContractReceipt;
-  };
-  newRouterState: RouterInfo;
 };
 
 const routerWithdraw = async ({
@@ -72,15 +63,18 @@ const routerWithdraw = async ({
     gasLimit: getGasBuffer(gasLimit),
   });
 
-  return tx.wait();
+  const receipt = await tx.wait();
+  return receipt;
 };
 
 const vaultWithdraw = async ({
   vaultId,
   signer,
 }: WithdrawArgs): Promise<ethers.ContractReceipt> => {
+  const provider = getProvider();
+
   // Get ERC20 vault contract
-  const erc20RootVault = new ethers.Contract(vaultId, Erc20RootVaultABI, signer);
+  const erc20RootVault = new ethers.Contract(vaultId, Erc20RootVaultABI, provider);
 
   // Get the balance of LP tokens
   const userAddress = await signer.getAddress();
@@ -125,29 +119,22 @@ const vaultWithdraw = async ({
     },
   );
 
-  return tx.wait();
+  const receipt = await tx.wait();
+  return receipt;
 };
 
-export const withdraw = async (params: WithdrawArgs): Promise<WithdrawResponse> => {
-  const { routerId, signer } = params;
+export const withdraw = async (params: WithdrawArgs): Promise<ethers.ContractReceipt> => {
+  const config = getMellowConfig();
 
-  // Get Mellow Config
-  const routerConfig = getRouterConfig(params.routerId);
+  const routerConfig = config.MELLOW_ROUTERS.find(
+    (item) => item.router.toLowerCase() === params.routerId.toLowerCase(),
+  );
 
-  const receipt = await (routerConfig.isVault ? vaultWithdraw(params) : routerWithdraw(params));
+  if (!routerConfig) {
+    // TODO: add sentry
+    throw new Error('Router ID not found');
+  }
 
-  // Get the next state of the router
-  const userAddress = await signer.getAddress();
-  const routerInfo = await getMellowProduct({
-    routerId,
-    userAddress,
-  });
-
-  // Return the response
-  return {
-    transaction: {
-      receipt,
-    },
-    newRouterState: routerInfo,
-  };
+  const receipt = routerConfig.isVault ? await vaultWithdraw(params) : await routerWithdraw(params);
+  return receipt;
 };
