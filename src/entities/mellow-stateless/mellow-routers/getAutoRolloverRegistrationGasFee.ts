@@ -2,7 +2,7 @@ import { ethers } from 'ethers';
 import { MellowMultiVaultRouterABI } from '../../../ABIs';
 import { getProvider } from '../../../init';
 import { convertGasUnitsToUSD } from '../../../utils/mellowHelpers/convertGasUnitsToUSD';
-import { getRouterConfig } from '../utils/getRouterConfig';
+import { getMellowConfig } from '../config/config';
 
 type GetAutoRolloverRegistrationGasFeeArgs = {
   routerId: string;
@@ -15,8 +15,16 @@ export const getAutoRolloverRegistrationGasFee = async ({
   registration,
   signer,
 }: GetAutoRolloverRegistrationGasFeeArgs): Promise<number> => {
-  // Get Mellow Config
-  const routerConfig = getRouterConfig(routerId);
+  const config = getMellowConfig();
+
+  const routerConfig = config.MELLOW_ROUTERS.find(
+    (item) => item.router.toLowerCase() === routerId.toLowerCase(),
+  );
+
+  if (!routerConfig) {
+    // TODO: add sentry
+    throw new Error('Router ID not found');
+  }
 
   if (routerConfig.isVault) {
     throw new Error('Deposit not supported for vaults.');
