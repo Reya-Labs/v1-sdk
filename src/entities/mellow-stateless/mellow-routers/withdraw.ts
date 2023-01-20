@@ -3,11 +3,21 @@ import { Erc20RootVaultABI, MellowMultiVaultRouterABI } from '../../../ABIs';
 import { getGasBuffer } from '../../../constants';
 import { getProvider } from '../../../init';
 import { getMellowConfig } from '../config/config';
+import { getMellowProduct } from '../getters/getMellowProduct';
+import { RouterInfo } from '../getters/types';
+import { getRouterConfig } from '../utils/getRouterConfig';
 
 type WithdrawArgs = {
   routerId: string;
   vaultId: string;
   signer: ethers.Signer;
+};
+
+type WithdrawResponse = {
+  transaction: {
+    receipt: ethers.ContractReceipt;
+  };
+  newRouterState: RouterInfo;
 };
 
 const routerWithdraw = async ({
@@ -63,8 +73,7 @@ const routerWithdraw = async ({
     gasLimit: getGasBuffer(gasLimit),
   });
 
-  const receipt = await tx.wait();
-  return receipt;
+  return tx.wait();
 };
 
 const vaultWithdraw = async ({
@@ -119,22 +128,29 @@ const vaultWithdraw = async ({
     },
   );
 
-  const receipt = await tx.wait();
-  return receipt;
+  return tx.wait();
 };
 
-export const withdraw = async (params: WithdrawArgs): Promise<ethers.ContractReceipt> => {
-  const config = getMellowConfig();
+export const withdraw = async (params: WithdrawArgs): Promise<WithdrawResponse> => {
+  const { routerId, signer } = params;
 
-  const routerConfig = config.MELLOW_ROUTERS.find(
-    (item) => item.router.toLowerCase() === params.routerId.toLowerCase(),
-  );
+  // Get Mellow Config
+  const routerConfig = getRouterConfig(params.routerId);
 
-  if (!routerConfig) {
-    // TODO: add sentry
-    throw new Error('Router ID not found');
-  }
+  const receipt = await (routerConfig.isVault ? vaultWithdraw(params) : routerWithdraw(params));
 
-  const receipt = routerConfig.isVault ? await vaultWithdraw(params) : await routerWithdraw(params);
-  return receipt;
+  // Get the next state of the router
+  const userAddress = await signer.getAddress();
+  const routerInfo = await getMellowProduct({
+    routerId,
+    userAddress,
+  });
+
+  // Return the response
+  return {
+    transaction: {
+      receipt,
+    },
+    newRouterState: routerInfo,
+  };
 };
