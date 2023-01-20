@@ -13,7 +13,7 @@ export const TresholdApprovalBn = BigNumber.from(
   '6277101735386680763835789423207666416102355444464034512896',
 );
 
-export const ADDRESS_ZERO = '0x0000000000000000000000000000000000000000';
+export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
 // constants used internally but not expected to be used externally
 export const NEGATIVE_ONE = JSBI.BigInt(-1);

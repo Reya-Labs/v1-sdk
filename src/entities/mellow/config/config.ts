@@ -160,7 +160,7 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
   },
   goerli: {
     MELLOW_ETH_WRAPPER: '0xcF2f79d8DF97E09BF5c4DBF3F953aeEF4f4a204d',
-    MELLOW_LENS: '0xb8cD303f0AB8fBA8Da50e2CC76cc7d0c891d9aE0',
+    MELLOW_LENS: '0x616e5F5E84eb4Ba33b7C72a7116F2e0a07d8669E',
     MELLOW_VAULTS: [
       {
         voltzVault: '0x1b876d1b5A8636EFe9835D8ed0231c1429cBfc40',
