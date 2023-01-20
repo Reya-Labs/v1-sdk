@@ -833,7 +833,7 @@ class MellowLpRouter {
     return this.canManageVaultPositions[vaultIndex];
   };
 
-  submitBatch = async (): Promise<ContractReceipt> => {
+  submitAllBatchesForFee = async (): Promise<ContractReceipt> => {
     if (
       isUndefined(this.readOnlyContracts) ||
       isUndefined(this.writeContracts) ||
@@ -877,10 +877,8 @@ class MellowLpRouter {
     try {
       const gasUnitsEstimate =
         await this.writeContracts.mellowRouter.estimateGas.submitAllBatchesForFee();
-      // convert gas estimate from gas units into usd
-      const gasUnitPriceUSD = await convertGasUnitsToUSD(this.provider, 1);
 
-      const gasPrice = gasUnitsEstimate.mul(BigNumber.from(gasUnitPriceUSD));
+      const gasPrice = gasUnitsEstimate.mul(BigNumber.from(this.gasUnitPriceUSD));
       return gasPrice;
     } catch (err) {
       const sentryTracker = getSentryTracker();
@@ -897,7 +895,7 @@ class MellowLpRouter {
     }
 
     try {
-      const budgetEth = await this.getBatchBudgetEth();
+      const budgetEth = await this.getBatchBudgetUnderlyingToken();
       const budgetForBatchDescaled = this.descale(budgetEth, this.tokenDecimals);
 
       const usdExchangeRate = this.isETH ? await this.ethPrice() : 1;
@@ -911,18 +909,21 @@ class MellowLpRouter {
     }
   };
 
-  getBatchBudgetEth = async (): Promise<BigNumber> => {
-    if (isUndefined(this.writeContracts)) {
+  getBatchBudgetUnderlyingToken = async (): Promise<BigNumber> => {
+    if (isUndefined(this.readOnlyContracts)) {
       throw new Error('Uninitialized contracts.');
     }
 
     try {
       let remainingDeposits = 0;
       for (let i = 0; i < this.vaultsCount; i++) {
-        remainingDeposits += (await this.writeContracts.mellowRouter.getBatchedDeposits(i)).length;
+        remainingDeposits += (
+          await this.readOnlyContracts.mellowRouterContract.getBatchedDeposits(i)
+        ).length;
       }
 
-      const budgetPerDeposit = await this.writeContracts.mellowRouter.getBatchBudgetPerDeposit();
+      const budgetPerDeposit =
+        await this.readOnlyContracts.mellowRouterContract.getBatchBudgetPerDeposit();
 
       return budgetPerDeposit.mul(remainingDeposits);
     } catch (err) {
