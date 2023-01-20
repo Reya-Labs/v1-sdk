@@ -12,6 +12,7 @@ import {
   Contract,
 } from 'ethers';
 import { isUndefined } from 'lodash';
+import { toBn } from 'evm-bn';
 
 import { getTokenInfo } from '../../services/getTokenInfo';
 
@@ -886,10 +887,8 @@ class MellowLpRouter {
       const gasUnitsEstimate =
         await this.writeContracts.mellowRouter.estimateGas.submitAllBatchesForFee();
 
-      const gasPrice = gasUnitsEstimate.mul(BigNumber.from(this.gasUnitPriceUSD));
-
-      const gasPriceDescaled = this.descale(gasPrice, 18);
-      return gasPriceDescaled;
+      const gasPrice = gasUnitsEstimate.toNumber() * this.gasUnitPriceUSD;
+      return gasPrice;
     } catch (err) {
       const sentryTracker = getSentryTracker();
       sentryTracker.captureException(err);
@@ -974,10 +973,9 @@ class MellowLpRouter {
       }
     }
 
-    const gasPrice = gasUnitsEstimate.mul(BigNumber.from(this.gasUnitPriceUSD));
-    const gasPriceDescaled = this.descale(gasPrice, 18);
+    const gasPrice = gasUnitsEstimate.toNumber() * this.gasUnitPriceUSD;
 
-    return gasPriceDescaled;
+    return gasPrice;
   };
 
   getBatchBudgetUsd = async (): Promise<number> => {
@@ -1012,7 +1010,10 @@ class MellowLpRouter {
       const fee = await this.readOnlyContracts.mellowRouterContract.getFee();
 
       const usdExchangeRate = this.isETH ? await this.ethPrice() : 1;
-      const feeDescaled = this.descale(fee.mul(usdExchangeRate), this.tokenDecimals);
+      const feeDescaled = this.descale(
+        fee.mul(toBn(usdExchangeRate.toString())),
+        this.tokenDecimals,
+      );
 
       return feeDescaled;
     } catch (err) {
