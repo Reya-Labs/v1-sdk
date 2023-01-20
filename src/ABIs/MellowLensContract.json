@@ -8,6 +8,11 @@
                     "type": "address[]"
                 },
                 {
+                    "internalType": "bool",
+                    "name": "userInfo",
+                    "type": "bool"
+                },
+                {
                     "internalType": "address",
                     "name": "userAddress",
                     "type": "address"
