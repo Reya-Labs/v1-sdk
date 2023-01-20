@@ -869,7 +869,7 @@ class MellowLpRouter {
     }
   };
 
-  getSubmitBatchGasCost = async (): Promise<BigNumber> => {
+  getSubmitBatchGasCost = async (): Promise<number> => {
     if (isUndefined(this.writeContracts)) {
       throw new Error('Uninitialized contracts.');
     }
@@ -879,7 +879,9 @@ class MellowLpRouter {
         await this.writeContracts.mellowRouter.estimateGas.submitAllBatchesForFee();
 
       const gasPrice = gasUnitsEstimate.mul(BigNumber.from(this.gasUnitPriceUSD));
-      return gasPrice;
+
+      const gasPriceDescaled = this.descale(gasPrice, 18);
+      return gasPriceDescaled;
     } catch (err) {
       const sentryTracker = getSentryTracker();
       sentryTracker.captureException(err);
@@ -887,6 +889,87 @@ class MellowLpRouter {
       console.error('Error during batch submittion', err);
       throw new Error('Unsuccessful batch submittion simulation');
     }
+  };
+
+  getDepositGasCost = async (
+    amount: number,
+    _weights: number[],
+    registration?: boolean | undefined,
+  ): Promise<number> => {
+    if (isUndefined(this.writeContracts) || isUndefined(this.userAddress)) {
+      throw new Error('Uninitialized contracts.');
+    }
+
+    const weights = _weights;
+    while (weights.length < this.vaultsCount) {
+      weights.push(0);
+    }
+
+    if (!this.validateWeights(weights)) {
+      throw new Error('Weights are invalid');
+    }
+
+    const scaledAmount = this.scale(amount);
+    const tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
+
+    if (this.isETH) {
+      tempOverrides.value = scaledAmount;
+    }
+
+    let gasUnitsEstimate: BigNumber;
+
+    if (registration !== undefined) {
+      try {
+        if (this.isETH) {
+          gasUnitsEstimate =
+            await this.writeContracts.mellowRouter.estimateGas.depositEthAndRegisterForAutoRollover(
+              weights,
+              registration,
+              tempOverrides,
+            );
+        } else {
+          gasUnitsEstimate =
+            await this.writeContracts.mellowRouter.estimateGas.depositErc20AndRegisterForAutoRollover(
+              scaledAmount,
+              weights,
+              registration,
+            );
+        }
+      } catch (error) {
+        console.error('Error estimating gas for depositAndRegisterForAutoRollover.', error);
+        const sentryTracker = getSentryTracker();
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage(
+          'Unsuccessful depositAndRegisterForAutoRollover gas estimate.',
+        );
+        throw new Error('Unsuccessful depositAndRegisterForAutoRollover gas estimate.');
+      }
+    } else {
+      try {
+        if (this.isETH) {
+          gasUnitsEstimate = await this.writeContracts.mellowRouter.estimateGas.depositEth(
+            weights,
+            tempOverrides,
+          );
+        } else {
+          gasUnitsEstimate = await this.writeContracts.mellowRouter.estimateGas.depositErc20(
+            scaledAmount,
+            weights,
+          );
+        }
+      } catch (error) {
+        console.error('Error when estimating gas for deposit.', error);
+        const sentryTracker = getSentryTracker();
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage('Unsuccessful deposit gas estimate.');
+        throw new Error('Unsuccessful deposit gas estimate.');
+      }
+    }
+
+    const gasPrice = gasUnitsEstimate.mul(BigNumber.from(this.gasUnitPriceUSD));
+    const gasPriceDescaled = this.descale(gasPrice, 18);
+
+    return gasPriceDescaled;
   };
 
   getBatchBudgetUsd = async (): Promise<number> => {
