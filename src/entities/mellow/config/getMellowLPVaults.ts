@@ -41,7 +41,11 @@ export const getMellowLPVaults = ({
   const routers: MellowProduct[] = config.MELLOW_ROUTERS.filter((item) => item.metadata.show).map(
     (item) => {
       const vault = new MellowLpRouter({
-        id: `mellow-${item.metadata.token.toLowerCase()}`,
+        // TODO: remove special case after cost-reduction QA
+        id:
+          item.router === '0x7AaA278531D0baCb2aC483be3edDFf83E09564Aa'
+            ? 'mellow-eth-cost-opt'
+            : `mellow-${item.metadata.token.toLowerCase()}`,
         mellowRouterAddress: item.router,
         provider: config.PROVIDER,
         metadata: {
