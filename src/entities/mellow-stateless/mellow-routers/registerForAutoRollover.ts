@@ -1,7 +1,9 @@
 import { ethers } from 'ethers';
 import { MellowMultiVaultRouterABI } from '../../../ABIs';
 import { getGasBuffer } from '../../../constants';
-import { getMellowConfig } from '../config/config';
+import { getOptimiserInfo } from '../getters/optimisers/getOptimiserInfo';
+import { RouterInfo } from '../getters/types';
+import { getRouterConfig } from '../utils/getRouterConfig';
 
 type RegisterForAutoRolloverArgs = {
   routerId: string;
@@ -9,21 +11,20 @@ type RegisterForAutoRolloverArgs = {
   signer: ethers.Signer;
 };
 
+type RegisterForAutoRolloverResponse = {
+  transaction: {
+    receipt: ethers.ContractReceipt;
+  };
+  newRouterState: RouterInfo;
+};
+
 export const registerForAutoRollover = async ({
   routerId,
   registration,
   signer,
-}: RegisterForAutoRolloverArgs): Promise<ethers.ContractReceipt> => {
-  const config = getMellowConfig();
-
-  const routerConfig = config.MELLOW_ROUTERS.find(
-    (item) => item.router.toLowerCase() === routerId.toLowerCase(),
-  );
-
-  if (!routerConfig) {
-    // TODO: add sentry
-    throw new Error('Router ID not found');
-  }
+}: RegisterForAutoRolloverArgs): Promise<RegisterForAutoRolloverResponse> => {
+  // Get Mellow Config
+  const routerConfig = getRouterConfig(routerId);
 
   if (routerConfig.isVault) {
     throw new Error('Deposit not supported for vaults.');
@@ -43,7 +44,17 @@ export const registerForAutoRollover = async ({
   const tx = await mellowRouter.registerForAutoRollover(registration, {
     gasLimit: getGasBuffer(gasLimit),
   });
-
   const receipt = await tx.wait();
-  return receipt;
+
+  // Get the next state of the router
+  const userAddress = await signer.getAddress();
+  const routerInfo = await getOptimiserInfo(routerId, userAddress);
+
+  // Return the response
+  return {
+    transaction: {
+      receipt,
+    },
+    newRouterState: routerInfo,
+  };
 };
