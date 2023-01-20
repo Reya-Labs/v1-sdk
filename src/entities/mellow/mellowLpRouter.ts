@@ -830,6 +830,14 @@ class MellowLpRouter {
       return false;
     }
 
+    if (
+      this.isRegisteredForAutoRollover &&
+      vaultIndex < this.metadata.vaults.length &&
+      closeOrPastMaturity(this.metadata.vaults[vaultIndex].maturityTimestampMS)
+    ) {
+      return false;
+    }
+
     return this.canManageVaultPositions[vaultIndex];
   };
 
