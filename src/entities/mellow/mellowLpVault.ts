@@ -521,6 +521,22 @@ class MellowLpVault {
     throw new Error('This is not supported');
   };
 
+  submitAllBatchesForFee = async (): Promise<ContractReceipt> => {
+    throw new Error('This is not supported');
+  };
+
+  getSubmitBatchGasCost = async (): Promise<BigNumber> => {
+    throw new Error('This is not supported');
+  };
+
+  getBatchBudgetUsd = async (): Promise<number> => {
+    throw new Error('This is not supported');
+  };
+
+  getBatchBudgetUnderlyingToken = async (): Promise<BigNumber> => {
+    throw new Error('This is not supported');
+  };
+
   public get autoRolloverRegistrationGasFeeUSD() {
     return 0;
   }
