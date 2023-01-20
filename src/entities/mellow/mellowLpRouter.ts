@@ -979,10 +979,13 @@ class MellowLpRouter {
 
     try {
       const budgetUnderlyingToken = await this.readOnlyContracts.mellowRouterContract.getTotalFee();
-      const budgetForBatchDescaled = this.descale(budgetUnderlyingToken, this.tokenDecimals);
-
       const usdExchangeRate = this.isETH ? await this.ethPrice() : 1;
-      return budgetForBatchDescaled * usdExchangeRate;
+      const budgetForBatchDescaled = this.descale(
+        budgetUnderlyingToken.mul(usdExchangeRate),
+        this.tokenDecimals,
+      );
+
+      return budgetForBatchDescaled;
     } catch (err) {
       const sentryTracker = getSentryTracker();
       sentryTracker.captureException(err);
@@ -999,11 +1002,11 @@ class MellowLpRouter {
 
     try {
       const fee = await this.readOnlyContracts.mellowRouterContract.getFee();
-      const feeDescaled = this.descale(fee, this.tokenDecimals);
 
       const usdExchangeRate = this.isETH ? await this.ethPrice() : 1;
+      const feeDescaled = this.descale(fee.mul(usdExchangeRate), this.tokenDecimals);
 
-      return feeDescaled * usdExchangeRate;
+      return feeDescaled;
     } catch (err) {
       const sentryTracker = getSentryTracker();
       sentryTracker.captureException(err);
