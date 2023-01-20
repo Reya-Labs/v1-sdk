@@ -8,3 +8,4 @@ export { abi as MellowLensContractABI } from './MellowLensContract.json';
 export { abi as MellowMultiVaultRouterABI } from './MellowMultiVaultRouterABI.json';
 export { abi as VoltzVaultABI } from './VoltzVault.json';
 export { abi as WethABI } from './WethABI.json';
+export { abi as Erc20RootVaultGovernanceABI } from './Erc20RootVaultGovernance.json';

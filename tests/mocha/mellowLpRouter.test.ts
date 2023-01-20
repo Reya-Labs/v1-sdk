@@ -12,6 +12,7 @@ import { abi as IERC20MinimalABI } from '../../src/ABIs/IERC20Minimal.json';
 import { withSigner, fail } from '../utils';
 import { advanceTimeAndBlock } from '../time';
 import * as initSDK from '../../src/init';
+import { geckoEthToUsd } from '../../src/utils/priceFetch';
 
 const { provider } = waffle;
 let ethMellowLpRouter: MellowLpRouter;
@@ -1036,7 +1037,10 @@ describe('Mellow Router Test Suite', () => {
 
     it('Calculate correct transaction fee in USD for autorollover registration', async () => {
       const currentEthPrice = await geckoEthToUsd(process.env.REACT_APP_COINGECKO_API_KEY || '');
-      expect(ethMellowLpRouter.autoRolloverRegistrationGasFeeUSD / currentEthPrice).to.be.closeTo(0.00239, 0.00001);
+      expect(ethMellowLpRouter.autoRolloverRegistrationGasFeeUSD / currentEthPrice).to.be.closeTo(
+        0.00239,
+        0.00001,
+      );
     });
 
     it('Can manage vault positions - init', async () => {
@@ -1087,9 +1091,9 @@ describe('Mellow Router Test Suite', () => {
         await ethMellowLpRouter.readOnlyContracts?.mellowRouterContract.owner(),
         async (routerOwnerSigner) => {
           await ethMellowLpRouter.readOnlyContracts?.mellowRouterContract
-              .connect(routerOwnerSigner)
-              .deprecateVault(4);
-        }
+            .connect(routerOwnerSigner)
+            .deprecateVault(4);
+        },
       );
 
       ethMellowLpRouter = new MellowLpRouter({
@@ -1119,8 +1123,12 @@ describe('Mellow Router Test Suite', () => {
         await ethMellowLpRouter.readOnlyContracts?.mellowRouterContract.owner(),
         async (routerOwnerSigner) => {
           await ethMellowLpRouter.readOnlyContracts?.mellowRouterContract
-              .connect(routerOwnerSigner)
-              .addVault((await ethMellowLpRouter.readOnlyContracts?.mellowRouterContract.getVaults())[4]);
+            .connect(routerOwnerSigner)
+            .addVault(
+              (
+                await ethMellowLpRouter.readOnlyContracts?.mellowRouterContract.getVaults()
+              )[4],
+            );
           await ethMellowLpRouter.readOnlyContracts?.mellowRouterContract
             .connect(routerOwnerSigner)
             .setAutoRolloverWeights([0, 0, 0, 0, 0, 100]);
@@ -1155,7 +1163,7 @@ describe('Mellow Router Test Suite', () => {
     it('Can manage vault positions - edge cases', async () => {
       expect(ethMellowLpRouter.canManageVaultPosition(-1)).to.be.eq(false);
       expect(ethMellowLpRouter.canManageVaultPosition(100)).to.be.eq(false);
-  
+
       ethMellowLpRouter = new MellowLpRouter({
         mellowRouterAddress: MellowRouterAddress,
         id: 'Test - ETH',
@@ -1171,8 +1179,8 @@ describe('Mellow Router Test Suite', () => {
           underlyingPools: [],
         },
       });
-  
+
       expect(ethMellowLpRouter.canManageVaultPosition(0)).to.be.eq(false);
     });
-  });  
+  });
 });

@@ -21,7 +21,6 @@ export type MellowProduct = MellowLpVault | MellowLpRouter;
 
 export type NetworkConfiguration = {
   MELLOW_ETH_WRAPPER: string;
-  MELLOW_LENS: string;
   MELLOW_VAULTS: {
     voltzVault: string;
     erc20RootVault: string;

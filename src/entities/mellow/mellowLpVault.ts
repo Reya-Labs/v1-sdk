@@ -56,8 +56,8 @@ class MellowLpVault {
 
   public signer?: Signer;
 
-  private userIndividualCommittedDeposits: number[] = [];
-  private userIndividualPendingDeposits: number[] = [];
+  public userIndividualCommittedDeposits: number[] = [];
+  public userIndividualPendingDeposit: number[] = [];
 
   public userWalletBalance?: number;
 
@@ -90,7 +90,7 @@ class MellowLpVault {
     }
 
     this.userIndividualCommittedDeposits = [0];
-    this.userIndividualPendingDeposits = [0];
+    this.userIndividualPendingDeposit = [0];
   }
 
   descale = (amount: BigNumberish, decimals: number): number => {
@@ -200,37 +200,28 @@ class MellowLpVault {
     return false;
   }
 
-  public userComittedDeposit(): number {
+  public get userComittedDeposit(): number {
     return this.userIndividualCommittedDeposits.reduce((total, deposit) => total + deposit, 0);
   }
 
-  public userPendingDeposit(): number {
-    return this.userIndividualPendingDeposits.reduce((total, deposit) => total + deposit, 0);
+  public get userPendingDeposit(): number {
+    return this.userIndividualPendingDeposit.reduce((total, deposit) => total + deposit, 0);
   }
 
-  public userDeposit(): number {
-    return this.userComittedDeposit() + this.userPendingDeposit();
-  }
+  public get userIndividualDeposits(): number[] {
+    if (
+      !(this.userIndividualPendingDeposit.length === this.userIndividualCommittedDeposits.length)
+    ) {
+      return [];
+    }
 
-  public userIndividualDeposit(vaultIndex: number): number {
-    return (
-      this.userIndividualCommittedDeposit(vaultIndex) +
-      this.userIndividualPendingDeposit(vaultIndex)
+    return this.userIndividualPendingDeposit.map(
+      (pendingDeposit, index) => pendingDeposit + this.userIndividualCommittedDeposits[index],
     );
   }
 
-  public userIndividualPendingDeposit(vaultIndex: number): number {
-    if (vaultIndex < this.userIndividualPendingDeposits.length) {
-      return this.userIndividualPendingDeposits[vaultIndex];
-    }
-    return 0;
-  }
-
-  public userIndividualCommittedDeposit(vaultIndex: number): number {
-    if (vaultIndex < this.userIndividualCommittedDeposits.length) {
-      return this.userIndividualCommittedDeposits[vaultIndex];
-    }
-    return 0;
+  public get userDeposit(): number {
+    return this.userIndividualDeposits.reduce((total, deposit) => total + deposit, 0);
   }
 
   refreshUserDeposit = async (): Promise<void> => {
@@ -527,6 +518,22 @@ class MellowLpVault {
   };
 
   refreshGasUnitPriceUSD = async (): Promise<void> => {
+    throw new Error('This is not supported');
+  };
+
+  submitAllBatchesForFee = async (): Promise<ContractReceipt> => {
+    throw new Error('This is not supported');
+  };
+
+  getSubmitBatchGasCost = async (): Promise<BigNumber> => {
+    throw new Error('This is not supported');
+  };
+
+  getBatchBudgetUsd = async (): Promise<number> => {
+    throw new Error('This is not supported');
+  };
+
+  getBatchBudgetUnderlyingToken = async (): Promise<BigNumber> => {
     throw new Error('This is not supported');
   };
 

@@ -1,10 +1,10 @@
+import { providers } from 'ethers';
 import { NetworkConfiguration } from './types';
 import { disableMaturedWeights } from './utils';
 
 const networkConfigurations: { [key: string]: NetworkConfiguration } = {
   mainnet: {
     MELLOW_ETH_WRAPPER: '0x07D6D75CA125a252AEf4d5647198446e5EDc5BBa',
-    MELLOW_LENS: '0x0000000000000000000000000000000000000000',
     MELLOW_VAULTS: [
       {
         voltzVault: '0xBBC446081cb7515a524D31e4afDB19dfc6BAa124',
@@ -160,7 +160,6 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
   },
   goerli: {
     MELLOW_ETH_WRAPPER: '0xcF2f79d8DF97E09BF5c4DBF3F953aeEF4f4a204d',
-    MELLOW_LENS: '0x616e5F5E84eb4Ba33b7C72a7116F2e0a07d8669E',
     MELLOW_VAULTS: [
       {
         voltzVault: '0x1b876d1b5A8636EFe9835D8ed0231c1429cBfc40',
@@ -315,9 +314,26 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
       },
     ],
   },
+  default: {
+    MELLOW_ETH_WRAPPER: '0x0000000000000000000000000000000000000000',
+    MELLOW_VAULTS: [],
+    MELLOW_ROUTERS: [],
+  },
 };
 
-export const getMellowConfig = (network: string): NetworkConfiguration => {
+export const getMellowConfig = ({
+  network,
+  providerURL,
+}: {
+  network: string;
+  providerURL: string;
+}): NetworkConfiguration & {
+  PROVIDER: providers.BaseProvider;
+} => {
+  if (!network) {
+    throw new Error(`Network not specified as an environment variable.`);
+  }
+
   const allNetworks = Object.keys(networkConfigurations);
   if (!allNetworks.includes(network)) {
     throw new Error(
@@ -328,5 +344,10 @@ export const getMellowConfig = (network: string): NetworkConfiguration => {
   let config = networkConfigurations[network as keyof typeof networkConfigurations];
   config = disableMaturedWeights(config);
 
-  return config;
+  const provider = providers.getDefaultProvider(providerURL);
+
+  return {
+    ...config,
+    PROVIDER: provider,
+  };
 };
