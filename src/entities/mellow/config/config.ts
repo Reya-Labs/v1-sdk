@@ -187,7 +187,7 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
     ],
     MELLOW_ROUTERS: [
       {
-        router: '0x704F6E9cB4f7e041CC89B6a49DF8EE2027a55164',
+        router: '0x7AaA278531D0baCb2aC483be3edDFf83E09564Aa',
         metadata: {
           title: 'MELLOW - ETH',
           token: 'ETH',
@@ -198,116 +198,18 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
           deprecated: false,
           vaults: [
             {
-              weight: 0,
+              weight: 50,
               pools: ['Compound - ETH', 'Compound - ETH'],
-              maturityTimestampMS: 1670427875000,
+              maturityTimestampMS: 1676542449000,
               estimatedHistoricApy: [10, 10],
-              withdrawable: true,
-            },
-            {
-              weight: 0,
-              pools: ['Compound - ETH'],
-              maturityTimestampMS: 1672500292000,
-              estimatedHistoricApy: [10, 10],
-              withdrawable: true,
-            },
-            {
-              weight: 0,
-              pools: ['Compound - ETH'],
-              maturityTimestampMS: 1673093041000,
-              estimatedHistoricApy: [20, 20],
-              withdrawable: true,
-            },
-            {
-              weight: 0,
-              pools: ['Compound - ETH'],
-              maturityTimestampMS: 1673697841000,
-              estimatedHistoricApy: [30, 30],
               withdrawable: true,
             },
             {
               weight: 50,
               pools: ['Compound - ETH'],
               maturityTimestampMS: 1676542449000,
-              estimatedHistoricApy: [30, 30],
-              withdrawable: false,
-            },
-            {
-              weight: 50,
-              pools: ['Compound - ETH'],
-              maturityTimestampMS: 1676542449000,
-              estimatedHistoricApy: [30, 30],
-              withdrawable: false,
-            },
-          ],
-        },
-      },
-      {
-        router: '0x9f397CD24103A0a0252DeC82a88e656480C53fB7',
-        metadata: {
-          title: 'MELLOW - USDC',
-          token: 'USDC',
-          description:
-            'The Mellow LP Optimiser runs a permissionless strategy that takes deposits and generates optimised LP fees by providing liquidity on Voltz Protocol.',
-          show: true,
-          soon: false,
-          deprecated: false,
-          vaults: [
-            {
-              weight: 0,
-              pools: ['Compound - USDC', 'Compound - USDC'],
-              maturityTimestampMS: 1670427875000,
-              withdrawable: true,
               estimatedHistoricApy: [10, 10],
-            },
-            {
-              weight: 0,
-              pools: ['Compound - USDC', 'Compound - USDC'],
-              maturityTimestampMS: 1670427875000,
-              estimatedHistoricApy: [30, 30],
               withdrawable: true,
-            },
-            {
-              weight: 0,
-              pools: ['Compound - USDC'],
-              maturityTimestampMS: 1672500292000,
-              estimatedHistoricApy: [30, 30],
-              withdrawable: true,
-            },
-            {
-              weight: 100,
-              pools: ['Compound - USDC'],
-              maturityTimestampMS: 1676542449000,
-              estimatedHistoricApy: [30, 30],
-              withdrawable: false,
-            },
-          ],
-        },
-      },
-      {
-        router: '0xB1EBCC0367c775D9447DFb0B55082aA694113ae0',
-        metadata: {
-          title: 'MELLOW - USDT',
-          token: 'USDT',
-          description:
-            'The Mellow LP Optimiser runs a permissionless strategy that takes deposits and generates optimised LP fees by providing liquidity on Voltz Protocol.',
-          show: true,
-          soon: false,
-          deprecated: false,
-          vaults: [
-            {
-              weight: 0,
-              pools: ['Compound - USDT'],
-              maturityTimestampMS: 1672500292000,
-              estimatedHistoricApy: [15, 15],
-              withdrawable: true,
-            },
-            {
-              weight: 100,
-              pools: ['Compound - USDT'],
-              maturityTimestampMS: 1676542449000,
-              estimatedHistoricApy: [15, 15],
-              withdrawable: false,
             },
           ],
         },

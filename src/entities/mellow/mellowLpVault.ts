@@ -525,7 +525,7 @@ class MellowLpVault {
     throw new Error('This is not supported');
   };
 
-  getSubmitBatchGasCost = async (): Promise<BigNumber> => {
+  getSubmitBatchGasCost = async (): Promise<number> => {
     throw new Error('This is not supported');
   };
 
@@ -533,7 +533,11 @@ class MellowLpVault {
     throw new Error('This is not supported');
   };
 
-  getBatchBudgetUnderlyingToken = async (): Promise<BigNumber> => {
+  getDepositGasCost = async (
+    amount: number,
+    _weights: number[],
+    registration?: boolean | undefined,
+  ): Promise<number> => {
     throw new Error('This is not supported');
   };
 

@@ -973,42 +973,16 @@ class MellowLpRouter {
   };
 
   getBatchBudgetUsd = async (): Promise<number> => {
-    if (isUndefined(this.writeContracts)) {
+    if (isUndefined(this.writeContracts) || isUndefined(this.readOnlyContracts)) {
       throw new Error('Uninitialized contracts.');
     }
 
     try {
-      const budgetEth = await this.getBatchBudgetUnderlyingToken();
-      const budgetForBatchDescaled = this.descale(budgetEth, this.tokenDecimals);
+      const budgetUnderlyingToken = await this.readOnlyContracts.mellowRouterContract.getTotalFee();
+      const budgetForBatchDescaled = this.descale(budgetUnderlyingToken, this.tokenDecimals);
 
       const usdExchangeRate = this.isETH ? await this.ethPrice() : 1;
       return budgetForBatchDescaled * usdExchangeRate;
-    } catch (err) {
-      const sentryTracker = getSentryTracker();
-      sentryTracker.captureException(err);
-      sentryTracker.captureMessage('Failed to get batch budget');
-      console.error('Error while getting batch budget', err);
-      throw new Error('Failed to get batch budget');
-    }
-  };
-
-  getBatchBudgetUnderlyingToken = async (): Promise<BigNumber> => {
-    if (isUndefined(this.readOnlyContracts)) {
-      throw new Error('Uninitialized contracts.');
-    }
-
-    try {
-      let remainingDeposits = 0;
-      for (let i = 0; i < this.vaultsCount; i++) {
-        remainingDeposits += (
-          await this.readOnlyContracts.mellowRouterContract.getBatchedDeposits(i)
-        ).length;
-      }
-
-      const budgetPerDeposit =
-        await this.readOnlyContracts.mellowRouterContract.getBatchBudgetPerDeposit();
-
-      return budgetPerDeposit.mul(remainingDeposits);
     } catch (err) {
       const sentryTracker = getSentryTracker();
       sentryTracker.captureException(err);
