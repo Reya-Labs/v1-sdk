@@ -187,9 +187,134 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
     ],
     MELLOW_ROUTERS: [
       {
-        router: '0x7AaA278531D0baCb2aC483be3edDFf83E09564Aa',
+        router: '0xF875B4BD81b1be40775652d8fDC174512C36DB20',
+        metadata: {
+          title: 'MELLOW - USDC',
+          token: 'USDC',
+          description: 'Optimised for LPing across pools in 50x levered positions.',
+          show: true,
+          soon: false,
+          deprecated: false,
+          vaults: [
+            {
+              weight: 0,
+              pools: ['AAVE - USDC LEND'],
+              maturityTimestampMS: 1672488000000,
+              estimatedHistoricApy: [6.51, 6.51],
+              withdrawable: true,
+            },
+            {
+              weight: 20,
+              pools: ['AAVE - USDC BORROW'],
+              maturityTimestampMS: 1680264000000,
+              estimatedHistoricApy: [0, 20],
+              withdrawable: false,
+            },
+            {
+              weight: 20,
+              pools: ['AAVE - USDC LEND'],
+              maturityTimestampMS: 1675166400000,
+              estimatedHistoricApy: [0, 20],
+              withdrawable: false,
+            },
+            {
+              weight: 60,
+              pools: ['AAVE - USDC LEND'],
+              maturityTimestampMS: 1680264000000,
+              estimatedHistoricApy: [0, 20],
+              withdrawable: false,
+            },
+          ],
+        },
+      },
+
+      {
+        router: '0x1963efb3B756e7D17D0e54645339e7E037705cc1',
         metadata: {
           title: 'MELLOW - ETH',
+          token: 'ETH',
+          description: 'Optimised for Lping across pools in 50x levered positions.',
+          show: true,
+          soon: false,
+          deprecated: false,
+          vaults: [
+            {
+              weight: 0,
+              maturityTimestampMS: 1672491600000,
+              pools: ['AAVE - ETH BORROW', 'AAVE - ETH LEND', 'LIDO - ETH', 'ROCKET - ETH'],
+              estimatedHistoricApy: [10.96, 10.96],
+              withdrawable: true,
+            },
+            {
+              weight: 100,
+              maturityTimestampMS: 1680264000000,
+              pools: ['LIDO - ETH', 'ROCKET - ETH'],
+              estimatedHistoricApy: [-16, 6],
+              withdrawable: false,
+            },
+          ],
+        },
+      },
+
+      {
+        router: '0xD6e133B9C82F04734B48d5808800078038231a22',
+        metadata: {
+          title: 'MELLOW - DAI',
+          token: 'DAI',
+          description: 'Optimised for LPing across pools in 50x levered positions.',
+          show: true,
+          soon: false,
+          deprecated: false,
+          vaults: [
+            {
+              weight: 0,
+              maturityTimestampMS: 1672488000000,
+              pools: ['AAVE - DAI LEND', 'COMPOUND - DAI LEND'],
+              estimatedHistoricApy: [10.3, 10.3],
+              withdrawable: true,
+            },
+            {
+              weight: 100,
+              maturityTimestampMS: 1680264000000,
+              pools: ['AAVE - DAI LEND', 'COMPOUND - DAI LEND'],
+              estimatedHistoricApy: [1, 4],
+              withdrawable: false,
+            },
+          ],
+        },
+      },
+
+      {
+        router: '0x9c1100A321ab778cE5d3B42c7b99f44afc3A4c41',
+        metadata: {
+          title: 'MELLOW - USDT',
+          token: 'USDT',
+          description: 'Optimised for LPing across pools in 50x levered positions.',
+          show: true,
+          soon: false,
+          deprecated: false,
+          vaults: [
+            {
+              weight: 80,
+              maturityTimestampMS: 1680264000000,
+              pools: ['COMPOUND - USDT BORROW'],
+              estimatedHistoricApy: [3, 32],
+              withdrawable: false,
+            },
+            {
+              weight: 20,
+              maturityTimestampMS: 1680264000000,
+              pools: ['AAVE - USDT BORROW'],
+              estimatedHistoricApy: [3, 32],
+              withdrawable: false,
+            },
+          ],
+        },
+      },
+      {
+        router: '0x7AaA278531D0baCb2aC483be3edDFf83E09564Aa',
+        metadata: {
+          title: 'Cost Test MELLOW - ETH',
           token: 'ETH',
           description:
             'The Mellow LP Optimiser runs a permissionless strategy that takes deposits and generates optimised LP fees by providing liquidity on Voltz Protocol.',
