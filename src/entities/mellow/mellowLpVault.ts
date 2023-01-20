@@ -541,6 +541,10 @@ class MellowLpVault {
     throw new Error('This is not supported');
   };
 
+  getDepositFeeUsd = async (): Promise<number> => {
+    throw new Error('This is not supported');
+  };
+
   public get autoRolloverRegistrationGasFeeUSD() {
     return 0;
   }

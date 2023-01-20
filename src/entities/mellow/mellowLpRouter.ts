@@ -992,15 +992,18 @@ class MellowLpRouter {
     }
   };
 
-  getDepositFee = async (): Promise<BigNumber> => {
-    if (isUndefined(this.writeContracts)) {
+  getDepositFeeUsd = async (): Promise<number> => {
+    if (isUndefined(this.readOnlyContracts)) {
       throw new Error('Uninitialized contracts.');
     }
 
     try {
-      const fee = await this.writeContracts.mellowRouter.getFee();
+      const fee = await this.readOnlyContracts.mellowRouterContract.getFee();
+      const feeDescaled = this.descale(fee, this.tokenDecimals);
 
-      return fee;
+      const usdExchangeRate = this.isETH ? await this.ethPrice() : 1;
+
+      return feeDescaled * usdExchangeRate;
     } catch (err) {
       const sentryTracker = getSentryTracker();
       sentryTracker.captureException(err);
