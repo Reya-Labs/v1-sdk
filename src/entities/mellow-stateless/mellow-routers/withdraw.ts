@@ -1,7 +1,6 @@
 import { ethers, BigNumber } from 'ethers';
 import { Erc20RootVaultABI, MellowMultiVaultRouterABI } from '../../../ABIs';
 import { getGasBuffer } from '../../../constants';
-import { getProvider } from '../../../init';
 import { getMellowConfig } from '../config/config';
 import { getMellowProduct } from '../getters/getMellowProduct';
 import { RouterInfo } from '../getters/types';
@@ -80,10 +79,8 @@ const vaultWithdraw = async ({
   vaultId,
   signer,
 }: WithdrawArgs): Promise<ethers.ContractReceipt> => {
-  const provider = getProvider();
-
   // Get ERC20 vault contract
-  const erc20RootVault = new ethers.Contract(vaultId, Erc20RootVaultABI, provider);
+  const erc20RootVault = new ethers.Contract(vaultId, Erc20RootVaultABI, signer);
 
   // Get the balance of LP tokens
   const userAddress = await signer.getAddress();
