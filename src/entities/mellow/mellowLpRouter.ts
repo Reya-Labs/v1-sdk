@@ -12,7 +12,6 @@ import {
   Contract,
 } from 'ethers';
 import { isUndefined } from 'lodash';
-import { toBn } from 'evm-bn';
 
 import { getTokenInfo } from '../../services/getTokenInfo';
 
@@ -985,7 +984,7 @@ class MellowLpRouter {
 
     try {
       const budgetUnderlyingToken = await this.readOnlyContracts.mellowRouterContract.getTotalFee();
-      const usdExchangeRate = this.isETH ? await this.ethPrice() : 1;
+      const usdExchangeRate = this.isETH ? Math.round(await this.ethPrice()) : 1;
       const budgetForBatchDescaled = this.descale(
         budgetUnderlyingToken.mul(usdExchangeRate),
         this.tokenDecimals,
@@ -1001,19 +1000,14 @@ class MellowLpRouter {
     }
   };
 
-  getDepositFeeUsd = async (): Promise<number> => {
+  getDepositFeeUnderlying = async (): Promise<number> => {
     if (isUndefined(this.readOnlyContracts)) {
       throw new Error('Uninitialized contracts.');
     }
 
     try {
       const fee = await this.readOnlyContracts.mellowRouterContract.getFee();
-
-      const usdExchangeRate = this.isETH ? await this.ethPrice() : 1;
-      const feeDescaled = this.descale(
-        fee.mul(toBn(usdExchangeRate.toString())),
-        this.tokenDecimals,
-      );
+      const feeDescaled = this.descale(fee, this.tokenDecimals);
 
       return feeDescaled;
     } catch (err) {
