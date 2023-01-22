@@ -1017,6 +1017,25 @@ class MellowLpRouter {
       throw new Error('Failed to get deposit fee');
     }
   };
+
+  getDepositFeeUsd = async (): Promise<number> => {
+    if (isUndefined(this.readOnlyContracts)) {
+      throw new Error('Uninitialized contracts.');
+    }
+
+    try {
+      const fee = await this.readOnlyContracts.mellowRouterContract.getFee();
+      const usdExchangeRate = this.isETH ? Math.round(await this.ethPrice()) : 1;
+      const feeDescaled = this.descale(fee.mul(usdExchangeRate), this.tokenDecimals);
+
+      return feeDescaled;
+    } catch (err) {
+      const sentryTracker = getSentryTracker();
+      sentryTracker.captureException(err);
+      sentryTracker.captureMessage('Failed to get deposit fee');
+      throw new Error('Failed to get deposit fee');
+    }
+  };
 }
 
 export default MellowLpRouter;
