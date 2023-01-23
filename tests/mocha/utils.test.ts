@@ -2,11 +2,13 @@ import { expect } from 'chai';
 import { waffle, network } from 'hardhat';
 import { convertGasUnitsToUSD } from '../../src/utils/mellowHelpers/convertGasUnitsToUSD';
 import { geckoEthToUsd } from '../../src/utils/priceFetch';
+import { delay } from '../../src/utils/retry';
 
 const { provider } = waffle;
 
 describe('Test utils', () => {
   const resetNetwork = async (blockNumber: number) => {
+    await delay(1000);
     await network.provider.request({
       method: 'hardhat_reset',
       params: [
