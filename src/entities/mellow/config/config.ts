@@ -226,7 +226,14 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
               withdrawable: true,
             },
             {
-              weight: 100,
+              weight: 50,
+              pools: ['Compound - ETH'],
+              maturityTimestampMS: 1676542449000,
+              estimatedHistoricApy: [30, 30],
+              withdrawable: false,
+            },
+            {
+              weight: 50,
               pools: ['Compound - ETH'],
               maturityTimestampMS: 1676542449000,
               estimatedHistoricApy: [30, 30],
@@ -305,6 +312,34 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
           ],
         },
       },
+      {
+        router: '0x7AaA278531D0baCb2aC483be3edDFf83E09564Aa',
+        metadata: {
+          title: 'Cost Test MELLOW - ETH',
+          token: 'ETH',
+          description:
+            'The Mellow LP Optimiser runs a permissionless strategy that takes deposits and generates optimised LP fees by providing liquidity on Voltz Protocol.',
+          show: true,
+          soon: false,
+          deprecated: false,
+          vaults: [
+            {
+              weight: 50,
+              pools: ['Compound - ETH'],
+              maturityTimestampMS: 1676542449000,
+              estimatedHistoricApy: [10, 10],
+              withdrawable: true,
+            },
+            {
+              weight: 50,
+              pools: ['Compound - ETH'],
+              maturityTimestampMS: 1676542449000,
+              estimatedHistoricApy: [10, 10],
+              withdrawable: true,
+            },
+          ],
+        },
+      },
     ],
   },
   default: {
@@ -314,7 +349,7 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
   },
 };
 
-export const getConfig = ({
+export const getMellowConfig = ({
   network,
   providerURL,
 }: {

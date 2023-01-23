@@ -12,19 +12,19 @@ import {
   Contract,
 } from 'ethers';
 import { isUndefined } from 'lodash';
-import { toBn } from 'evm-bn';
 
 import { getTokenInfo } from '../../services/getTokenInfo';
 
 import { getGasBuffer, MaxUint256Bn, TresholdApprovalBn } from '../../constants';
 
 import { abi as Erc20RootVaultABI } from '../../ABIs/Erc20RootVault.json';
-import { abi as Erc20RootVaultGovernanceABI } from '../../ABIs/Erc20RootVaultGovernance.json';
 import { abi as IERC20MinimalABI } from '../../ABIs/IERC20Minimal.json';
 import { abi as MellowMultiVaultRouterABI } from '../../ABIs/MellowMultiVaultRouterABI.json';
 import { getSentryTracker } from '../../init';
-import { closeOrPastMaturity, MellowProductMetadata } from './config';
+import { MellowProductMetadata } from './config/types';
+import { closeOrPastMaturity } from './config/utils';
 import { convertGasUnitsToUSD } from '../../utils/mellowHelpers/convertGasUnitsToUSD';
+import { geckoEthToUsd } from '../../utils/priceFetch';
 
 export type MellowLpRouterArgs = {
   id: string;
@@ -33,6 +33,7 @@ export type MellowLpRouterArgs = {
   metadata: MellowProductMetadata & {
     underlyingPools: string[];
   };
+  ethPrice?: () => Promise<number>;
 };
 
 type BatchedDeposit = {
@@ -44,6 +45,7 @@ class MellowLpRouter {
   public readonly id: string;
   public readonly mellowRouterAddress: string;
   public readonly provider: providers.Provider;
+  public readonly ethPrice: () => Promise<number>;
   metadata: MellowProductMetadata & {
     underlyingPools: string[];
   };
@@ -52,7 +54,6 @@ class MellowLpRouter {
     token: Contract;
     mellowRouterContract: Contract;
     erc20RootVault: Contract[];
-    erc20RootVaultGovernance: Contract[];
   };
 
   public writeContracts?: {
@@ -62,9 +63,6 @@ class MellowLpRouter {
   };
 
   public signer?: Signer;
-
-  public vaultCumulative?: number;
-  public vaultCap?: number;
 
   public userIndividualCommittedDeposits: number[] = [];
   public userIndividualPendingDeposit: number[] = [];
@@ -78,16 +76,27 @@ class MellowLpRouter {
 
   public vaultsCount = 0;
 
-  public isRegisteredForAutoRollover?: boolean;
+  public isRegisteredForAutoRollover = false;
+
+  private canManageVaultPositions?: boolean[];
 
   private gasUnitPriceUSD = 0;
   private autoRolloverRegistrationGasUnits = 0;
+  private batchBudgetScaled: BigNumberish = 0;
 
-  public constructor({ mellowRouterAddress, id, provider, metadata }: MellowLpRouterArgs) {
+  public constructor({
+    mellowRouterAddress,
+    id,
+    provider,
+    metadata,
+    ethPrice,
+  }: MellowLpRouterArgs) {
     this.mellowRouterAddress = mellowRouterAddress;
     this.id = id;
     this.provider = provider;
     this.metadata = metadata;
+    this.ethPrice =
+      ethPrice || (() => geckoEthToUsd(process.env.REACT_APP_COINGECKO_API_KEY || ''));
   }
 
   descale = (amount: BigNumberish, decimals: number): number => {
@@ -138,25 +147,11 @@ class MellowLpRouter {
       (address: string) => new ethers.Contract(address, Erc20RootVaultABI, this.provider),
     );
 
-    // Instantiate an empty array of addresses
-    const erc20RootVaultGovernanceAddresses = [];
-    for (const erc20RootVaultContract of erc20RootVaultContracts) {
-      erc20RootVaultGovernanceAddresses.push(await erc20RootVaultContract.vaultGovernance());
-    }
-
-    // ERC20RootVaultGovernanceContracts stores every governance contract associated with this router
-    const erc20RootVaultGovernanceContracts = erc20RootVaultGovernanceAddresses.map(
-      (address: string) => new ethers.Contract(address, Erc20RootVaultGovernanceABI, this.provider),
-    );
-
     this.readOnlyContracts = {
       token: tokenContract,
       erc20RootVault: erc20RootVaultContracts,
-      erc20RootVaultGovernance: erc20RootVaultGovernanceContracts,
       mellowRouterContract,
     };
-
-    await this.refreshVaultCumulative();
 
     this.userIndividualCommittedDeposits = new Array(this.vaultsCount).fill(0x0);
     this.userIndividualPendingDeposit = new Array(this.vaultsCount).fill(0x0);
@@ -197,19 +192,36 @@ class MellowLpRouter {
 
     await this.refreshUserDeposit();
     await this.refreshWalletBalance();
+    await this.refreshBatchBudget();
 
+    // try-catch block to be removed once all routers have been upgraded on GOERLI & MAINNET
     try {
       this.isRegisteredForAutoRollover =
         await this.readOnlyContracts.mellowRouterContract.isRegisteredForAutoRollover(
           this.userAddress,
         );
 
+      this.canManageVaultPositions = [];
+      for (let vaultIndex = 0; vaultIndex < this.vaultsCount; vaultIndex += 1) {
+        this.canManageVaultPositions.push(
+          await this.readOnlyContracts.mellowRouterContract.canWithdrawOrRollover(
+            vaultIndex,
+            this.userAddress,
+          ),
+        );
+      }
+    } catch (error) {}
+
+    // try-catch to not be removed
+    try {
       this.autoRolloverRegistrationGasUnits = (
         await this.writeContracts.mellowRouter.estimateGas.registerForAutoRollover(
           !this.isRegisteredForAutoRollover,
         )
       ).toNumber();
-    } catch (error) {}
+    } catch (error) {
+      this.autoRolloverRegistrationGasUnits = 0;
+    }
 
     this.userInitialized = true;
   };
@@ -278,35 +290,11 @@ class MellowLpRouter {
     return this.userIndividualDeposits.reduce((total, deposit) => total + deposit, 0);
   }
 
-  refreshVaultCumulative = async (): Promise<void> => {
-    this.vaultCumulative = 0;
-    this.vaultCap = 0;
+  public get batchBudgetUnderlying(): number {
+    const budgetForBatchDescaled = this.descale(this.batchBudgetScaled, this.tokenDecimals);
 
-    if (isUndefined(this.readOnlyContracts)) {
-      return;
-    }
-
-    for (const erc20RootVaultContract of this.readOnlyContracts.erc20RootVault) {
-      const totalLpTokens = await erc20RootVaultContract.totalSupply();
-      const tvl = await erc20RootVaultContract.tvl();
-
-      const nft = await erc20RootVaultContract.nft();
-
-      for (const erc20RootVaultGovernanceContract of this.readOnlyContracts
-        .erc20RootVaultGovernance) {
-        const strategyParams = await erc20RootVaultGovernanceContract.strategyParams(nft);
-
-        const vaultCumulative = this.descale(tvl.minTokenAmounts[0], this.tokenDecimals);
-        const vaultCap = this.descale(
-          totalLpTokens.mul(toBn('1', 18)).div(strategyParams.tokenLimit),
-          16,
-        );
-
-        this.vaultCumulative += vaultCumulative;
-        this.vaultCap += vaultCap;
-      }
-    }
-  };
+    return budgetForBatchDescaled;
+  }
 
   refreshUserComittedDeposit = async (): Promise<void> => {
     this.userIndividualCommittedDeposits = this.userIndividualCommittedDeposits.map(() => 0);
@@ -386,6 +374,15 @@ class MellowLpRouter {
       : await this.readOnlyContracts.token.balanceOf(this.userAddress);
 
     this.userWalletBalance = this.descale(walletBalance, this.tokenDecimals);
+  };
+
+  refreshBatchBudget = async (): Promise<void> => {
+    if (isUndefined(this.readOnlyContracts)) {
+      this.batchBudgetScaled = 0;
+      return;
+    }
+
+    this.batchBudgetScaled = await this.readOnlyContracts.mellowRouterContract.getTotalFee();
   };
 
   isTokenApproved = async (): Promise<boolean> => {
@@ -524,6 +521,7 @@ class MellowLpRouter {
 
       try {
         const receipt = await tx.wait();
+        this.isRegisteredForAutoRollover = registration;
 
         try {
           await this.refreshUserDeposit();
@@ -535,6 +533,20 @@ class MellowLpRouter {
           );
           console.error(
             'User deposit failed to refresh after depositAndRegisterForAutoRollover.',
+            error,
+          );
+        }
+
+        try {
+          await this.refreshBatchBudget();
+        } catch (error) {
+          const sentryTracker = getSentryTracker();
+          sentryTracker.captureException(error);
+          sentryTracker.captureMessage(
+            'Batch budget failed to refresh after depositAndRegisterForAutoRollover',
+          );
+          console.error(
+            'Batch budget failed to refresh after depositAndRegisterForAutoRollover.',
             error,
           );
         }
@@ -607,6 +619,15 @@ class MellowLpRouter {
           sentryTracker.captureException(error);
           sentryTracker.captureMessage('User deposit failed to refresh after deposit');
           console.error('User deposit failed to refresh after deposit.', error);
+        }
+
+        try {
+          await this.refreshBatchBudget();
+        } catch (error) {
+          const sentryTracker = getSentryTracker();
+          sentryTracker.captureException(error);
+          sentryTracker.captureMessage('Batch budget failed to refresh after deposit');
+          console.error('Batch budget failed to refresh after deposit.', error);
         }
 
         try {
@@ -839,6 +860,226 @@ class MellowLpRouter {
   public get autoRolloverRegistrationGasFeeUSD() {
     return this.autoRolloverRegistrationGasUnits * this.gasUnitPriceUSD;
   }
+
+  public canManageVaultPosition = (vaultIndex: number): boolean => {
+    if (this.canManageVaultPositions === undefined) {
+      return false;
+    }
+
+    if (vaultIndex < 0 || vaultIndex >= this.vaultsCount) {
+      return false;
+    }
+
+    if (
+      this.isRegisteredForAutoRollover &&
+      vaultIndex < this.metadata.vaults.length &&
+      closeOrPastMaturity(this.metadata.vaults[vaultIndex].maturityTimestampMS)
+    ) {
+      return false;
+    }
+
+    return this.canManageVaultPositions[vaultIndex];
+  };
+
+  submitAllBatchesForFee = async (): Promise<ContractReceipt> => {
+    if (
+      isUndefined(this.readOnlyContracts) ||
+      isUndefined(this.writeContracts) ||
+      isUndefined(this.userAddress)
+    ) {
+      throw new Error('Uninitialized contracts.');
+    }
+
+    try {
+      await this.writeContracts.mellowRouter.callStatic.submitAllBatchesForFee();
+    } catch (err) {
+      const sentryTracker = getSentryTracker();
+      sentryTracker.captureException(err);
+      sentryTracker.captureMessage('Unsuccessful batch submittion simulation');
+      throw new Error('Unsuccessful batch submittion simulation');
+    }
+
+    const gasLimit = await this.writeContracts.mellowRouter.estimateGas.submitAllBatchesForFee();
+
+    const tx = await this.writeContracts.mellowRouter.submitAllBatchesForFee({
+      gasLimit: getGasBuffer(gasLimit),
+    });
+
+    try {
+      const receipt = await tx.wait();
+
+      try {
+        await this.refreshBatchBudget();
+      } catch (error) {
+        const sentryTracker = getSentryTracker();
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage('Batch budget failed to refresh after submitting batch');
+        console.error('Batch budget failed to refresh after submitting batch.', error);
+      }
+
+      return receipt;
+    } catch (err) {
+      const sentryTracker = getSentryTracker();
+      sentryTracker.captureException(err);
+      sentryTracker.captureMessage('Unsuccessful batch submittion');
+      throw new Error('Unsuccessful batch submittion');
+    }
+  };
+
+  getSubmitBatchGasCost = async (): Promise<number> => {
+    if (isUndefined(this.writeContracts)) {
+      throw new Error('Uninitialized contracts.');
+    }
+
+    try {
+      const gasUnitsEstimate =
+        await this.writeContracts.mellowRouter.estimateGas.submitAllBatchesForFee();
+
+      const gasPrice = gasUnitsEstimate.toNumber() * this.gasUnitPriceUSD;
+      return gasPrice;
+    } catch (err) {
+      const sentryTracker = getSentryTracker();
+      sentryTracker.captureException(err);
+      sentryTracker.captureMessage('Unsuccessful batch submittion simulation');
+      console.error('Error during batch submittion', err);
+      throw new Error('Unsuccessful batch submittion simulation');
+    }
+  };
+
+  getDepositGasCost = async (
+    amount: number,
+    _weights: number[],
+    registration?: boolean | undefined,
+  ): Promise<number> => {
+    if (isUndefined(this.writeContracts) || isUndefined(this.userAddress)) {
+      throw new Error('Uninitialized contracts.');
+    }
+
+    const weights = _weights;
+    while (weights.length < this.vaultsCount) {
+      weights.push(0);
+    }
+
+    if (!this.validateWeights(weights)) {
+      throw new Error('Weights are invalid');
+    }
+
+    const scaledAmount = this.scale(amount);
+    const tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
+
+    if (this.isETH) {
+      tempOverrides.value = scaledAmount;
+    }
+
+    let gasUnitsEstimate: BigNumber;
+
+    if (registration !== undefined) {
+      try {
+        if (this.isETH) {
+          gasUnitsEstimate =
+            await this.writeContracts.mellowRouter.estimateGas.depositEthAndRegisterForAutoRollover(
+              weights,
+              registration,
+              tempOverrides,
+            );
+        } else {
+          gasUnitsEstimate =
+            await this.writeContracts.mellowRouter.estimateGas.depositErc20AndRegisterForAutoRollover(
+              scaledAmount,
+              weights,
+              registration,
+            );
+        }
+      } catch (error) {
+        console.error('Error estimating gas for depositAndRegisterForAutoRollover.', error);
+        const sentryTracker = getSentryTracker();
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage(
+          'Unsuccessful depositAndRegisterForAutoRollover gas estimate.',
+        );
+        throw new Error('Unsuccessful depositAndRegisterForAutoRollover gas estimate.');
+      }
+    } else {
+      try {
+        if (this.isETH) {
+          gasUnitsEstimate = await this.writeContracts.mellowRouter.estimateGas.depositEth(
+            weights,
+            tempOverrides,
+          );
+        } else {
+          gasUnitsEstimate = await this.writeContracts.mellowRouter.estimateGas.depositErc20(
+            scaledAmount,
+            weights,
+          );
+        }
+      } catch (error) {
+        console.error('Error when estimating gas for deposit.', error);
+        const sentryTracker = getSentryTracker();
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage('Unsuccessful deposit gas estimate.');
+        throw new Error('Unsuccessful deposit gas estimate.');
+      }
+    }
+
+    const gasPrice = gasUnitsEstimate.toNumber() * this.gasUnitPriceUSD;
+
+    return gasPrice;
+  };
+
+  getBatchBudgetUsd = async (): Promise<number> => {
+    try {
+      const usdExchangeRate = this.isETH ? Math.round(await this.ethPrice()) : 1;
+      const budgetForBatchDescaled = this.descale(
+        BigNumber.from(this.batchBudgetScaled).mul(usdExchangeRate),
+        this.tokenDecimals,
+      );
+
+      return budgetForBatchDescaled;
+    } catch (err) {
+      const sentryTracker = getSentryTracker();
+      sentryTracker.captureException(err);
+      sentryTracker.captureMessage('Failed to get batch budget');
+      console.error('Error while getting batch budget', err);
+      throw new Error('Failed to get batch budget');
+    }
+  };
+
+  getDepositFeeUnderlying = async (): Promise<number> => {
+    if (isUndefined(this.readOnlyContracts)) {
+      throw new Error('Uninitialized contracts.');
+    }
+
+    try {
+      const fee = await this.readOnlyContracts.mellowRouterContract.getFee();
+      const feeDescaled = this.descale(fee, this.tokenDecimals);
+
+      return feeDescaled;
+    } catch (err) {
+      const sentryTracker = getSentryTracker();
+      sentryTracker.captureException(err);
+      sentryTracker.captureMessage('Failed to get deposit fee');
+      throw new Error('Failed to get deposit fee');
+    }
+  };
+
+  getDepositFeeUsd = async (): Promise<number> => {
+    if (isUndefined(this.readOnlyContracts)) {
+      throw new Error('Uninitialized contracts.');
+    }
+
+    try {
+      const fee = await this.readOnlyContracts.mellowRouterContract.getFee();
+      const usdExchangeRate = this.isETH ? Math.round(await this.ethPrice()) : 1;
+      const feeDescaled = this.descale(fee.mul(usdExchangeRate), this.tokenDecimals);
+
+      return feeDescaled;
+    } catch (err) {
+      const sentryTracker = getSentryTracker();
+      sentryTracker.captureException(err);
+      sentryTracker.captureMessage('Failed to get deposit fee');
+      throw new Error('Failed to get deposit fee');
+    }
+  };
 }
 
 export default MellowLpRouter;

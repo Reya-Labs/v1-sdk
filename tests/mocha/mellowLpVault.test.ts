@@ -99,12 +99,6 @@ describe('Mellow Router Test Suite', () => {
       expect(ethMellowLpVault.readOnlyContracts?.token.address).to.be.eq(
         '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6',
       );
-
-      const erc20RootVaultGovernanceAddress =
-        ethMellowLpVault.readOnlyContracts?.erc20RootVaultGovernance[0].address;
-      expect(erc20RootVaultGovernanceAddress).to.be.eq(
-        '0x4DCc9Ad7ff5964d13ee4A6932922f1a24f3f8e25',
-      );
     });
 
     it('Check that user has been initialised correctly', async () => {

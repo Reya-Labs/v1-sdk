@@ -1,9 +1,10 @@
 import { getAMMs as getRawAMMs, AMM as RawAMM } from '@voltz-protocol/subgraph-data';
+import { isUndefined } from 'lodash';
 import { getSentryTracker } from '../../init';
 import { RateOracle } from '../rateOracle';
 import Token from '../token';
 import { AMM } from './amm';
-import { getConfig } from './voltz-config/getConfig';
+import { getVoltzPoolConfig } from './voltz-config';
 
 type GetAMMsArgs = {
   network: string;
@@ -21,7 +22,7 @@ export const getAMMs = async ({
   providerURL,
   subgraphURL,
 }: GetAMMsArgs): Promise<GetAMMsResponse> => {
-  const config = getConfig({
+  const config = getVoltzPoolConfig({
     network,
     providerURL,
   });
@@ -53,7 +54,7 @@ export const getAMMs = async ({
     return aIndex - bIndex;
   });
 
-  const amms = sortedRawAMMs.map((rawAmm) => {
+  const amms = sortedRawAMMs.map((rawAmm, index) => {
     return new AMM({
       id: rawAmm.id,
       signer: null,
@@ -73,6 +74,10 @@ export const getAMMs = async ({
       }),
       tickSpacing: rawAmm.tickSpacing,
       wethAddress: config.wethAddress,
+      minLeverageAllowed:
+        index < config.pools.length && !isUndefined(config.pools[index].minLeverageAllowed)
+          ? (config.pools[index].minLeverageAllowed as number)
+          : config.defaultMinLeverageAllowed,
     });
   });
 
