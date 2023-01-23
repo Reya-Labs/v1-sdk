@@ -1,7 +1,7 @@
-import { expect } from "chai";
-import { waffle, network } from "hardhat";
-import { convertGasUnitsToUSD } from "../../src/utils/mellowHelpers/convertGasUnitsToUSD";
-import { geckoEthToUsd } from "../../src/utils/priceFetch";
+import { expect } from 'chai';
+import { waffle, network } from 'hardhat';
+import { convertGasUnitsToUSD } from '../../src/utils/mellowHelpers/convertGasUnitsToUSD';
+import { geckoEthToUsd } from '../../src/utils/priceFetch';
 
 const { provider } = waffle;
 
@@ -32,9 +32,8 @@ describe('Test utils', () => {
       0.00001,
     );
 
-    expect(100000 * (await convertGasUnitsToUSD(provider, 1)) / currentEthPrice).to.be.approximately(
-      0.00198,
-      0.00001,
-    );
+    expect(
+      (100000 * (await convertGasUnitsToUSD(provider, 1))) / currentEthPrice,
+    ).to.be.approximately(0.00198, 0.00001);
   });
 });
