@@ -18,7 +18,7 @@ export const approveToken = async ({
   signer: ethers.Signer;
 }): Promise<ethers.ContractReceipt> => {
   // Get the token decimals
-  const { decimals: tokenDecimals } = getTokenInfo(tokenId);
+  const { decimals: tokenDecimals, name: tokenName } = getTokenInfo(tokenId);
 
   // Get the actual amount
   const actualAmount = isUndefined(amount) ? MaxUint256Bn : scale(amount, tokenDecimals);
@@ -26,11 +26,20 @@ export const approveToken = async ({
   // Get the token contract
   const tokenContract = new ethers.Contract(tokenId, IERC20MinimalABI, signer);
 
+  if (tokenName === 'USDT') {
+    const userAddress = await signer.getAddress();
+    const allowance: ethers.BigNumber = await tokenContract.allowance(userAddress, to);
+
+    if (allowance.gt(0)) {
+      throw new Error('The current approval needs to be reset first.');
+    }
+  }
+
   // Get the gas limit
   const gasLimit = await tokenContract.estimateGas.approve(to, actualAmount);
 
   // Send the approve transaction
-  const tx = await tokenContract.approve(to, amount, {
+  const tx = await tokenContract.approve(to, actualAmount, {
     gasLimit: getGasBuffer(gasLimit),
   });
 
