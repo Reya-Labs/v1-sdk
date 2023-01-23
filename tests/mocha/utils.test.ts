@@ -2,6 +2,7 @@ import { expect } from 'chai';
 import { waffle, network } from 'hardhat';
 import { BrowserClient } from '@sentry/browser';
 import * as sinon from 'sinon';
+import axios from 'axios';
 import { convertGasUnitsToUSD } from '../../src/utils/mellowHelpers/convertGasUnitsToUSD';
 import { geckoEthToUsd } from '../../src/utils/priceFetch';
 import { delay } from '../../src/utils/retry';
@@ -36,11 +37,22 @@ describe('Test utils', () => {
           captureMessage: () => undefined,
         } as unknown as BrowserClient),
     );
+
+    sinon.stub(axios, 'get').resolves({
+      data: {
+        ethereum: {
+          usd: 1630.37,
+        },
+      },
+    });
   });
 
   afterEach(() => {
     // restore the original implementation of initSDK.getSentryTracker
     (initSDK.getSentryTracker as sinon.SinonStub).restore();
+
+    // restore the original implementation of axios.get
+    (axios.get as sinon.SinonStub).restore();
   });
 
   it('Gas Units to USD conversion function', async () => {
