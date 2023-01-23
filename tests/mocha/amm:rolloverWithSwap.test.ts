@@ -19,7 +19,7 @@ const DELTA = 0.0001;
 
 describe('amm:rolloverWithSwap', () => {
   const resetNetwork = async (blockNumber: number) => {
-    await delay(1000);
+    await delay(500);
     await network.provider.request({
       method: 'hardhat_reset',
       params: [
