@@ -93,7 +93,10 @@ export const deposit = async ({
   const scaledAmount = scale(amount, tokenDecimals);
 
   // Map spare weights to array
-  const weights = mapWeights(routerConfig, spareWeights);
+  const weights = mapWeights(
+    routerConfig.vaults.map((v) => v.address),
+    spareWeights,
+  );
 
   // Get the transaction and wait for the receipt
   const tx = await getTransaction(mellowRouter, isETH, scaledAmount, weights);
