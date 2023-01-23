@@ -1,6 +1,7 @@
 import { BigNumber, providers, utils } from 'ethers';
 import mapProtocolIdToProtocol from '../utils/mapProtocolIdToProtocol';
 import { BaseRateOracle__factory as baseRateOracleFactory } from '../typechain';
+import { exponentialBackoff } from '../utils/retry';
 
 export type RateOracleConstructorArgs = {
   id: string;
@@ -43,7 +44,9 @@ export const getVariableFactor = (
     const fromWad = utils.parseUnits(fromInMS.toString(), 15);
     const toWad = utils.parseUnits(toInMS.toString(), 15);
 
-    const variableFactorWad = await rateOracleContract.callStatic.variableFactor(fromWad, toWad);
+    const variableFactorWad = await exponentialBackoff(() =>
+      rateOracleContract.callStatic.variableFactor(fromWad, toWad),
+    );
 
     const variableFactor = Number(utils.formatUnits(variableFactorWad, 18));
 
