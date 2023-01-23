@@ -224,6 +224,10 @@ class MellowLpVault {
     return this.userIndividualDeposits.reduce((total, deposit) => total + deposit, 0);
   }
 
+  public get batchBudgetUnderlying(): number {
+    return 0;
+  }
+
   refreshUserDeposit = async (): Promise<void> => {
     this.userIndividualCommittedDeposits = [0];
     if (
@@ -263,6 +267,8 @@ class MellowLpVault {
 
     this.userWalletBalance = this.descale(walletBalance, this.tokenDecimals);
   };
+
+  refreshBatchBudget = async (): Promise<void> => {};
 
   isTokenApproved = async (): Promise<boolean> => {
     if (this.isETH) {
