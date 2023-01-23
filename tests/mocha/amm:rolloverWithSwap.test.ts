@@ -12,12 +12,14 @@ import {
   MarginEngine__factory as marginEngineFactory,
   IERC20Minimal__factory as tokenFactory,
 } from '../../src/typechain';
+import { delay } from '../../src/utils/retry';
 
 const { provider } = waffle;
 const DELTA = 0.0001;
 
 describe('amm:rolloverWithSwap', () => {
   const resetNetwork = async (blockNumber: number) => {
+    await delay(1000);
     await network.provider.request({
       method: 'hardhat_reset',
       params: [
