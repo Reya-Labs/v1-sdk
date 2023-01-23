@@ -53,7 +53,10 @@ export const rollover = async ({
   );
 
   // Map spare weights to array
-  const weights = mapWeights(routerConfig, spareWeights);
+  const weights = mapWeights(
+    routerConfig.vaults.map((v) => v.address),
+    spareWeights,
+  );
 
   // Build the parameters
   const subvaultsCount: number = (await erc20RootVaultContract.subvaultNfts()).length;
