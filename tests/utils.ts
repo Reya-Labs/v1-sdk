@@ -32,3 +32,7 @@ export const withSigner = async (
   await f(signer);
   await removeSigner(network, address);
 };
+
+export const delay = (ms: number): Promise<unknown> => {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+};

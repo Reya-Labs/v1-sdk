@@ -5,12 +5,14 @@ import { BrowserClient } from '@sentry/browser';
 import { AMM, Position, RateOracle, Token } from '../../src/entities';
 import { advanceTimeAndBlock } from '../time';
 import * as initSDK from '../../src/init';
+import { delay } from '../utils';
 
 const { provider } = waffle;
 const DELTA = 0.0001;
 
 describe('position:refreshInfo', () => {
   const resetNetwork = async (blockNumber: number) => {
+    await delay(200);
     await network.provider.request({
       method: 'hardhat_reset',
       params: [
@@ -68,6 +70,7 @@ describe('position:refreshInfo', () => {
           tickSpacing: 60,
           wethAddress: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
           ethPrice: async () => 1200,
+          minLeverageAllowed: 0,
         });
 
         const positionId =
@@ -181,6 +184,7 @@ describe('position:refreshInfo', () => {
           tickSpacing: 60,
           wethAddress: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
           ethPrice: async () => 1200,
+          minLeverageAllowed: 0,
         });
 
         const positionId =
@@ -279,6 +283,7 @@ describe('position:refreshInfo', () => {
           tickSpacing: 60,
           wethAddress: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
           ethPrice: async () => 1200,
+          minLeverageAllowed: 0,
         });
 
         const positionId =
@@ -394,6 +399,7 @@ describe('position:refreshInfo', () => {
           tickSpacing: 60,
           wethAddress: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
           ethPrice: async () => 1200,
+          minLeverageAllowed: 0,
         });
 
         const positionId =
@@ -525,6 +531,7 @@ describe('position:refreshInfo', () => {
           tickSpacing: 60,
           wethAddress: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
           ethPrice: async () => 1200,
+          minLeverageAllowed: 0,
         });
 
         const positionId =
@@ -657,6 +664,7 @@ describe('position:refreshInfo', () => {
           tickSpacing: 60,
           wethAddress: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
           ethPrice: async () => 1200,
+          minLeverageAllowed: 0,
         });
 
         const positionId =
@@ -758,6 +766,7 @@ describe('position:refreshInfo', () => {
           tickSpacing: 60,
           wethAddress: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
           ethPrice: async () => 1200,
+          minLeverageAllowed: 0,
         });
 
         const positionId =

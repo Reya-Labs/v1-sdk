@@ -6,7 +6,7 @@ import { BrowserClient } from '@sentry/browser';
 import * as initSDK from '../../src/init';
 import { AMM, RateOracle, Token } from '../../src/entities';
 import { advanceTimeAndBlock } from '../time';
-import { fail, withSigner } from '../utils';
+import { delay, fail, withSigner } from '../utils';
 
 import {
   MarginEngine__factory as marginEngineFactory,
@@ -18,6 +18,7 @@ const DELTA = 0.0001;
 
 describe('amm:rolloverWithMint', () => {
   const resetNetwork = async (blockNumber: number) => {
+    await delay(200);
     await network.provider.request({
       method: 'hardhat_reset',
       params: [

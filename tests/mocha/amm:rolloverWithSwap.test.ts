@@ -5,7 +5,7 @@ import * as sinon from 'sinon';
 import { BrowserClient } from '@sentry/browser';
 import { AMM, RateOracle, Token } from '../../src/entities';
 import { advanceTimeAndBlock } from '../time';
-import { fail, withSigner } from '../utils';
+import { delay, fail, withSigner } from '../utils';
 import * as initSDK from '../../src/init';
 
 import {
@@ -18,6 +18,7 @@ const DELTA = 0.0001;
 
 describe('amm:rolloverWithSwap', () => {
   const resetNetwork = async (blockNumber: number) => {
+    await delay(200);
     await network.provider.request({
       method: 'hardhat_reset',
       params: [
