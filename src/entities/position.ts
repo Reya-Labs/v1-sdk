@@ -21,6 +21,7 @@ import {
 import { getAccruedCashflow, transformSwaps } from '../services/getAccruedCashflow';
 import { getSentryTracker } from '../init';
 import { getRangeHealthFactor } from '../utils/rangeHealthFactor';
+import { exponentialBackoff } from '../utils/retry';
 
 export type PositionConstructorArgs = {
   id: string;
@@ -174,16 +175,14 @@ class Position {
     );
 
     // Get fresh information about the position
-    const freshInfo = await marginEngineContract.callStatic.getPosition(
-      this.owner,
-      this.tickLower,
-      this.tickUpper,
+    const freshInfo = await exponentialBackoff(() =>
+      marginEngineContract.callStatic.getPosition(this.owner, this.tickLower, this.tickUpper),
     );
 
     this.isSettled = freshInfo.isSettled;
 
     // Get last block timestamp
-    const block = await this.amm.provider.getBlock('latest');
+    const block = await exponentialBackoff(() => this.amm.provider.getBlock('latest'));
     const currentTime = block.timestamp - 1;
     this.isPoolMatured = currentTime >= this.amm.endDateTime.toSeconds();
 
@@ -234,11 +233,13 @@ class Position {
       if (!this.isPoolMatured) {
         // Get liquidation threshold
         try {
-          const scaledLiqT = await marginEngineContract.callStatic.getPositionMarginRequirement(
-            this.owner,
-            this.tickLower,
-            this.tickUpper,
-            true,
+          const scaledLiqT = await exponentialBackoff(() =>
+            marginEngineContract.callStatic.getPositionMarginRequirement(
+              this.owner,
+              this.tickLower,
+              this.tickUpper,
+              true,
+            ),
           );
           this.liquidationThreshold = this.amm.descale(scaledLiqT);
         } catch (error) {
@@ -249,11 +250,13 @@ class Position {
 
         // Get safety threshold
         try {
-          const scaledSafeT = await marginEngineContract.callStatic.getPositionMarginRequirement(
-            this.owner,
-            this.tickLower,
-            this.tickUpper,
-            false,
+          const scaledSafeT = await exponentialBackoff(() =>
+            marginEngineContract.callStatic.getPositionMarginRequirement(
+              this.owner,
+              this.tickLower,
+              this.tickUpper,
+              false,
+            ),
           );
           this.safetyThreshold = this.amm.descale(scaledSafeT);
         } catch (error) {
