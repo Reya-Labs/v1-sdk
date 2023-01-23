@@ -19,6 +19,8 @@ jobs:
           node-version: 'lts/*'
       - name: Install dependencies
         run: make install-ci
+      - name: Run tests
+        run: GOERLI_URL=${{secrets.GOERLI_URL}} MAINNET_URL=${{secrets.MAINNET_URL}} yarn test
       - name: Build release
         run: make build-release
       - name: Release
