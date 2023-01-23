@@ -27,7 +27,7 @@ export const exponentialBackoff = async <T = any>(
 
       return data;
     } catch (error) {
-      console.error(`Retry failed. [attempt: ${attempt}/${attempts}]`);
+      console.error(`Retry failed. [attempt: ${attempt + 1}/${attempts}]`);
 
       if (attempt + 1 === attempts) {
         console.error(`All attempts failed with ${error}`);
