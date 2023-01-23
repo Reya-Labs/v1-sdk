@@ -1,14 +1,17 @@
 import { expect } from 'chai';
 import { waffle, network } from 'hardhat';
+import { BrowserClient } from '@sentry/browser';
+import * as sinon from 'sinon';
 import { convertGasUnitsToUSD } from '../../src/utils/mellowHelpers/convertGasUnitsToUSD';
 import { geckoEthToUsd } from '../../src/utils/priceFetch';
 import { delay } from '../../src/utils/retry';
+import * as initSDK from '../../src/init';
 
 const { provider } = waffle;
 
 describe('Test utils', () => {
   const resetNetwork = async (blockNumber: number) => {
-    await delay(1000);
+    await delay(500);
     await network.provider.request({
       method: 'hardhat_reset',
       params: [
@@ -25,6 +28,19 @@ describe('Test utils', () => {
 
   beforeEach(async () => {
     await resetNetwork(8321776);
+
+    sinon.stub(initSDK, 'getSentryTracker').callsFake(
+      () =>
+        ({
+          captureException: () => undefined,
+          captureMessage: () => undefined,
+        } as unknown as BrowserClient),
+    );
+  });
+
+  afterEach(() => {
+    // restore the original implementation of initSDK.getSentryTracker
+    (initSDK.getSentryTracker as sinon.SinonStub).restore();
   });
 
   it('Gas Units to USD conversion function', async () => {

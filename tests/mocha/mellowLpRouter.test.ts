@@ -67,7 +67,7 @@ describe('Mellow Router Test Suite', () => {
   });
 
   const resetNetwork = async (blockNumber: number) => {
-    await delay(1000);
+    await delay(500);
     await network.provider.request({
       method: 'hardhat_reset',
       params: [
