@@ -4,6 +4,7 @@ import { Swap } from '@voltz-protocol/subgraph-data';
 import { utils } from 'ethers';
 import { ONE_YEAR_IN_SECONDS } from '../constants';
 import { BaseRateOracle } from '../typechain';
+import { exponentialBackoff } from '../utils/retry';
 
 const getAnnualizedTime = (start: number, end: number): number => {
   return (end - start) / ONE_YEAR_IN_SECONDS;
@@ -52,7 +53,9 @@ async function getAccruedCashflowBetween(
   // if notional < 0 -- FT, received fixed, pays variable
 
   const nTime = getAnnualizedTime(from, to);
-  const variableRate = Number(utils.formatUnits(await rateOracle.getApyFromTo(from, to), 18));
+  const variableRate = Number(
+    utils.formatUnits(await exponentialBackoff(() => rateOracle.getApyFromTo(from, to), 18)),
+  );
 
   return notional * nTime * (variableRate - fixedRate);
 }
