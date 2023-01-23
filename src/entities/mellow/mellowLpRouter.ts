@@ -82,6 +82,7 @@ class MellowLpRouter {
 
   private gasUnitPriceUSD = 0;
   private autoRolloverRegistrationGasUnits = 0;
+  private batchBudgetScaled: BigNumberish = 0;
 
   public constructor({
     mellowRouterAddress,
@@ -191,6 +192,7 @@ class MellowLpRouter {
 
     await this.refreshUserDeposit();
     await this.refreshWalletBalance();
+    await this.refreshBatchBudget();
 
     // try-catch block to be removed once all routers have been upgraded on GOERLI & MAINNET
     try {
@@ -288,6 +290,12 @@ class MellowLpRouter {
     return this.userIndividualDeposits.reduce((total, deposit) => total + deposit, 0);
   }
 
+  public get batchBudgetUnderlying(): number {
+    const budgetForBatchDescaled = this.descale(this.batchBudgetScaled, this.tokenDecimals);
+
+    return budgetForBatchDescaled;
+  }
+
   refreshUserComittedDeposit = async (): Promise<void> => {
     this.userIndividualCommittedDeposits = this.userIndividualCommittedDeposits.map(() => 0);
 
@@ -366,6 +374,15 @@ class MellowLpRouter {
       : await this.readOnlyContracts.token.balanceOf(this.userAddress);
 
     this.userWalletBalance = this.descale(walletBalance, this.tokenDecimals);
+  };
+
+  refreshBatchBudget = async (): Promise<void> => {
+    if (isUndefined(this.readOnlyContracts)) {
+      this.batchBudgetScaled = 0;
+      return;
+    }
+
+    this.batchBudgetScaled = await this.readOnlyContracts.mellowRouterContract.getTotalFee();
   };
 
   isTokenApproved = async (): Promise<boolean> => {
@@ -521,6 +538,20 @@ class MellowLpRouter {
         }
 
         try {
+          await this.refreshBatchBudget();
+        } catch (error) {
+          const sentryTracker = getSentryTracker();
+          sentryTracker.captureException(error);
+          sentryTracker.captureMessage(
+            'Batch budget failed to refresh after depositAndRegisterForAutoRollover',
+          );
+          console.error(
+            'Batch budget failed to refresh after depositAndRegisterForAutoRollover.',
+            error,
+          );
+        }
+
+        try {
           await this.refreshWalletBalance();
         } catch (error) {
           const sentryTracker = getSentryTracker();
@@ -588,6 +619,15 @@ class MellowLpRouter {
           sentryTracker.captureException(error);
           sentryTracker.captureMessage('User deposit failed to refresh after deposit');
           console.error('User deposit failed to refresh after deposit.', error);
+        }
+
+        try {
+          await this.refreshBatchBudget();
+        } catch (error) {
+          const sentryTracker = getSentryTracker();
+          sentryTracker.captureException(error);
+          sentryTracker.captureMessage('Batch budget failed to refresh after deposit');
+          console.error('Batch budget failed to refresh after deposit.', error);
         }
 
         try {
@@ -868,6 +908,15 @@ class MellowLpRouter {
     try {
       const receipt = await tx.wait();
 
+      try {
+        await this.refreshBatchBudget();
+      } catch (error) {
+        const sentryTracker = getSentryTracker();
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage('Batch budget failed to refresh after submitting batch');
+        console.error('Batch budget failed to refresh after submitting batch.', error);
+      }
+
       return receipt;
     } catch (err) {
       const sentryTracker = getSentryTracker();
@@ -978,15 +1027,10 @@ class MellowLpRouter {
   };
 
   getBatchBudgetUsd = async (): Promise<number> => {
-    if (isUndefined(this.writeContracts) || isUndefined(this.readOnlyContracts)) {
-      throw new Error('Uninitialized contracts.');
-    }
-
     try {
-      const budgetUnderlyingToken = await this.readOnlyContracts.mellowRouterContract.getTotalFee();
       const usdExchangeRate = this.isETH ? Math.round(await this.ethPrice()) : 1;
       const budgetForBatchDescaled = this.descale(
-        budgetUnderlyingToken.mul(usdExchangeRate),
+        BigNumber.from(this.batchBudgetScaled).mul(usdExchangeRate),
         this.tokenDecimals,
       );
 
