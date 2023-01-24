@@ -196,19 +196,27 @@ class MellowLpRouter {
     await this.refreshWalletBalance();
     await this.refreshBatchBudget();
 
-    this.isRegisteredForAutoRollover =
-      await this.readOnlyContracts.mellowRouterContract.isRegisteredForAutoRollover(
-        this.userAddress,
-      );
-
-    this.canManageVaultPositions = [];
-    for (let vaultIndex = 0; vaultIndex < this.vaultsCount; vaultIndex += 1) {
-      this.canManageVaultPositions.push(
-        await this.readOnlyContracts.mellowRouterContract.canWithdrawOrRollover(
-          vaultIndex,
+    // to be removed when all routers on GOERLI & MAINNET WERE UPGRADED
+    try {
+      this.isRegisteredForAutoRollover =
+        await this.readOnlyContracts.mellowRouterContract.isRegisteredForAutoRollover(
           this.userAddress,
-        ),
-      );
+        );
+
+      this.canManageVaultPositions = [];
+      for (let vaultIndex = 0; vaultIndex < this.vaultsCount; vaultIndex += 1) {
+        this.canManageVaultPositions.push(
+          await this.readOnlyContracts.mellowRouterContract.canWithdrawOrRollover(
+            vaultIndex,
+            this.userAddress,
+          ),
+        );
+      }
+    } catch (error) {
+      this.canManageVaultPositions = [];
+      for (let vaultIndex = 0; vaultIndex < this.vaultsCount; vaultIndex += 1) {
+        this.canManageVaultPositions.push(true);
+      }
     }
 
     // try-catch to not be removed
