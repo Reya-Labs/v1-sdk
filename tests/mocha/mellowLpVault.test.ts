@@ -8,7 +8,6 @@ import MellowLpVault from '../../src/entities/mellow/mellowLpVault';
 import { abi as IERC20MinimalABI } from '../../src/ABIs/IERC20Minimal.json';
 import { advanceTimeAndBlock } from '../time';
 import * as initSDK from '../../src/init';
-import { delay } from '../../src/utils/retry';
 
 const { provider } = waffle;
 let ethMellowLpVault: MellowLpVault;
@@ -25,7 +24,6 @@ const userWallet = signer;
 
 describe('Mellow Router Test Suite', () => {
   const resetNetwork = async (blockNumber: number) => {
-    await delay(500);
     await network.provider.request({
       method: 'hardhat_reset',
       params: [
