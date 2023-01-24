@@ -5,14 +5,12 @@ import * as sinon from 'sinon';
 import axios from 'axios';
 import { convertGasUnitsToUSD } from '../../src/utils/mellowHelpers/convertGasUnitsToUSD';
 import { geckoEthToUsd } from '../../src/utils/priceFetch';
-import { delay } from '../../src/utils/retry';
 import * as initSDK from '../../src/init';
 
 const { provider } = waffle;
 
 describe('Test utils', () => {
   const resetNetwork = async (blockNumber: number) => {
-    await delay(500);
     await network.provider.request({
       method: 'hardhat_reset',
       params: [

@@ -57,12 +57,13 @@ import {
 } from './types';
 import { geckoEthToUsd } from '../../utils/priceFetch';
 import { getVariableFactor, RateOracle } from '../rateOracle';
+import { exponentialBackoff } from '../../utils/retry';
 
 export class AMM {
   public readonly id: string;
   public readonly signer: Signer | null;
   public readonly provider: providers.Provider;
-  public readonly factoryAddress: string;
+  private readonly factoryAddress: string;
   public readonly marginEngineAddress: string;
   public readonly rateOracle: RateOracle;
   public readonly termStartTimestampInMS: number;
@@ -114,7 +115,7 @@ export class AMM {
     if (!chosenProvider) {
       const sentryTracker = getSentryTracker();
       sentryTracker.captureMessage("Provider doesn't exist");
-      throw Error("Provider doesn't exist");
+      throw new Error("Provider doesn't exist");
     }
     this.provider = chosenProvider;
 
@@ -123,19 +124,35 @@ export class AMM {
     this.minLeverageAllowed = minLeverageAllowed;
   }
 
+  private peripheryAddress: string | null = null;
+  public getPeripheryAddress = async (): Promise<string> => {
+    if (!this.peripheryAddress) {
+      const factoryContract = factoryFactory.connect(this.factoryAddress, this.provider);
+      this.peripheryAddress = await exponentialBackoff(() => factoryContract.periphery());
+    }
+
+    return this.peripheryAddress;
+  };
+
+  public getUserAddress = async (): Promise<string> => {
+    if (!this.signer) {
+      throw new Error('Wallet not connected');
+    }
+
+    const signer = this.signer;
+    return exponentialBackoff(() => signer.getAddress());
+  };
+
   // expected apy
-  expectedApy = async (
+  private expectedApy = (
     ft: number,
     vt: number,
     margin: number,
     rate: number,
-  ): Promise<[number, number]> => {
+  ): [number, number] => {
     const now = Math.round(new Date().getTime() / 1000);
-
     const end = this.termEndTimestampInMS / 1000;
-
     const [pnl, ecs] = getExpectedApy(now, end, ft, vt, margin, rate);
-
     return [100 * pnl, ecs];
   };
 
@@ -167,7 +184,7 @@ export class AMM {
       throw new Error('No underlying error');
     }
 
-    const owner = await this.signer.getAddress();
+    const owner = await this.getUserAddress();
 
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
@@ -182,8 +199,7 @@ export class AMM {
       sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MIN_TICK + 1).toString();
     }
 
-    const factoryContract = factoryFactory.connect(this.factoryAddress, this.signer);
-    const peripheryAddress = await factoryContract.periphery();
+    const peripheryAddress = await this.getPeripheryAddress();
     const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
     const scaledNotional = this.scale(notional);
 
@@ -300,13 +316,12 @@ export class AMM {
       throw new Error('No underlying error');
     }
 
-    const owner = await this.signer.getAddress();
+    const owner = await this.getUserAddress();
 
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
-    const factoryContract = factoryFactory.connect(this.factoryAddress, this.signer);
-    const peripheryAddress = await factoryContract.periphery();
+    const peripheryAddress = await this.getPeripheryAddress();
     const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
     const scaledNotional = this.scale(notional);
 
@@ -427,7 +442,7 @@ export class AMM {
       throw new Error('Amount of notional must be greater than 0');
     }
 
-    const signerAddress = await this.signer.getAddress();
+    const signerAddress = await this.getUserAddress();
 
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
@@ -444,8 +459,7 @@ export class AMM {
 
     const scaledNotional = this.scale(notional);
 
-    const factoryContract = factoryFactory.connect(this.factoryAddress, this.signer);
-    const peripheryAddress = await factoryContract.periphery();
+    const peripheryAddress = await this.getPeripheryAddress();
 
     const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
     const swapPeripheryParams: SwapPeripheryParams = {
@@ -458,7 +472,9 @@ export class AMM {
       marginDelta: '0',
     };
 
-    const tickBefore = await peripheryContract.getCurrentTick(this.marginEngineAddress);
+    const tickBefore = await exponentialBackoff(() =>
+      peripheryContract.getCurrentTick(this.marginEngineAddress),
+    );
     let tickAfter = 0;
     let marginRequirement: BigNumber = BigNumber.from(0);
     let fee = BigNumber.from(0);
@@ -466,7 +482,7 @@ export class AMM {
     let fixedTokenDeltaUnbalanced = BigNumber.from(0);
     let fixedTokenDelta = BigNumber.from(0);
 
-    await peripheryContract.callStatic.swap(swapPeripheryParams).then(
+    await exponentialBackoff(() => peripheryContract.callStatic.swap(swapPeripheryParams)).then(
       (result: any) => {
         availableNotional = result[1];
         fee = result[2];
@@ -494,7 +510,9 @@ export class AMM {
 
     const marginEngineContract = marginEngineFactory.connect(this.marginEngineAddress, this.signer);
     const currentMargin = (
-      await marginEngineContract.callStatic.getPosition(signerAddress, tickLower, tickUpper)
+      await exponentialBackoff(() =>
+        marginEngineContract.callStatic.getPosition(signerAddress, tickLower, tickUpper),
+      )
     ).margin;
 
     const scaledCurrentMargin = this.descale(currentMargin);
@@ -522,7 +540,9 @@ export class AMM {
       tickUpper,
       marginDelta: '0',
     };
-    await peripheryContract.callStatic.swap(swapPeripheryParamsLargeSwap).then(
+    await exponentialBackoff(() =>
+      peripheryContract.callStatic.swap(swapPeripheryParamsLargeSwap),
+    ).then(
       (result: any) => {
         maxAvailableNotional = result[1];
       },
@@ -578,19 +598,19 @@ export class AMM {
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
-    const signerAddress = await this.signer.getAddress();
+    const signerAddress = await this.getUserAddress();
 
     const marginEngineContract = marginEngineFactory.connect(this.marginEngineAddress, this.signer);
     const currentMargin = (
-      await marginEngineContract.callStatic.getPosition(signerAddress, tickLower, tickUpper)
+      await exponentialBackoff(() =>
+        marginEngineContract.callStatic.getPosition(signerAddress, tickLower, tickUpper),
+      )
     ).margin;
 
     const rateOracleContract = baseRateOracleFactory.connect(this.rateOracle.id, this.provider);
 
-    const lastBlock = await this.provider.getBlockNumber();
-    const lastBlockTimestamp = BigNumber.from(
-      (await this.provider.getBlock(lastBlock - 1)).timestamp,
-    );
+    const lastBlockTimestamp =
+      (await exponentialBackoff(() => this.provider.getBlock('latest'))).timestamp - 15;
 
     const scaledCurrentMargin = this.descale(currentMargin);
 
@@ -621,7 +641,7 @@ export class AMM {
       }
     }
 
-    const [expectedApy, expectedCashflow] = await this.expectedApy(
+    const [expectedApy, expectedCashflow] = this.expectedApy(
       positionUft + fixedTokenDeltaUnbalanced,
       positionVt + availableNotional,
       margin + positionMargin + accruedCashflow,
@@ -682,8 +702,7 @@ export class AMM {
       sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MIN_TICK + 1).toString();
     }
 
-    const factoryContract = factoryFactory.connect(this.factoryAddress, this.signer);
-    const peripheryAddress = await factoryContract.periphery();
+    const peripheryAddress = await this.getPeripheryAddress();
 
     const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
     const scaledNotional = this.scale(notional);
@@ -827,12 +846,11 @@ export class AMM {
       throw new Error('Amount of notional must be greater than 0');
     }
 
-    const signerAddress = await this.signer.getAddress();
+    const signerAddress = await this.getUserAddress();
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
-    const factoryContract = factoryFactory.connect(this.factoryAddress, this.signer);
-    const peripheryAddress = await factoryContract.periphery();
+    const peripheryAddress = await this.getPeripheryAddress();
 
     const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
     const scaledNotional = this.scale(notional);
@@ -846,7 +864,7 @@ export class AMM {
     };
 
     let marginRequirement = BigNumber.from('0');
-    await peripheryContract.callStatic.mintOrBurn(mintOrBurnParams).then(
+    await exponentialBackoff(() => peripheryContract.callStatic.mintOrBurn(mintOrBurnParams)).then(
       (result) => {
         marginRequirement = BigNumber.from(result);
       },
@@ -858,7 +876,9 @@ export class AMM {
 
     const marginEngineContract = marginEngineFactory.connect(this.marginEngineAddress, this.signer);
     const currentMargin = (
-      await marginEngineContract.callStatic.getPosition(signerAddress, tickLower, tickUpper)
+      await exponentialBackoff(() =>
+        marginEngineContract.callStatic.getPosition(signerAddress, tickLower, tickUpper),
+      )
     ).margin;
 
     const scaledCurrentMargin = this.descale(currentMargin);
@@ -907,8 +927,7 @@ export class AMM {
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
-    const factoryContract = factoryFactory.connect(this.factoryAddress, this.signer);
-    const peripheryAddress = await factoryContract.periphery();
+    const peripheryAddress = await this.getPeripheryAddress();
 
     const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
     const scaledNotional = this.scale(notional);
@@ -1002,8 +1021,7 @@ export class AMM {
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
-    const factoryContract = factoryFactory.connect(this.factoryAddress, this.signer);
-    const peripheryAddress = await factoryContract.periphery();
+    const peripheryAddress = await this.getPeripheryAddress();
 
     const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
 
@@ -1083,8 +1101,7 @@ export class AMM {
       scaledMarginDelta = this.scale(marginDelta);
     }
 
-    const factoryContract = factoryFactory.connect(this.factoryAddress, this.signer);
-    const peripheryAddress = await factoryContract.periphery();
+    const peripheryAddress = await this.getPeripheryAddress();
 
     const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
 
@@ -1151,14 +1168,12 @@ export class AMM {
       throw new Error('Wallet not connected');
     }
 
-    const effectiveOwner = !owner ? await this.signer.getAddress() : owner;
+    const effectiveOwner = !owner ? await this.getUserAddress() : owner;
 
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
-    const factoryContract = factoryFactory.connect(this.factoryAddress, this.signer);
-    const peripheryAddress = await factoryContract.periphery();
-
+    const peripheryAddress = await this.getPeripheryAddress();
     const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
 
     await peripheryContract.callStatic
@@ -1237,14 +1252,15 @@ export class AMM {
       throw new Error('Wallet not connected');
     }
 
-    const signerAddress = await this.signer.getAddress();
+    const signerAddress = await this.getUserAddress();
 
     const tokenAddress = this.underlyingToken.id;
     const token = tokenFactory.connect(tokenAddress, this.signer);
 
-    const factoryContract = factoryFactory.connect(this.factoryAddress, this.signer);
-    const peripheryAddress = await factoryContract.periphery();
-    const allowance = await token.allowance(signerAddress, peripheryAddress);
+    const peripheryAddress = await this.getPeripheryAddress();
+    const allowance = await exponentialBackoff(() =>
+      token.allowance(signerAddress, peripheryAddress),
+    );
 
     if (scaledAmount === undefined) {
       return allowance.gte(TresholdApprovalBn);
@@ -1264,8 +1280,7 @@ export class AMM {
     const tokenAddress = this.underlyingToken.id;
     const token = tokenFactory.connect(tokenAddress, this.signer);
 
-    const factoryContract = factoryFactory.connect(this.factoryAddress, this.signer);
-    const peripheryAddress = await factoryContract.periphery();
+    const peripheryAddress = await this.getPeripheryAddress();
 
     let estimatedGas;
     try {
@@ -1274,7 +1289,7 @@ export class AMM {
       const sentryTracker = getSentryTracker();
       sentryTracker.captureException(error);
       sentryTracker.captureMessage(
-        `Could not increase periphery allowance (${tokenAddress}, ${await this.signer.getAddress()}, ${MaxUint256Bn.toString()})`,
+        `Could not increase periphery allowance (${tokenAddress}, ${await this.getUserAddress()}, ${MaxUint256Bn.toString()})`,
       );
       throw new Error(
         `Unable to approve. If your existing allowance is non-zero but lower than needed, some tokens like USDT require you to call approve("${peripheryAddress}", 0) before you can increase the allowance.`,
@@ -1323,11 +1338,12 @@ export class AMM {
   }
 
   public async getFixedApr(): Promise<number> {
-    const factoryContract = factoryFactory.connect(this.factoryAddress, this.provider);
-    const peripheryAddress = await factoryContract.periphery();
+    const peripheryAddress = await this.getPeripheryAddress();
 
     const peripheryContract = peripheryFactory.connect(peripheryAddress, this.provider);
-    const currentTick = await peripheryContract.callStatic.getCurrentTick(this.marginEngineAddress);
+    const currentTick = await exponentialBackoff(() =>
+      peripheryContract.getCurrentTick(this.marginEngineAddress),
+    );
     const apr = tickToFixedRate(currentTick).toNumber();
 
     return apr;
@@ -1362,11 +1378,11 @@ export class AMM {
       throw new Error('Wallet not connected');
     }
 
-    const signerAddress = await this.signer.getAddress();
+    const signerAddress = await this.getUserAddress();
 
     let currentBalance: BigNumber;
     if (this.isETH) {
-      currentBalance = await this.provider.getBalance(signerAddress);
+      currentBalance = await exponentialBackoff(() => this.provider.getBalance(signerAddress));
     } else {
       if (!this.underlyingToken.id) {
         throw new Error('No underlying token');
@@ -1375,17 +1391,15 @@ export class AMM {
       const tokenAddress = this.underlyingToken.id;
       const token = tokenFactory.connect(tokenAddress, this.signer);
 
-      currentBalance = await token.balanceOf(signerAddress);
+      currentBalance = await exponentialBackoff(() => token.balanceOf(signerAddress));
     }
 
     return this.descale(currentBalance);
   }
 
-  // one week look-back window apy
-
+  // instant apy
   async getInstantApy(): Promise<number> {
     const blocksPerDay = 6570; // 13.15 seconds per block
-    const blockPerHour = 274;
 
     switch (this.rateOracle.protocolId) {
       case 1: {
@@ -1397,9 +1411,13 @@ export class AMM {
           this.rateOracle.id,
           this.provider,
         );
-        const lendingPoolAddress = await rateOracleContract.aaveLendingPool();
+        const lendingPoolAddress = await exponentialBackoff(() =>
+          rateOracleContract.aaveLendingPool(),
+        );
         const lendingPool = iAaveV2LendingPoolFactory.connect(lendingPoolAddress, this.provider);
-        const reservesData = await lendingPool.getReserveData(this.underlyingToken.id);
+        const reservesData = await exponentialBackoff(() =>
+          lendingPool.getReserveData(this.underlyingToken.id),
+        );
         const rateInRay = reservesData.currentLiquidityRate;
         const result = rateInRay.div(BigNumber.from(10).pow(21)).toNumber() / 1000000;
         return result;
@@ -1407,40 +1425,32 @@ export class AMM {
       case 2: {
         const daysPerYear = 365;
         const rateOracle = compoundRateOracleFactory.connect(this.rateOracle.id, this.provider);
-        const cTokenAddress = await (rateOracle as CompoundRateOracle).ctoken();
+        const cTokenAddress = await exponentialBackoff(() =>
+          (rateOracle as CompoundRateOracle).ctoken(),
+        );
         const cTokenContract = iCTokenFactory.connect(cTokenAddress, this.provider);
-        const supplyRatePerBlock = await cTokenContract.supplyRatePerBlock();
+        const supplyRatePerBlock = await exponentialBackoff(() =>
+          cTokenContract.supplyRatePerBlock(),
+        );
         const supplyApy =
           ((supplyRatePerBlock.toNumber() / 1e18) * blocksPerDay + 1) ** daysPerYear - 1;
         return supplyApy;
       }
 
-      case 3: {
-        const lastBlock = await this.provider.getBlockNumber();
-        const to = BigNumber.from((await this.provider.getBlock(lastBlock - 1)).timestamp);
-        const from = BigNumber.from(
-          (await this.provider.getBlock(lastBlock - 28 * blockPerHour)).timestamp,
-        );
-
-        const rateOracleContract = baseRateOracleFactory.connect(this.rateOracle.id, this.provider);
-
-        const oneWeekApy = await rateOracleContract.callStatic.getApyFromTo(from, to);
-
-        return oneWeekApy.div(BigNumber.from(1000000000000)).toNumber() / 1000000;
-      }
-
+      case 3:
       case 4: {
-        const lastBlock = await this.provider.getBlockNumber();
-        const to = BigNumber.from((await this.provider.getBlock(lastBlock - 1)).timestamp);
-        const from = BigNumber.from(
-          (await this.provider.getBlock(lastBlock - 28 * blockPerHour)).timestamp,
-        );
+        const toInSeconds =
+          (await exponentialBackoff(() => this.provider.getBlock('latest'))).timestamp - 15;
+        const fromInSeconds = toInSeconds - 28 * 60 * 60;
 
         const rateOracleContract = baseRateOracleFactory.connect(this.rateOracle.id, this.provider);
 
-        const oneWeekApy = await rateOracleContract.callStatic.getApyFromTo(from, to);
+        const instantApy = await exponentialBackoff(() =>
+          rateOracleContract.getApyFromTo(fromInSeconds, toInSeconds),
+        );
 
-        return oneWeekApy.div(BigNumber.from(1000000000000)).toNumber() / 1000000;
+        // TODO: normalize this to utility descale
+        return instantApy.div(BigNumber.from(1000000000000)).toNumber() / 1000000;
       }
 
       case 5: {
@@ -1452,9 +1462,13 @@ export class AMM {
           this.rateOracle.id,
           this.provider,
         );
-        const lendingPoolAddress = await rateOracleContract.aaveLendingPool();
+        const lendingPoolAddress = await exponentialBackoff(() =>
+          rateOracleContract.aaveLendingPool(),
+        );
         const lendingPool = iAaveV2LendingPoolFactory.connect(lendingPoolAddress, this.provider);
-        const reservesData = await lendingPool.getReserveData(this.underlyingToken.id);
+        const reservesData = await exponentialBackoff(() =>
+          lendingPool.getReserveData(this.underlyingToken.id),
+        );
         const rateInRay = reservesData.currentVariableBorrowRate;
         const result = rateInRay.div(BigNumber.from(10).pow(21)).toNumber() / 1000000;
         return result;
@@ -1468,10 +1482,14 @@ export class AMM {
           this.provider,
         );
 
-        const cTokenAddress = await (rateOracle as CompoundBorrowRateOracle).ctoken();
+        const cTokenAddress = await exponentialBackoff(() =>
+          (rateOracle as CompoundBorrowRateOracle).ctoken(),
+        );
         const cTokenContract = iCTokenFactory.connect(cTokenAddress, this.provider);
 
-        const borrowRatePerBlock = await cTokenContract.borrowRatePerBlock();
+        const borrowRatePerBlock = await exponentialBackoff(() =>
+          cTokenContract.borrowRatePerBlock(),
+        );
         const borrowApy =
           ((borrowRatePerBlock.toNumber() / 1e18) * blocksPerDay + 1) ** daysPerYear - 1;
         return borrowApy;

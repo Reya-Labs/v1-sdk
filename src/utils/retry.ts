@@ -1,5 +1,5 @@
 // It introduces a delay of ms milliseconds
-export function delay(ms: number): Promise<unknown> {
+function delay(ms: number): Promise<unknown> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
