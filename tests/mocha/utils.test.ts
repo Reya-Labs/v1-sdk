@@ -6,6 +6,8 @@ import axios from 'axios';
 import { convertGasUnitsToUSD } from '../../src/utils/mellowHelpers/convertGasUnitsToUSD';
 import { geckoEthToUsd } from '../../src/utils/priceFetch';
 import * as initSDK from '../../src/init';
+import { exponentialBackoff } from '../../src/utils/retry';
+import { fail } from '../utils';
 
 const { provider } = waffle;
 
@@ -63,5 +65,71 @@ describe('Test utils', () => {
     expect(
       (100000 * (await convertGasUnitsToUSD(provider, 1))) / currentEthPrice,
     ).to.be.approximately(0.00198, 0.00001);
+  });
+
+  describe('Exponential backoff', () => {
+    it('successfull call - first attempt', async () => {
+      const call = async () => 1;
+
+      let timeElapsed = Date.now().valueOf();
+      const response = await exponentialBackoff(call);
+      timeElapsed = Date.now().valueOf() - timeElapsed;
+      expect(response).to.be.eq(1);
+      expect(timeElapsed).to.be.lessThan(1000);
+    });
+
+    it('successfull call - second attempt', async () => {
+      let tries = 0;
+      const call = async () => {
+        tries += 1;
+        if (tries <= 1) {
+          throw new Error('attempt fails');
+        }
+        return 1;
+      };
+
+      let timeElapsed = Date.now().valueOf();
+      const response = await exponentialBackoff(call);
+      timeElapsed = Date.now().valueOf() - timeElapsed;
+      expect(response).to.be.eq(1);
+      expect(timeElapsed).to.be.greaterThan(1000);
+      expect(timeElapsed).to.be.lessThan(2000);
+    });
+
+    it('successfull call - third attempt', async () => {
+      let tries = 0;
+      const call = async () => {
+        tries += 1;
+        if (tries <= 2) {
+          throw new Error('attempt fails');
+        }
+        return 1;
+      };
+
+      let timeElapsed = Date.now().valueOf();
+      const response = await exponentialBackoff(call);
+      timeElapsed = Date.now().valueOf() - timeElapsed;
+      expect(response).to.be.eq(1);
+      expect(timeElapsed).to.be.greaterThan(3000);
+      expect(timeElapsed).to.be.lessThan(4000);
+    });
+
+    it('failing call', async () => {
+      const call = async () => {
+        throw new Error('attempt fails');
+      };
+
+      let timeElapsed = Date.now().valueOf();
+      try {
+        await exponentialBackoff(call, 3);
+        fail();
+      } catch (error: unknown) {
+        timeElapsed = Date.now().valueOf() - timeElapsed;
+        expect(timeElapsed).to.be.greaterThan(3000);
+        expect(timeElapsed).to.be.lessThan(4000);
+
+        expect((error as Error).message).to.be.eq('attempt fails');
+      }
+    });
   });
 });
