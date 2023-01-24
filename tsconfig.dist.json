@@ -7,10 +7,7 @@
     "outDir": "./dist",
     "declarationDir": "./dist/types"
   },
-  "exclude": [
-    "./dist/**/*",
-    "./scripts/**/*",
-    "./tests/**/*",
-    "./hardhat.config.ts"
+  "include": [
+    "./src"
   ]
 }

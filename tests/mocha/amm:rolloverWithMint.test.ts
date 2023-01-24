@@ -3,7 +3,6 @@ import { expect } from 'chai';
 import { ethers } from 'ethers';
 import * as sinon from 'sinon';
 import { BrowserClient } from '@sentry/browser';
-import { delay } from '../../src/utils/retry';
 import * as initSDK from '../../src/init';
 import { AMM, RateOracle, Token } from '../../src/entities';
 import { advanceTimeAndBlock } from '../time';
@@ -19,7 +18,6 @@ const DELTA = 0.0001;
 
 describe('amm:rolloverWithMint', () => {
   const resetNetwork = async (blockNumber: number) => {
-    await delay(500);
     await network.provider.request({
       method: 'hardhat_reset',
       params: [
