@@ -84,7 +84,7 @@ class MellowLpRouter {
   private autoRolloverRegistrationGasUnits = 0;
   private batchBudgetScaled: BigNumberish = 0;
 
-  public canRegisterForAutoRollover = true;
+  public canRegisterUnregister = true;
 
   public constructor({
     mellowRouterAddress,
@@ -218,10 +218,10 @@ class MellowLpRouter {
           !this.isRegisteredForAutoRollover,
         )
       ).toNumber();
-      this.canRegisterForAutoRollover = true;
+      this.canRegisterUnregister = true;
     } catch (error) {
       this.autoRolloverRegistrationGasUnits = 0;
-      this.canRegisterForAutoRollover = false;
+      this.canRegisterUnregister = false;
     }
 
     this.userInitialized = true;
@@ -858,7 +858,7 @@ class MellowLpRouter {
     this.gasUnitPriceUSD = await convertGasUnitsToUSD(this.provider, 1);
   };
 
-  public get autoRolloverRegistrationGasFeeUSD() {
+  public get autoRolloverRegistrationGasFeeUSD(): number {
     return this.autoRolloverRegistrationGasUnits * this.gasUnitPriceUSD;
   }
 

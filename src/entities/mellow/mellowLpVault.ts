@@ -70,7 +70,7 @@ class MellowLpVault {
 
   public isRegisteredForAutoRollover = false;
 
-  public canManageVaultPositions: boolean[] = [];
+  public canRegisterUnregister = false;
 
   public constructor({
     id,
