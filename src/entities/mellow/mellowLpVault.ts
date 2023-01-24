@@ -228,6 +228,10 @@ class MellowLpVault {
     return 0;
   }
 
+  public get batchBudgetUsd(): number {
+    return 0;
+  }
+
   refreshUserDeposit = async (): Promise<void> => {
     this.userIndividualCommittedDeposits = [0];
     if (
@@ -532,10 +536,6 @@ class MellowLpVault {
   };
 
   getSubmitBatchGasCost = async (): Promise<number> => {
-    throw new Error('This is not supported');
-  };
-
-  getBatchBudgetUsd = async (): Promise<number> => {
     throw new Error('This is not supported');
   };
 
