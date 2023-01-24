@@ -12,6 +12,7 @@ import {
   MarginEngine__factory as marginEngineFactory,
   IERC20Minimal__factory as tokenFactory,
 } from '../../src/typechain';
+import { exponentialBackoff } from '../../src/utils/retry';
 
 const { provider } = waffle;
 const DELTA = 0.0001;
@@ -88,24 +89,28 @@ describe('amm:rolloverWithMint', () => {
           };
 
           const newMarginEngine = '0xbb3583efc060ed1cffffc06a28f6b5381031b601';
-          await amm.rolloverWithMint({
-            fixedLow: 1.3,
-            fixedHigh: 1.7,
-            notional: 0.1,
-            margin: 1,
-            newMarginEngine,
-            rolloverPosition: {
-              tickLower: -5280,
-              tickUpper: -2640,
-              settlementBalance: 9.98312,
-            },
-          });
+          await exponentialBackoff(() =>
+            amm.rolloverWithMint({
+              fixedLow: 1.3,
+              fixedHigh: 1.7,
+              notional: 0.1,
+              margin: 1,
+              newMarginEngine,
+              rolloverPosition: {
+                tickLower: -5280,
+                tickUpper: -2640,
+                settlementBalance: 9.98312,
+              },
+            }),
+          );
 
           const after = {
             balance: await amm.underlyingTokens(),
-            position: await marginEngineFactory
-              .connect(newMarginEngine, signer)
-              .callStatic.getPosition(owner, -5280, -2640),
+            position: await exponentialBackoff(() =>
+              marginEngineFactory
+                .connect(newMarginEngine, signer)
+                .callStatic.getPosition(owner, -5280, -2640),
+            ),
           };
 
           expect(after.balance - before.balance).to.be.closeTo(8.98312, DELTA);
@@ -149,24 +154,28 @@ describe('amm:rolloverWithMint', () => {
           };
 
           const newMarginEngine = '0xbb3583efc060ed1cffffc06a28f6b5381031b601';
-          await amm.rolloverWithMint({
-            fixedLow: 1.3,
-            fixedHigh: 1.7,
-            notional: 1,
-            margin: 20,
-            newMarginEngine,
-            rolloverPosition: {
-              tickLower: -5280,
-              tickUpper: -2640,
-              settlementBalance: 9.98312,
-            },
-          });
+          await exponentialBackoff(() =>
+            amm.rolloverWithMint({
+              fixedLow: 1.3,
+              fixedHigh: 1.7,
+              notional: 1,
+              margin: 20,
+              newMarginEngine,
+              rolloverPosition: {
+                tickLower: -5280,
+                tickUpper: -2640,
+                settlementBalance: 9.98312,
+              },
+            }),
+          );
 
           const after = {
             balance: await amm.underlyingTokens(),
-            position: await marginEngineFactory
-              .connect(newMarginEngine, signer)
-              .callStatic.getPosition(owner, -5280, -2640),
+            position: await exponentialBackoff(() =>
+              marginEngineFactory
+                .connect(newMarginEngine, signer)
+                .callStatic.getPosition(owner, -5280, -2640),
+            ),
           };
 
           expect(after.balance - before.balance).to.be.closeTo(-10.01688, DELTA);
@@ -177,7 +186,7 @@ describe('amm:rolloverWithMint', () => {
 
     describe('ETH', () => {
       it('No approval for WETH - revert', async () => {
-        await advanceTimeAndBlock(24 * 60 * 60, 1);
+        await exponentialBackoff(() => advanceTimeAndBlock(24 * 60 * 60, 1));
 
         const owner = '0xf8f6b70a36f4398f0853a311dc6699aba8333cc1';
 
@@ -228,7 +237,7 @@ describe('amm:rolloverWithMint', () => {
       });
 
       it('Rollover less than received - the difference should go into wallet as WETH', async () => {
-        await advanceTimeAndBlock(24 * 60 * 60, 1);
+        await exponentialBackoff(() => advanceTimeAndBlock(24 * 60 * 60, 1));
 
         const owner = '0xf8f6b70a36f4398f0853a311dc6699aba8333cc1';
 
@@ -261,37 +270,41 @@ describe('amm:rolloverWithMint', () => {
           const tokenAddress = amm.underlyingToken.id;
           const token = tokenFactory.connect(tokenAddress, signer);
 
-          await amm.approveUnderlyingTokenForPeriphery();
+          await exponentialBackoff(() => amm.approveUnderlyingTokenForPeriphery());
 
           const before = {
-            balanceWeth: amm.descale(await token.balanceOf(owner)),
+            balanceWeth: amm.descale(await exponentialBackoff(() => token.balanceOf(owner))),
             balanceEth: await amm.underlyingTokens(),
           };
 
           const newMarginEngine = '0x626cf6b2fbf578653f7fa5424962972161a79de7';
-          const receipt = await amm.rolloverWithMint({
-            fixedLow: 5,
-            fixedHigh: 7,
-            notional: 0.1,
-            margin: 0.01,
-            newMarginEngine,
-            rolloverPosition: {
-              tickLower: -17940,
-              tickUpper: -17040,
-              settlementBalance: 0.02063018,
-            },
-          });
+          const receipt = await exponentialBackoff(() =>
+            amm.rolloverWithMint({
+              fixedLow: 5,
+              fixedHigh: 7,
+              notional: 0.1,
+              margin: 0.01,
+              newMarginEngine,
+              rolloverPosition: {
+                tickLower: -17940,
+                tickUpper: -17040,
+                settlementBalance: 0.02063018,
+              },
+            }),
+          );
 
           const ethUsedForRollover = Number(
             ethers.utils.formatEther(receipt.effectiveGasPrice.mul(receipt.gasUsed).toString()),
           );
 
           const after = {
-            balanceWeth: amm.descale(await token.balanceOf(owner)),
+            balanceWeth: amm.descale(await exponentialBackoff(() => token.balanceOf(owner))),
             balanceEth: await amm.underlyingTokens(),
-            position: await marginEngineFactory
-              .connect(newMarginEngine, signer)
-              .callStatic.getPosition(owner, -19440, -16080),
+            position: await exponentialBackoff(() =>
+              marginEngineFactory
+                .connect(newMarginEngine, signer)
+                .callStatic.getPosition(owner, -19440, -16080),
+            ),
           };
 
           expect(after.balanceWeth - before.balanceWeth).to.be.closeTo(0.01063018, DELTA);
@@ -301,7 +314,7 @@ describe('amm:rolloverWithMint', () => {
       });
 
       it('Rollover more than received - the extra deposit should be in ETH', async () => {
-        await advanceTimeAndBlock(24 * 60 * 60, 1);
+        await exponentialBackoff(() => advanceTimeAndBlock(24 * 60 * 60, 1));
 
         const owner = '0xf8f6b70a36f4398f0853a311dc6699aba8333cc1';
 
@@ -334,10 +347,10 @@ describe('amm:rolloverWithMint', () => {
           const tokenAddress = amm.underlyingToken.id;
           const token = tokenFactory.connect(tokenAddress, signer);
 
-          await amm.approveUnderlyingTokenForPeriphery();
+          await exponentialBackoff(() => amm.approveUnderlyingTokenForPeriphery());
 
           const before = {
-            balanceWeth: amm.descale(await token.balanceOf(owner)),
+            balanceWeth: amm.descale(await exponentialBackoff(() => token.balanceOf(owner))),
             balanceEth: await amm.underlyingTokens(),
           };
 
@@ -360,11 +373,13 @@ describe('amm:rolloverWithMint', () => {
           );
 
           const after = {
-            balanceWeth: amm.descale(await token.balanceOf(owner)),
+            balanceWeth: amm.descale(await exponentialBackoff(() => token.balanceOf(owner))),
             balanceEth: await amm.underlyingTokens(),
-            position: await marginEngineFactory
-              .connect(newMarginEngine, signer)
-              .callStatic.getPosition(owner, -19440, -16080),
+            position: await exponentialBackoff(() =>
+              marginEngineFactory
+                .connect(newMarginEngine, signer)
+                .callStatic.getPosition(owner, -19440, -16080),
+            ),
           };
 
           expect(after.balanceWeth - before.balanceWeth).to.be.closeTo(0, DELTA);
