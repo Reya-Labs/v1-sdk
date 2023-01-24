@@ -482,7 +482,7 @@ export class AMM {
     let fixedTokenDeltaUnbalanced = BigNumber.from(0);
     let fixedTokenDelta = BigNumber.from(0);
 
-    await exponentialBackoff(() => peripheryContract.callStatic.swap(swapPeripheryParams)).then(
+    await peripheryContract.callStatic.swap(swapPeripheryParams).then(
       (result: any) => {
         availableNotional = result[1];
         fee = result[2];
