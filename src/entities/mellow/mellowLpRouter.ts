@@ -194,7 +194,11 @@ class MellowLpRouter {
 
     await this.refreshUserDeposit();
     await this.refreshWalletBalance();
-    await this.refreshBatchBudget();
+
+    // to be removed when all routers on GOERLI & MAINNET WERE UPGRADED
+    try {
+      await this.refreshBatchBudget();
+    } catch (error) {}
 
     // to be removed when all routers on GOERLI & MAINNET WERE UPGRADED
     try {
