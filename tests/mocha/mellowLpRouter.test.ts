@@ -37,11 +37,6 @@ const signer2 = new Wallet(
 const userWallet = signer;
 const userWallet2 = signer2;
 
-// using delay here because these tests will be deprecated soon
-function delay(ms: number): Promise<unknown> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 describe('Mellow Router Test Suite', () => {
   beforeEach(() => {
     sinon.stub(initSDK, 'getSentryTracker').callsFake(
@@ -54,10 +49,10 @@ describe('Mellow Router Test Suite', () => {
 
     sinon.stub(priceFetch, 'geckoEthToUsd').callsFake(
       () =>
-        new Promise((resolve) => {
-          setTimeout(() => {
-            resolve(1300);
-          }, 10);
+        new Promise((resolve, reject) => {
+            setTimeout(() => {
+              resolve(1300);
+            }, 10);
         }),
     );
   });
@@ -71,8 +66,6 @@ describe('Mellow Router Test Suite', () => {
   });
 
   const resetNetwork = async (blockNumber: number) => {
-    await delay(500);
-
     await network.provider.request({
       method: 'hardhat_reset',
       params: [
@@ -112,7 +105,7 @@ describe('Mellow Router Test Suite', () => {
     });
   });
 
-  describe.skip('Deposit Scenarios', async () => {
+  describe('Deposit Scenarios', async () => {
     beforeEach('Setting up the Router Object', async () => {
       await resetNetwork(7992457);
       await extendRouter();
@@ -664,7 +657,7 @@ describe('Mellow Router Test Suite', () => {
     });
   });
 
-  describe.skip('Withdrawal Scenarios', async () => {
+  describe('Withdrawal Scenarios', async () => {
     beforeEach('Setting up the Router Object', async () => {
       await resetNetwork(8099085);
       await extendRouter();
@@ -746,7 +739,7 @@ describe('Mellow Router Test Suite', () => {
     });
   });
 
-  describe.skip('Rollover Scenarios', async () => {
+  describe('Rollover Scenarios', async () => {
     beforeEach('Setting up the Router Object for Deposit', async () => {
       await resetNetwork(8099085);
       await extendRouter();
@@ -976,7 +969,7 @@ describe('Mellow Router Test Suite', () => {
     });
   });
 
-  describe.skip('Auto-rollover', async () => {
+  describe('Auto-rollover', async () => {
     beforeEach('Setting up the Router Object', async () => {
       await resetNetwork(8321776);
 
@@ -1065,10 +1058,7 @@ describe('Mellow Router Test Suite', () => {
 
     it('Calculate correct transaction fee in USD for autorollover registration', async () => {
       const currentEthPrice = await priceFetch.geckoEthToUsd('');
-      expect(ethMellowLpRouter.autoRolloverRegistrationGasFeeUSD / currentEthPrice).to.be.closeTo(
-        0.00239,
-        0.00001,
-      );
+      expect(ethMellowLpRouter.autoRolloverRegistrationGasFeeUSD / currentEthPrice).to.be.closeTo(0.00239, 0.00001);
     });
 
     it('Can manage vault positions - init', async () => {
@@ -1119,9 +1109,9 @@ describe('Mellow Router Test Suite', () => {
         await ethMellowLpRouter.readOnlyContracts?.mellowRouterContract.owner(),
         async (routerOwnerSigner) => {
           await ethMellowLpRouter.readOnlyContracts?.mellowRouterContract
-            .connect(routerOwnerSigner)
-            .deprecateVault(4);
-        },
+              .connect(routerOwnerSigner)
+              .deprecateVault(4);
+        }
       );
 
       ethMellowLpRouter = new MellowLpRouter({
@@ -1151,12 +1141,8 @@ describe('Mellow Router Test Suite', () => {
         await ethMellowLpRouter.readOnlyContracts?.mellowRouterContract.owner(),
         async (routerOwnerSigner) => {
           await ethMellowLpRouter.readOnlyContracts?.mellowRouterContract
-            .connect(routerOwnerSigner)
-            .addVault(
-              (
-                await ethMellowLpRouter.readOnlyContracts?.mellowRouterContract.getVaults()
-              )[4],
-            );
+              .connect(routerOwnerSigner)
+              .addVault((await ethMellowLpRouter.readOnlyContracts?.mellowRouterContract.getVaults())[4]);
           await ethMellowLpRouter.readOnlyContracts?.mellowRouterContract
             .connect(routerOwnerSigner)
             .setAutoRolloverWeights([0, 0, 0, 0, 0, 100]);
@@ -1191,7 +1177,7 @@ describe('Mellow Router Test Suite', () => {
     it('Can manage vault positions - edge cases', async () => {
       expect(ethMellowLpRouter.canManageVaultPosition(-1)).to.be.eq(false);
       expect(ethMellowLpRouter.canManageVaultPosition(100)).to.be.eq(false);
-
+  
       ethMellowLpRouter = new MellowLpRouter({
         mellowRouterAddress: MellowRouterAddress,
         id: 'Test - ETH',
@@ -1207,15 +1193,15 @@ describe('Mellow Router Test Suite', () => {
           underlyingPools: [],
         },
       });
-
+  
       expect(ethMellowLpRouter.canManageVaultPosition(0)).to.be.eq(false);
     });
-  });
+  });  
 
   describe('Submit Batch Scenarios', async () => {
     beforeEach('Setting up the Router Object', async () => {
       await resetNetwork(8344143);
-      // await extendRouter();
+      //await extendRouter();
       localMellowRouterContract = new ethers.Contract(
         MellowRouterAddress_submitBatch,
         MellowMultiVaultRouterABI,
@@ -1297,34 +1283,39 @@ describe('Mellow Router Test Suite', () => {
         network,
         await localMellowRouterContract.owner(),
         async (routerOwnerSigner) => {
-          await localMellowRouterContract.connect(routerOwnerSigner).setFee(fee);
+          await localMellowRouterContract
+            .connect(routerOwnerSigner)
+            .setFee(fee);
         },
       );
     });
 
-    it.skip('Get fee before and after fee change', async () => {
-      let obtainedFee = await ethMellowLpRouter.getDepositFeeUnderlying();
+    it('Get fee before and after fee change', async () => {
+
+      let obtainedFee = await ethMellowLpRouter.getDepositFee();
       expect(obtainedFee).to.be.eq(fee);
 
       await withSigner(
         network,
         await localMellowRouterContract.owner(),
         async (routerOwnerSigner) => {
-          await localMellowRouterContract.connect(routerOwnerSigner).setFee(0);
+          await localMellowRouterContract
+            .connect(routerOwnerSigner)
+            .setFee(0);
         },
       );
 
-      obtainedFee = await ethMellowLpRouter.getDepositFeeUnderlying();
+      obtainedFee = await ethMellowLpRouter.getDepositFee();
       expect(obtainedFee).to.be.eq('0');
     });
 
-    it.skip('Get batch budget', async () => {
+    it('Get batch budget', async () => {
       const weights1 = [60, 40]; // Needs to sum to 100
       const weights2 = [30, 70]; // Needs to sum to 100
 
       let batchBudget = await ethMellowLpRouter.getBatchBudgetUsd();
       expect(batchBudget).to.be.eq(0);
-
+      
       await ethMellowLpRouter.deposit(10, weights1);
       batchBudget = await ethMellowLpRouter.getBatchBudgetUsd();
       const descaledFeeUsd = ethMellowLpRouter.descale(fee, 18) * 1300;
@@ -1345,6 +1336,7 @@ describe('Mellow Router Test Suite', () => {
 
       // Submit the batch of deposits from the router to the erc20 root vaults
       await ethMellowLpRouter.submitAllBatchesForFee();
+
     });
 
     it('Submit batch after 1 deposit with even split', async () => {
@@ -1353,11 +1345,9 @@ describe('Mellow Router Test Suite', () => {
       // User deposits funds into the router
       await ethMellowLpRouter.deposit(10, weights);
 
-      const balanceInit = await ethMellowLpRouter.writeContracts?.token.balanceOf(
-        userWallet.address,
-      );
+      const balanceInit = await ethMellowLpRouter.writeContracts?.token.balanceOf(userWallet.address);
       const batchBudgetUsdc = await ethMellowLpRouter.getBatchBudgetUsd();
-      const batchBudget = ethMellowLpRouter.scale(batchBudgetUsdc / 1300);
+      const batchBudget = ethMellowLpRouter.scale(batchBudgetUsdc/1300);
 
       // Router gets the batched deposits
       for (let vaultIndex = 0; vaultIndex < 2; vaultIndex += 1) {
@@ -1387,14 +1377,13 @@ describe('Mellow Router Test Suite', () => {
       expect(userLpTokenBalance[1]).to.be.eq('4500000000000000000');
 
       // Check submitter has received fee
-      const balanceAfter = await ethMellowLpRouter.writeContracts?.token.balanceOf(
-        userWallet.address,
-      );
+      const balanceAfter = await ethMellowLpRouter.writeContracts?.token.balanceOf(userWallet.address);
       expect(balanceAfter).to.be.eq(balanceInit.add(fee));
       expect(balanceAfter).to.be.eq(balanceInit.add(batchBudget));
+
     });
 
-    it.skip('Submit batch after 2 deposit with uneven split', async () => {
+    it('Submit batch after 2 deposit with uneven split', async () => {
       const weights1 = [60, 40]; // Needs to sum to 100
       const weights2 = [30, 70]; // Needs to sum to 100
 
@@ -1402,69 +1391,56 @@ describe('Mellow Router Test Suite', () => {
       await ethMellowLpRouter.deposit(10, weights1);
       await ethMellowLpRouter2.deposit(10, weights2);
 
-      const balanceInit1 = await ethMellowLpRouter.writeContracts?.token.balanceOf(
-        userWallet.address,
-      );
+      const balanceInit1 = await ethMellowLpRouter.writeContracts?.token.balanceOf(userWallet.address);
       let batchBudgetUsdc = await ethMellowLpRouter.getBatchBudgetUsd();
-      let batchBudget = ethMellowLpRouter.scale(batchBudgetUsdc / 1300);
+      let batchBudget = ethMellowLpRouter.scale(batchBudgetUsdc/1300);
 
       // Submit the batch of deposits from the router to the erc20 root vaults
       await ethMellowLpRouter.userInit(userWallet);
       await ethMellowLpRouter.submitAllBatchesForFee();
 
       // Check submitter has received fee
-      const balanceAfter1 = await ethMellowLpRouter.writeContracts?.token.balanceOf(
-        userWallet.address,
-      );
+      const balanceAfter1 = await ethMellowLpRouter.writeContracts?.token.balanceOf(userWallet.address);
       expect(balanceAfter1).to.be.eq(balanceInit1.add(fee.mul(2)));
       expect(balanceAfter1).to.be.eq(balanceInit1.add(batchBudget));
 
       // Get the user lp token balance after the router receives it from the erc20 root vault upon batch submission
       {
         const userLpTokenBalance1 =
-          await ethMellowLpRouter.writeContracts?.mellowRouter.getLPTokenBalances(
-            userWallet.address,
-          );
+          await ethMellowLpRouter.writeContracts?.mellowRouter.getLPTokenBalances(userWallet.address);
         const userLpTokenBalance2 =
-          await ethMellowLpRouter.writeContracts?.mellowRouter.getLPTokenBalances(
-            userWallet2.address,
-          );
+          await ethMellowLpRouter.writeContracts?.mellowRouter.getLPTokenBalances(userWallet2.address);
         expect(userLpTokenBalance1[0]).to.be.eq('5400000000000000000');
         expect(userLpTokenBalance2[0]).to.be.eq('2700000000000000000');
         expect(userLpTokenBalance1[1]).to.be.eq('3600000000000000000');
         expect(userLpTokenBalance2[1]).to.be.eq('6300000000000000000');
       }
 
-      // ------------------ DEPOSIT AGAIN ------------------
+      // ------------------ DEPOSIT AGAIN ------------------ 
 
       await ethMellowLpRouter2.deposit(10, weights2);
       batchBudgetUsdc = await ethMellowLpRouter.getBatchBudgetUsd();
-      batchBudget = ethMellowLpRouter.scale(batchBudgetUsdc / 1300);
+      batchBudget = ethMellowLpRouter.scale(batchBudgetUsdc/1300);
 
       await ethMellowLpRouter.submitAllBatchesForFee();
 
       // Check submitter has received fee
-      const balanceAfter2 = await ethMellowLpRouter.writeContracts?.token.balanceOf(
-        userWallet.address,
-      );
+      const balanceAfter2 = await ethMellowLpRouter.writeContracts?.token.balanceOf(userWallet.address);
       expect(balanceAfter2).to.be.eq(balanceInit1.add(fee.mul(3)));
       expect(balanceAfter2).to.be.eq(balanceAfter1.add(batchBudget));
 
       // Get the user lp token balance after the router receives it from the erc20 root vault upon batch submission
       {
         const userLpTokenBalance2 =
-          await ethMellowLpRouter.writeContracts?.mellowRouter.getLPTokenBalances(
-            userWallet2.address,
-          );
+          await ethMellowLpRouter.writeContracts?.mellowRouter.getLPTokenBalances(userWallet2.address);
         expect(userLpTokenBalance2[0]).to.be.closeTo('5400000000000000000', '100000000000000000');
         expect(userLpTokenBalance2[1]).to.be.closeTo('12600000000000000000', '100000000000000000');
       }
+
     });
 
     it('Submit empty batch', async () => {
-      const balanceInit = await ethMellowLpRouter.writeContracts?.token.balanceOf(
-        userWallet.address,
-      );
+      const balanceInit = await ethMellowLpRouter.writeContracts?.token.balanceOf(userWallet.address);
 
       // Router gets the batched deposits
       for (let vaultIndex = 0; vaultIndex < 2; vaultIndex += 1) {
@@ -1473,8 +1449,8 @@ describe('Mellow Router Test Suite', () => {
         expect(batchedDeposit.length).to.be.eq(0);
       }
 
-      const batchBudgetUsdc = await ethMellowLpRouter.getBatchBudgetUsd();
-      const batchBudget = ethMellowLpRouter.scale(batchBudgetUsdc / 1300);
+      let batchBudgetUsdc = await ethMellowLpRouter.getBatchBudgetUsd();
+      let batchBudget = ethMellowLpRouter.scale(batchBudgetUsdc/1300);
       expect(batchBudget).to.be.eq('0');
 
       // Make sure the user LP token balance before batch submission is 0 for each vault
@@ -1487,9 +1463,10 @@ describe('Mellow Router Test Suite', () => {
       ).to.be.eq('0,0');
 
       // Submit the batch of deposits from the router to the erc20 root vaults
-      expect(ethMellowLpRouter.submitAllBatchesForFee()).to.be.revertedWith(
-        'Unsuccessful batch submittion simulation',
-      );
+      expect(
+        ethMellowLpRouter.submitAllBatchesForFee()
+      ).to.be.revertedWith('Unsuccessful batch submittion simulation');
+      
 
       // Get the user lp token balance after the router receives it from the erc20 root vault upon batch submission
       const userLpTokenBalance =
@@ -1497,10 +1474,10 @@ describe('Mellow Router Test Suite', () => {
       expect(userLpTokenBalance[0]).to.be.eq('0');
 
       // Check submitter has received fee
-      const balanceAfter = await ethMellowLpRouter.writeContracts?.token.balanceOf(
-        userWallet.address,
-      );
+      const balanceAfter = await ethMellowLpRouter.writeContracts?.token.balanceOf(userWallet.address);
       expect(balanceAfter).to.be.eq(balanceInit);
+
     });
+    
   });
 });
