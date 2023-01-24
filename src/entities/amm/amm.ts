@@ -540,9 +540,7 @@ export class AMM {
       tickUpper,
       marginDelta: '0',
     };
-    await exponentialBackoff(() =>
-      peripheryContract.callStatic.swap(swapPeripheryParamsLargeSwap),
-    ).then(
+    await peripheryContract.callStatic.swap(swapPeripheryParamsLargeSwap).then(
       (result: any) => {
         maxAvailableNotional = result[1];
       },
@@ -864,7 +862,7 @@ export class AMM {
     };
 
     let marginRequirement = BigNumber.from('0');
-    await exponentialBackoff(() => peripheryContract.callStatic.mintOrBurn(mintOrBurnParams)).then(
+    await peripheryContract.callStatic.mintOrBurn(mintOrBurnParams).then(
       (result) => {
         marginRequirement = BigNumber.from(result);
       },
