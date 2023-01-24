@@ -458,7 +458,12 @@ class MellowLpRouter {
       throw new Error('Weights are invalid');
     }
 
-    const scaledAmount = this.scale(amount);
+    const fee = await this.getDepositFeeUnderlying();
+    if (amount <= fee) {
+      throw new Error('Amount must be greater than fee');
+    }
+
+    const scaledAmount = this.scale(amount + fee);
     const tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
 
     if (this.isETH) {
