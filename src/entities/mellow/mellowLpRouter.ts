@@ -1072,7 +1072,7 @@ class MellowLpRouter {
       const sentryTracker = getSentryTracker();
       sentryTracker.captureException(err);
       sentryTracker.captureMessage('Failed to get deposit fee');
-      throw new Error('Failed to get deposit fee');
+      return 0; // TODO: replace with error after upgrading router to have getFee()
     }
   };
 

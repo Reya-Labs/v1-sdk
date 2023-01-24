@@ -252,16 +252,53 @@
         "type": "function"
       },
       {
+        "inputs": [],
+        "name": "getAutoRolledOverVaults",
+        "outputs": [
+          {
+            "internalType": "uint256[]",
+            "name": "",
+            "type": "uint256[]"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
         "inputs": [
           {
             "internalType": "uint256",
-            "name": "index",
+            "name": "fromVault",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "toVault",
             "type": "uint256"
           }
         ],
-        "name": "deprecateVault",
-        "outputs": [],
-        "stateMutability": "nonpayable",
+        "name": "getAutoRolloverExchangeRatesWad",
+        "outputs": [
+          {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [],
+        "name": "getAutoRolloverWeights",
+        "outputs": [
+          {
+            "internalType": "uint256[]",
+            "name": "",
+            "type": "uint256[]"
+          }
+        ],
+        "stateMutability": "view",
         "type": "function"
       },
       {
@@ -327,6 +364,25 @@
         "type": "function"
       },
       {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "vaultIndex",
+            "type": "uint256"
+          }
+        ],
+        "name": "getCachedVaultMaturity",
+        "outputs": [
+          {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+          }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
         "inputs": [],
         "name": "getFee",
         "outputs": [
@@ -359,6 +415,44 @@
         "type": "function"
       },
       {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "vaultIndex",
+            "type": "uint256"
+          }
+        ],
+        "name": "getPendingAutoRolloverDeposits",
+        "outputs": [
+          {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "owner",
+            "type": "address"
+          }
+        ],
+        "name": "getPropagatedAutoRolloverLPTokens",
+        "outputs": [
+          {
+            "internalType": "uint256[]",
+            "name": "",
+            "type": "uint256[]"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
         "inputs": [],
         "name": "getTotalFee",
         "outputs": [
@@ -374,6 +468,25 @@
       {
         "inputs": [],
         "name": "getVaultDepositsCount",
+        "outputs": [
+          {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "vaultIndex",
+            "type": "uint256"
+          }
+        ],
+        "name": "getVaultMaturity",
         "outputs": [
           {
             "internalType": "uint256",
@@ -447,7 +560,26 @@
             "type": "uint256"
           }
         ],
-        "name": "isVaultDeprecated",
+        "name": "isVaultCompleted",
+        "outputs": [
+          {
+            "internalType": "bool",
+            "name": "",
+            "type": "bool"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "index",
+            "type": "uint256"
+          }
+        ],
+        "name": "isVaultPaused",
         "outputs": [
           {
             "internalType": "bool",
@@ -482,19 +614,6 @@
           }
         ],
         "stateMutability": "view",
-        "type": "function"
-      },
-      {
-        "inputs": [
-          {
-            "internalType": "uint256",
-            "name": "index",
-            "type": "uint256"
-          }
-        ],
-        "name": "reactivateVault",
-        "outputs": [],
-        "stateMutability": "nonpayable",
         "type": "function"
       },
       {
@@ -562,11 +681,47 @@
         "inputs": [
           {
             "internalType": "uint256",
+            "name": "index",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "completed",
+            "type": "bool"
+          }
+        ],
+        "name": "setCompletion",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "uint256",
             "name": "fee_",
             "type": "uint256"
           }
         ],
         "name": "setFee",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "index",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "paused",
+            "type": "bool"
+          }
+        ],
+        "name": "setPausability",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
