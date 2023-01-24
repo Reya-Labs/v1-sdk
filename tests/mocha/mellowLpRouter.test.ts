@@ -13,7 +13,6 @@ import { withSigner, fail } from '../utils';
 import { advanceTimeAndBlock } from '../time';
 import * as initSDK from '../../src/init';
 import * as priceFetch from '../../src/utils/priceFetch';
-import { delay } from '../../src/utils/retry';
 
 const { provider } = waffle;
 let ethMellowLpRouter: MellowLpRouter;
@@ -67,7 +66,6 @@ describe('Mellow Router Test Suite', () => {
   });
 
   const resetNetwork = async (blockNumber: number) => {
-    await delay(500);
     await network.provider.request({
       method: 'hardhat_reset',
       params: [
@@ -1298,7 +1296,7 @@ describe('Mellow Router Test Suite', () => {
     });
 
     it.skip('Get fee before and after fee change', async () => {
-      let obtainedFee = await ethMellowLpRouter.getDepositFee();
+      let obtainedFee = await ethMellowLpRouter.getDepositFeeUnderlying();
       expect(obtainedFee).to.be.eq(fee);
 
       await withSigner(
@@ -1309,7 +1307,7 @@ describe('Mellow Router Test Suite', () => {
         },
       );
 
-      obtainedFee = await ethMellowLpRouter.getDepositFee();
+      obtainedFee = await ethMellowLpRouter.getDepositFeeUnderlying();
       expect(obtainedFee).to.be.eq('0');
     });
 

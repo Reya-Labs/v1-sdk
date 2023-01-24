@@ -25,6 +25,7 @@ import { MellowProductMetadata } from './config/types';
 import { closeOrPastMaturity } from './config/utils';
 import { convertGasUnitsToUSD } from '../../utils/mellowHelpers/convertGasUnitsToUSD';
 import { geckoEthToUsd } from '../../utils/priceFetch';
+import { exponentialBackoff } from '../../utils/retry';
 
 export type MellowLpRouterArgs = {
   id: string;
@@ -138,11 +139,13 @@ class MellowLpRouter {
     );
 
     // Get the token from mellowRouter.token() here
-    const tokenAddress = await mellowRouterContract.token();
+    const tokenAddress = await exponentialBackoff(() => mellowRouterContract.token());
     const tokenContract = new Contract(tokenAddress, IERC20MinimalABI, this.provider);
 
     // erc20rootvault addresses
-    const ERC20RootVaultAddresses: string[] = await mellowRouterContract.getVaults();
+    const ERC20RootVaultAddresses: string[] = await exponentialBackoff(() =>
+      mellowRouterContract.getVaults(),
+    );
     this.vaultsCount = ERC20RootVaultAddresses.length;
 
     // Map the addresses so that each of them is instantiated into a contract
@@ -180,7 +183,7 @@ class MellowLpRouter {
       throw new Error('Uninitialized contracts.');
     }
 
-    this.userAddress = await this.signer.getAddress();
+    this.userAddress = await exponentialBackoff(() => signer.getAddress());
 
     this.writeContracts = {
       token: new Contract(this.readOnlyContracts.token.address, IERC20MinimalABI, this.signer),
@@ -204,17 +207,19 @@ class MellowLpRouter {
 
     // to be removed when all routers on GOERLI & MAINNET WERE UPGRADED
     try {
-      this.isRegisteredForAutoRollover =
-        await this.readOnlyContracts.mellowRouterContract.isRegisteredForAutoRollover(
-          this.userAddress,
-        );
+      const readOnlyContracts = this.readOnlyContracts;
+      this.isRegisteredForAutoRollover = await exponentialBackoff(() =>
+        readOnlyContracts.mellowRouterContract.isRegisteredForAutoRollover(this.userAddress),
+      );
 
       this.canManageVaultPositions = [];
       for (let vaultIndex = 0; vaultIndex < this.vaultsCount; vaultIndex += 1) {
         this.canManageVaultPositions.push(
-          await this.readOnlyContracts.mellowRouterContract.canWithdrawOrRollover(
-            vaultIndex,
-            this.userAddress,
+          await exponentialBackoff(() =>
+            readOnlyContracts.mellowRouterContract.canWithdrawOrRollover(
+              vaultIndex,
+              this.userAddress,
+            ),
           ),
         );
       }
@@ -227,9 +232,12 @@ class MellowLpRouter {
 
     // try-catch to not be removed
     try {
+      const writeContracts = this.writeContracts;
       this.autoRolloverRegistrationGasUnits = (
-        await this.writeContracts.mellowRouter.estimateGas.registerForAutoRollover(
-          !this.isRegisteredForAutoRollover,
+        await exponentialBackoff(() =>
+          writeContracts.mellowRouter.estimateGas.registerForAutoRollover(
+            !this.isRegisteredForAutoRollover,
+          ),
         )
       ).toNumber();
       this.canRegisterUnregister = true;
@@ -331,16 +339,18 @@ class MellowLpRouter {
       return;
     }
 
-    const lpTokensBalances: BigNumber[] =
-      await this.readOnlyContracts.mellowRouterContract.getLPTokenBalances(this.userAddress);
+    const readOnlyContracts = this.readOnlyContracts;
+    const lpTokensBalances: BigNumber[] = await exponentialBackoff(() =>
+      readOnlyContracts.mellowRouterContract.getLPTokenBalances(this.userAddress),
+    );
 
     for (let i = 0; i < this.readOnlyContracts.erc20RootVault.length; i += 1) {
       const erc20RootVaultContract = this.readOnlyContracts.erc20RootVault[i];
       const lpTokensBalance = lpTokensBalances[i];
 
-      const totalLpTokens = await erc20RootVaultContract.totalSupply();
+      const totalLpTokens = await exponentialBackoff(() => erc20RootVaultContract.totalSupply());
 
-      const tvl = await erc20RootVaultContract.tvl();
+      const tvl = await exponentialBackoff(() => erc20RootVaultContract.tvl());
 
       if (totalLpTokens.gt(0)) {
         const userFunds = lpTokensBalance.mul(tvl[0][0]).div(totalLpTokens);
@@ -360,9 +370,12 @@ class MellowLpRouter {
       return;
     }
 
+    const readOnlyContracts = this.readOnlyContracts;
+
     for (let i = 0; i < this.vaultsCount; i += 1) {
-      const batchedDeposits: BatchedDeposit[] =
-        await this.readOnlyContracts.mellowRouterContract.getBatchedDeposits(i);
+      const batchedDeposits: BatchedDeposit[] = await exponentialBackoff(() =>
+        readOnlyContracts.mellowRouterContract.getBatchedDeposits(i),
+      );
 
       const userBatchedDeposits: BatchedDeposit[] = batchedDeposits.filter(
         (batchedDeposit) => batchedDeposit.author.toLowerCase() === this.userAddress?.toLowerCase(),
@@ -393,9 +406,12 @@ class MellowLpRouter {
       return;
     }
 
+    const readOnlyContracts = this.readOnlyContracts;
+    const userAddress = this.userAddress;
+
     const walletBalance = this.isETH
-      ? await this.provider.getBalance(this.userAddress)
-      : await this.readOnlyContracts.token.balanceOf(this.userAddress);
+      ? await exponentialBackoff(() => this.provider.getBalance(userAddress))
+      : await exponentialBackoff(() => readOnlyContracts.token.balanceOf(userAddress));
 
     this.userWalletBalance = this.descale(walletBalance, this.tokenDecimals);
   };
@@ -406,7 +422,11 @@ class MellowLpRouter {
       return;
     }
 
-    this.batchBudgetScaled = await this.readOnlyContracts.mellowRouterContract.getTotalFee();
+    const readOnlyContracts = this.readOnlyContracts;
+
+    this.batchBudgetScaled = await exponentialBackoff(() =>
+      readOnlyContracts.mellowRouterContract.getTotalFee(),
+    );
   };
 
   isTokenApproved = async (): Promise<boolean> => {
@@ -422,9 +442,13 @@ class MellowLpRouter {
       return false;
     }
 
-    const tokenApproval = await this.readOnlyContracts.token.allowance(
-      this.userAddress,
-      this.writeContracts?.mellowRouter.address,
+    const readOnlyContracts = this.readOnlyContracts;
+
+    const tokenApproval = await exponentialBackoff(() =>
+      readOnlyContracts.token.allowance(
+        this.userAddress,
+        this.writeContracts?.mellowRouter.address,
+      ),
     );
 
     return tokenApproval.gte(TresholdApprovalBn);
