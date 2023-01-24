@@ -84,6 +84,8 @@ class MellowLpRouter {
   private autoRolloverRegistrationGasUnits = 0;
   private batchBudgetScaled: BigNumberish = 0;
 
+  public canRegisterForAutoRollover = true;
+
   public constructor({
     mellowRouterAddress,
     id,
@@ -194,23 +196,20 @@ class MellowLpRouter {
     await this.refreshWalletBalance();
     await this.refreshBatchBudget();
 
-    // try-catch block to be removed once all routers have been upgraded on GOERLI & MAINNET
-    try {
-      this.isRegisteredForAutoRollover =
-        await this.readOnlyContracts.mellowRouterContract.isRegisteredForAutoRollover(
-          this.userAddress,
-        );
+    this.isRegisteredForAutoRollover =
+      await this.readOnlyContracts.mellowRouterContract.isRegisteredForAutoRollover(
+        this.userAddress,
+      );
 
-      this.canManageVaultPositions = [];
-      for (let vaultIndex = 0; vaultIndex < this.vaultsCount; vaultIndex += 1) {
-        this.canManageVaultPositions.push(
-          await this.readOnlyContracts.mellowRouterContract.canWithdrawOrRollover(
-            vaultIndex,
-            this.userAddress,
-          ),
-        );
-      }
-    } catch (error) {}
+    this.canManageVaultPositions = [];
+    for (let vaultIndex = 0; vaultIndex < this.vaultsCount; vaultIndex += 1) {
+      this.canManageVaultPositions.push(
+        await this.readOnlyContracts.mellowRouterContract.canWithdrawOrRollover(
+          vaultIndex,
+          this.userAddress,
+        ),
+      );
+    }
 
     // try-catch to not be removed
     try {
@@ -219,8 +218,10 @@ class MellowLpRouter {
           !this.isRegisteredForAutoRollover,
         )
       ).toNumber();
+      this.canRegisterForAutoRollover = true;
     } catch (error) {
       this.autoRolloverRegistrationGasUnits = 0;
+      this.canRegisterForAutoRollover = false;
     }
 
     this.userInitialized = true;
