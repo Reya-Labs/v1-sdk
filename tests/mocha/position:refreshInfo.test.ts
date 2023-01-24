@@ -5,14 +5,12 @@ import { BrowserClient } from '@sentry/browser';
 import { AMM, Position, RateOracle, Token } from '../../src/entities';
 import { advanceTimeAndBlock } from '../time';
 import * as initSDK from '../../src/init';
-import { delay } from '../../src/utils/retry';
 
 const { provider } = waffle;
 const DELTA = 0.0001;
 
 describe('position:refreshInfo', () => {
   const resetNetwork = async (blockNumber: number) => {
-    await delay(500);
     await network.provider.request({
       method: 'hardhat_reset',
       params: [
