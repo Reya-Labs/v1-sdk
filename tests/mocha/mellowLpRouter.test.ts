@@ -37,6 +37,11 @@ const signer2 = new Wallet(
 const userWallet = signer;
 const userWallet2 = signer2;
 
+// using delay here because these tests will be deprecated soon
+function delay(ms: number): Promise<unknown> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 describe('Mellow Router Test Suite', () => {
   beforeEach(() => {
     sinon.stub(initSDK, 'getSentryTracker').callsFake(
@@ -66,6 +71,8 @@ describe('Mellow Router Test Suite', () => {
   });
 
   const resetNetwork = async (blockNumber: number) => {
+    await delay(500);
+
     await network.provider.request({
       method: 'hardhat_reset',
       params: [
