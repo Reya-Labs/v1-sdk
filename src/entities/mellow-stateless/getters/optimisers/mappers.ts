@@ -54,6 +54,11 @@ export const mapRouter = (
     }
   }
 
+  // Get batch submission fees
+  const feePerDeposit = descale(optimiserContractInfo.feePerDeposit, tokenDecimals);
+  const accumulatedFees = descale(optimiserContractInfo.accumulatedFees, tokenDecimals);
+  const pendingDepositsCount = descale(optimiserContractInfo.pendingDepositsCount, tokenDecimals);
+
   // Get vault information
   const vaults = routerConfig.vaults.map((vaultConfig, vaultIndex): VaultInfo => {
     const vaultContractInfo = vaultsContractInfo[vaultIndex];
@@ -91,6 +96,10 @@ export const mapRouter = (
 
   return {
     routerId: routerConfig.router,
+
+    feePerDeposit,
+    accumulatedFees,
+    pendingDepositsCount,
 
     soon: routerConfig.soon,
     title: routerConfig.title,

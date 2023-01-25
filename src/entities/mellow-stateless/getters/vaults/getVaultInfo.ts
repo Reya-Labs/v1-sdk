@@ -103,6 +103,10 @@ export const getVaultInfo = async (routerId: string, userAddress: string): Promi
     expired,
     depositable,
 
+    feePerDeposit: 0,
+    accumulatedFees: 0,
+    pendingDepositsCount: 0,
+
     userWalletBalance,
 
     userRouterDeposit: sum(vaults.map((vault) => vault.userVaultDeposit)),

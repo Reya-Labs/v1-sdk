@@ -14,7 +14,7 @@ import { exponentialBackoff } from '../../../src/utils/retry';
 const { provider } = waffle;
 const DELTA = 0.00001;
 
-describe('getRouters', () => {
+describe('Mellow Router:DepositAndRegister', () => {
   const userAddress = '0xf8f6b70a36f4398f0853a311dc6699aba8333cc1';
 
   const resetNetwork = async (blockNumber: number) => {
@@ -33,7 +33,7 @@ describe('getRouters', () => {
   };
 
   const mock = async () => {
-    const block = 8344555;
+    const block = 8375800;
     await resetNetwork(block);
 
     sinon.stub(initSDK, 'getSentryTracker').callsFake(
@@ -146,7 +146,7 @@ describe('getRouters', () => {
               amount,
               spareWeights: [['0x4972C5f24E6EDfD479ba989b204bD376503D48d8', 100]],
               signer,
-              registration: true,
+              registration: false,
             }),
           RETRY_ATTEMPTS,
         );
@@ -164,7 +164,7 @@ describe('getRouters', () => {
           newRouterState.vaults[3].userVaultDeposit - routerState.vaults[3].userVaultDeposit,
         ).to.be.closeTo(amount, DELTA);
 
-        expect(newRouterState.isUserRegisteredForAutoRollover).to.be.eq(true);
+        expect(newRouterState.isUserRegisteredForAutoRollover).to.be.eq(false);
       });
     });
   });

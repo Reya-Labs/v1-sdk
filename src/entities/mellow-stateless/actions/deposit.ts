@@ -8,9 +8,11 @@ import { mapWeights } from '../utils/mapWeights';
 import { RouterInfo } from '../getters/types';
 import { getOptimiserInfo } from '../getters/optimisers/getOptimiserInfo';
 import { exponentialBackoff } from '../../../utils/retry';
-import { getSentryTracker } from '../../../init';
+import { getProvider, getSentryTracker } from '../../../init';
+import { convertGasUnitsToUSD } from '../../../utils/mellowHelpers/convertGasUnitsToUSD';
 
 type DepositArgs = {
+  onlyGasEstimate?: boolean;
   routerId: string;
   amount: number;
   spareWeights: [string, number][];
@@ -18,68 +20,13 @@ type DepositArgs = {
 };
 
 type DepositResponse = {
-  transaction: {
-    receipt: ethers.ContractReceipt;
-  };
+  gasEstimateUsd: number;
+  receipt: ethers.ContractReceipt | null;
   newRouterState: RouterInfo | null;
 };
 
-const getTransaction = async (
-  mellowRouter: ethers.Contract,
-  isETH: boolean,
-  scaledAmount: ethers.BigNumber,
-  weights: number[],
-): Promise<ethers.ContractTransaction> => {
-  const tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
-
-  if (isETH) {
-    tempOverrides.value = scaledAmount;
-
-    // Simulate deposit
-    try {
-      await mellowRouter.callStatic.depositEth(weights, tempOverrides);
-    } catch (error) {
-      const errorMessage = 'Unsuccessful deposit simulation.';
-
-      // Report to Sentry
-      const sentryTracker = getSentryTracker();
-      sentryTracker.captureException(error);
-      sentryTracker.captureMessage(errorMessage);
-
-      throw new Error(errorMessage);
-    }
-
-    // Estimate gas
-    const gasLimit = await mellowRouter.estimateGas.depositEth(weights, tempOverrides);
-    tempOverrides.gasLimit = getGasBuffer(gasLimit);
-
-    // Send transaction
-    return mellowRouter.depositEth(weights, tempOverrides);
-  }
-
-  // Simulate deposit
-  try {
-    await mellowRouter.callStatic.depositErc20(scaledAmount, weights);
-  } catch (error) {
-    const errorMessage = 'Unsuccessful deposit simulation.';
-
-    // Report to Sentry
-    const sentryTracker = getSentryTracker();
-    sentryTracker.captureException(error);
-    sentryTracker.captureMessage(errorMessage);
-
-    throw new Error(errorMessage);
-  }
-
-  // Estimate gas
-  const gasLimit = await mellowRouter.estimateGas.depositErc20(scaledAmount, weights);
-  tempOverrides.gasLimit = getGasBuffer(gasLimit);
-
-  // Send transaction
-  return mellowRouter.depositErc20(scaledAmount, weights, tempOverrides);
-};
-
 export const deposit = async ({
+  onlyGasEstimate,
   routerId,
   amount,
   spareWeights,
@@ -131,7 +78,51 @@ export const deposit = async ({
   );
 
   // Get the transaction
-  const tx = await getTransaction(mellowRouter, isETH, scaledAmount, weights);
+  const tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
+
+  if (isETH) {
+    tempOverrides.value = scaledAmount;
+  }
+
+  // Simulate deposit
+  try {
+    if (isETH) {
+      await mellowRouter.callStatic.depositEth(weights, tempOverrides);
+    } else {
+      await mellowRouter.callStatic.depositErc20(scaledAmount, weights);
+    }
+  } catch (error) {
+    const errorMessage = 'Unsuccessful deposit simulation.';
+
+    // Report to Sentry
+    const sentryTracker = getSentryTracker();
+    sentryTracker.captureException(error);
+    sentryTracker.captureMessage(errorMessage);
+
+    throw new Error(errorMessage);
+  }
+
+  // Estimate gas
+  const gasLimit = isETH
+    ? await mellowRouter.estimateGas.depositEth(weights, tempOverrides)
+    : await mellowRouter.estimateGas.depositErc20(scaledAmount, weights);
+  tempOverrides.gasLimit = getGasBuffer(gasLimit);
+
+  const provider = getProvider();
+  const gasEstimateUsd = await convertGasUnitsToUSD(provider, gasLimit.toNumber());
+
+  if (onlyGasEstimate) {
+    return {
+      gasEstimateUsd,
+      receipt: null,
+      newRouterState: null,
+    };
+  }
+
+  // Send transaction
+  const tx: ethers.ContractTransaction = isETH
+    ? await mellowRouter.depositEth(weights, tempOverrides)
+    : await mellowRouter.depositErc20(scaledAmount, weights, tempOverrides);
 
   // Wait for the receipt
   let receipt: ethers.ContractReceipt;
@@ -164,9 +155,8 @@ export const deposit = async ({
 
   // Return the response
   return {
-    transaction: {
-      receipt,
-    },
+    gasEstimateUsd,
+    receipt,
     newRouterState: routerInfo,
   };
 };

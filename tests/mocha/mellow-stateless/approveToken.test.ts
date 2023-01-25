@@ -15,7 +15,7 @@ import { exponentialBackoff } from '../../../src/utils/retry';
 
 const { provider } = waffle;
 
-describe('approve token', () => {
+describe('Utilities:ApproveToken', () => {
   const userAddress = '0xf8f6b70a36f4398f0853a311dc6699aba8333cc1';
 
   const resetNetwork = async (blockNumber: number) => {

@@ -11,7 +11,7 @@ import { getAllMellowProducts } from '../../../src/entities/mellow-stateless/get
 
 const { provider } = waffle;
 
-describe('getRouters', () => {
+describe('Mellow Router:GetRouters', () => {
   const resetNetwork = async (blockNumber: number) => {
     await network.provider.request({
       method: 'hardhat_reset',
@@ -28,7 +28,7 @@ describe('getRouters', () => {
   };
 
   const mock = async () => {
-    const block = 8344555;
+    const block = 8375800;
     await resetNetwork(block);
 
     sinon.stub(initSDK, 'getSentryTracker').callsFake(
@@ -73,7 +73,7 @@ describe('getRouters', () => {
       expect(ethRouterInfo.title).to.be.eq('MELLOW - ETH');
       expect(ethRouterInfo.description).to.be.eq('B');
       expect(ethRouterInfo.underlyingPools).to.be.deep.eq(['Compound - ETH']);
-      expect(ethRouterInfo.tokenId).to.be.eq('0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6');
+      expect(ethRouterInfo.tokenName).to.be.eq('ETH');
       expect(ethRouterInfo.expired).to.be.eq(false);
       expect(ethRouterInfo.depositable).to.be.eq(true);
 
@@ -130,9 +130,9 @@ describe('getRouters', () => {
     });
 
     it('Router info', async () => {
-      expect(ethRouterInfo.userWalletBalance).to.be.eq(6.181047125928028);
-      expect(ethRouterInfo.userRouterDeposit).to.be.eq(0.076);
-      expect(ethRouterInfo.userRouterCommittedDeposit).to.be.eq(0.076);
+      expect(ethRouterInfo.userWalletBalance).to.be.eq(5.505181556948178);
+      expect(ethRouterInfo.userRouterDeposit).to.be.eq(0.09164338331246726);
+      expect(ethRouterInfo.userRouterCommittedDeposit).to.be.eq(0.09164338331246726);
       expect(ethRouterInfo.userRouterPendingDeposit).to.be.eq(0);
       expect(ethRouterInfo.isUserRegisteredForAutoRollover).to.be.eq(false);
     });
@@ -161,9 +161,9 @@ describe('getRouters', () => {
       expect(vaultInfo.maturityTimestampMS).to.be.eq(1676542449000);
       expect(vaultInfo.withdrawable).to.be.eq(false);
       expect(vaultInfo.rolloverable).to.be.eq(false);
-      expect(vaultInfo.userVaultCommittedDeposit).to.be.eq(0.0462);
+      expect(vaultInfo.userVaultCommittedDeposit).to.be.eq(0.061193054465384554);
       expect(vaultInfo.userVaultPendingDeposit).to.be.eq(0);
-      expect(vaultInfo.userVaultDeposit).to.be.eq(0.0462);
+      expect(vaultInfo.userVaultDeposit).to.be.eq(0.061193054465384554);
       expect(vaultInfo.canUserManageVault).to.be.eq(false);
     });
   });
@@ -186,7 +186,7 @@ describe('getRouters', () => {
   };
 
   const mock = async () => {
-    const block = 8344555;
+    const block = 8375800;
     await resetNetwork(block);
 
     sinon.stub(initSDK, 'getSentryTracker').callsFake(
@@ -231,7 +231,7 @@ describe('getRouters', () => {
       expect(ethRouterInfo.title).to.be.eq('MELLOW - ETH');
       expect(ethRouterInfo.description).to.be.eq('B');
       expect(ethRouterInfo.underlyingPools).to.be.deep.eq(['Compound - ETH']);
-      expect(ethRouterInfo.tokenId).to.be.eq('0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6');
+      expect(ethRouterInfo.tokenName).to.be.eq('ETH');
       expect(ethRouterInfo.expired).to.be.eq(false);
       expect(ethRouterInfo.depositable).to.be.eq(true);
 
@@ -288,9 +288,9 @@ describe('getRouters', () => {
     });
 
     it('Router info', async () => {
-      expect(ethRouterInfo.userWalletBalance).to.be.eq(6.181047125928028);
-      expect(ethRouterInfo.userRouterDeposit).to.be.eq(0.076);
-      expect(ethRouterInfo.userRouterCommittedDeposit).to.be.eq(0.076);
+      expect(ethRouterInfo.userWalletBalance).to.be.eq(5.505181556948178);
+      expect(ethRouterInfo.userRouterDeposit).to.be.eq(0.09164338331246726);
+      expect(ethRouterInfo.userRouterCommittedDeposit).to.be.eq(0.09164338331246726);
       expect(ethRouterInfo.userRouterPendingDeposit).to.be.eq(0);
       expect(ethRouterInfo.isUserRegisteredForAutoRollover).to.be.eq(false);
     });
@@ -319,9 +319,9 @@ describe('getRouters', () => {
       expect(vaultInfo.maturityTimestampMS).to.be.eq(1676542449000);
       expect(vaultInfo.withdrawable).to.be.eq(false);
       expect(vaultInfo.rolloverable).to.be.eq(false);
-      expect(vaultInfo.userVaultCommittedDeposit).to.be.eq(0.0462);
+      expect(vaultInfo.userVaultCommittedDeposit).to.be.eq(0.061193054465384554);
       expect(vaultInfo.userVaultPendingDeposit).to.be.eq(0);
-      expect(vaultInfo.userVaultDeposit).to.be.eq(0.0462);
+      expect(vaultInfo.userVaultDeposit).to.be.eq(0.061193054465384554);
       expect(vaultInfo.canUserManageVault).to.be.eq(false);
     });
   });
