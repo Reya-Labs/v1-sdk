@@ -11,7 +11,7 @@ import { fail } from '../utils';
 
 const { provider } = waffle;
 
-describe('Test utils', () => {
+describe('Price utils', () => {
   const resetNetwork = async (blockNumber: number) => {
     await network.provider.request({
       method: 'hardhat_reset',
@@ -38,25 +38,27 @@ describe('Test utils', () => {
         } as unknown as BrowserClient),
     );
 
-    sinon.stub(axios, 'get').resolves({
+    sinon.stub(axios, 'get');
+    sinon.stub(Date, 'now');
+  });
+
+  afterEach(() => {
+    // restore the original implementation of all mocks
+    sinon.restore();
+  });
+
+  it('Gas Units to USD conversion function', async () => {
+    (axios.get as sinon.SinonStub).resolves({
       data: {
         ethereum: {
           usd: 1630.37,
         },
       },
     });
-  });
 
-  afterEach(() => {
-    // restore the original implementation of initSDK.getSentryTracker
-    (initSDK.getSentryTracker as sinon.SinonStub).restore();
+    (Date.now as sinon.SinonStub).returns(1000);
 
-    // restore the original implementation of axios.get
-    (axios.get as sinon.SinonStub).restore();
-  });
-
-  it('Gas Units to USD conversion function', async () => {
-    const currentEthPrice = await geckoEthToUsd(process.env.REACT_APP_COINGECKO_API_KEY || '');
+    const currentEthPrice = await geckoEthToUsd('');
     expect((await convertGasUnitsToUSD(provider, 100000)) / currentEthPrice).to.be.approximately(
       0.00198,
       0.00001,
@@ -67,69 +69,138 @@ describe('Test utils', () => {
     ).to.be.approximately(0.00198, 0.00001);
   });
 
-  describe('Exponential backoff', () => {
-    it('successfull call - first attempt', async () => {
-      const call = async () => 1;
-
-      let timeElapsed = Date.now().valueOf();
-      const response = await exponentialBackoff(call);
-      timeElapsed = Date.now().valueOf() - timeElapsed;
-      expect(response).to.be.eq(1);
-      expect(timeElapsed).to.be.lessThan(1000);
+  it('ETH price', async () => {
+    (axios.get as sinon.SinonStub).resolves({
+      data: {
+        ethereum: {
+          usd: 1700,
+        },
+      },
     });
 
-    it('successfull call - second attempt', async () => {
-      let tries = 0;
-      const call = async () => {
-        tries += 1;
-        if (tries <= 1) {
-          throw new Error('attempt fails');
-        }
-        return 1;
-      };
+    (Date.now as sinon.SinonStub).returns(1000 + 60 * 1000 + 50);
 
-      let timeElapsed = Date.now().valueOf();
-      const response = await exponentialBackoff(call);
-      timeElapsed = Date.now().valueOf() - timeElapsed;
-      expect(response).to.be.eq(1);
-      expect(timeElapsed).to.be.greaterThan(1000);
-      expect(timeElapsed).to.be.lessThan(2000);
+    const currentEthPrice = await geckoEthToUsd('');
+    expect(currentEthPrice).to.be.eq(1700);
+  });
+
+  it('ETH price', async () => {
+    (axios.get as sinon.SinonStub).resolves({
+      data: {
+        ethereum: {
+          usd: 1700,
+        },
+      },
     });
 
-    it('successfull call - third attempt', async () => {
-      let tries = 0;
-      const call = async () => {
-        tries += 1;
-        if (tries <= 2) {
-          throw new Error('attempt fails');
-        }
-        return 1;
-      };
+    (Date.now as sinon.SinonStub).returns(1000 + 60 * 1000 + 50);
 
-      let timeElapsed = Date.now().valueOf();
-      const response = await exponentialBackoff(call);
+    await geckoEthToUsd('');
+
+    (axios.get as sinon.SinonStub).resolves({
+      data: {
+        ethereum: {
+          usd: 1800,
+        },
+      },
+    });
+
+    (Date.now as sinon.SinonStub).returns(1000 + 60 * 1000 + 100);
+
+    const currentEthPrice = await geckoEthToUsd('');
+    expect(currentEthPrice).to.be.eq(1700);
+  });
+
+  it('ETH price', async () => {
+    (axios.get as sinon.SinonStub).resolves({
+      data: {
+        ethereum: {
+          usd: 1700,
+        },
+      },
+    });
+
+    (Date.now as sinon.SinonStub).returns(1000 + 60 * 1000 + 100);
+
+    await geckoEthToUsd('');
+
+    (Date.now as sinon.SinonStub).returns(1000000 + 2 * 60 * 1000 + 150);
+
+    (axios.get as sinon.SinonStub).resolves({
+      data: {
+        ethereum: {
+          usd: 1800,
+        },
+      },
+    });
+
+    const currentEthPrice = await geckoEthToUsd('');
+    expect(currentEthPrice).to.be.eq(1800);
+  });
+});
+
+describe('Exponential backoff', () => {
+  it('successfull call - first attempt', async () => {
+    const call = async () => 1;
+
+    let timeElapsed = Date.now().valueOf();
+    const response = await exponentialBackoff(call);
+    timeElapsed = Date.now().valueOf() - timeElapsed;
+    expect(response).to.be.eq(1);
+    expect(timeElapsed).to.be.lessThan(1000);
+  });
+
+  it('successfull call - second attempt', async () => {
+    let tries = 0;
+    const call = async () => {
+      tries += 1;
+      if (tries <= 1) {
+        throw new Error('attempt fails');
+      }
+      return 1;
+    };
+
+    let timeElapsed = Date.now().valueOf();
+    const response = await exponentialBackoff(call);
+    timeElapsed = Date.now().valueOf() - timeElapsed;
+    expect(response).to.be.eq(1);
+    expect(timeElapsed).to.be.greaterThan(1000);
+    expect(timeElapsed).to.be.lessThan(2000);
+  });
+
+  it('successfull call - third attempt', async () => {
+    let tries = 0;
+    const call = async () => {
+      tries += 1;
+      if (tries <= 2) {
+        throw new Error('attempt fails');
+      }
+      return 1;
+    };
+
+    let timeElapsed = Date.now().valueOf();
+    const response = await exponentialBackoff(call);
+    timeElapsed = Date.now().valueOf() - timeElapsed;
+    expect(response).to.be.eq(1);
+    expect(timeElapsed).to.be.greaterThan(3000);
+    expect(timeElapsed).to.be.lessThan(4000);
+  });
+
+  it('failing call', async () => {
+    const call = async () => {
+      throw new Error('attempt fails');
+    };
+
+    let timeElapsed = Date.now().valueOf();
+    try {
+      await exponentialBackoff(call, 3);
+      fail();
+    } catch (error: unknown) {
       timeElapsed = Date.now().valueOf() - timeElapsed;
-      expect(response).to.be.eq(1);
       expect(timeElapsed).to.be.greaterThan(3000);
       expect(timeElapsed).to.be.lessThan(4000);
-    });
 
-    it('failing call', async () => {
-      const call = async () => {
-        throw new Error('attempt fails');
-      };
-
-      let timeElapsed = Date.now().valueOf();
-      try {
-        await exponentialBackoff(call, 3);
-        fail();
-      } catch (error: unknown) {
-        timeElapsed = Date.now().valueOf() - timeElapsed;
-        expect(timeElapsed).to.be.greaterThan(3000);
-        expect(timeElapsed).to.be.lessThan(4000);
-
-        expect((error as Error).message).to.be.eq('attempt fails');
-      }
-    });
+      expect((error as Error).message).to.be.eq('attempt fails');
+    }
   });
 });
