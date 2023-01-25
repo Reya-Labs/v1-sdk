@@ -1,6 +1,7 @@
 import { ethers, BigNumber } from 'ethers';
 import { Erc20RootVaultABI, MellowMultiVaultRouterABI } from '../../../ABIs';
 import { getGasBuffer } from '../../../constants';
+import { getSentryTracker } from '../../../init';
 import { exponentialBackoff } from '../../../utils/retry';
 import { getMellowConfig } from '../config/config';
 import { getMellowProduct } from '../getters/getMellowProduct';
@@ -17,7 +18,7 @@ type WithdrawResponse = {
   transaction: {
     receipt: ethers.ContractReceipt;
   };
-  newRouterState: RouterInfo;
+  newRouterState: RouterInfo | null;
 };
 
 const routerWithdraw = async ({
@@ -32,15 +33,25 @@ const routerWithdraw = async ({
   );
 
   if (!routerConfig) {
-    // TODO: add sentry
-    throw new Error('Router ID not found');
+    const errorMessage = 'Router ID not found';
+
+    // Report to Sentry
+    const sentryTracker = getSentryTracker();
+    sentryTracker.captureMessage(errorMessage);
+
+    throw new Error(errorMessage);
   }
 
   const routerVaultIds = routerConfig.vaults.map((v) => v.address);
   const vaultIndex = routerVaultIds.findIndex((item) => item === vaultId);
   if (vaultIndex < 0) {
-    // Add Sentry
-    throw new Error('Vault ID not found.');
+    const errorMessage = 'Vault ID not found';
+
+    // Report to Sentry
+    const sentryTracker = getSentryTracker();
+    sentryTracker.captureMessage(errorMessage);
+
+    throw new Error(errorMessage);
   }
 
   const erc20RootVaultContract = new ethers.Contract(
@@ -49,9 +60,19 @@ const routerWithdraw = async ({
     signer,
   );
 
-  const subvaultsCount: number = (
-    await exponentialBackoff(() => erc20RootVaultContract.subvaultNfts())
-  ).length;
+  let subvaultsCount: number;
+  try {
+    subvaultsCount = (await exponentialBackoff(() => erc20RootVaultContract.subvaultNfts())).length;
+  } catch (error) {
+    const errorMessage = 'Failed to fetch number of subvaults';
+
+    // Report to Sentry
+    const sentryTracker = getSentryTracker();
+    sentryTracker.captureException(error);
+    sentryTracker.captureMessage(errorMessage);
+
+    throw new Error(errorMessage);
+  }
 
   const minTokenAmounts = BigNumber.from(0);
   const vaultsOptions = new Array(subvaultsCount).fill(0x0);
@@ -60,9 +81,15 @@ const routerWithdraw = async ({
 
   try {
     await mellowRouter.callStatic.claimLPTokens(vaultIndex, [minTokenAmounts], vaultsOptions);
-  } catch (err) {
-    // TODO: Add Sentry
-    throw new Error('Unsuccessful claimLPTokens simulation.');
+  } catch (error) {
+    const errorMessage = 'Unsuccessful claimLPTokens simulation.';
+
+    // Report to Sentry
+    const sentryTracker = getSentryTracker();
+    sentryTracker.captureException(error);
+    sentryTracker.captureMessage(errorMessage);
+
+    throw new Error(errorMessage);
   }
 
   const gasLimit = await mellowRouter.estimateGas.claimLPTokens(
@@ -75,7 +102,21 @@ const routerWithdraw = async ({
     gasLimit: getGasBuffer(gasLimit),
   });
 
-  return tx.wait();
+  // Wait for the receipt
+  let receipt: ethers.ContractReceipt;
+  try {
+    receipt = await tx.wait();
+    return receipt;
+  } catch (error) {
+    const errorMessage = 'Transaction Confirmation Error';
+
+    // Report to Sentry
+    const sentryTracker = getSentryTracker();
+    sentryTracker.captureException(error);
+    sentryTracker.captureMessage(errorMessage);
+
+    throw new Error(errorMessage);
+  }
 };
 
 const vaultWithdraw = async ({
@@ -87,7 +128,7 @@ const vaultWithdraw = async ({
 
   // Get the balance of LP tokens
   const userAddress = await exponentialBackoff(() => signer.getAddress());
-  const lpTokens = erc20RootVault.balanceOf(userAddress);
+  const lpTokens = await erc20RootVault.balanceOf(userAddress);
 
   // Get the number of subvaults to input the correct vault options
   const subvaultsCount: number = (await exponentialBackoff(() => erc20RootVault.subvaultNfts()))
@@ -106,8 +147,14 @@ const vaultWithdraw = async ({
       vaultsOptions,
     );
   } catch (error) {
-    // TODO: Add Sentry
-    throw new Error('Unsuccessful withdrawal simulation.');
+    const errorMessage = 'Unsuccessful withdraw simulation.';
+
+    // Report to Sentry
+    const sentryTracker = getSentryTracker();
+    sentryTracker.captureException(error);
+    sentryTracker.captureMessage(errorMessage);
+
+    throw new Error(errorMessage);
   }
 
   // Estimate the gas for this transaction
@@ -129,7 +176,21 @@ const vaultWithdraw = async ({
     },
   );
 
-  return tx.wait();
+  // Wait for the receipt
+  let receipt: ethers.ContractReceipt;
+  try {
+    receipt = await tx.wait();
+    return receipt;
+  } catch (error) {
+    const errorMessage = 'Transaction Confirmation Error';
+
+    // Report to Sentry
+    const sentryTracker = getSentryTracker();
+    sentryTracker.captureException(error);
+    sentryTracker.captureMessage(errorMessage);
+
+    throw new Error(errorMessage);
+  }
 };
 
 export const withdraw = async (params: WithdrawArgs): Promise<WithdrawResponse> => {
@@ -141,11 +202,22 @@ export const withdraw = async (params: WithdrawArgs): Promise<WithdrawResponse> 
   const receipt = await (routerConfig.isVault ? vaultWithdraw(params) : routerWithdraw(params));
 
   // Get the next state of the router
-  const userAddress = await exponentialBackoff(() => signer.getAddress());
-  const routerInfo = await getMellowProduct({
-    routerId,
-    userAddress,
-  });
+  let routerInfo: RouterInfo | null = null;
+  try {
+    // Get the next state of the router
+    const userAddress = await exponentialBackoff(() => signer.getAddress());
+    routerInfo = await getMellowProduct({
+      routerId,
+      userAddress,
+    });
+  } catch (error) {
+    const errorMessage = 'Failed to get new state after deposit';
+
+    // Report to Sentry
+    const sentryTracker = getSentryTracker();
+    sentryTracker.captureException(error);
+    sentryTracker.captureMessage(errorMessage);
+  }
 
   // Return the response
   return {

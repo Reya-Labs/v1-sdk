@@ -1,6 +1,6 @@
 import { ethers } from 'ethers';
 import { MellowMultiVaultRouterABI } from '../../../ABIs';
-import { getProvider } from '../../../init';
+import { getProvider, getSentryTracker } from '../../../init';
 import { convertGasUnitsToUSD } from '../../../utils/mellowHelpers/convertGasUnitsToUSD';
 import { getRouterConfig } from '../utils/getRouterConfig';
 
@@ -19,14 +19,31 @@ export const getAutoRolloverRegistrationGasFee = async ({
   const routerConfig = getRouterConfig(routerId);
 
   if (routerConfig.isVault) {
-    throw new Error('Deposit not supported for vaults.');
+    const errorMessage = 'Query not supported for vaults.';
+
+    // Report to Sentry
+    const sentryTracker = getSentryTracker();
+    sentryTracker.captureMessage(errorMessage);
+
+    throw new Error(errorMessage);
   }
 
   const provider = getProvider();
   const mellowRouter = new ethers.Contract(routerId, MellowMultiVaultRouterABI, signer);
 
-  const gasLimit = await mellowRouter.estimateGas.registerForAutoRollover(registration);
-  const fee = await convertGasUnitsToUSD(provider, gasLimit.toNumber());
+  try {
+    const gasLimit = await mellowRouter.estimateGas.registerForAutoRollover(registration);
+    const fee = await convertGasUnitsToUSD(provider, gasLimit.toNumber());
 
-  return fee;
+    return fee;
+  } catch (error) {
+    const errorMessage = 'Transaction Confirmation Error';
+
+    // Report to Sentry
+    const sentryTracker = getSentryTracker();
+    sentryTracker.captureException(error);
+    sentryTracker.captureMessage(errorMessage);
+
+    throw new Error(errorMessage);
+  }
 };

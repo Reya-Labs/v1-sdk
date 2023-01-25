@@ -110,6 +110,10 @@ describe('getRouters', () => {
           RETRY_ATTEMPTS,
         );
 
+        if (!newRouterState) {
+          throw new Error('Failure');
+        }
+
         expect(newRouterState.userRouterDeposit - routerState.userRouterDeposit).to.be.closeTo(
           amount,
           DELTA,
@@ -141,6 +145,10 @@ describe('getRouters', () => {
             }),
           RETRY_ATTEMPTS,
         );
+
+        if (!newRouterState) {
+          throw new Error('Failure');
+        }
 
         expect(newRouterState.userRouterDeposit - routerState.userRouterDeposit).to.be.closeTo(
           amount,
