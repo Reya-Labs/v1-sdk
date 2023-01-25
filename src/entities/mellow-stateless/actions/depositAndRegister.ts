@@ -1,113 +1,51 @@
 import { ethers, BigNumber } from 'ethers';
+import { isUndefined } from 'lodash';
 import { MellowMultiVaultRouterABI } from '../../../ABIs';
 import { getGasBuffer } from '../../../constants';
-import { getSentryTracker } from '../../../init';
+import { getProvider, getSentryTracker } from '../../../init';
 import { getTokenInfo } from '../../../services/getTokenInfo';
+import { convertGasUnitsToUSD } from '../../../utils/mellowHelpers/convertGasUnitsToUSD';
 import { exponentialBackoff } from '../../../utils/retry';
 import { scale } from '../../../utils/scaling';
 import { getOptimiserInfo } from '../getters/optimisers/getOptimiserInfo';
 import { RouterInfo } from '../getters/types';
 import { getRouterConfig } from '../utils/getRouterConfig';
 import { mapWeights } from '../utils/mapWeights';
+import { deposit } from './deposit';
 
 type DepositAndRegisterArgs = {
+  onlyGasEstimate?: boolean;
   routerId: string;
   amount: number;
   spareWeights: [string, number][];
-  registration: boolean;
+  registration?: boolean;
   signer: ethers.Signer;
 };
 
 type DepositAndRegisterResponse = {
-  transaction: {
-    receipt: ethers.ContractReceipt;
-  };
+  gasEstimateUsd: number;
+  receipt: ethers.ContractReceipt | null;
   newRouterState: RouterInfo | null;
 };
 
-const getTransaction = async (
-  mellowRouter: ethers.Contract,
-  isETH: boolean,
-  scaledAmount: ethers.BigNumber,
-  weights: number[],
-  registration: boolean,
-): Promise<ethers.ContractTransaction> => {
-  const tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
-
-  if (isETH) {
-    tempOverrides.value = scaledAmount;
-
-    // Simulate deposit and register
-    try {
-      mellowRouter.callStatic.depositEthAndRegisterForAutoRollover(
-        weights,
-        registration,
-        tempOverrides,
-      );
-    } catch (error) {
-      const errorMessage = 'Unsuccessful deposit and register simulation.';
-
-      // Report to Sentry
-      const sentryTracker = getSentryTracker();
-      sentryTracker.captureException(error);
-      sentryTracker.captureMessage(errorMessage);
-
-      throw new Error(errorMessage);
-    }
-
-    const gasLimit = await mellowRouter.estimateGas.depositEthAndRegisterForAutoRollover(
-      weights,
-      registration,
-      tempOverrides,
-    );
-    tempOverrides.gasLimit = getGasBuffer(gasLimit);
-
-    return mellowRouter.depositEthAndRegisterForAutoRollover(weights, registration, tempOverrides);
-  }
-
-  // Simulate deposit and register
-  try {
-    mellowRouter.callStatic.depositErc20AndRegisterForAutoRollover(
-      scaledAmount,
-      weights,
-      registration,
-    );
-  } catch (error) {
-    const errorMessage = 'Unsuccessful deposit and register simulation.';
-
-    // Report to Sentry
-    const sentryTracker = getSentryTracker();
-    sentryTracker.captureException(error);
-    sentryTracker.captureMessage(errorMessage);
-
-    throw new Error(errorMessage);
-  }
-
-  // Estimate gas
-  const gasLimit = await mellowRouter.estimateGas.depositErc20AndRegisterForAutoRollover(
-    scaledAmount,
-    weights,
-    registration,
-    tempOverrides,
-  );
-  tempOverrides.gasLimit = getGasBuffer(gasLimit);
-
-  // Send transaction
-  return mellowRouter.depositErc20AndRegisterForAutoRollover(
-    scaledAmount,
-    weights,
-    registration,
-    tempOverrides,
-  );
-};
-
 export const depositAndRegister = async ({
+  onlyGasEstimate,
   routerId,
   amount,
   spareWeights,
   registration,
   signer,
 }: DepositAndRegisterArgs): Promise<DepositAndRegisterResponse> => {
+  if (isUndefined(registration)) {
+    return deposit({
+      onlyGasEstimate,
+      routerId,
+      amount,
+      spareWeights,
+      signer,
+    });
+  }
+
   // Get Mellow Config
   const routerConfig = getRouterConfig(routerId);
 
@@ -152,7 +90,73 @@ export const depositAndRegister = async ({
   );
 
   // Get the transaction and wait for the receipt
-  const tx = await getTransaction(mellowRouter, isETH, scaledAmount, weights, registration);
+  const tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
+
+  if (isETH) {
+    tempOverrides.value = scaledAmount;
+  }
+
+  // Simulate deposit and register
+  try {
+    if (isETH) {
+      mellowRouter.callStatic.depositEthAndRegisterForAutoRollover(
+        weights,
+        registration,
+        tempOverrides,
+      );
+    } else {
+      mellowRouter.callStatic.depositErc20AndRegisterForAutoRollover(
+        scaledAmount,
+        weights,
+        registration,
+      );
+    }
+  } catch (error) {
+    const errorMessage = 'Unsuccessful deposit and register simulation.';
+
+    // Report to Sentry
+    const sentryTracker = getSentryTracker();
+    sentryTracker.captureException(error);
+    sentryTracker.captureMessage(errorMessage);
+
+    throw new Error(errorMessage);
+  }
+
+  // Estimate gas
+  const gasLimit = isETH
+    ? await mellowRouter.estimateGas.depositEthAndRegisterForAutoRollover(
+        weights,
+        registration,
+        tempOverrides,
+      )
+    : await mellowRouter.estimateGas.depositErc20AndRegisterForAutoRollover(
+        scaledAmount,
+        weights,
+        registration,
+        tempOverrides,
+      );
+  tempOverrides.gasLimit = getGasBuffer(gasLimit);
+
+  const provider = getProvider();
+  const gasEstimateUsd = await convertGasUnitsToUSD(provider, gasLimit.toNumber());
+
+  if (onlyGasEstimate) {
+    return {
+      gasEstimateUsd,
+      receipt: null,
+      newRouterState: null,
+    };
+  }
+
+  // Send transaction
+  const tx = isETH
+    ? await mellowRouter.depositEthAndRegisterForAutoRollover(weights, registration, tempOverrides)
+    : await mellowRouter.depositErc20AndRegisterForAutoRollover(
+        scaledAmount,
+        weights,
+        registration,
+        tempOverrides,
+      );
 
   // Wait for the receipt
   let receipt: ethers.ContractReceipt;
@@ -185,9 +189,8 @@ export const depositAndRegister = async ({
 
   // Return the response
   return {
-    transaction: {
-      receipt,
-    },
+    gasEstimateUsd,
+    receipt,
     newRouterState: routerInfo,
   };
 };

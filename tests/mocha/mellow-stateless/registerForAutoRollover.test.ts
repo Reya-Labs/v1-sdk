@@ -12,7 +12,7 @@ import { exponentialBackoff } from '../../../src/utils/retry';
 
 const { provider } = waffle;
 
-describe('registration for autorollover', () => {
+describe('Mellow Router:RegisterForAutorollover', () => {
   const userAddress = '0xf8f6b70a36f4398f0853a311dc6699aba8333cc1';
 
   const resetNetwork = async (blockNumber: number) => {
@@ -31,7 +31,7 @@ describe('registration for autorollover', () => {
   };
 
   const mock = async () => {
-    const block = 8344555;
+    const block = 8375800;
     await resetNetwork(block);
 
     sinon.stub(initSDK, 'getSentryTracker').callsFake(
@@ -116,7 +116,7 @@ describe('registration for autorollover', () => {
             registerForAutoRollover({
               routerId,
               signer,
-              registration: true,
+              registration: false,
             }),
           RETRY_ATTEMPTS,
         );
@@ -125,7 +125,7 @@ describe('registration for autorollover', () => {
           throw new Error('Failure');
         }
 
-        expect(newRouterState.isUserRegisteredForAutoRollover).to.be.eq(true);
+        expect(newRouterState.isUserRegisteredForAutoRollover).to.be.eq(false);
       });
     });
   });

@@ -7,14 +7,14 @@ import * as initSDK from '../../../src/init';
 import * as initMellowConfig from '../../../src/entities/mellow-stateless/config/config';
 import { MockGoerliConfig } from './utils';
 import { fail, withSigner } from '../../utils';
-import { getAutoRolloverRegistrationGasFee } from '../../../src/entities/mellow-stateless/actions/getAutoRolloverRegistrationGasFee';
+import { registerForAutoRollover } from '../../../src/entities/mellow-stateless/actions/registerForAutoRollover';
 import * as priceFetcher from '../../../src/utils/priceFetch';
 
 const { provider } = waffle;
 
 const DELTA = 0.0001;
 
-describe('getRouters', () => {
+describe('Mellow Router:Gas Fee for AutoRollover Registration', () => {
   const userAddress = '0xf8f6b70a36f4398f0853a311dc6699aba8333cc1';
 
   const resetNetwork = async (blockNumber: number) => {
@@ -33,7 +33,7 @@ describe('getRouters', () => {
   };
 
   const mock = async () => {
-    const block = 8344555;
+    const block = 8375800;
     await resetNetwork(block);
 
     sinon.stub(initSDK, 'getSentryTracker').callsFake(
@@ -79,7 +79,8 @@ describe('getRouters', () => {
 
       await withSigner(network, userAddress, async (signer) => {
         try {
-          await getAutoRolloverRegistrationGasFee({
+          await registerForAutoRollover({
+            onlyGasEstimate: true,
             routerId,
             registration: true,
             signer,
@@ -92,13 +93,16 @@ describe('getRouters', () => {
     it('register in ETH', async () => {
       const routerId = '0x704F6E9cB4f7e041CC89B6a49DF8EE2027a55164';
       await withSigner(network, userAddress, async (signer) => {
-        const fee = await getAutoRolloverRegistrationGasFee({
-          routerId,
-          registration: true,
-          signer,
-        });
+        const fee = (
+          await registerForAutoRollover({
+            onlyGasEstimate: true,
+            routerId,
+            registration: true,
+            signer,
+          })
+        ).gasEstimateUsd;
 
-        expect(fee).to.be.closeTo(0.001854115524750921, DELTA);
+        expect(fee).to.be.closeTo(0.00023464839913624799, DELTA);
       });
     });
 
@@ -106,13 +110,16 @@ describe('getRouters', () => {
       const routerId = '0x9f397CD24103A0a0252DeC82a88e656480C53fB7';
 
       await withSigner(network, userAddress, async (signer) => {
-        const fee = await getAutoRolloverRegistrationGasFee({
-          routerId,
-          registration: true,
-          signer,
-        });
+        const fee = (
+          await registerForAutoRollover({
+            onlyGasEstimate: true,
+            routerId,
+            registration: false,
+            signer,
+          })
+        ).gasEstimateUsd;
 
-        expect(fee).to.be.closeTo(0.001115602548002874, DELTA);
+        expect(fee).to.be.closeTo(0.00012932421998012398, DELTA);
       });
     });
   });

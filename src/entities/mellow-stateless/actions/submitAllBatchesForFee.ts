@@ -8,38 +8,29 @@ import { getOptimiserInfo } from '../getters/optimisers/getOptimiserInfo';
 import { RouterInfo } from '../getters/types';
 import { getRouterConfig } from '../utils/getRouterConfig';
 
-type RegisterForAutoRolloverArgs = {
+type SubmitAllBatchesForFeeArgs = {
   onlyGasEstimate?: boolean;
   routerId: string;
-  registration: boolean;
   signer: ethers.Signer;
 };
 
-type RegisterForAutoRolloverResponse = {
+type SubmitAllBatchesForFeeResponse = {
   gasEstimateUsd: number;
   receipt: ethers.ContractReceipt | null;
   newRouterState: RouterInfo | null;
 };
 
-export const registerForAutoRollover = async ({
+export const submitAllBatchesForFee = async ({
   onlyGasEstimate,
   routerId,
-  registration,
   signer,
-}: RegisterForAutoRolloverArgs): Promise<RegisterForAutoRolloverResponse> => {
+}: SubmitAllBatchesForFeeArgs): Promise<SubmitAllBatchesForFeeResponse> => {
   // Get Mellow Config
   const routerConfig = getRouterConfig(routerId);
 
+  // Rollover is only allowed for routers
   if (routerConfig.isVault) {
-    throw new Error('Deposit not supported for vaults.');
-  }
-
-  const mellowRouter = new ethers.Contract(routerId, MellowMultiVaultRouterABI, signer);
-
-  try {
-    await mellowRouter.callStatic.registerForAutoRollover(registration);
-  } catch (err) {
-    const errorMessage = 'Unsuccessful auto-rollover registration simulation';
+    const errorMessage = 'Submit batch not supported for vaults.';
 
     // Report to Sentry
     const sentryTracker = getSentryTracker();
@@ -48,7 +39,25 @@ export const registerForAutoRollover = async ({
     throw new Error(errorMessage);
   }
 
-  const gasLimit = await mellowRouter.estimateGas.registerForAutoRollover(registration);
+  // Get Router contract
+  const mellowRouter = new ethers.Contract(routerId, MellowMultiVaultRouterABI, signer);
+
+  // Simulate the transaction
+  try {
+    await mellowRouter.callStatic.submitAllBatchesForFee();
+  } catch (error) {
+    const errorMessage = 'Unsuccessful Submit Batch simulation.';
+
+    // Report to Sentry
+    const sentryTracker = getSentryTracker();
+    sentryTracker.captureException(error);
+    sentryTracker.captureMessage(errorMessage);
+
+    throw new Error(errorMessage);
+  }
+
+  // Get the gas limit
+  const gasLimit = await mellowRouter.estimateGas.submitAllBatchesForFee();
 
   const provider = getProvider();
   const gasEstimateUsd = await convertGasUnitsToUSD(provider, gasLimit.toNumber());
@@ -61,7 +70,8 @@ export const registerForAutoRollover = async ({
     };
   }
 
-  const tx = await mellowRouter.registerForAutoRollover(registration, {
+  // Send the transaction
+  const tx = await mellowRouter.rolloverLPTokens(submitAllBatchesForFee, {
     gasLimit: getGasBuffer(gasLimit),
   });
 

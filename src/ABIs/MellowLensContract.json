@@ -24,6 +24,21 @@
                         },
                         {
                             "internalType": "uint256",
+                            "name": "feePerDeposit",
+                            "type": "uint256"
+                        },
+                        {
+                            "internalType": "uint256",
+                            "name": "accumulatedFees",
+                            "type": "uint256"
+                        },
+                        {
+                            "internalType": "uint256",
+                            "name": "pendingDepositsCount",
+                            "type": "uint256"
+                        },
+                        {
+                            "internalType": "uint256",
                             "name": "tokenBalance",
                             "type": "uint256"
                         },

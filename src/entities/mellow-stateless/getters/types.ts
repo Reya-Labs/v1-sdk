@@ -2,6 +2,9 @@ import { BigNumber } from 'ethers';
 
 export type ContractRouterInfo = {
   token: string;
+  feePerDeposit: BigNumber;
+  accumulatedFees: BigNumber;
+  pendingDepositsCount: BigNumber;
   tokenBalance: BigNumber;
   ethBalance: BigNumber;
   isRegisteredForAutoRollover: boolean;
@@ -45,6 +48,10 @@ export type RouterInfo = {
 
   expired: boolean;
   depositable: boolean;
+
+  feePerDeposit: number;
+  accumulatedFees: number;
+  pendingDepositsCount: number;
 
   userWalletBalance: number;
 
