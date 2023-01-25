@@ -7,7 +7,7 @@ import * as initSDK from '../../../src/init';
 import * as initMellowConfig from '../../../src/entities/mellow-stateless/config/config';
 import { MockGoerliConfig, RETRY_ATTEMPTS } from './utils';
 import { fail, withSigner } from '../../utils';
-import { rollover } from '../../../src/entities/mellow-stateless/mellow-routers/rollover';
+import { rollover } from '../../../src/entities/mellow-stateless/actions/rollover';
 import { getMellowProduct } from '../../../src/entities/mellow-stateless/getters/getMellowProduct';
 import { exponentialBackoff } from '../../../src/utils/retry';
 

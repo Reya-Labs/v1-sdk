@@ -7,7 +7,7 @@ import * as initSDK from '../../../src/init';
 import * as initMellowConfig from '../../../src/entities/mellow-stateless/config/config';
 import { MockGoerliConfig } from './utils';
 import { fail, withSigner } from '../../utils';
-import { getAutoRolloverRegistrationGasFee } from '../../../src/entities/mellow-stateless/mellow-routers/getAutoRolloverRegistrationGasFee';
+import { getAutoRolloverRegistrationGasFee } from '../../../src/entities/mellow-stateless/actions/getAutoRolloverRegistrationGasFee';
 import * as priceFetcher from '../../../src/utils/priceFetch';
 
 const { provider } = waffle;

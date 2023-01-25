@@ -1,7 +1,7 @@
 import { NetworkConfiguration } from '../../../src/entities/mellow-stateless/config/types';
 
 export const MockGoerliConfig: NetworkConfiguration = {
-  MELLOW_LENS: '0xeb8Aa56F2Ee2BA07621F5acFCf36a67f2b0DEB10',
+  MELLOW_LENS: '0x41600c23a9803D644b55CD5b263ec9cB961FaC04',
   MELLOW_ROUTERS: [
     {
       router: '0x62E224d9ae2f4702CC88695e6Ea4aA16D0925BdB',

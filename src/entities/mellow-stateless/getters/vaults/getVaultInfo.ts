@@ -5,7 +5,7 @@ import { getTokenInfo } from '../../../../services/getTokenInfo';
 import { sum } from '../../../../utils/functions';
 import { exponentialBackoff } from '../../../../utils/retry';
 import { descale } from '../../../../utils/scaling';
-import { closeOrPastMaturity } from '../../config';
+import { closeOrPastMaturity } from '../../config/utils';
 import { getMellowConfig } from '../../config/config';
 import { getRouterConfig } from '../../utils/getRouterConfig';
 import { RouterInfo, VaultInfo } from '../types';
@@ -98,7 +98,7 @@ export const getVaultInfo = async (routerId: string, userAddress: string): Promi
 
     underlyingPools,
 
-    tokenId,
+    tokenName,
 
     expired,
     depositable,

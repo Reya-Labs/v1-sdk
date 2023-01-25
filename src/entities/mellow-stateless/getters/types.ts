@@ -8,7 +8,8 @@ export type ContractRouterInfo = {
   erc20RootVaults: {
     rootVault: string;
     latestMaturity: BigNumber;
-    vaultDeprecated: boolean;
+    vaultCompleted: boolean;
+    vaultPaused: boolean;
     pendingUserDeposit: BigNumber;
     committedUserDeposit: BigNumber;
     canWithdrawOrRollover: boolean;
@@ -40,7 +41,7 @@ export type RouterInfo = {
   title: string;
   description: string;
   underlyingPools: string[];
-  tokenId: string;
+  tokenName: string;
 
   expired: boolean;
   depositable: boolean;
