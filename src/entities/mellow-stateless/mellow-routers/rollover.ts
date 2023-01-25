@@ -1,6 +1,7 @@
 import { ethers, BigNumber } from 'ethers';
 import { Erc20RootVaultABI, MellowMultiVaultRouterABI } from '../../../ABIs';
 import { getGasBuffer } from '../../../constants';
+import { getSentryTracker } from '../../../init';
 import { exponentialBackoff } from '../../../utils/retry';
 import { getOptimiserInfo } from '../getters/optimisers/getOptimiserInfo';
 import { RouterInfo } from '../getters/types';
@@ -18,7 +19,7 @@ type RolloverResponse = {
   transaction: {
     receipt: ethers.ContractReceipt;
   };
-  newRouterState: RouterInfo;
+  newRouterState: RouterInfo | null;
 };
 
 export const rollover = async ({
@@ -32,7 +33,13 @@ export const rollover = async ({
 
   // Rollover is only allowed for routers
   if (routerConfig.isVault) {
-    throw new Error('Deposit not supported for vaults.');
+    const errorMessage = 'Rollover not supported for vaults.';
+
+    // Report to Sentry
+    const sentryTracker = getSentryTracker();
+    sentryTracker.captureMessage(errorMessage);
+
+    throw new Error(errorMessage);
   }
 
   // Get Router contract
@@ -42,8 +49,13 @@ export const rollover = async ({
   const routerVaultIds = routerConfig.vaults.map((v) => v.address);
   const vaultIndex = routerVaultIds.findIndex((item) => item === vaultId);
   if (vaultIndex < 0) {
-    // Add Sentry
-    throw new Error('Vault ID not found.');
+    const errorMessage = 'Vault ID not found.';
+
+    // Report to Sentry
+    const sentryTracker = getSentryTracker();
+    sentryTracker.captureMessage(errorMessage);
+
+    throw new Error(errorMessage);
   }
 
   // Get the Vault Contract
@@ -60,9 +72,19 @@ export const rollover = async ({
   );
 
   // Build the parameters
-  const subvaultsCount: number = (
-    await exponentialBackoff(() => erc20RootVaultContract.subvaultNfts())
-  ).length;
+  let subvaultsCount: number;
+  try {
+    subvaultsCount = (await exponentialBackoff(() => erc20RootVaultContract.subvaultNfts())).length;
+  } catch (error) {
+    const errorMessage = 'Failed to fetch number of subvaults';
+
+    // Report to Sentry
+    const sentryTracker = getSentryTracker();
+    sentryTracker.captureException(error);
+    sentryTracker.captureMessage(errorMessage);
+
+    throw new Error(errorMessage);
+  }
 
   const minTokenAmounts = BigNumber.from(0);
   const vaultsOptions = new Array(subvaultsCount).fill(0x0);
@@ -75,9 +97,15 @@ export const rollover = async ({
       vaultsOptions,
       weights,
     );
-  } catch (err) {
-    // TODO: Add Sentry
-    throw new Error('Unsuccessful rolloverLPTokens simulation.');
+  } catch (error) {
+    const errorMessage = 'Unsuccessful rolloverLPTokens simulation.';
+
+    // Report to Sentry
+    const sentryTracker = getSentryTracker();
+    sentryTracker.captureException(error);
+    sentryTracker.captureMessage(errorMessage);
+
+    throw new Error(errorMessage);
   }
 
   // Get the gas limit
@@ -98,11 +126,35 @@ export const rollover = async ({
       gasLimit: getGasBuffer(gasLimit),
     },
   );
-  const receipt = await tx.wait();
+
+  // Wait for the receipt
+  let receipt: ethers.ContractReceipt;
+  try {
+    receipt = await tx.wait();
+  } catch (error) {
+    const errorMessage = 'Transaction Confirmation Error';
+
+    // Report to Sentry
+    const sentryTracker = getSentryTracker();
+    sentryTracker.captureException(error);
+    sentryTracker.captureMessage(errorMessage);
+
+    throw new Error(errorMessage);
+  }
 
   // Get the next state of the router
-  const userAddress = await exponentialBackoff(() => signer.getAddress());
-  const routerInfo = await getOptimiserInfo(routerId, userAddress);
+  let routerInfo: RouterInfo | null = null;
+  try {
+    const userAddress = await exponentialBackoff(() => signer.getAddress());
+    routerInfo = await getOptimiserInfo(routerId, userAddress);
+  } catch (error) {
+    const errorMessage = 'Failed to get new state after deposit';
+
+    // Report to Sentry
+    const sentryTracker = getSentryTracker();
+    sentryTracker.captureException(error);
+    sentryTracker.captureMessage(errorMessage);
+  }
 
   // Return the response
   return {

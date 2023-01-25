@@ -1,6 +1,7 @@
 import { ethers, BigNumber } from 'ethers';
 import { MellowMultiVaultRouterABI } from '../../../ABIs';
 import { getGasBuffer } from '../../../constants';
+import { getSentryTracker } from '../../../init';
 import { getTokenInfo } from '../../../services/getTokenInfo';
 import { exponentialBackoff } from '../../../utils/retry';
 import { scale } from '../../../utils/scaling';
@@ -21,7 +22,7 @@ type DepositAndRegisterResponse = {
   transaction: {
     receipt: ethers.ContractReceipt;
   };
-  newRouterState: RouterInfo;
+  newRouterState: RouterInfo | null;
 };
 
 const getTransaction = async (
@@ -44,8 +45,14 @@ const getTransaction = async (
         tempOverrides,
       );
     } catch (error) {
-      // TODO: Add Sentry
-      throw new Error('Unsuccessful depositAndRegisterForAutoRollover simulation.');
+      const errorMessage = 'Unsuccessful deposit and register simulation.';
+
+      // Report to Sentry
+      const sentryTracker = getSentryTracker();
+      sentryTracker.captureException(error);
+      sentryTracker.captureMessage(errorMessage);
+
+      throw new Error(errorMessage);
     }
 
     const gasLimit = await mellowRouter.estimateGas.depositEthAndRegisterForAutoRollover(
@@ -66,8 +73,14 @@ const getTransaction = async (
       registration,
     );
   } catch (error) {
-    // TODO: Add Sentry
-    throw new Error('Unsuccessful depositAndRegisterForAutoRollover simulation.');
+    const errorMessage = 'Unsuccessful deposit and register simulation.';
+
+    // Report to Sentry
+    const sentryTracker = getSentryTracker();
+    sentryTracker.captureException(error);
+    sentryTracker.captureMessage(errorMessage);
+
+    throw new Error(errorMessage);
   }
 
   // Estimate gas
@@ -99,13 +112,31 @@ export const depositAndRegister = async ({
   const routerConfig = getRouterConfig(routerId);
 
   if (routerConfig.isVault) {
-    throw new Error('Deposit not supported for vaults.');
+    const errorMessage = 'Deposit and register not supported for vaults.';
+
+    // Report to Sentry
+    const sentryTracker = getSentryTracker();
+    sentryTracker.captureMessage(errorMessage);
+
+    throw new Error(errorMessage);
   }
 
   const mellowRouter = new ethers.Contract(routerId, MellowMultiVaultRouterABI, signer);
 
   // Get token address
-  const tokenId = await exponentialBackoff(() => mellowRouter.token());
+  let tokenId: string;
+  try {
+    tokenId = await exponentialBackoff(() => mellowRouter.token());
+  } catch (error) {
+    const errorMessage = 'Failed to fetch router token';
+
+    // Report to Sentry
+    const sentryTracker = getSentryTracker();
+    sentryTracker.captureException(error);
+    sentryTracker.captureMessage(errorMessage);
+
+    throw new Error(errorMessage);
+  }
 
   // Get token name and decimals
   const { decimals: tokenDecimals, name: tokenName } = getTokenInfo(tokenId);
@@ -122,11 +153,35 @@ export const depositAndRegister = async ({
 
   // Get the transaction and wait for the receipt
   const tx = await getTransaction(mellowRouter, isETH, scaledAmount, weights, registration);
-  const receipt = await tx.wait();
+
+  // Wait for the receipt
+  let receipt: ethers.ContractReceipt;
+  try {
+    receipt = await tx.wait();
+  } catch (error) {
+    const errorMessage = 'Transaction Confirmation Error';
+
+    // Report to Sentry
+    const sentryTracker = getSentryTracker();
+    sentryTracker.captureException(error);
+    sentryTracker.captureMessage(errorMessage);
+
+    throw new Error(errorMessage);
+  }
 
   // Get the next state of the router
-  const userAddress = await exponentialBackoff(() => signer.getAddress());
-  const routerInfo = await getOptimiserInfo(routerId, userAddress);
+  let routerInfo: RouterInfo | null = null;
+  try {
+    const userAddress = await exponentialBackoff(() => signer.getAddress());
+    routerInfo = await getOptimiserInfo(routerId, userAddress);
+  } catch (error) {
+    const errorMessage = 'Failed to get new state after deposit and register';
+
+    // Report to Sentry
+    const sentryTracker = getSentryTracker();
+    sentryTracker.captureException(error);
+    sentryTracker.captureMessage(errorMessage);
+  }
 
   // Return the response
   return {

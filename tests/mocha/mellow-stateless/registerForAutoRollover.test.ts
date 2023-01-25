@@ -99,6 +99,10 @@ describe('registration for autorollover', () => {
           RETRY_ATTEMPTS,
         );
 
+        if (!newRouterState) {
+          throw new Error('Failure');
+        }
+
         expect(newRouterState.isUserRegisteredForAutoRollover).to.be.eq(true);
       });
     });
@@ -116,6 +120,10 @@ describe('registration for autorollover', () => {
             }),
           RETRY_ATTEMPTS,
         );
+
+        if (!newRouterState) {
+          throw new Error('Failure');
+        }
 
         expect(newRouterState.isUserRegisteredForAutoRollover).to.be.eq(true);
       });

@@ -1,6 +1,7 @@
 import { ethers } from 'ethers';
 import { MellowMultiVaultRouterABI } from '../../../ABIs';
 import { getGasBuffer } from '../../../constants';
+import { getSentryTracker } from '../../../init';
 import { exponentialBackoff } from '../../../utils/retry';
 import { getOptimiserInfo } from '../getters/optimisers/getOptimiserInfo';
 import { RouterInfo } from '../getters/types';
@@ -16,7 +17,7 @@ type RegisterForAutoRolloverResponse = {
   transaction: {
     receipt: ethers.ContractReceipt;
   };
-  newRouterState: RouterInfo;
+  newRouterState: RouterInfo | null;
 };
 
 export const registerForAutoRollover = async ({
@@ -36,8 +37,13 @@ export const registerForAutoRollover = async ({
   try {
     await mellowRouter.callStatic.registerForAutoRollover(registration);
   } catch (err) {
-    // TODO: Add Sentry
-    throw new Error('Unsuccessful auto-rollover registration simulation');
+    const errorMessage = 'Unsuccessful auto-rollover registration simulation';
+
+    // Report to Sentry
+    const sentryTracker = getSentryTracker();
+    sentryTracker.captureMessage(errorMessage);
+
+    throw new Error(errorMessage);
   }
 
   const gasLimit = await mellowRouter.estimateGas.registerForAutoRollover(registration);
@@ -45,11 +51,35 @@ export const registerForAutoRollover = async ({
   const tx = await mellowRouter.registerForAutoRollover(registration, {
     gasLimit: getGasBuffer(gasLimit),
   });
-  const receipt = await tx.wait();
+
+  // Wait for the receipt
+  let receipt: ethers.ContractReceipt;
+  try {
+    receipt = await tx.wait();
+  } catch (error) {
+    const errorMessage = 'Transaction Confirmation Error';
+
+    // Report to Sentry
+    const sentryTracker = getSentryTracker();
+    sentryTracker.captureException(error);
+    sentryTracker.captureMessage(errorMessage);
+
+    throw new Error(errorMessage);
+  }
 
   // Get the next state of the router
-  const userAddress = await exponentialBackoff(() => signer.getAddress());
-  const routerInfo = await getOptimiserInfo(routerId, userAddress);
+  let routerInfo: RouterInfo | null = null;
+  try {
+    const userAddress = await exponentialBackoff(() => signer.getAddress());
+    routerInfo = await getOptimiserInfo(routerId, userAddress);
+  } catch (error) {
+    const errorMessage = 'Failed to get new state after deposit';
+
+    // Report to Sentry
+    const sentryTracker = getSentryTracker();
+    sentryTracker.captureException(error);
+    sentryTracker.captureMessage(errorMessage);
+  }
 
   // Return the response
   return {

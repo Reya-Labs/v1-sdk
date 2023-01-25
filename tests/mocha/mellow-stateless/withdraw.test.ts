@@ -131,6 +131,10 @@ describe('getRouters', () => {
           RETRY_ATTEMPTS,
         );
 
+        if (!newRouterState) {
+          throw new Error('Failure');
+        }
+
         // Nothing to withdraw, change 0
         expect(newRouterState.userRouterDeposit - routerState.userRouterDeposit).to.be.closeTo(
           -0.1,
@@ -162,6 +166,10 @@ describe('getRouters', () => {
           RETRY_ATTEMPTS,
         );
 
+        if (!newRouterState) {
+          throw new Error('Failure');
+        }
+
         expect(newRouterState.userRouterDeposit - routerState.userRouterDeposit).to.be.closeTo(
           -0.022,
           DELTA,
@@ -188,6 +196,10 @@ describe('getRouters', () => {
             }),
           RETRY_ATTEMPTS,
         );
+
+        if (!newRouterState) {
+          throw new Error('Failure');
+        }
 
         expect(newRouterState.userRouterDeposit - routerState.userRouterDeposit).to.be.closeTo(
           -27.3,
