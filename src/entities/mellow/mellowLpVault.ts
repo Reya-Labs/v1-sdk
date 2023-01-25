@@ -70,7 +70,7 @@ class MellowLpVault {
 
   public isRegisteredForAutoRollover = false;
 
-  public canManageVaultPositions: boolean[] = [];
+  public canRegisterUnregister = false;
 
   public constructor({
     id,
@@ -225,6 +225,10 @@ class MellowLpVault {
   }
 
   public get batchBudgetUnderlying(): number {
+    return 0;
+  }
+
+  public get batchBudgetUsd(): number {
     return 0;
   }
 
@@ -532,10 +536,6 @@ class MellowLpVault {
   };
 
   getSubmitBatchGasCost = async (): Promise<number> => {
-    throw new Error('This is not supported');
-  };
-
-  getBatchBudgetUsd = async (): Promise<number> => {
     throw new Error('This is not supported');
   };
 

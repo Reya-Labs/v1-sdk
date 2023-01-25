@@ -82,10 +82,11 @@ class MellowLpRouter {
   private canManageVaultPositions?: boolean[];
 
   private gasUnitPriceUSD = 0;
+  private usdExchangeRate = 0;
   private autoRolloverRegistrationGasUnits = 0;
   private batchBudgetScaled: BigNumberish = 0;
 
-  public canRegisterForAutoRollover = true;
+  public canRegisterUnregister = true;
 
   public constructor({
     mellowRouterAddress,
@@ -162,6 +163,7 @@ class MellowLpRouter {
     this.userIndividualPendingDeposit = new Array(this.vaultsCount).fill(0x0);
 
     await this.refreshGasUnitPriceUSD();
+    this.usdExchangeRate = this.isETH ? Math.round(await this.ethPrice()) : 1;
 
     this.vaultInitialized = true;
   };
@@ -197,23 +199,35 @@ class MellowLpRouter {
 
     await this.refreshUserDeposit();
     await this.refreshWalletBalance();
-    await this.refreshBatchBudget();
 
-    const readOnlyContracts = this.readOnlyContracts;
-    this.isRegisteredForAutoRollover = await exponentialBackoff(() =>
-      readOnlyContracts.mellowRouterContract.isRegisteredForAutoRollover(this.userAddress),
-    );
+    // to be removed when all routers on GOERLI & MAINNET WERE UPGRADED
+    try {
+      await this.refreshBatchBudget();
+    } catch (error) {}
 
-    this.canManageVaultPositions = [];
-    for (let vaultIndex = 0; vaultIndex < this.vaultsCount; vaultIndex += 1) {
-      this.canManageVaultPositions.push(
-        await exponentialBackoff(() =>
-          readOnlyContracts.mellowRouterContract.canWithdrawOrRollover(
-            vaultIndex,
-            this.userAddress,
-          ),
-        ),
+    // to be removed when all routers on GOERLI & MAINNET WERE UPGRADED
+    try {
+      const readOnlyContracts = this.readOnlyContracts;
+      this.isRegisteredForAutoRollover = await exponentialBackoff(() =>
+        readOnlyContracts.mellowRouterContract.isRegisteredForAutoRollover(this.userAddress),
       );
+
+      this.canManageVaultPositions = [];
+      for (let vaultIndex = 0; vaultIndex < this.vaultsCount; vaultIndex += 1) {
+        this.canManageVaultPositions.push(
+          await exponentialBackoff(() =>
+            readOnlyContracts.mellowRouterContract.canWithdrawOrRollover(
+              vaultIndex,
+              this.userAddress,
+            ),
+          ),
+        );
+      }
+    } catch (error) {
+      this.canManageVaultPositions = [];
+      for (let vaultIndex = 0; vaultIndex < this.vaultsCount; vaultIndex += 1) {
+        this.canManageVaultPositions.push(true);
+      }
     }
 
     // try-catch to not be removed
@@ -226,10 +240,10 @@ class MellowLpRouter {
           ),
         )
       ).toNumber();
-      this.canRegisterForAutoRollover = true;
+      this.canRegisterUnregister = true;
     } catch (error) {
       this.autoRolloverRegistrationGasUnits = 0;
-      this.canRegisterForAutoRollover = false;
+      this.canRegisterUnregister = false;
     }
 
     this.userInitialized = true;
@@ -301,6 +315,15 @@ class MellowLpRouter {
 
   public get batchBudgetUnderlying(): number {
     const budgetForBatchDescaled = this.descale(this.batchBudgetScaled, this.tokenDecimals);
+
+    return budgetForBatchDescaled;
+  }
+
+  public get batchBudgetUsd(): number {
+    const budgetForBatchDescaled = this.descale(
+      BigNumber.from(this.batchBudgetScaled).mul(this.usdExchangeRate),
+      this.tokenDecimals,
+    );
 
     return budgetForBatchDescaled;
   }
@@ -482,7 +505,12 @@ class MellowLpRouter {
       throw new Error('Weights are invalid');
     }
 
-    const scaledAmount = this.scale(amount);
+    const fee = await this.getDepositFeeUnderlying();
+    if (amount <= 0) {
+      throw new Error('Amount must be greater than 0');
+    }
+
+    const scaledAmount = this.scale(amount + fee);
     const tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
 
     if (this.isETH) {
@@ -882,7 +910,7 @@ class MellowLpRouter {
     this.gasUnitPriceUSD = await convertGasUnitsToUSD(this.provider, 1);
   };
 
-  public get autoRolloverRegistrationGasFeeUSD() {
+  public get autoRolloverRegistrationGasFeeUSD(): number {
     return this.autoRolloverRegistrationGasUnits * this.gasUnitPriceUSD;
   }
 
@@ -920,8 +948,8 @@ class MellowLpRouter {
     } catch (err) {
       const sentryTracker = getSentryTracker();
       sentryTracker.captureException(err);
-      sentryTracker.captureMessage('Unsuccessful batch submittion simulation');
-      throw new Error('Unsuccessful batch submittion simulation');
+      sentryTracker.captureMessage('Unsuccessful batch submission simulation');
+      throw new Error('Unsuccessful batch submission simulation');
     }
 
     const gasLimit = await this.writeContracts.mellowRouter.estimateGas.submitAllBatchesForFee();
@@ -946,8 +974,8 @@ class MellowLpRouter {
     } catch (err) {
       const sentryTracker = getSentryTracker();
       sentryTracker.captureException(err);
-      sentryTracker.captureMessage('Unsuccessful batch submittion');
-      throw new Error('Unsuccessful batch submittion');
+      sentryTracker.captureMessage('Unsuccessful batch submission');
+      throw new Error('Unsuccessful batch submission');
     }
   };
 
@@ -965,9 +993,9 @@ class MellowLpRouter {
     } catch (err) {
       const sentryTracker = getSentryTracker();
       sentryTracker.captureException(err);
-      sentryTracker.captureMessage('Unsuccessful batch submittion simulation');
-      console.error('Error during batch submittion', err);
-      throw new Error('Unsuccessful batch submittion simulation');
+      sentryTracker.captureMessage('Unsuccessful batch submission simulation');
+      console.error('Error during batch submission', err);
+      throw new Error('Unsuccessful batch submission simulation');
     }
   };
 
@@ -989,7 +1017,12 @@ class MellowLpRouter {
       throw new Error('Weights are invalid');
     }
 
-    const scaledAmount = this.scale(amount);
+    const fee = await this.getDepositFeeUnderlying();
+    if (amount <= 0) {
+      throw new Error('Amount must be greater than 0');
+    }
+
+    const scaledAmount = this.scale(amount + fee);
     const tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
 
     if (this.isETH) {
@@ -1051,24 +1084,6 @@ class MellowLpRouter {
     return gasPrice;
   };
 
-  getBatchBudgetUsd = async (): Promise<number> => {
-    try {
-      const usdExchangeRate = this.isETH ? Math.round(await this.ethPrice()) : 1;
-      const budgetForBatchDescaled = this.descale(
-        BigNumber.from(this.batchBudgetScaled).mul(usdExchangeRate),
-        this.tokenDecimals,
-      );
-
-      return budgetForBatchDescaled;
-    } catch (err) {
-      const sentryTracker = getSentryTracker();
-      sentryTracker.captureException(err);
-      sentryTracker.captureMessage('Failed to get batch budget');
-      console.error('Error while getting batch budget', err);
-      throw new Error('Failed to get batch budget');
-    }
-  };
-
   getDepositFeeUnderlying = async (): Promise<number> => {
     if (isUndefined(this.readOnlyContracts)) {
       throw new Error('Uninitialized contracts.');
@@ -1083,7 +1098,7 @@ class MellowLpRouter {
       const sentryTracker = getSentryTracker();
       sentryTracker.captureException(err);
       sentryTracker.captureMessage('Failed to get deposit fee');
-      throw new Error('Failed to get deposit fee');
+      return 0; // TODO: replace with error after upgrading router to have getFee()
     }
   };
 
@@ -1094,8 +1109,7 @@ class MellowLpRouter {
 
     try {
       const fee = await this.readOnlyContracts.mellowRouterContract.getFee();
-      const usdExchangeRate = this.isETH ? Math.round(await this.ethPrice()) : 1;
-      const feeDescaled = this.descale(fee.mul(usdExchangeRate), this.tokenDecimals);
+      const feeDescaled = this.descale(fee.mul(this.usdExchangeRate), this.tokenDecimals);
 
       return feeDescaled;
     } catch (err) {
