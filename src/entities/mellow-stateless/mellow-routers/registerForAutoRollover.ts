@@ -1,6 +1,7 @@
 import { ethers } from 'ethers';
 import { MellowMultiVaultRouterABI } from '../../../ABIs';
 import { getGasBuffer } from '../../../constants';
+import { exponentialBackoff } from '../../../utils/retry';
 import { getOptimiserInfo } from '../getters/optimisers/getOptimiserInfo';
 import { RouterInfo } from '../getters/types';
 import { getRouterConfig } from '../utils/getRouterConfig';
@@ -47,7 +48,7 @@ export const registerForAutoRollover = async ({
   const receipt = await tx.wait();
 
   // Get the next state of the router
-  const userAddress = await signer.getAddress();
+  const userAddress = await exponentialBackoff(() => signer.getAddress());
   const routerInfo = await getOptimiserInfo(routerId, userAddress);
 
   // Return the response

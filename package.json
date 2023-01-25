@@ -22,7 +22,7 @@
     "lint:fix": "eslint --fix 'src/**/*.ts'",
     "yalc:push-changes": "yarn build-release && npx yalc publish && npx yalc push --sig",
     "test": "npx jest tests/jest/*.ts && npx hardhat test",
-    "test:cicd": "npx jest tests/jest/*.ts",
+    "test:cicd": "npx jest tests/jest/*.ts && npx hardhat test tests/mocha/mellow-stateless/*.test.ts",
     "release": "semantic-release",
     "irs-setup": "ts-node scripts/setup.ts",
     "decode-error": "ts-node src/utils/errors/decodeError.ts",

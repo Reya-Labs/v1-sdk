@@ -7,10 +7,11 @@ import { ethers } from 'ethers';
 import { IERC20MinimalABI } from '../../../src/ABIs';
 import * as initSDK from '../../../src/init';
 import * as initMellowConfig from '../../../src/entities/mellow-stateless/config/config';
-import { MockGoerliConfig } from './utils';
+import { MockGoerliConfig, RETRY_ATTEMPTS } from './utils';
 import { fail, withSigner } from '../../utils';
 import { approveToken } from '../../../src/entities/mellow-stateless/utils/token/approveToken';
 import { MaxUint256Bn } from '../../../src/constants';
+import { exponentialBackoff } from '../../../src/utils/retry';
 
 const { provider } = waffle;
 
@@ -74,16 +75,23 @@ describe('approve token', () => {
       const to = '0x1111111111111111111111111111111111111111';
 
       await withSigner(network, userAddress, async (signer) => {
-        await approveToken({
-          tokenId,
-          to,
-          amount: 10,
-          signer,
-        });
+        await exponentialBackoff(
+          () =>
+            approveToken({
+              tokenId,
+              to,
+              amount: 10,
+              signer,
+            }),
+          RETRY_ATTEMPTS,
+        );
 
         const tokenContract = new ethers.Contract(tokenId, IERC20MinimalABI, signer);
 
-        const allowance = await tokenContract.allowance(userAddress, to);
+        const allowance = await exponentialBackoff(
+          () => tokenContract.allowance(userAddress, to),
+          RETRY_ATTEMPTS,
+        );
         expect(allowance).to.be.eq('10000000');
       });
     });
@@ -93,11 +101,15 @@ describe('approve token', () => {
       const to = '0x1111111111111111111111111111111111111111';
 
       await withSigner(network, userAddress, async (signer) => {
-        await approveToken({
-          tokenId,
-          to,
-          signer,
-        });
+        await exponentialBackoff(
+          () =>
+            approveToken({
+              tokenId,
+              to,
+              signer,
+            }),
+          RETRY_ATTEMPTS,
+        );
 
         const tokenContract = new ethers.Contract(tokenId, IERC20MinimalABI, signer);
 
@@ -111,16 +123,23 @@ describe('approve token', () => {
       const to = '0x1111111111111111111111111111111111111111';
 
       await withSigner(network, userAddress, async (signer) => {
-        await approveToken({
-          tokenId,
-          amount: 0,
-          to,
-          signer,
-        });
+        await exponentialBackoff(
+          () =>
+            approveToken({
+              tokenId,
+              amount: 0,
+              to,
+              signer,
+            }),
+          RETRY_ATTEMPTS,
+        );
 
         const tokenContract = new ethers.Contract(tokenId, IERC20MinimalABI, signer);
 
-        const allowance = await tokenContract.allowance(userAddress, to);
+        const allowance = await exponentialBackoff(
+          () => tokenContract.allowance(userAddress, to),
+          RETRY_ATTEMPTS,
+        );
         expect(allowance).to.be.eq(0);
       });
     });
@@ -130,12 +149,16 @@ describe('approve token', () => {
       const to = '0x1111111111111111111111111111111111111111';
 
       await withSigner(network, userAddress, async (signer) => {
-        await approveToken({
-          tokenId,
-          amount: 10,
-          to,
-          signer,
-        });
+        await exponentialBackoff(
+          () =>
+            approveToken({
+              tokenId,
+              amount: 10,
+              to,
+              signer,
+            }),
+          RETRY_ATTEMPTS,
+        );
 
         const tokenContract = new ethers.Contract(tokenId, IERC20MinimalABI, signer);
 
@@ -149,16 +172,23 @@ describe('approve token', () => {
       const to = '0x1111111111111111111111111111111111111111';
 
       await withSigner(network, userAddress, async (signer) => {
-        await approveToken({
-          tokenId,
-          amount: 10,
-          to,
-          signer,
-        });
+        await exponentialBackoff(
+          () =>
+            approveToken({
+              tokenId,
+              amount: 10,
+              to,
+              signer,
+            }),
+          RETRY_ATTEMPTS,
+        );
 
         const tokenContract = new ethers.Contract(tokenId, IERC20MinimalABI, signer);
 
-        const allowance = await tokenContract.allowance(userAddress, to);
+        const allowance = await exponentialBackoff(
+          () => tokenContract.allowance(userAddress, to),
+          RETRY_ATTEMPTS,
+        );
         expect(allowance).to.be.eq('10000000');
       });
     });
@@ -168,25 +198,36 @@ describe('approve token', () => {
       const to = '0x1111111111111111111111111111111111111111';
 
       await withSigner(network, userAddress, async (signer) => {
-        await approveToken({
-          tokenId,
-          amount: 10,
-          to,
-          signer,
-        });
+        await exponentialBackoff(
+          () =>
+            approveToken({
+              tokenId,
+              amount: 10,
+              to,
+              signer,
+            }),
+          RETRY_ATTEMPTS,
+        );
 
         const tokenContract = new ethers.Contract(tokenId, IERC20MinimalABI, signer);
 
-        const allowance = await tokenContract.allowance(userAddress, to);
+        const allowance = await exponentialBackoff(
+          () => tokenContract.allowance(userAddress, to),
+          RETRY_ATTEMPTS,
+        );
         expect(allowance).to.be.eq('10000000');
 
         try {
-          await approveToken({
-            tokenId,
-            amount: 10,
-            to,
-            signer,
-          });
+          await exponentialBackoff(
+            () =>
+              approveToken({
+                tokenId,
+                amount: 10,
+                to,
+                signer,
+              }),
+            RETRY_ATTEMPTS,
+          );
           fail();
         } catch (error: unknown) {
           expect((error as Error).message === 'The current approval needs to be reset first.');

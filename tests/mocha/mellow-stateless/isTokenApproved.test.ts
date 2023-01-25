@@ -7,9 +7,10 @@ import { ethers } from 'ethers';
 import { IERC20MinimalABI } from '../../../src/ABIs';
 import * as initSDK from '../../../src/init';
 import * as initMellowConfig from '../../../src/entities/mellow-stateless/config/config';
-import { MockGoerliConfig } from './utils';
+import { MockGoerliConfig, RETRY_ATTEMPTS } from './utils';
 import { withSigner } from '../../utils';
 import { isTokenApproved } from '../../../src/entities/mellow-stateless/utils/token/isTokenApproved';
+import { exponentialBackoff } from '../../../src/utils/retry';
 
 const { provider } = waffle;
 
@@ -116,7 +117,7 @@ describe('token approval', () => {
       // approve 5 USDC
       await withSigner(network, userAddress, async (signer) => {
         const tokenContract = new ethers.Contract(tokenId, IERC20MinimalABI, signer);
-        await tokenContract.approve(to, '5000000');
+        await exponentialBackoff(() => tokenContract.approve(to, '5000000'), RETRY_ATTEMPTS);
       });
 
       const approval = await isTokenApproved({
@@ -136,7 +137,7 @@ describe('token approval', () => {
       // approve 5 USDC
       await withSigner(network, userAddress, async (signer) => {
         const tokenContract = new ethers.Contract(tokenId, IERC20MinimalABI, signer);
-        await tokenContract.approve(to, '5000000');
+        await exponentialBackoff(() => tokenContract.approve(to, '5000000'), RETRY_ATTEMPTS);
       });
 
       const approval = await isTokenApproved({
@@ -156,7 +157,7 @@ describe('token approval', () => {
       // approve 5 USDC
       await withSigner(network, userAddress, async (signer) => {
         const tokenContract = new ethers.Contract(tokenId, IERC20MinimalABI, signer);
-        await tokenContract.approve(to, '5000000');
+        await exponentialBackoff(() => tokenContract.approve(to, '5000000'), RETRY_ATTEMPTS);
       });
 
       const approval = await isTokenApproved({
@@ -202,7 +203,10 @@ describe('token approval', () => {
       // approve 5 WETH
       await withSigner(network, userAddress, async (signer) => {
         const tokenContract = new ethers.Contract(tokenId, IERC20MinimalABI, signer);
-        await tokenContract.approve(to, '5000000000000000000');
+        await exponentialBackoff(
+          () => tokenContract.approve(to, '5000000000000000000'),
+          RETRY_ATTEMPTS,
+        );
       });
 
       const approval = await isTokenApproved({
@@ -223,7 +227,10 @@ describe('token approval', () => {
       // approve 5 WETH
       await withSigner(network, userAddress, async (signer) => {
         const tokenContract = new ethers.Contract(tokenId, IERC20MinimalABI, signer);
-        await tokenContract.approve(to, '5000000000000000000');
+        await exponentialBackoff(
+          () => tokenContract.approve(to, '5000000000000000000'),
+          RETRY_ATTEMPTS,
+        );
       });
 
       const approval = await isTokenApproved({

@@ -2,6 +2,7 @@ import { ethers } from 'ethers';
 import { MellowLensContractABI } from '../../../../ABIs';
 import { ZERO_ADDRESS } from '../../../../constants';
 import { getProvider } from '../../../../init';
+import { exponentialBackoff } from '../../../../utils/retry';
 import { getMellowConfig } from '../../config/config';
 import { RouterInfo, ContractRouterInfo } from '../types';
 import { mapRouter } from './mappers';
@@ -18,9 +19,11 @@ export const getOptimisersInfo = async (userAddress = ZERO_ADDRESS): Promise<Rou
   );
 
   // Get routers
-  const optimisersContractInfo: ContractRouterInfo[] = await mellowLensContract.getOptimisersInfo(
-    routerConfigs.map((routerConfig) => routerConfig.router),
-    userAddress,
+  const optimisersContractInfo: ContractRouterInfo[] = await exponentialBackoff(() =>
+    mellowLensContract.getOptimisersInfo(
+      routerConfigs.map((routerConfig) => routerConfig.router),
+      userAddress,
+    ),
   );
 
   const routers = routerConfigs.map((routerConfig, index) =>

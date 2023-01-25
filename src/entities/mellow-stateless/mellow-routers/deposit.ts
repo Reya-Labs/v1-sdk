@@ -7,6 +7,7 @@ import { getRouterConfig } from '../utils/getRouterConfig';
 import { mapWeights } from '../utils/mapWeights';
 import { RouterInfo } from '../getters/types';
 import { getOptimiserInfo } from '../getters/optimisers/getOptimiserInfo';
+import { exponentialBackoff } from '../../../utils/retry';
 
 type DepositArgs = {
   routerId: string;
@@ -83,7 +84,7 @@ export const deposit = async ({
   const mellowRouter = new ethers.Contract(routerId, MellowMultiVaultRouterABI, signer);
 
   // Get token address
-  const tokenId = await mellowRouter.token();
+  const tokenId = await exponentialBackoff(() => mellowRouter.token());
 
   // Get token name and decimals
   const { decimals: tokenDecimals, name: tokenName } = getTokenInfo(tokenId);
@@ -103,7 +104,7 @@ export const deposit = async ({
   const receipt = await tx.wait();
 
   // Get the next state of the router
-  const userAddress = await signer.getAddress();
+  const userAddress = await exponentialBackoff(() => signer.getAddress());
   const routerInfo = await getOptimiserInfo(routerId, userAddress);
 
   // Return the response

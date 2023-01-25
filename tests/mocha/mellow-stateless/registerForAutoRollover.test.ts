@@ -5,9 +5,10 @@ import { BrowserClient } from '@sentry/browser';
 import { expect } from 'chai';
 import * as initSDK from '../../../src/init';
 import * as initMellowConfig from '../../../src/entities/mellow-stateless/config/config';
-import { MockGoerliConfig } from './utils';
+import { MockGoerliConfig, RETRY_ATTEMPTS } from './utils';
 import { fail, withSigner } from '../../utils';
 import { registerForAutoRollover } from '../../../src/entities/mellow-stateless/mellow-routers/registerForAutoRollover';
+import { exponentialBackoff } from '../../../src/utils/retry';
 
 const { provider } = waffle;
 
@@ -71,11 +72,15 @@ describe('registration for autorollover', () => {
 
       await withSigner(network, userAddress, async (signer) => {
         try {
-          await registerForAutoRollover({
-            routerId,
-            signer,
-            registration: true,
-          });
+          await exponentialBackoff(
+            () =>
+              registerForAutoRollover({
+                routerId,
+                signer,
+                registration: true,
+              }),
+            RETRY_ATTEMPTS,
+          );
           fail();
         } catch (_) {}
       });
@@ -84,11 +89,15 @@ describe('registration for autorollover', () => {
     it('register in ETH', async () => {
       const routerId = '0x704F6E9cB4f7e041CC89B6a49DF8EE2027a55164';
       await withSigner(network, userAddress, async (signer) => {
-        const { newRouterState } = await registerForAutoRollover({
-          routerId,
-          signer,
-          registration: true,
-        });
+        const { newRouterState } = await exponentialBackoff(
+          () =>
+            registerForAutoRollover({
+              routerId,
+              signer,
+              registration: true,
+            }),
+          RETRY_ATTEMPTS,
+        );
 
         expect(newRouterState.isUserRegisteredForAutoRollover).to.be.eq(true);
       });
@@ -98,11 +107,15 @@ describe('registration for autorollover', () => {
       const routerId = '0x9f397CD24103A0a0252DeC82a88e656480C53fB7';
 
       await withSigner(network, userAddress, async (signer) => {
-        const { newRouterState } = await registerForAutoRollover({
-          routerId,
-          signer,
-          registration: true,
-        });
+        const { newRouterState } = await exponentialBackoff(
+          () =>
+            registerForAutoRollover({
+              routerId,
+              signer,
+              registration: true,
+            }),
+          RETRY_ATTEMPTS,
+        );
 
         expect(newRouterState.isUserRegisteredForAutoRollover).to.be.eq(true);
       });

@@ -6,6 +6,7 @@ import { RouterInfo, ContractRouterInfo } from '../types';
 import { getRouterConfig } from '../../utils/getRouterConfig';
 import { mapRouter } from './mappers';
 import { ZERO_ADDRESS } from '../../../../constants';
+import { exponentialBackoff } from '../../../../utils/retry';
 
 export const getOptimiserInfo = async (
   routerId: string,
@@ -18,9 +19,8 @@ export const getOptimiserInfo = async (
   const mellowLensContract = new ethers.Contract(MELLOW_LENS, MellowLensContractABI, provider);
 
   try {
-    const optimisersContractInfo: ContractRouterInfo[] = await mellowLensContract.getOptimisersInfo(
-      [routerConfig.router],
-      userAddress,
+    const optimisersContractInfo: ContractRouterInfo[] = await exponentialBackoff(() =>
+      mellowLensContract.getOptimisersInfo([routerConfig.router], userAddress),
     );
 
     const router = mapRouter(routerConfig, optimisersContractInfo[0]);

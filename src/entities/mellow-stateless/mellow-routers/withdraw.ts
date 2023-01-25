@@ -1,6 +1,7 @@
 import { ethers, BigNumber } from 'ethers';
 import { Erc20RootVaultABI, MellowMultiVaultRouterABI } from '../../../ABIs';
 import { getGasBuffer } from '../../../constants';
+import { exponentialBackoff } from '../../../utils/retry';
 import { getMellowConfig } from '../config/config';
 import { getMellowProduct } from '../getters/getMellowProduct';
 import { RouterInfo } from '../getters/types';
@@ -48,7 +49,9 @@ const routerWithdraw = async ({
     signer,
   );
 
-  const subvaultsCount: number = (await erc20RootVaultContract.subvaultNfts()).length;
+  const subvaultsCount: number = (
+    await exponentialBackoff(() => erc20RootVaultContract.subvaultNfts())
+  ).length;
 
   const minTokenAmounts = BigNumber.from(0);
   const vaultsOptions = new Array(subvaultsCount).fill(0x0);
@@ -83,11 +86,12 @@ const vaultWithdraw = async ({
   const erc20RootVault = new ethers.Contract(vaultId, Erc20RootVaultABI, signer);
 
   // Get the balance of LP tokens
-  const userAddress = await signer.getAddress();
+  const userAddress = await exponentialBackoff(() => signer.getAddress());
   const lpTokens = erc20RootVault.balanceOf(userAddress);
 
   // Get the number of subvaults to input the correct vault options
-  const subvaultsCount: number = (await erc20RootVault.subvaultNfts()).length;
+  const subvaultsCount: number = (await exponentialBackoff(() => erc20RootVault.subvaultNfts()))
+    .length;
 
   // Default arguments for withdraw
   const minTokenAmounts = BigNumber.from(0);
@@ -137,7 +141,7 @@ export const withdraw = async (params: WithdrawArgs): Promise<WithdrawResponse> 
   const receipt = await (routerConfig.isVault ? vaultWithdraw(params) : routerWithdraw(params));
 
   // Get the next state of the router
-  const userAddress = await signer.getAddress();
+  const userAddress = await exponentialBackoff(() => signer.getAddress());
   const routerInfo = await getMellowProduct({
     routerId,
     userAddress,
