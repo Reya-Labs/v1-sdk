@@ -4,7 +4,16 @@ import { IERC20MinimalABI } from '../../../../ABIs';
 import { TresholdApprovalBn } from '../../../../constants';
 import { getProvider } from '../../../../init';
 import { getTokenInfo } from '../../../../services/getTokenInfo';
+import { exponentialBackoff } from '../../../../utils/retry';
 import { scale } from '../../../../utils/scaling';
+
+type IsTokenApprovedArgs = {
+  tokenId: string;
+  userAddress: string;
+  to: string;
+  threshold?: number;
+  forceErc20?: boolean;
+};
 
 export const isTokenApproved = async ({
   tokenId,
@@ -12,13 +21,7 @@ export const isTokenApproved = async ({
   to,
   threshold,
   forceErc20,
-}: {
-  tokenId: string;
-  userAddress: string;
-  to: string;
-  threshold?: number;
-  forceErc20?: boolean;
-}): Promise<boolean> => {
+}: IsTokenApprovedArgs): Promise<boolean> => {
   const provider = getProvider();
 
   // Get the token decimals
@@ -39,7 +42,7 @@ export const isTokenApproved = async ({
   const tokenContract = new ethers.Contract(tokenId, IERC20MinimalABI, provider);
 
   // Query the allowance
-  const tokenApproval = await tokenContract.allowance(userAddress, to);
+  const tokenApproval = await exponentialBackoff(() => tokenContract.allowance(userAddress, to));
 
   // Return if the allowance is above the threshold
   return tokenApproval.gte(actualAmount);

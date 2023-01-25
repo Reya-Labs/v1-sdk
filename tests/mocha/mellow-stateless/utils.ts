@@ -140,3 +140,5 @@ export const MockGoerliConfig: NetworkConfiguration = {
     },
   ],
 };
+
+export const RETRY_ATTEMPTS = 2;

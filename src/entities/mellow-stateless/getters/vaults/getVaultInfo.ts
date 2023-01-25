@@ -3,6 +3,7 @@ import { Erc20RootVaultABI, IERC20MinimalABI, MellowLensContractABI } from '../.
 import { getProvider } from '../../../../init';
 import { getTokenInfo } from '../../../../services/getTokenInfo';
 import { sum } from '../../../../utils/functions';
+import { exponentialBackoff } from '../../../../utils/retry';
 import { descale } from '../../../../utils/scaling';
 import { closeOrPastMaturity } from '../../config';
 import { getMellowConfig } from '../../config/config';
@@ -22,7 +23,7 @@ export const getVaultInfo = async (routerId: string, userAddress: string): Promi
   const erc20RootVault = new ethers.Contract(vaultAddress, Erc20RootVaultABI, provider);
 
   // Get token information
-  const tokenId: string = (await erc20RootVault.vaultTokens())[0];
+  const tokenId: string = (await exponentialBackoff(() => erc20RootVault.vaultTokens()))[0];
   const { name: tokenName, decimals: tokenDecimals } = getTokenInfo(tokenId);
   const isETH = tokenName === 'ETH';
 
@@ -30,7 +31,9 @@ export const getVaultInfo = async (routerId: string, userAddress: string): Promi
   const tokenContract = new ethers.Contract(tokenId, IERC20MinimalABI, provider);
 
   // Get latest maturity and decide whether the entire router is expired or not
-  const latestMaturityInMS: number = await mellowLensContract.getVaultMaturity(vaultAddress);
+  const latestMaturityInMS: number = await exponentialBackoff(() =>
+    mellowLensContract.getVaultMaturity(vaultAddress),
+  );
   const expired = closeOrPastMaturity(latestMaturityInMS);
 
   // Decide whether the vault is depositable or not
@@ -47,16 +50,18 @@ export const getVaultInfo = async (routerId: string, userAddress: string): Promi
 
   // Get user wallet balance
   const userWalletBalance: number = descale(
-    isETH ? await provider.getBalance(userAddress) : await tokenContract.balanceOf(userAddress),
+    await exponentialBackoff(() =>
+      isETH ? provider.getBalance(userAddress) : tokenContract.balanceOf(userAddress),
+    ),
     tokenDecimals,
   );
 
   // Get user deposits on this vault
   let userVaultCommittedDeposit = 0;
 
-  const lpTokens = await erc20RootVault.balanceOf(userAddress);
-  const totalLpTokens = await erc20RootVault.totalSupply();
-  const tvl = await erc20RootVault.tvl();
+  const lpTokens = await exponentialBackoff(() => erc20RootVault.balanceOf(userAddress));
+  const totalLpTokens = await exponentialBackoff(() => erc20RootVault.totalSupply());
+  const tvl = await exponentialBackoff(() => erc20RootVault.tvl());
 
   if (totalLpTokens.gt(0)) {
     const userFunds = lpTokens.mul(tvl[0][0]).div(totalLpTokens);

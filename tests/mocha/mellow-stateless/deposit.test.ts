@@ -5,10 +5,11 @@ import { BrowserClient } from '@sentry/browser';
 import { expect } from 'chai';
 import * as initSDK from '../../../src/init';
 import * as initMellowConfig from '../../../src/entities/mellow-stateless/config/config';
-import { MockGoerliConfig } from './utils';
+import { MockGoerliConfig, RETRY_ATTEMPTS } from './utils';
 import { fail, withSigner } from '../../utils';
 import { deposit } from '../../../src/entities/mellow-stateless/mellow-routers/deposit';
 import { getMellowProduct } from '../../../src/entities/mellow-stateless/getters/getMellowProduct';
+import { exponentialBackoff } from '../../../src/utils/retry';
 
 const { provider } = waffle;
 const DELTA = 0.00001;
@@ -74,12 +75,16 @@ describe('getRouters', () => {
 
       await withSigner(network, userAddress, async (signer) => {
         try {
-          await deposit({
-            routerId,
-            amount,
-            spareWeights: [['0x5de7a5BbEDcE4a739b8a8D1cdA15D71924BDC9f7', 100]],
-            signer,
-          });
+          await exponentialBackoff(
+            () =>
+              deposit({
+                routerId,
+                amount,
+                spareWeights: [['0x5de7a5BbEDcE4a739b8a8D1cdA15D71924BDC9f7', 100]],
+                signer,
+              }),
+            RETRY_ATTEMPTS,
+          );
           fail();
         } catch (_) {}
       });
@@ -94,12 +99,16 @@ describe('getRouters', () => {
           userAddress,
         });
 
-        const { newRouterState } = await deposit({
-          routerId,
-          amount,
-          spareWeights: [['0x5de7a5BbEDcE4a739b8a8D1cdA15D71924BDC9f7', 100]],
-          signer,
-        });
+        const { newRouterState } = await exponentialBackoff(
+          () =>
+            deposit({
+              routerId,
+              amount,
+              spareWeights: [['0x5de7a5BbEDcE4a739b8a8D1cdA15D71924BDC9f7', 100]],
+              signer,
+            }),
+          RETRY_ATTEMPTS,
+        );
 
         expect(newRouterState.userRouterDeposit - routerState.userRouterDeposit).to.be.closeTo(
           amount,
@@ -122,12 +131,16 @@ describe('getRouters', () => {
           userAddress,
         });
 
-        const { newRouterState } = await deposit({
-          routerId,
-          amount,
-          spareWeights: [['0x4972C5f24E6EDfD479ba989b204bD376503D48d8', 100]],
-          signer,
-        });
+        const { newRouterState } = await exponentialBackoff(
+          () =>
+            deposit({
+              routerId,
+              amount,
+              spareWeights: [['0x4972C5f24E6EDfD479ba989b204bD376503D48d8', 100]],
+              signer,
+            }),
+          RETRY_ATTEMPTS,
+        );
 
         expect(newRouterState.userRouterDeposit - routerState.userRouterDeposit).to.be.closeTo(
           amount,

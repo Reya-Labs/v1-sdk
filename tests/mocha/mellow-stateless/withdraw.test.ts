@@ -6,11 +6,12 @@ import { expect } from 'chai';
 import { descale } from '../../../src/utils/scaling';
 import * as initSDK from '../../../src/init';
 import * as initMellowConfig from '../../../src/entities/mellow-stateless/config/config';
-import { MockGoerliConfig } from './utils';
+import { MockGoerliConfig, RETRY_ATTEMPTS } from './utils';
 import { withSigner } from '../../utils';
 import { withdraw } from '../../../src/entities/mellow-stateless/mellow-routers/withdraw';
 import { getMellowProduct } from '../../../src/entities/mellow-stateless/getters/getMellowProduct';
 import { IERC20MinimalABI, MellowDepositWrapperABI } from '../../../src/ABIs';
+import { exponentialBackoff } from '../../../src/utils/retry';
 
 const { provider } = waffle;
 const DELTA = 0.00001;
@@ -80,9 +81,13 @@ describe('getRouters', () => {
         const ethWrapper = new ethers.Contract(wrapperId, MellowDepositWrapperABI, signer);
 
         // Make a deposit (since current deposit is 0)
-        await ethWrapper.deposit(routerId, 0, [], {
-          value: '100000000000000000',
-        });
+        await exponentialBackoff(
+          () =>
+            ethWrapper.deposit(routerId, 0, [], {
+              value: '100000000000000000',
+            }),
+          RETRY_ATTEMPTS,
+        );
 
         // Get the token contract
         const wethContract = new ethers.Contract(
@@ -91,26 +96,40 @@ describe('getRouters', () => {
           signer,
         );
 
-        const balance = descale(await wethContract.balanceOf(userAddress), 18);
+        const balance = descale(
+          await exponentialBackoff(() => wethContract.balanceOf(userAddress), RETRY_ATTEMPTS),
+          18,
+        );
 
         const routerState = await getMellowProduct({
           routerId,
           userAddress,
         });
 
-        await withdraw({
-          routerId,
-          vaultId,
-          signer,
-        });
+        await exponentialBackoff(
+          () =>
+            withdraw({
+              routerId,
+              vaultId,
+              signer,
+            }),
+          RETRY_ATTEMPTS,
+        );
 
-        const newBalance = descale(await wethContract.balanceOf(userAddress), 18);
+        const newBalance = descale(
+          await exponentialBackoff(() => wethContract.balanceOf(userAddress), RETRY_ATTEMPTS),
+          18,
+        );
 
-        const { newRouterState } = await withdraw({
-          routerId,
-          vaultId,
-          signer,
-        });
+        const { newRouterState } = await exponentialBackoff(
+          () =>
+            withdraw({
+              routerId,
+              vaultId,
+              signer,
+            }),
+          RETRY_ATTEMPTS,
+        );
 
         // Nothing to withdraw, change 0
         expect(newRouterState.userRouterDeposit - routerState.userRouterDeposit).to.be.closeTo(
@@ -133,11 +152,15 @@ describe('getRouters', () => {
           userAddress,
         });
 
-        const { newRouterState } = await withdraw({
-          routerId,
-          vaultId,
-          signer,
-        });
+        const { newRouterState } = await exponentialBackoff(
+          () =>
+            withdraw({
+              routerId,
+              vaultId,
+              signer,
+            }),
+          RETRY_ATTEMPTS,
+        );
 
         expect(newRouterState.userRouterDeposit - routerState.userRouterDeposit).to.be.closeTo(
           -0.022,
@@ -156,11 +179,15 @@ describe('getRouters', () => {
           userAddress,
         });
 
-        const { newRouterState } = await withdraw({
-          routerId,
-          vaultId,
-          signer,
-        });
+        const { newRouterState } = await exponentialBackoff(
+          () =>
+            withdraw({
+              routerId,
+              vaultId,
+              signer,
+            }),
+          RETRY_ATTEMPTS,
+        );
 
         expect(newRouterState.userRouterDeposit - routerState.userRouterDeposit).to.be.closeTo(
           -27.3,
