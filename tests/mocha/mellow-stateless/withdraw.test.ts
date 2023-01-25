@@ -8,7 +8,7 @@ import * as initSDK from '../../../src/init';
 import * as initMellowConfig from '../../../src/entities/mellow-stateless/config/config';
 import { MockGoerliConfig, RETRY_ATTEMPTS } from './utils';
 import { withSigner } from '../../utils';
-import { withdraw } from '../../../src/entities/mellow-stateless/mellow-routers/withdraw';
+import { withdraw } from '../../../src/entities/mellow-stateless/actions/withdraw';
 import { getMellowProduct } from '../../../src/entities/mellow-stateless/getters/getMellowProduct';
 import { IERC20MinimalABI, MellowDepositWrapperABI } from '../../../src/ABIs';
 import { exponentialBackoff } from '../../../src/utils/retry';

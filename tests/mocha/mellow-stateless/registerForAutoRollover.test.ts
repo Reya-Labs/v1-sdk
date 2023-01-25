@@ -7,7 +7,7 @@ import * as initSDK from '../../../src/init';
 import * as initMellowConfig from '../../../src/entities/mellow-stateless/config/config';
 import { MockGoerliConfig, RETRY_ATTEMPTS } from './utils';
 import { fail, withSigner } from '../../utils';
-import { registerForAutoRollover } from '../../../src/entities/mellow-stateless/mellow-routers/registerForAutoRollover';
+import { registerForAutoRollover } from '../../../src/entities/mellow-stateless/actions/registerForAutoRollover';
 import { exponentialBackoff } from '../../../src/utils/retry';
 
 const { provider } = waffle;

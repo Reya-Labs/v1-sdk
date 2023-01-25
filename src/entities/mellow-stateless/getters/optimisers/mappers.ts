@@ -1,7 +1,7 @@
 import { getTokenInfo } from '../../../../services/getTokenInfo';
 import { sum } from '../../../../utils/functions';
 import { descale } from '../../../../utils/scaling';
-import { closeOrPastMaturity } from '../../config';
+import { closeOrPastMaturity } from '../../config/utils';
 import { getMellowConfig } from '../../config/config';
 import { ContractRouterInfo, RouterInfo, VaultInfo } from '../types';
 
@@ -98,7 +98,7 @@ export const mapRouter = (
 
     underlyingPools,
 
-    tokenId,
+    tokenName,
 
     expired,
     depositable,
