@@ -285,6 +285,32 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
           },
         ],
       },
+      // {
+      //   optimiser: '0x7AaA278531D0baCb2aC483be3edDFf83E09564Aa',
+      //   isVault: false,
+      //   title: 'Cost Test MELLOW - ETH',
+      //   description:
+      //     'The Mellow LP Optimiser runs a permissionless strategy that takes deposits and generates optimised LP fees by providing liquidity on Voltz Protocol.',
+      //   show: true,
+      //   soon: false,
+      //   deprecated: false,
+      //   vaults: [
+      //     {
+      //       address: '0x4FE3444AC2Ee16cAF4661fba06186b09E4F0a706',
+      //       weight: 50,
+      //       pools: ['Compound - ETH'],
+      //       estimatedHistoricApy: [10, 10],
+      //       withdrawable: true,
+      //     },
+      //     {
+      //       address: '0x5de7a5BbEDcE4a739b8a8D1cdA15D71924BDC9f7',
+      //       weight: 50,
+      //       pools: ['Compound - ETH'],
+      //       estimatedHistoricApy: [10, 10],
+      //       withdrawable: true,
+      //     },
+      //   ],
+      // },
     ],
   },
 };
