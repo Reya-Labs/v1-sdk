@@ -4,7 +4,7 @@ import { jest } from '@jest/globals';
 import { ethers } from 'hardhat';
 import { Badge, SeasonUser } from '@voltz-protocol/subgraph-data';
 import { ONE_DAY_IN_SECONDS } from '../../src/constants';
-import SBT from '../../src/entities/communitySbt';
+import { CommunitySBT as SBT } from '../../src';
 import { getSelectedSeasonBadgesUrl, toMillis } from '../../src/utils/communitySbt/helpers';
 import { getSubgraphBadges } from '../../src/utils/communitySbt/getSubgraphBadges';
 import {

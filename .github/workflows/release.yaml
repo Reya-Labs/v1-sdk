@@ -20,7 +20,9 @@ jobs:
       - name: Install dependencies
         run: make install-ci
       - name: Run tests
-        run: GOERLI_URL=${{secrets.GOERLI_URL}} MAINNET_URL=${{secrets.MAINNET_URL}} yarn test:cicd
+        run: GOERLI_URL=${{secrets.GOERLI_URL}} MAINNET_URL=${{secrets.MAINNET_URL}} yarn test:coverage
+      - name: Generate coverage badges
+        run: make generate-coverage-badges
       - name: Build release
         run: make build-release
       - name: Release

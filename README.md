@@ -1,3 +1,7 @@
+| Statements                  | Branches                | Functions                 | Lines             |
+| --------------------------- | ----------------------- | ------------------------- | ----------------- |
+| ![Statements](https://img.shields.io/badge/statements-25.73%25-red.svg?style=flat) | ![Branches](https://img.shields.io/badge/branches-12.84%25-red.svg?style=flat) | ![Functions](https://img.shields.io/badge/functions-14.61%25-red.svg?style=flat) | ![Lines](https://img.shields.io/badge/lines-26.52%25-red.svg?style=flat) |
+
 # Voltz SDK
 
 This is the Typescript SDK for Voltz Protocol v1. The main functions of the SDK which interact with the smart contracts in the [voltz-core repository](https://github.com/Voltz-Protocol/voltz-core) are in the [amm.ts](https://github.com/Voltz-Protocol/v1-sdk/blob/main/src/entities/amm.ts) file. You can also find in-depth documentation on the functions in amm.ts [here](https://docs.voltz.xyz/sdk-and-subgraph/sdk).
