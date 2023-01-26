@@ -5,11 +5,11 @@ import { getSentryTracker } from '../../../init';
 import { exponentialBackoff } from '../../../utils/retry';
 import { getMellowConfig } from '../config/config';
 import { getMellowProduct } from '../getters/getMellowProduct';
-import { RouterInfo } from '../getters/types';
-import { getRouterConfig } from '../utils/getRouterConfig';
+import { OptimiserInfo } from '../getters/types';
+import { getOptimiserConfig } from '../utils/getOptimiserConfig';
 
 type WithdrawArgs = {
-  routerId: string;
+  optimiserId: string;
   vaultId: string;
   signer: ethers.Signer;
 };
@@ -18,22 +18,22 @@ type WithdrawResponse = {
   transaction: {
     receipt: ethers.ContractReceipt;
   };
-  newRouterState: RouterInfo | null;
+  newOptimiserState: OptimiserInfo | null;
 };
 
-const routerWithdraw = async ({
-  routerId,
+const optimiserWithdraw = async ({
+  optimiserId,
   vaultId,
   signer,
 }: WithdrawArgs): Promise<ethers.ContractReceipt> => {
   const config = getMellowConfig();
 
-  const routerConfig = config.MELLOW_ROUTERS.find(
-    (item) => item.router.toLowerCase() === routerId.toLowerCase(),
+  const optimiserConfig = config.MELLOW_OPTIMISERS.find(
+    (item) => item.optimiser.toLowerCase() === optimiserId.toLowerCase(),
   );
 
-  if (!routerConfig) {
-    const errorMessage = 'Router ID not found';
+  if (!optimiserConfig) {
+    const errorMessage = 'Optimiser ID not found';
 
     // Report to Sentry
     const sentryTracker = getSentryTracker();
@@ -42,8 +42,8 @@ const routerWithdraw = async ({
     throw new Error(errorMessage);
   }
 
-  const routerVaultIds = routerConfig.vaults.map((v) => v.address);
-  const vaultIndex = routerVaultIds.findIndex((item) => item === vaultId);
+  const optimiserVaultIds = optimiserConfig.vaults.map((v) => v.address);
+  const vaultIndex = optimiserVaultIds.findIndex((item) => item === vaultId);
   if (vaultIndex < 0) {
     const errorMessage = 'Vault ID not found';
 
@@ -55,7 +55,7 @@ const routerWithdraw = async ({
   }
 
   const erc20RootVaultContract = new ethers.Contract(
-    routerVaultIds[vaultIndex],
+    optimiserVaultIds[vaultIndex],
     Erc20RootVaultABI,
     signer,
   );
@@ -77,10 +77,10 @@ const routerWithdraw = async ({
   const minTokenAmounts = BigNumber.from(0);
   const vaultsOptions = new Array(subvaultsCount).fill(0x0);
 
-  const mellowRouter = new ethers.Contract(routerId, MellowMultiVaultRouterABI, signer);
+  const mellowOptimiser = new ethers.Contract(optimiserId, MellowMultiVaultRouterABI, signer);
 
   try {
-    await mellowRouter.callStatic.claimLPTokens(vaultIndex, [minTokenAmounts], vaultsOptions);
+    await mellowOptimiser.callStatic.claimLPTokens(vaultIndex, [minTokenAmounts], vaultsOptions);
   } catch (error) {
     const errorMessage = 'Unsuccessful claimLPTokens simulation.';
 
@@ -92,13 +92,13 @@ const routerWithdraw = async ({
     throw new Error(errorMessage);
   }
 
-  const gasLimit = await mellowRouter.estimateGas.claimLPTokens(
+  const gasLimit = await mellowOptimiser.estimateGas.claimLPTokens(
     vaultIndex,
     [minTokenAmounts],
     vaultsOptions,
   );
 
-  const tx = await mellowRouter.claimLPTokens(vaultIndex, [minTokenAmounts], vaultsOptions, {
+  const tx = await mellowOptimiser.claimLPTokens(vaultIndex, [minTokenAmounts], vaultsOptions, {
     gasLimit: getGasBuffer(gasLimit),
   });
 
@@ -194,20 +194,22 @@ const vaultWithdraw = async ({
 };
 
 export const withdraw = async (params: WithdrawArgs): Promise<WithdrawResponse> => {
-  const { routerId, signer } = params;
+  const { optimiserId, signer } = params;
 
   // Get Mellow Config
-  const routerConfig = getRouterConfig(params.routerId);
+  const optimiserConfig = getOptimiserConfig(params.optimiserId);
 
-  const receipt = await (routerConfig.isVault ? vaultWithdraw(params) : routerWithdraw(params));
+  const receipt = await (optimiserConfig.isVault
+    ? vaultWithdraw(params)
+    : optimiserWithdraw(params));
 
-  // Get the next state of the router
-  let routerInfo: RouterInfo | null = null;
+  // Get the next state of the optimiser
+  let optimiserInfo: OptimiserInfo | null = null;
   try {
-    // Get the next state of the router
+    // Get the next state of the optimiser
     const userAddress = await exponentialBackoff(() => signer.getAddress());
-    routerInfo = await getMellowProduct({
-      routerId,
+    optimiserInfo = await getMellowProduct({
+      optimiserId,
       userAddress,
     });
   } catch (error) {
@@ -224,6 +226,6 @@ export const withdraw = async (params: WithdrawArgs): Promise<WithdrawResponse> 
     transaction: {
       receipt,
     },
-    newRouterState: routerInfo,
+    newOptimiserState: optimiserInfo,
   };
 };

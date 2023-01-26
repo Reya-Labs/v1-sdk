@@ -12,7 +12,7 @@ import { exponentialBackoff } from '../../../src/utils/retry';
 
 const { provider } = waffle;
 
-describe('Mellow Router:RegisterForAutorollover', () => {
+describe('Mellow Optimiser:RegisterForAutorollover', () => {
   const userAddress = '0xf8f6b70a36f4398f0853a311dc6699aba8333cc1';
 
   const resetNetwork = async (blockNumber: number) => {
@@ -66,16 +66,16 @@ describe('Mellow Router:RegisterForAutorollover', () => {
     await restore();
   });
 
-  describe('ETH router register', () => {
+  describe('ETH optimiser register', () => {
     it('register in vault blocked', async () => {
-      const routerId = '0x62E224d9ae2f4702CC88695e6Ea4aA16D0925BdB';
+      const optimiserId = '0x62E224d9ae2f4702CC88695e6Ea4aA16D0925BdB';
 
       await withSigner(network, userAddress, async (signer) => {
         try {
           await exponentialBackoff(
             () =>
               registerForAutoRollover({
-                routerId,
+                optimiserId,
                 signer,
                 registration: true,
               }),
@@ -87,45 +87,45 @@ describe('Mellow Router:RegisterForAutorollover', () => {
     });
 
     it('register in ETH', async () => {
-      const routerId = '0x704F6E9cB4f7e041CC89B6a49DF8EE2027a55164';
+      const optimiserId = '0x704F6E9cB4f7e041CC89B6a49DF8EE2027a55164';
       await withSigner(network, userAddress, async (signer) => {
-        const { newRouterState } = await exponentialBackoff(
+        const { newOptimiserState } = await exponentialBackoff(
           () =>
             registerForAutoRollover({
-              routerId,
+              optimiserId,
               signer,
               registration: true,
             }),
           RETRY_ATTEMPTS,
         );
 
-        if (!newRouterState) {
+        if (!newOptimiserState) {
           throw new Error('Failure');
         }
 
-        expect(newRouterState.isUserRegisteredForAutoRollover).to.be.eq(true);
+        expect(newOptimiserState.isUserRegisteredForAutoRollover).to.be.eq(true);
       });
     });
 
     it('register in USDC', async () => {
-      const routerId = '0x9f397CD24103A0a0252DeC82a88e656480C53fB7';
+      const optimiserId = '0x9f397CD24103A0a0252DeC82a88e656480C53fB7';
 
       await withSigner(network, userAddress, async (signer) => {
-        const { newRouterState } = await exponentialBackoff(
+        const { newOptimiserState } = await exponentialBackoff(
           () =>
             registerForAutoRollover({
-              routerId,
+              optimiserId,
               signer,
               registration: false,
             }),
           RETRY_ATTEMPTS,
         );
 
-        if (!newRouterState) {
+        if (!newOptimiserState) {
           throw new Error('Failure');
         }
 
-        expect(newRouterState.isUserRegisteredForAutoRollover).to.be.eq(false);
+        expect(newOptimiserState.isUserRegisteredForAutoRollover).to.be.eq(false);
       });
     });
   });

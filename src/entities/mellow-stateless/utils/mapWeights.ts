@@ -1,7 +1,7 @@
 import { validateWeights } from './validateWeights';
 
 export const mapWeights = (
-  routerVaultIds: string[],
+  optimiserVaultIds: string[],
   spareWeights: [string, number][],
 ): number[] => {
   const uniqueVaultIds = Array.from(new Set(spareWeights.map((w) => w[0])));
@@ -10,12 +10,12 @@ export const mapWeights = (
     throw new Error('Duplicate vault ids in spare weights');
   }
 
-  if (!uniqueVaultIds.every((id) => routerVaultIds.find((rootId) => rootId === id))) {
+  if (!uniqueVaultIds.every((id) => optimiserVaultIds.find((rootId) => rootId === id))) {
     throw new Error('Spare vault id not found');
   }
 
-  const weights = routerVaultIds.map((routerVaultId) => {
-    const weight = spareWeights.find((w) => w[0] === routerVaultId);
+  const weights = optimiserVaultIds.map((optimiserVaultId) => {
+    const weight = spareWeights.find((w) => w[0] === optimiserVaultId);
     return weight ? weight[1] : 0;
   });
 

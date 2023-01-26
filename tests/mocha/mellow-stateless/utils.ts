@@ -2,9 +2,9 @@ import { NetworkConfiguration } from '../../../src/entities/mellow-stateless/con
 
 export const MockGoerliConfig: NetworkConfiguration = {
   MELLOW_LENS: '0xc4da22ab1f2726D073d5a796856961D02b0E4c61',
-  MELLOW_ROUTERS: [
+  MELLOW_OPTIMISERS: [
     {
-      router: '0x62E224d9ae2f4702CC88695e6Ea4aA16D0925BdB',
+      optimiser: '0x62E224d9ae2f4702CC88695e6Ea4aA16D0925BdB',
       isVault: true,
       title: 'MELLOW - ETH',
       description: 'A',
@@ -22,7 +22,7 @@ export const MockGoerliConfig: NetworkConfiguration = {
       ],
     },
     {
-      router: '0x704F6E9cB4f7e041CC89B6a49DF8EE2027a55164',
+      optimiser: '0x704F6E9cB4f7e041CC89B6a49DF8EE2027a55164',
       isVault: false,
       title: 'MELLOW - ETH',
       description: 'B',
@@ -75,7 +75,7 @@ export const MockGoerliConfig: NetworkConfiguration = {
       ],
     },
     {
-      router: '0x9f397CD24103A0a0252DeC82a88e656480C53fB7',
+      optimiser: '0x9f397CD24103A0a0252DeC82a88e656480C53fB7',
       isVault: false,
       title: 'MELLOW - USDC',
       description: 'C',
@@ -114,7 +114,7 @@ export const MockGoerliConfig: NetworkConfiguration = {
       ],
     },
     {
-      router: '0xB1EBCC0367c775D9447DFb0B55082aA694113ae0',
+      optimiser: '0xB1EBCC0367c775D9447DFb0B55082aA694113ae0',
       isVault: false,
       title: 'MELLOW - USDT',
       description: 'D',

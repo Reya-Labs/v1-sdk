@@ -6,10 +6,10 @@ type VaultInfo = {
   withdrawable: boolean;
 };
 
-export type MellowRouter = {
+export type MellowOptimiser = {
   isVault: boolean;
 
-  router: string;
+  optimiser: string;
   show: boolean;
   soon: boolean;
   deprecated: boolean;
@@ -20,5 +20,5 @@ export type MellowRouter = {
 
 export type NetworkConfiguration = {
   MELLOW_LENS: string;
-  MELLOW_ROUTERS: MellowRouter[];
+  MELLOW_OPTIMISERS: MellowOptimiser[];
 };

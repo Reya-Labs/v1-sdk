@@ -7,7 +7,7 @@ import { mapWeights } from '../../../src/entities/mellow-stateless/utils/mapWeig
 import * as initSDK from '../../../src/init';
 import * as initMellowConfig from '../../../src/entities/mellow-stateless/config/config';
 import { MockGoerliConfig } from './utils';
-import { getRouterConfig } from '../../../src/entities/mellow-stateless/utils/getRouterConfig';
+import { getOptimiserConfig } from '../../../src/entities/mellow-stateless/utils/getOptimiserConfig';
 import { fail } from '../../utils';
 import { validateWeights } from '../../../src/entities/mellow-stateless/utils/validateWeights';
 
@@ -47,13 +47,13 @@ describe('tests for utils', () => {
     await restore();
   });
 
-  describe('getRouterConfig', () => {
+  describe('getOptimiserConfig', () => {
     it('existing Id', async () => {
-      const routerId = '0x62E224d9ae2f4702CC88695e6Ea4aA16D0925BdB';
-      const routerConfig = getRouterConfig(routerId);
+      const optimiserId = '0x62E224d9ae2f4702CC88695e6Ea4aA16D0925BdB';
+      const optimiserConfig = getOptimiserConfig(optimiserId);
 
-      expect(routerConfig).to.be.deep.eq({
-        router: '0x62E224d9ae2f4702CC88695e6Ea4aA16D0925BdB',
+      expect(optimiserConfig).to.be.deep.eq({
+        optimiser: '0x62E224d9ae2f4702CC88695e6Ea4aA16D0925BdB',
         isVault: true,
         title: 'MELLOW - ETH',
         description: 'A',
@@ -73,12 +73,12 @@ describe('tests for utils', () => {
     });
 
     it('non-existing ID', async () => {
-      const routerId = '0x62E224d9ae2f4702CC88695e6Ea4aA16D0925BdC';
+      const optimiserId = '0x62E224d9ae2f4702CC88695e6Ea4aA16D0925BdC';
       try {
-        getRouterConfig(routerId);
+        getOptimiserConfig(optimiserId);
         fail();
       } catch (error: unknown) {
-        expect((error as Error).message).to.be.eq('Router ID not found');
+        expect((error as Error).message).to.be.eq('Optimiser ID not found');
       }
     });
   });

@@ -3,28 +3,28 @@ import { sum } from '../../../../utils/functions';
 import { descale } from '../../../../utils/scaling';
 import { closeOrPastMaturity } from '../../config/utils';
 import { getMellowConfig } from '../../config/config';
-import { ContractRouterInfo, RouterInfo, VaultInfo } from '../types';
+import { ContractOptimiserInfo, OptimiserInfo, VaultInfo } from '../types';
 
-export const mapRouter = (
-  routerConfig: ReturnType<typeof getMellowConfig>['MELLOW_ROUTERS'][0],
-  optimiserContractInfo: ContractRouterInfo,
-): RouterInfo => {
+export const mapOptimiser = (
+  optimiserConfig: ReturnType<typeof getMellowConfig>['MELLOW_OPTIMISERS'][0],
+  optimiserContractInfo: ContractOptimiserInfo,
+): OptimiserInfo => {
   // Get token information
   const tokenId = optimiserContractInfo.token;
   const { name: tokenName, decimals: tokenDecimals } = getTokenInfo(tokenId);
   const isETH = tokenName === 'ETH';
 
-  // Get latest maturity and decide whether the entire router is expired or not
+  // Get latest maturity and decide whether the entire optimiser is expired or not
   const latestMaturityInMS = Math.max(
     ...optimiserContractInfo.erc20RootVaults.map((v) => v.latestMaturity.toNumber() * 1000),
   );
   const expired = closeOrPastMaturity(latestMaturityInMS);
 
   // Decide whether the vault is depositable or not
-  const depositable = !expired && !routerConfig.deprecated;
+  const depositable = !expired && !optimiserConfig.deprecated;
 
-  // Get underlying pool of the router
-  const underlyingPools = routerConfig.vaults.reduce((allPools, currentVault) => {
+  // Get underlying pool of the optimiser
+  const underlyingPools = optimiserConfig.vaults.reduce((allPools, currentVault) => {
     if (currentVault.weight > 0) {
       const appendingPools = currentVault.pools.filter((p) => !allPools.includes(p));
       return [...allPools, ...appendingPools];
@@ -42,13 +42,14 @@ export const mapRouter = (
   const vaultsContractInfo = optimiserContractInfo.erc20RootVaults;
 
   // Check if the on-chain data corresponds to the config file
-  if (routerConfig.vaults.length > vaultsContractInfo.length) {
+  if (optimiserConfig.vaults.length > vaultsContractInfo.length) {
     throw new Error('Configuration has more vaults than on-chain.');
   }
 
-  for (let i = 0; i < routerConfig.vaults.length; i++) {
+  for (let i = 0; i < optimiserConfig.vaults.length; i++) {
     if (
-      routerConfig.vaults[i].address.toLowerCase() !== vaultsContractInfo[i].rootVault.toLowerCase()
+      optimiserConfig.vaults[i].address.toLowerCase() !==
+      vaultsContractInfo[i].rootVault.toLowerCase()
     ) {
       throw new Error(`Vault ${i} address doesn't correspond to on-chain vault`);
     }
@@ -60,7 +61,7 @@ export const mapRouter = (
   const pendingDepositsCount = descale(optimiserContractInfo.pendingDepositsCount, tokenDecimals);
 
   // Get vault information
-  const vaults = routerConfig.vaults.map((vaultConfig, vaultIndex): VaultInfo => {
+  const vaults = optimiserConfig.vaults.map((vaultConfig, vaultIndex): VaultInfo => {
     const vaultContractInfo = vaultsContractInfo[vaultIndex];
 
     // Get maturity timestamp
@@ -95,18 +96,25 @@ export const mapRouter = (
   });
 
   return {
-    routerId: routerConfig.router,
+    optimiserId: optimiserConfig.optimiser,
 
     feePerDeposit,
+    // TODO: adjust here
+    feePerDepositUSD: feePerDeposit,
+
     accumulatedFees,
+    // TODO: adjust here
+    accumulatedFeesUSD: accumulatedFees,
+
     pendingDepositsCount,
 
-    soon: routerConfig.soon,
-    title: routerConfig.title,
-    description: routerConfig.description,
+    soon: optimiserConfig.soon,
+    title: optimiserConfig.title,
+    description: optimiserConfig.description,
 
     underlyingPools,
 
+    tokenId,
     tokenName,
 
     expired,
@@ -114,9 +122,9 @@ export const mapRouter = (
 
     userWalletBalance,
 
-    userRouterDeposit: sum(vaults.map((vault) => vault.userVaultDeposit)),
-    userRouterCommittedDeposit: sum(vaults.map((vault) => vault.userVaultCommittedDeposit)),
-    userRouterPendingDeposit: sum(vaults.map((vault) => vault.userVaultPendingDeposit)),
+    userOptimiserDeposit: sum(vaults.map((vault) => vault.userVaultDeposit)),
+    userOptimiserCommittedDeposit: sum(vaults.map((vault) => vault.userVaultCommittedDeposit)),
+    userOptimiserPendingDeposit: sum(vaults.map((vault) => vault.userVaultPendingDeposit)),
     isUserRegisteredForAutoRollover: optimiserContractInfo.isRegisteredForAutoRollover,
 
     vaults,

@@ -4,12 +4,12 @@ import { getGasBuffer } from '../../../constants';
 import { getSentryTracker } from '../../../init';
 import { exponentialBackoff } from '../../../utils/retry';
 import { getOptimiserInfo } from '../getters/optimisers/getOptimiserInfo';
-import { RouterInfo } from '../getters/types';
-import { getRouterConfig } from '../utils/getRouterConfig';
+import { OptimiserInfo } from '../getters/types';
+import { getOptimiserConfig } from '../utils/getOptimiserConfig';
 import { mapWeights } from '../utils/mapWeights';
 
 type RolloverArgs = {
-  routerId: string;
+  optimiserId: string;
   vaultId: string;
   spareWeights: [string, number][];
   signer: ethers.Signer;
@@ -19,20 +19,20 @@ type RolloverResponse = {
   transaction: {
     receipt: ethers.ContractReceipt;
   };
-  newRouterState: RouterInfo | null;
+  newOptimiserState: OptimiserInfo | null;
 };
 
 export const rollover = async ({
-  routerId,
+  optimiserId,
   vaultId,
   spareWeights,
   signer,
 }: RolloverArgs): Promise<RolloverResponse> => {
   // Get Mellow Config
-  const routerConfig = getRouterConfig(routerId);
+  const optimiserConfig = getOptimiserConfig(optimiserId);
 
-  // Rollover is only allowed for routers
-  if (routerConfig.isVault) {
+  // Rollover is only allowed for optimisers
+  if (optimiserConfig.isVault) {
     const errorMessage = 'Rollover not supported for vaults.';
 
     // Report to Sentry
@@ -42,12 +42,12 @@ export const rollover = async ({
     throw new Error(errorMessage);
   }
 
-  // Get Router contract
-  const mellowRouter = new ethers.Contract(routerId, MellowMultiVaultRouterABI, signer);
+  // Get Optimiser contract
+  const mellowOptimiser = new ethers.Contract(optimiserId, MellowMultiVaultRouterABI, signer);
 
   // Get the index of the specified vault
-  const routerVaultIds = routerConfig.vaults.map((v) => v.address);
-  const vaultIndex = routerVaultIds.findIndex((item) => item === vaultId);
+  const optimiserVaultIds = optimiserConfig.vaults.map((v) => v.address);
+  const vaultIndex = optimiserVaultIds.findIndex((item) => item === vaultId);
   if (vaultIndex < 0) {
     const errorMessage = 'Vault ID not found.';
 
@@ -60,14 +60,14 @@ export const rollover = async ({
 
   // Get the Vault Contract
   const erc20RootVaultContract = new ethers.Contract(
-    routerVaultIds[vaultIndex],
+    optimiserVaultIds[vaultIndex],
     Erc20RootVaultABI,
     signer,
   );
 
   // Map spare weights to array
   const weights = mapWeights(
-    routerConfig.vaults.map((v) => v.address),
+    optimiserConfig.vaults.map((v) => v.address),
     spareWeights,
   );
 
@@ -91,7 +91,7 @@ export const rollover = async ({
 
   // Simulate the transaction
   try {
-    await mellowRouter.callStatic.rolloverLPTokens(
+    await mellowOptimiser.callStatic.rolloverLPTokens(
       vaultIndex,
       [minTokenAmounts],
       vaultsOptions,
@@ -109,7 +109,7 @@ export const rollover = async ({
   }
 
   // Get the gas limit
-  const gasLimit = await mellowRouter.estimateGas.rolloverLPTokens(
+  const gasLimit = await mellowOptimiser.estimateGas.rolloverLPTokens(
     vaultIndex,
     [minTokenAmounts],
     vaultsOptions,
@@ -117,7 +117,7 @@ export const rollover = async ({
   );
 
   // Send the transaction
-  const tx = await mellowRouter.rolloverLPTokens(
+  const tx = await mellowOptimiser.rolloverLPTokens(
     vaultIndex,
     [minTokenAmounts],
     vaultsOptions,
@@ -142,11 +142,11 @@ export const rollover = async ({
     throw new Error(errorMessage);
   }
 
-  // Get the next state of the router
-  let routerInfo: RouterInfo | null = null;
+  // Get the next state of the optimiser
+  let optimiserInfo: OptimiserInfo | null = null;
   try {
     const userAddress = await exponentialBackoff(() => signer.getAddress());
-    routerInfo = await getOptimiserInfo(routerId, userAddress);
+    optimiserInfo = await getOptimiserInfo(optimiserId, userAddress);
   } catch (error) {
     const errorMessage = 'Failed to get new state after deposit';
 
@@ -161,6 +161,6 @@ export const rollover = async ({
     transaction: {
       receipt,
     },
-    newRouterState: routerInfo,
+    newOptimiserState: optimiserInfo,
   };
 };

@@ -3,9 +3,9 @@ import { MellowMultiVaultRouterABI } from '../../../ABIs';
 import { getGasBuffer } from '../../../constants';
 import { getTokenInfo } from '../../../services/getTokenInfo';
 import { scale } from '../../../utils/scaling';
-import { getRouterConfig } from '../utils/getRouterConfig';
+import { getOptimiserConfig } from '../utils/getOptimiserConfig';
 import { mapWeights } from '../utils/mapWeights';
-import { RouterInfo } from '../getters/types';
+import { OptimiserInfo } from '../getters/types';
 import { getOptimiserInfo } from '../getters/optimisers/getOptimiserInfo';
 import { exponentialBackoff } from '../../../utils/retry';
 import { getProvider, getSentryTracker } from '../../../init';
@@ -13,7 +13,7 @@ import { convertGasUnitsToUSD } from '../../../utils/mellowHelpers/convertGasUni
 
 type DepositArgs = {
   onlyGasEstimate?: boolean;
-  routerId: string;
+  optimiserId: string;
   amount: number;
   spareWeights: [string, number][];
   signer: ethers.Signer;
@@ -22,21 +22,21 @@ type DepositArgs = {
 type DepositResponse = {
   gasEstimateUsd: number;
   receipt: ethers.ContractReceipt | null;
-  newRouterState: RouterInfo | null;
+  newOptimiserState: OptimiserInfo | null;
 };
 
 export const deposit = async ({
   onlyGasEstimate,
-  routerId,
+  optimiserId,
   amount,
   spareWeights,
   signer,
 }: DepositArgs): Promise<DepositResponse> => {
   // Get Mellow Config
-  const routerConfig = getRouterConfig(routerId);
+  const optimiserConfig = getOptimiserConfig(optimiserId);
 
-  // Deposit is only allowed for routers
-  if (routerConfig.isVault) {
+  // Deposit is only allowed for optimisers
+  if (optimiserConfig.isVault) {
     const errorMessage = 'Deposit not supported for vaults.';
 
     // Report to Sentry
@@ -46,15 +46,15 @@ export const deposit = async ({
     throw new Error(errorMessage);
   }
 
-  // Get Router contract
-  const mellowRouter = new ethers.Contract(routerId, MellowMultiVaultRouterABI, signer);
+  // Get Optimiser contract
+  const mellowOptimiser = new ethers.Contract(optimiserId, MellowMultiVaultRouterABI, signer);
 
   // Get token address
   let tokenId: string;
   try {
-    tokenId = await exponentialBackoff(() => mellowRouter.token());
+    tokenId = await exponentialBackoff(() => mellowOptimiser.token());
   } catch (error) {
-    const errorMessage = 'Failed to fetch router token';
+    const errorMessage = 'Failed to fetch optimiser token';
 
     // Report to Sentry
     const sentryTracker = getSentryTracker();
@@ -73,7 +73,7 @@ export const deposit = async ({
 
   // Map spare weights to array
   const weights = mapWeights(
-    routerConfig.vaults.map((v) => v.address),
+    optimiserConfig.vaults.map((v) => v.address),
     spareWeights,
   );
 
@@ -87,9 +87,9 @@ export const deposit = async ({
   // Simulate deposit
   try {
     if (isETH) {
-      await mellowRouter.callStatic.depositEth(weights, tempOverrides);
+      await mellowOptimiser.callStatic.depositEth(weights, tempOverrides);
     } else {
-      await mellowRouter.callStatic.depositErc20(scaledAmount, weights);
+      await mellowOptimiser.callStatic.depositErc20(scaledAmount, weights);
     }
   } catch (error) {
     const errorMessage = 'Unsuccessful deposit simulation.';
@@ -104,8 +104,8 @@ export const deposit = async ({
 
   // Estimate gas
   const gasLimit = isETH
-    ? await mellowRouter.estimateGas.depositEth(weights, tempOverrides)
-    : await mellowRouter.estimateGas.depositErc20(scaledAmount, weights);
+    ? await mellowOptimiser.estimateGas.depositEth(weights, tempOverrides)
+    : await mellowOptimiser.estimateGas.depositErc20(scaledAmount, weights);
   tempOverrides.gasLimit = getGasBuffer(gasLimit);
 
   const provider = getProvider();
@@ -115,14 +115,14 @@ export const deposit = async ({
     return {
       gasEstimateUsd,
       receipt: null,
-      newRouterState: null,
+      newOptimiserState: null,
     };
   }
 
   // Send transaction
   const tx: ethers.ContractTransaction = isETH
-    ? await mellowRouter.depositEth(weights, tempOverrides)
-    : await mellowRouter.depositErc20(scaledAmount, weights, tempOverrides);
+    ? await mellowOptimiser.depositEth(weights, tempOverrides)
+    : await mellowOptimiser.depositErc20(scaledAmount, weights, tempOverrides);
 
   // Wait for the receipt
   let receipt: ethers.ContractReceipt;
@@ -139,11 +139,11 @@ export const deposit = async ({
     throw new Error(errorMessage);
   }
 
-  // Get the next state of the router
-  let routerInfo: RouterInfo | null = null;
+  // Get the next state of the optimiser
+  let optimiserInfo: OptimiserInfo | null = null;
   try {
     const userAddress = await exponentialBackoff(() => signer.getAddress());
-    routerInfo = await getOptimiserInfo(routerId, userAddress);
+    optimiserInfo = await getOptimiserInfo(optimiserId, userAddress);
   } catch (error) {
     const errorMessage = 'Failed to get new state after deposit';
 
@@ -157,6 +157,6 @@ export const deposit = async ({
   return {
     gasEstimateUsd,
     receipt,
-    newRouterState: routerInfo,
+    newOptimiserState: optimiserInfo,
   };
 };

@@ -2,30 +2,30 @@ import { ethers } from 'ethers';
 import { MellowLensContractABI } from '../../../../ABIs';
 import { getProvider, getSentryTracker } from '../../../../init';
 import { getMellowConfig } from '../../config/config';
-import { RouterInfo, ContractRouterInfo } from '../types';
-import { getRouterConfig } from '../../utils/getRouterConfig';
-import { mapRouter } from './mappers';
+import { OptimiserInfo } from '../types';
+import { getOptimiserConfig } from '../../utils/getOptimiserConfig';
+import { mapOptimiser } from './mappers';
 import { ZERO_ADDRESS } from '../../../../constants';
 import { exponentialBackoff } from '../../../../utils/retry';
 
 export const getOptimiserInfo = async (
-  routerId: string,
+  optimiserId: string,
   userAddress: string = ZERO_ADDRESS,
-): Promise<RouterInfo> => {
+): Promise<OptimiserInfo> => {
   const { MELLOW_LENS } = getMellowConfig();
-  const routerConfig = getRouterConfig(routerId);
+  const optimiserConfig = getOptimiserConfig(optimiserId);
   const provider = getProvider();
 
   const mellowLensContract = new ethers.Contract(MELLOW_LENS, MellowLensContractABI, provider);
 
   try {
-    const optimisersContractInfo: ContractRouterInfo[] = await exponentialBackoff(() =>
-      mellowLensContract.getOptimisersInfo([routerConfig.router], userAddress),
+    const optimisersContractInfo = await exponentialBackoff(() =>
+      mellowLensContract.getOptimisersInfo([optimiserConfig.optimiser], userAddress),
     );
 
-    const router = mapRouter(routerConfig, optimisersContractInfo[0]);
+    const optimiser = mapOptimiser(optimiserConfig, optimisersContractInfo[0]);
 
-    return router;
+    return optimiser;
   } catch (error) {
     const sentryTracker = getSentryTracker();
     sentryTracker.captureException(error);

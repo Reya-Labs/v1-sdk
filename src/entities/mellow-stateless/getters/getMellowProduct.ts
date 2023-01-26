@@ -1,20 +1,20 @@
 import { ZERO_ADDRESS } from '../../../constants';
-import { getRouterConfig } from '../utils/getRouterConfig';
+import { getOptimiserConfig } from '../utils/getOptimiserConfig';
 import { getOptimiserInfo } from './optimisers/getOptimiserInfo';
-import { RouterInfo } from './types';
+import { OptimiserInfo } from './types';
 import { getVaultInfo } from './vaults/getVaultInfo';
 
 export const getMellowProduct = async ({
-  routerId,
+  optimiserId,
   userAddress = ZERO_ADDRESS,
 }: {
-  routerId: string;
+  optimiserId: string;
   userAddress: string;
-}): Promise<RouterInfo> => {
-  const routerConfig = getRouterConfig(routerId);
-  if (routerConfig.isVault) {
-    return getVaultInfo(routerConfig.router, userAddress);
+}): Promise<OptimiserInfo> => {
+  const optimiserConfig = getOptimiserConfig(optimiserId);
+  if (optimiserConfig.isVault) {
+    return getVaultInfo(optimiserConfig.optimiser, userAddress);
   }
 
-  return getOptimiserInfo(routerConfig.router, userAddress);
+  return getOptimiserInfo(optimiserConfig.optimiser, userAddress);
 };

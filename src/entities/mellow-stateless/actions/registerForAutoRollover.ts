@@ -5,12 +5,12 @@ import { getProvider, getSentryTracker } from '../../../init';
 import { convertGasUnitsToUSD } from '../../../utils/mellowHelpers/convertGasUnitsToUSD';
 import { exponentialBackoff } from '../../../utils/retry';
 import { getOptimiserInfo } from '../getters/optimisers/getOptimiserInfo';
-import { RouterInfo } from '../getters/types';
-import { getRouterConfig } from '../utils/getRouterConfig';
+import { OptimiserInfo } from '../getters/types';
+import { getOptimiserConfig } from '../utils/getOptimiserConfig';
 
 type RegisterForAutoRolloverArgs = {
   onlyGasEstimate?: boolean;
-  routerId: string;
+  optimiserId: string;
   registration: boolean;
   signer: ethers.Signer;
 };
@@ -18,26 +18,26 @@ type RegisterForAutoRolloverArgs = {
 type RegisterForAutoRolloverResponse = {
   gasEstimateUsd: number;
   receipt: ethers.ContractReceipt | null;
-  newRouterState: RouterInfo | null;
+  newOptimiserState: OptimiserInfo | null;
 };
 
 export const registerForAutoRollover = async ({
   onlyGasEstimate,
-  routerId,
+  optimiserId,
   registration,
   signer,
 }: RegisterForAutoRolloverArgs): Promise<RegisterForAutoRolloverResponse> => {
   // Get Mellow Config
-  const routerConfig = getRouterConfig(routerId);
+  const optimiserConfig = getOptimiserConfig(optimiserId);
 
-  if (routerConfig.isVault) {
+  if (optimiserConfig.isVault) {
     throw new Error('Deposit not supported for vaults.');
   }
 
-  const mellowRouter = new ethers.Contract(routerId, MellowMultiVaultRouterABI, signer);
+  const mellowOptimiser = new ethers.Contract(optimiserId, MellowMultiVaultRouterABI, signer);
 
   try {
-    await mellowRouter.callStatic.registerForAutoRollover(registration);
+    await mellowOptimiser.callStatic.registerForAutoRollover(registration);
   } catch (err) {
     const errorMessage = 'Unsuccessful auto-rollover registration simulation';
 
@@ -48,7 +48,7 @@ export const registerForAutoRollover = async ({
     throw new Error(errorMessage);
   }
 
-  const gasLimit = await mellowRouter.estimateGas.registerForAutoRollover(registration);
+  const gasLimit = await mellowOptimiser.estimateGas.registerForAutoRollover(registration);
 
   const provider = getProvider();
   const gasEstimateUsd = await convertGasUnitsToUSD(provider, gasLimit.toNumber());
@@ -57,11 +57,11 @@ export const registerForAutoRollover = async ({
     return {
       gasEstimateUsd,
       receipt: null,
-      newRouterState: null,
+      newOptimiserState: null,
     };
   }
 
-  const tx = await mellowRouter.registerForAutoRollover(registration, {
+  const tx = await mellowOptimiser.registerForAutoRollover(registration, {
     gasLimit: getGasBuffer(gasLimit),
   });
 
@@ -80,11 +80,11 @@ export const registerForAutoRollover = async ({
     throw new Error(errorMessage);
   }
 
-  // Get the next state of the router
-  let routerInfo: RouterInfo | null = null;
+  // Get the next state of the optimiser
+  let optimiserInfo: OptimiserInfo | null = null;
   try {
     const userAddress = await exponentialBackoff(() => signer.getAddress());
-    routerInfo = await getOptimiserInfo(routerId, userAddress);
+    optimiserInfo = await getOptimiserInfo(optimiserId, userAddress);
   } catch (error) {
     const errorMessage = 'Failed to get new state after deposit';
 
@@ -98,6 +98,6 @@ export const registerForAutoRollover = async ({
   return {
     gasEstimateUsd,
     receipt,
-    newRouterState: routerInfo,
+    newOptimiserState: optimiserInfo,
   };
 };
