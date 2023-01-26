@@ -19,3 +19,6 @@ code-quality-check:
 
 release:
 	yarn release
+
+generate-coverage-badges:
+	yarn generate:coverage-badges
