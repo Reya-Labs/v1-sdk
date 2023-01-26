@@ -3,9 +3,9 @@ import { NetworkConfiguration } from './types';
 const networkConfigurations: { [key: string]: NetworkConfiguration } = {
   mainnet: {
     MELLOW_LENS: '0x0000000000000000000000000000000000000000',
-    MELLOW_ROUTERS: [
+    MELLOW_OPTIMISERS: [
       {
-        router: '0xC99c70492Bc15c056813d1ddA95C89Bb285Cdc86',
+        optimiser: '0xC99c70492Bc15c056813d1ddA95C89Bb285Cdc86',
         isVault: true,
         title: 'MELLOW - ETH',
         description:
@@ -25,7 +25,7 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
       },
 
       {
-        router: '0xF875B4BD81b1be40775652d8fDC174512C36DB20',
+        optimiser: '0xF875B4BD81b1be40775652d8fDC174512C36DB20',
         isVault: false,
         title: 'MELLOW - USDC',
         description: 'Optimised for LPing across pools in 50x levered positions.',
@@ -65,7 +65,7 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
       },
 
       {
-        router: '0x1963efb3B756e7D17D0e54645339e7E037705cc1',
+        optimiser: '0x1963efb3B756e7D17D0e54645339e7E037705cc1',
         isVault: false,
         title: 'MELLOW - ETH',
         description: 'Optimised for Lping across pools in 50x levered positions.',
@@ -91,7 +91,7 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
       },
 
       {
-        router: '0xD6e133B9C82F04734B48d5808800078038231a22',
+        optimiser: '0xD6e133B9C82F04734B48d5808800078038231a22',
         isVault: false,
         title: 'MELLOW - DAI',
         description: 'Optimised for LPing across pools in 50x levered positions.',
@@ -117,7 +117,7 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
       },
 
       {
-        router: '0x9c1100A321ab778cE5d3B42c7b99f44afc3A4c41',
+        optimiser: '0x9c1100A321ab778cE5d3B42c7b99f44afc3A4c41',
         isVault: false,
         title: 'MELLOW - USDT',
         description: 'Optimised for LPing across pools in 50x levered positions.',
@@ -145,9 +145,9 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
   },
   goerli: {
     MELLOW_LENS: '0xc4da22ab1f2726D073d5a796856961D02b0E4c61',
-    MELLOW_ROUTERS: [
+    MELLOW_OPTIMISERS: [
       {
-        router: '0x62E224d9ae2f4702CC88695e6Ea4aA16D0925BdB',
+        optimiser: '0x62E224d9ae2f4702CC88695e6Ea4aA16D0925BdB',
         isVault: true,
         title: 'MELLOW - ETH',
         description:
@@ -166,7 +166,7 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
         ],
       },
       {
-        router: '0x704F6E9cB4f7e041CC89B6a49DF8EE2027a55164',
+        optimiser: '0x704F6E9cB4f7e041CC89B6a49DF8EE2027a55164',
         isVault: false,
         title: 'MELLOW - ETH',
         description:
@@ -220,7 +220,7 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
         ],
       },
       {
-        router: '0x9f397CD24103A0a0252DeC82a88e656480C53fB7',
+        optimiser: '0x9f397CD24103A0a0252DeC82a88e656480C53fB7',
         isVault: false,
         title: 'MELLOW - USDC',
         description:
@@ -260,7 +260,7 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
         ],
       },
       {
-        router: '0xB1EBCC0367c775D9447DFb0B55082aA694113ae0',
+        optimiser: '0xB1EBCC0367c775D9447DFb0B55082aA694113ae0',
         isVault: false,
         title: 'MELLOW - USDT',
         description:

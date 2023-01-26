@@ -5,31 +5,33 @@ import { getProvider, getSentryTracker } from '../../../init';
 import { convertGasUnitsToUSD } from '../../../utils/mellowHelpers/convertGasUnitsToUSD';
 import { exponentialBackoff } from '../../../utils/retry';
 import { getOptimiserInfo } from '../getters/optimisers/getOptimiserInfo';
-import { RouterInfo } from '../getters/types';
-import { getRouterConfig } from '../utils/getRouterConfig';
+import { OptimiserInfo } from '../getters/types';
+import { getOptimiserConfig } from '../utils/getOptimiserConfig';
 
 type SubmitAllBatchesForFeeArgs = {
   onlyGasEstimate?: boolean;
-  routerId: string;
-  signer: ethers.Signer;
+  optimiserId: string;
+  signer: ethers.Signer | null;
 };
 
 type SubmitAllBatchesForFeeResponse = {
   gasEstimateUsd: number;
   receipt: ethers.ContractReceipt | null;
-  newRouterState: RouterInfo | null;
+  newOptimiserState: OptimiserInfo | null;
 };
 
 export const submitAllBatchesForFee = async ({
   onlyGasEstimate,
-  routerId,
+  optimiserId,
   signer,
 }: SubmitAllBatchesForFeeArgs): Promise<SubmitAllBatchesForFeeResponse> => {
-  // Get Mellow Config
-  const routerConfig = getRouterConfig(routerId);
+  const provider = getProvider();
 
-  // Rollover is only allowed for routers
-  if (routerConfig.isVault) {
+  // Get Mellow Config
+  const optimiserConfig = getOptimiserConfig(optimiserId);
+
+  // Submit batch is only allowed for optimisers
+  if (optimiserConfig.isVault) {
     const errorMessage = 'Submit batch not supported for vaults.';
 
     // Report to Sentry
@@ -39,12 +41,12 @@ export const submitAllBatchesForFee = async ({
     throw new Error(errorMessage);
   }
 
-  // Get Router contract
-  const mellowRouter = new ethers.Contract(routerId, MellowMultiVaultRouterABI, signer);
+  // Get Optimiser contract
+  let mellowOptimiser = new ethers.Contract(optimiserId, MellowMultiVaultRouterABI, provider);
 
   // Simulate the transaction
   try {
-    await mellowRouter.callStatic.submitAllBatchesForFee();
+    await mellowOptimiser.callStatic.submitAllBatchesForFee();
   } catch (error) {
     const errorMessage = 'Unsuccessful Submit Batch simulation.';
 
@@ -57,21 +59,31 @@ export const submitAllBatchesForFee = async ({
   }
 
   // Get the gas limit
-  const gasLimit = await mellowRouter.estimateGas.submitAllBatchesForFee();
-
-  const provider = getProvider();
+  const gasLimit = await mellowOptimiser.estimateGas.submitAllBatchesForFee();
   const gasEstimateUsd = await convertGasUnitsToUSD(provider, gasLimit.toNumber());
 
   if (onlyGasEstimate) {
     return {
       gasEstimateUsd,
       receipt: null,
-      newRouterState: null,
+      newOptimiserState: null,
     };
   }
 
+  if (!signer) {
+    const errorMessage = 'Signer needs to be passed to execute submit batch';
+
+    // Report to Sentry
+    const sentryTracker = getSentryTracker();
+    sentryTracker.captureMessage(errorMessage);
+
+    throw new Error(errorMessage);
+  }
+
+  mellowOptimiser = new ethers.Contract(optimiserId, MellowMultiVaultRouterABI, signer);
+
   // Send the transaction
-  const tx = await mellowRouter.rolloverLPTokens(submitAllBatchesForFee, {
+  const tx = await mellowOptimiser.submitAllBatchesForFee({
     gasLimit: getGasBuffer(gasLimit),
   });
 
@@ -90,11 +102,11 @@ export const submitAllBatchesForFee = async ({
     throw new Error(errorMessage);
   }
 
-  // Get the next state of the router
-  let routerInfo: RouterInfo | null = null;
+  // Get the next state of the optimiser
+  let optimiserInfo: OptimiserInfo | null = null;
   try {
     const userAddress = await exponentialBackoff(() => signer.getAddress());
-    routerInfo = await getOptimiserInfo(routerId, userAddress);
+    optimiserInfo = await getOptimiserInfo(optimiserId, userAddress);
   } catch (error) {
     const errorMessage = 'Failed to get new state after deposit';
 
@@ -108,6 +120,6 @@ export const submitAllBatchesForFee = async ({
   return {
     gasEstimateUsd,
     receipt,
-    newRouterState: routerInfo,
+    newOptimiserState: optimiserInfo,
   };
 };

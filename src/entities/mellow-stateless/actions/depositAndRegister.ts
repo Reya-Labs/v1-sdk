@@ -8,14 +8,14 @@ import { convertGasUnitsToUSD } from '../../../utils/mellowHelpers/convertGasUni
 import { exponentialBackoff } from '../../../utils/retry';
 import { scale } from '../../../utils/scaling';
 import { getOptimiserInfo } from '../getters/optimisers/getOptimiserInfo';
-import { RouterInfo } from '../getters/types';
-import { getRouterConfig } from '../utils/getRouterConfig';
+import { OptimiserInfo } from '../getters/types';
+import { getOptimiserConfig } from '../utils/getOptimiserConfig';
 import { mapWeights } from '../utils/mapWeights';
 import { deposit } from './deposit';
 
 type DepositAndRegisterArgs = {
   onlyGasEstimate?: boolean;
-  routerId: string;
+  optimiserId: string;
   amount: number;
   spareWeights: [string, number][];
   registration?: boolean;
@@ -25,12 +25,12 @@ type DepositAndRegisterArgs = {
 type DepositAndRegisterResponse = {
   gasEstimateUsd: number;
   receipt: ethers.ContractReceipt | null;
-  newRouterState: RouterInfo | null;
+  newOptimiserState: OptimiserInfo | null;
 };
 
 export const depositAndRegister = async ({
   onlyGasEstimate,
-  routerId,
+  optimiserId,
   amount,
   spareWeights,
   registration,
@@ -39,7 +39,7 @@ export const depositAndRegister = async ({
   if (isUndefined(registration)) {
     return deposit({
       onlyGasEstimate,
-      routerId,
+      optimiserId,
       amount,
       spareWeights,
       signer,
@@ -47,9 +47,9 @@ export const depositAndRegister = async ({
   }
 
   // Get Mellow Config
-  const routerConfig = getRouterConfig(routerId);
+  const optimiserConfig = getOptimiserConfig(optimiserId);
 
-  if (routerConfig.isVault) {
+  if (optimiserConfig.isVault) {
     const errorMessage = 'Deposit and register not supported for vaults.';
 
     // Report to Sentry
@@ -59,14 +59,14 @@ export const depositAndRegister = async ({
     throw new Error(errorMessage);
   }
 
-  const mellowRouter = new ethers.Contract(routerId, MellowMultiVaultRouterABI, signer);
+  const mellowOptimiser = new ethers.Contract(optimiserId, MellowMultiVaultRouterABI, signer);
 
   // Get token address
   let tokenId: string;
   try {
-    tokenId = await exponentialBackoff(() => mellowRouter.token());
+    tokenId = await exponentialBackoff(() => mellowOptimiser.token());
   } catch (error) {
-    const errorMessage = 'Failed to fetch router token';
+    const errorMessage = 'Failed to fetch optimiser token';
 
     // Report to Sentry
     const sentryTracker = getSentryTracker();
@@ -85,7 +85,7 @@ export const depositAndRegister = async ({
 
   // Map spare weights to array
   const weights = mapWeights(
-    routerConfig.vaults.map((v) => v.address),
+    optimiserConfig.vaults.map((v) => v.address),
     spareWeights,
   );
 
@@ -99,13 +99,13 @@ export const depositAndRegister = async ({
   // Simulate deposit and register
   try {
     if (isETH) {
-      mellowRouter.callStatic.depositEthAndRegisterForAutoRollover(
+      mellowOptimiser.callStatic.depositEthAndRegisterForAutoRollover(
         weights,
         registration,
         tempOverrides,
       );
     } else {
-      mellowRouter.callStatic.depositErc20AndRegisterForAutoRollover(
+      mellowOptimiser.callStatic.depositErc20AndRegisterForAutoRollover(
         scaledAmount,
         weights,
         registration,
@@ -124,12 +124,12 @@ export const depositAndRegister = async ({
 
   // Estimate gas
   const gasLimit = isETH
-    ? await mellowRouter.estimateGas.depositEthAndRegisterForAutoRollover(
+    ? await mellowOptimiser.estimateGas.depositEthAndRegisterForAutoRollover(
         weights,
         registration,
         tempOverrides,
       )
-    : await mellowRouter.estimateGas.depositErc20AndRegisterForAutoRollover(
+    : await mellowOptimiser.estimateGas.depositErc20AndRegisterForAutoRollover(
         scaledAmount,
         weights,
         registration,
@@ -144,14 +144,18 @@ export const depositAndRegister = async ({
     return {
       gasEstimateUsd,
       receipt: null,
-      newRouterState: null,
+      newOptimiserState: null,
     };
   }
 
   // Send transaction
   const tx = isETH
-    ? await mellowRouter.depositEthAndRegisterForAutoRollover(weights, registration, tempOverrides)
-    : await mellowRouter.depositErc20AndRegisterForAutoRollover(
+    ? await mellowOptimiser.depositEthAndRegisterForAutoRollover(
+        weights,
+        registration,
+        tempOverrides,
+      )
+    : await mellowOptimiser.depositErc20AndRegisterForAutoRollover(
         scaledAmount,
         weights,
         registration,
@@ -173,11 +177,11 @@ export const depositAndRegister = async ({
     throw new Error(errorMessage);
   }
 
-  // Get the next state of the router
-  let routerInfo: RouterInfo | null = null;
+  // Get the next state of the optimiser
+  let optimiserInfo: OptimiserInfo | null = null;
   try {
     const userAddress = await exponentialBackoff(() => signer.getAddress());
-    routerInfo = await getOptimiserInfo(routerId, userAddress);
+    optimiserInfo = await getOptimiserInfo(optimiserId, userAddress);
   } catch (error) {
     const errorMessage = 'Failed to get new state after deposit and register';
 
@@ -191,6 +195,6 @@ export const depositAndRegister = async ({
   return {
     gasEstimateUsd,
     receipt,
-    newRouterState: routerInfo,
+    newOptimiserState: optimiserInfo,
   };
 };

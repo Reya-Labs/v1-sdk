@@ -4,13 +4,13 @@ import { ZERO_ADDRESS } from '../../../../constants';
 import { getProvider } from '../../../../init';
 import { exponentialBackoff } from '../../../../utils/retry';
 import { getMellowConfig } from '../../config/config';
-import { RouterInfo, ContractRouterInfo } from '../types';
-import { mapRouter } from './mappers';
+import { OptimiserInfo, ContractOptimiserInfo } from '../types';
+import { mapOptimiser } from './mappers';
 
-export const getOptimisersInfo = async (userAddress = ZERO_ADDRESS): Promise<RouterInfo[]> => {
+export const getOptimisersInfo = async (userAddress = ZERO_ADDRESS): Promise<OptimiserInfo[]> => {
   const config = getMellowConfig();
   const provider = getProvider();
-  const routerConfigs = config.MELLOW_ROUTERS.filter((r) => !r.isVault);
+  const optimiserConfigs = config.MELLOW_OPTIMISERS.filter((r) => !r.isVault);
 
   const mellowLensContract = new ethers.Contract(
     config.MELLOW_LENS,
@@ -18,17 +18,17 @@ export const getOptimisersInfo = async (userAddress = ZERO_ADDRESS): Promise<Rou
     provider,
   );
 
-  // Get routers
-  const optimisersContractInfo: ContractRouterInfo[] = await exponentialBackoff(() =>
+  // Get optimisers
+  const optimisersContractInfo: ContractOptimiserInfo[] = await exponentialBackoff(() =>
     mellowLensContract.getOptimisersInfo(
-      routerConfigs.map((routerConfig) => routerConfig.router),
+      optimiserConfigs.map((optimiserConfig) => optimiserConfig.optimiser),
       userAddress,
     ),
   );
 
-  const routers = routerConfigs.map((routerConfig, index) =>
-    mapRouter(routerConfig, optimisersContractInfo[index]),
+  const optimisers = optimiserConfigs.map((optimiserConfig, index) =>
+    mapOptimiser(optimiserConfig, optimisersContractInfo[index]),
   );
 
-  return routers;
+  return optimisers;
 };

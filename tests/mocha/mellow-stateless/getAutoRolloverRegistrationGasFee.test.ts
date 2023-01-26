@@ -14,7 +14,7 @@ const { provider } = waffle;
 
 const DELTA = 0.0001;
 
-describe('Mellow Router:Gas Fee for AutoRollover Registration', () => {
+describe('Mellow Optimiser:Gas Fee for AutoRollover Registration', () => {
   const userAddress = '0xf8f6b70a36f4398f0853a311dc6699aba8333cc1';
 
   const resetNetwork = async (blockNumber: number) => {
@@ -75,13 +75,13 @@ describe('Mellow Router:Gas Fee for AutoRollover Registration', () => {
 
   describe('ETH registration', () => {
     it('registration in vault blocked', async () => {
-      const routerId = '0x62E224d9ae2f4702CC88695e6Ea4aA16D0925BdB';
+      const optimiserId = '0x62E224d9ae2f4702CC88695e6Ea4aA16D0925BdB';
 
       await withSigner(network, userAddress, async (signer) => {
         try {
           await registerForAutoRollover({
             onlyGasEstimate: true,
-            routerId,
+            optimiserId,
             registration: true,
             signer,
           });
@@ -91,12 +91,12 @@ describe('Mellow Router:Gas Fee for AutoRollover Registration', () => {
     });
 
     it('register in ETH', async () => {
-      const routerId = '0x704F6E9cB4f7e041CC89B6a49DF8EE2027a55164';
+      const optimiserId = '0x704F6E9cB4f7e041CC89B6a49DF8EE2027a55164';
       await withSigner(network, userAddress, async (signer) => {
         const fee = (
           await registerForAutoRollover({
             onlyGasEstimate: true,
-            routerId,
+            optimiserId,
             registration: true,
             signer,
           })
@@ -107,13 +107,13 @@ describe('Mellow Router:Gas Fee for AutoRollover Registration', () => {
     });
 
     it('registers in USDC', async () => {
-      const routerId = '0x9f397CD24103A0a0252DeC82a88e656480C53fB7';
+      const optimiserId = '0x9f397CD24103A0a0252DeC82a88e656480C53fB7';
 
       await withSigner(network, userAddress, async (signer) => {
         const fee = (
           await registerForAutoRollover({
             onlyGasEstimate: true,
-            routerId,
+            optimiserId,
             registration: false,
             signer,
           })

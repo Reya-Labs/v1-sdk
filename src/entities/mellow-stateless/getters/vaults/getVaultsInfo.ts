@@ -1,15 +1,15 @@
 import { getMellowConfig } from '../../config/config';
-import { RouterInfo } from '../types';
+import { OptimiserInfo } from '../types';
 import { getVaultInfo } from './getVaultInfo';
 
-export const getVaultsInfo = async (userAddress: string): Promise<RouterInfo[]> => {
+export const getVaultsInfo = async (userAddress: string): Promise<OptimiserInfo[]> => {
   const config = getMellowConfig();
-  const vaultConfigs = config.MELLOW_ROUTERS.filter((r) => r.isVault);
+  const vaultConfigs = config.MELLOW_OPTIMISERS.filter((r) => r.isVault);
 
   // Get vaults
-  const vaults: RouterInfo[] = [];
+  const vaults: OptimiserInfo[] = [];
   for (const vaultConfig of vaultConfigs) {
-    vaults.push(await getVaultInfo(vaultConfig.router, userAddress));
+    vaults.push(await getVaultInfo(vaultConfig.optimiser, userAddress));
   }
 
   return vaults;

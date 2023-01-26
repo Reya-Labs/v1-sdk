@@ -1,11 +1,13 @@
 import { ZERO_ADDRESS } from '../../../constants';
-import { RouterInfo } from './types';
+import { OptimiserInfo } from './types';
 import { getOptimisersInfo } from './optimisers/getOptimisersInfo';
 import { getVaultsInfo } from './vaults/getVaultsInfo';
 
-export const getAllMellowProducts = async (userAddress = ZERO_ADDRESS): Promise<RouterInfo[]> => {
+export const getAllMellowProducts = async (
+  userAddress = ZERO_ADDRESS,
+): Promise<OptimiserInfo[]> => {
   const vaults = await getVaultsInfo(userAddress);
-  const routers = await getOptimisersInfo(userAddress);
+  const optimisers = await getOptimisersInfo(userAddress);
 
-  return vaults.concat(routers);
+  return vaults.concat(optimisers);
 };

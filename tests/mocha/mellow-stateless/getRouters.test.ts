@@ -6,12 +6,12 @@ import { BrowserClient } from '@sentry/browser';
 import * as initSDK from '../../../src/init';
 import * as initMellowConfig from '../../../src/entities/mellow-stateless/config/config';
 import { MockGoerliConfig } from './utils';
-import { RouterInfo } from '../../../src/entities/mellow-stateless/getters/types';
+import { OptimiserInfo } from '../../../src/entities/mellow-stateless/getters/types';
 import { getAllMellowProducts } from '../../../src/entities/mellow-stateless/getters';
 
 const { provider } = waffle;
 
-describe('Mellow Router:GetRouters', () => {
+describe('Mellow Optimiser:GetOptimisers', () => {
   const resetNetwork = async (blockNumber: number) => {
     await network.provider.request({
       method: 'hardhat_reset',
@@ -55,37 +55,37 @@ describe('Mellow Router:GetRouters', () => {
     (initMellowConfig.getMellowConfig as sinon.SinonStub).restore();
   };
 
-  describe('ETH router with no user connected', () => {
-    const ethRouterId = '0x704F6E9cB4f7e041CC89B6a49DF8EE2027a55164';
-    let ethRouterInfo: RouterInfo;
+  describe('ETH optimiser with no user connected', () => {
+    const ethOptimiserId = '0x704F6E9cB4f7e041CC89B6a49DF8EE2027a55164';
+    let ethOptimiserInfo: OptimiserInfo;
 
     before(async () => {
       await mock();
-      const mellowRouters = await getAllMellowProducts();
+      const mellowOptimisers = await getAllMellowProducts();
       await restore();
 
-      ethRouterInfo = mellowRouters[1];
-      expect(ethRouterInfo.routerId).to.be.eq(ethRouterId);
+      ethOptimiserInfo = mellowOptimisers[1];
+      expect(ethOptimiserInfo.optimiserId).to.be.eq(ethOptimiserId);
     });
 
-    it('Router info', async () => {
-      expect(ethRouterInfo.soon).to.be.eq(false);
-      expect(ethRouterInfo.title).to.be.eq('MELLOW - ETH');
-      expect(ethRouterInfo.description).to.be.eq('B');
-      expect(ethRouterInfo.underlyingPools).to.be.deep.eq(['Compound - ETH']);
-      expect(ethRouterInfo.tokenName).to.be.eq('ETH');
-      expect(ethRouterInfo.expired).to.be.eq(false);
-      expect(ethRouterInfo.depositable).to.be.eq(true);
+    it('Optimiser info', async () => {
+      expect(ethOptimiserInfo.soon).to.be.eq(false);
+      expect(ethOptimiserInfo.title).to.be.eq('MELLOW - ETH');
+      expect(ethOptimiserInfo.description).to.be.eq('B');
+      expect(ethOptimiserInfo.underlyingPools).to.be.deep.eq(['Compound - ETH']);
+      expect(ethOptimiserInfo.tokenName).to.be.eq('ETH');
+      expect(ethOptimiserInfo.expired).to.be.eq(false);
+      expect(ethOptimiserInfo.depositable).to.be.eq(true);
 
-      expect(ethRouterInfo.userWalletBalance).to.be.eq(0);
-      expect(ethRouterInfo.userRouterDeposit).to.be.eq(0);
-      expect(ethRouterInfo.userRouterCommittedDeposit).to.be.eq(0);
-      expect(ethRouterInfo.userRouterPendingDeposit).to.be.eq(0);
-      expect(ethRouterInfo.isUserRegisteredForAutoRollover).to.be.eq(false);
+      expect(ethOptimiserInfo.userWalletBalance).to.be.eq(0);
+      expect(ethOptimiserInfo.userOptimiserDeposit).to.be.eq(0);
+      expect(ethOptimiserInfo.userOptimiserCommittedDeposit).to.be.eq(0);
+      expect(ethOptimiserInfo.userOptimiserPendingDeposit).to.be.eq(0);
+      expect(ethOptimiserInfo.isUserRegisteredForAutoRollover).to.be.eq(false);
     });
 
     it('Deprecated vault', async () => {
-      const vaultInfo = ethRouterInfo.vaults[1];
+      const vaultInfo = ethOptimiserInfo.vaults[1];
       expect(vaultInfo.vaultId).to.be.eq('0x1C4808DE8F806a611b30ECbaFA20C52D1209ecB6');
       expect(vaultInfo.pools).to.be.deep.eq(['Compound - ETH']);
       expect(vaultInfo.estimatedHistoricApy).to.be.deep.eq([10, 10]);
@@ -100,7 +100,7 @@ describe('Mellow Router:GetRouters', () => {
     });
 
     it('Active vault', async () => {
-      const vaultInfo = ethRouterInfo.vaults[4];
+      const vaultInfo = ethOptimiserInfo.vaults[4];
       expect(vaultInfo.vaultId).to.be.eq('0x4FE3444AC2Ee16cAF4661fba06186b09E4F0a706');
       expect(vaultInfo.pools).to.be.deep.eq(['Compound - ETH']);
       expect(vaultInfo.estimatedHistoricApy).to.be.deep.eq([30, 30]);
@@ -115,30 +115,30 @@ describe('Mellow Router:GetRouters', () => {
     });
   });
 
-  describe('ETH router with user connected', () => {
-    const ethRouterId = '0x704F6E9cB4f7e041CC89B6a49DF8EE2027a55164';
+  describe('ETH optimiser with user connected', () => {
+    const ethOptimiserId = '0x704F6E9cB4f7e041CC89B6a49DF8EE2027a55164';
     const userAddress = '0xF8F6B70a36f4398f0853a311dC6699Aba8333Cc1';
-    let ethRouterInfo: RouterInfo;
+    let ethOptimiserInfo: OptimiserInfo;
 
     before(async () => {
       await mock();
-      const mellowRouters = await getAllMellowProducts(userAddress);
+      const mellowOptimisers = await getAllMellowProducts(userAddress);
       await restore();
 
-      ethRouterInfo = mellowRouters[1];
-      expect(ethRouterInfo.routerId).to.be.eq(ethRouterId);
+      ethOptimiserInfo = mellowOptimisers[1];
+      expect(ethOptimiserInfo.optimiserId).to.be.eq(ethOptimiserId);
     });
 
-    it('Router info', async () => {
-      expect(ethRouterInfo.userWalletBalance).to.be.eq(5.505181556948178);
-      expect(ethRouterInfo.userRouterDeposit).to.be.eq(0.09164338331246726);
-      expect(ethRouterInfo.userRouterCommittedDeposit).to.be.eq(0.09164338331246726);
-      expect(ethRouterInfo.userRouterPendingDeposit).to.be.eq(0);
-      expect(ethRouterInfo.isUserRegisteredForAutoRollover).to.be.eq(false);
+    it('Optimiser info', async () => {
+      expect(ethOptimiserInfo.userWalletBalance).to.be.eq(5.505181556948178);
+      expect(ethOptimiserInfo.userOptimiserDeposit).to.be.eq(0.09164338331246726);
+      expect(ethOptimiserInfo.userOptimiserCommittedDeposit).to.be.eq(0.09164338331246726);
+      expect(ethOptimiserInfo.userOptimiserPendingDeposit).to.be.eq(0);
+      expect(ethOptimiserInfo.isUserRegisteredForAutoRollover).to.be.eq(false);
     });
 
     it('Deprecated vault', async () => {
-      const vaultInfo = ethRouterInfo.vaults[1];
+      const vaultInfo = ethOptimiserInfo.vaults[1];
       expect(vaultInfo.vaultId).to.be.eq('0x1C4808DE8F806a611b30ECbaFA20C52D1209ecB6');
       expect(vaultInfo.pools).to.be.deep.eq(['Compound - ETH']);
       expect(vaultInfo.estimatedHistoricApy).to.be.deep.eq([10, 10]);
@@ -153,7 +153,7 @@ describe('Mellow Router:GetRouters', () => {
     });
 
     it('Active vault', async () => {
-      const vaultInfo = ethRouterInfo.vaults[4];
+      const vaultInfo = ethOptimiserInfo.vaults[4];
       expect(vaultInfo.vaultId).to.be.eq('0x4FE3444AC2Ee16cAF4661fba06186b09E4F0a706');
       expect(vaultInfo.pools).to.be.deep.eq(['Compound - ETH']);
       expect(vaultInfo.estimatedHistoricApy).to.be.deep.eq([30, 30]);
@@ -169,7 +169,7 @@ describe('Mellow Router:GetRouters', () => {
   });
 });
 
-describe('getRouters', () => {
+describe('getOptimisers', () => {
   const resetNetwork = async (blockNumber: number) => {
     await network.provider.request({
       method: 'hardhat_reset',
@@ -213,37 +213,37 @@ describe('getRouters', () => {
     (initMellowConfig.getMellowConfig as sinon.SinonStub).restore();
   };
 
-  describe('ETH router with no user connected', () => {
-    const ethRouterId = '0x704F6E9cB4f7e041CC89B6a49DF8EE2027a55164';
-    let ethRouterInfo: RouterInfo;
+  describe('ETH optimiser with no user connected', () => {
+    const ethOptimiserId = '0x704F6E9cB4f7e041CC89B6a49DF8EE2027a55164';
+    let ethOptimiserInfo: OptimiserInfo;
 
     before(async () => {
       await mock();
-      const mellowRouters = await getAllMellowProducts();
+      const mellowOptimisers = await getAllMellowProducts();
       await restore();
 
-      ethRouterInfo = mellowRouters[1];
-      expect(ethRouterInfo.routerId).to.be.eq(ethRouterId);
+      ethOptimiserInfo = mellowOptimisers[1];
+      expect(ethOptimiserInfo.optimiserId).to.be.eq(ethOptimiserId);
     });
 
-    it('Router info', async () => {
-      expect(ethRouterInfo.soon).to.be.eq(false);
-      expect(ethRouterInfo.title).to.be.eq('MELLOW - ETH');
-      expect(ethRouterInfo.description).to.be.eq('B');
-      expect(ethRouterInfo.underlyingPools).to.be.deep.eq(['Compound - ETH']);
-      expect(ethRouterInfo.tokenName).to.be.eq('ETH');
-      expect(ethRouterInfo.expired).to.be.eq(false);
-      expect(ethRouterInfo.depositable).to.be.eq(true);
+    it('Optimiser info', async () => {
+      expect(ethOptimiserInfo.soon).to.be.eq(false);
+      expect(ethOptimiserInfo.title).to.be.eq('MELLOW - ETH');
+      expect(ethOptimiserInfo.description).to.be.eq('B');
+      expect(ethOptimiserInfo.underlyingPools).to.be.deep.eq(['Compound - ETH']);
+      expect(ethOptimiserInfo.tokenName).to.be.eq('ETH');
+      expect(ethOptimiserInfo.expired).to.be.eq(false);
+      expect(ethOptimiserInfo.depositable).to.be.eq(true);
 
-      expect(ethRouterInfo.userWalletBalance).to.be.eq(0);
-      expect(ethRouterInfo.userRouterDeposit).to.be.eq(0);
-      expect(ethRouterInfo.userRouterCommittedDeposit).to.be.eq(0);
-      expect(ethRouterInfo.userRouterPendingDeposit).to.be.eq(0);
-      expect(ethRouterInfo.isUserRegisteredForAutoRollover).to.be.eq(false);
+      expect(ethOptimiserInfo.userWalletBalance).to.be.eq(0);
+      expect(ethOptimiserInfo.userOptimiserDeposit).to.be.eq(0);
+      expect(ethOptimiserInfo.userOptimiserCommittedDeposit).to.be.eq(0);
+      expect(ethOptimiserInfo.userOptimiserPendingDeposit).to.be.eq(0);
+      expect(ethOptimiserInfo.isUserRegisteredForAutoRollover).to.be.eq(false);
     });
 
     it('Deprecated vault', async () => {
-      const vaultInfo = ethRouterInfo.vaults[1];
+      const vaultInfo = ethOptimiserInfo.vaults[1];
       expect(vaultInfo.vaultId).to.be.eq('0x1C4808DE8F806a611b30ECbaFA20C52D1209ecB6');
       expect(vaultInfo.pools).to.be.deep.eq(['Compound - ETH']);
       expect(vaultInfo.estimatedHistoricApy).to.be.deep.eq([10, 10]);
@@ -258,7 +258,7 @@ describe('getRouters', () => {
     });
 
     it('Active vault', async () => {
-      const vaultInfo = ethRouterInfo.vaults[4];
+      const vaultInfo = ethOptimiserInfo.vaults[4];
       expect(vaultInfo.vaultId).to.be.eq('0x4FE3444AC2Ee16cAF4661fba06186b09E4F0a706');
       expect(vaultInfo.pools).to.be.deep.eq(['Compound - ETH']);
       expect(vaultInfo.estimatedHistoricApy).to.be.deep.eq([30, 30]);
@@ -273,30 +273,30 @@ describe('getRouters', () => {
     });
   });
 
-  describe('ETH router with user connected', () => {
-    const ethRouterId = '0x704F6E9cB4f7e041CC89B6a49DF8EE2027a55164';
+  describe('ETH optimiser with user connected', () => {
+    const ethOptimiserId = '0x704F6E9cB4f7e041CC89B6a49DF8EE2027a55164';
     const userAddress = '0xF8F6B70a36f4398f0853a311dC6699Aba8333Cc1';
-    let ethRouterInfo: RouterInfo;
+    let ethOptimiserInfo: OptimiserInfo;
 
     before(async () => {
       await mock();
-      const mellowRouters = await getAllMellowProducts(userAddress);
+      const mellowOptimisers = await getAllMellowProducts(userAddress);
       await restore();
 
-      ethRouterInfo = mellowRouters[1];
-      expect(ethRouterInfo.routerId).to.be.eq(ethRouterId);
+      ethOptimiserInfo = mellowOptimisers[1];
+      expect(ethOptimiserInfo.optimiserId).to.be.eq(ethOptimiserId);
     });
 
-    it('Router info', async () => {
-      expect(ethRouterInfo.userWalletBalance).to.be.eq(5.505181556948178);
-      expect(ethRouterInfo.userRouterDeposit).to.be.eq(0.09164338331246726);
-      expect(ethRouterInfo.userRouterCommittedDeposit).to.be.eq(0.09164338331246726);
-      expect(ethRouterInfo.userRouterPendingDeposit).to.be.eq(0);
-      expect(ethRouterInfo.isUserRegisteredForAutoRollover).to.be.eq(false);
+    it('Optimiser info', async () => {
+      expect(ethOptimiserInfo.userWalletBalance).to.be.eq(5.505181556948178);
+      expect(ethOptimiserInfo.userOptimiserDeposit).to.be.eq(0.09164338331246726);
+      expect(ethOptimiserInfo.userOptimiserCommittedDeposit).to.be.eq(0.09164338331246726);
+      expect(ethOptimiserInfo.userOptimiserPendingDeposit).to.be.eq(0);
+      expect(ethOptimiserInfo.isUserRegisteredForAutoRollover).to.be.eq(false);
     });
 
     it('Deprecated vault', async () => {
-      const vaultInfo = ethRouterInfo.vaults[1];
+      const vaultInfo = ethOptimiserInfo.vaults[1];
       expect(vaultInfo.vaultId).to.be.eq('0x1C4808DE8F806a611b30ECbaFA20C52D1209ecB6');
       expect(vaultInfo.pools).to.be.deep.eq(['Compound - ETH']);
       expect(vaultInfo.estimatedHistoricApy).to.be.deep.eq([10, 10]);
@@ -311,7 +311,7 @@ describe('getRouters', () => {
     });
 
     it('Active vault', async () => {
-      const vaultInfo = ethRouterInfo.vaults[4];
+      const vaultInfo = ethOptimiserInfo.vaults[4];
       expect(vaultInfo.vaultId).to.be.eq('0x4FE3444AC2Ee16cAF4661fba06186b09E4F0a706');
       expect(vaultInfo.pools).to.be.deep.eq(['Compound - ETH']);
       expect(vaultInfo.estimatedHistoricApy).to.be.deep.eq([30, 30]);

@@ -7,11 +7,14 @@ import { exponentialBackoff } from '../../../../utils/retry';
 import { descale } from '../../../../utils/scaling';
 import { closeOrPastMaturity } from '../../config/utils';
 import { getMellowConfig } from '../../config/config';
-import { getRouterConfig } from '../../utils/getRouterConfig';
-import { RouterInfo, VaultInfo } from '../types';
+import { getOptimiserConfig } from '../../utils/getOptimiserConfig';
+import { OptimiserInfo, VaultInfo } from '../types';
 
-export const getVaultInfo = async (routerId: string, userAddress: string): Promise<RouterInfo> => {
-  const vaultConfig = getRouterConfig(routerId);
+export const getVaultInfo = async (
+  optimiserId: string,
+  userAddress: string,
+): Promise<OptimiserInfo> => {
+  const vaultConfig = getOptimiserConfig(optimiserId);
   const { MELLOW_LENS } = getMellowConfig();
   const provider = getProvider();
   const vaultAddress = vaultConfig.vaults[0].address;
@@ -30,7 +33,7 @@ export const getVaultInfo = async (routerId: string, userAddress: string): Promi
   // Get ERC20 vault contract
   const tokenContract = new ethers.Contract(tokenId, IERC20MinimalABI, provider);
 
-  // Get latest maturity and decide whether the entire router is expired or not
+  // Get latest maturity and decide whether the entire optimiser is expired or not
   const latestMaturityInMS: number = await exponentialBackoff(() =>
     mellowLensContract.getVaultMaturity(vaultAddress),
   );
@@ -39,7 +42,7 @@ export const getVaultInfo = async (routerId: string, userAddress: string): Promi
   // Decide whether the vault is depositable or not
   const depositable = !expired && !vaultConfig.deprecated;
 
-  // Get underlying pool of the router
+  // Get underlying pool of the optimiser
   const underlyingPools = vaultConfig.vaults.reduce((allPools, currentVault) => {
     if (currentVault.weight > 0) {
       const appendingPools = currentVault.pools.filter((p) => !allPools.includes(p));
@@ -90,7 +93,7 @@ export const getVaultInfo = async (routerId: string, userAddress: string): Promi
   ];
 
   return {
-    routerId: vaultConfig.router,
+    optimiserId: vaultConfig.optimiser,
 
     soon: vaultConfig.soon,
     title: vaultConfig.title,
@@ -98,20 +101,23 @@ export const getVaultInfo = async (routerId: string, userAddress: string): Promi
 
     underlyingPools,
 
+    tokenId,
     tokenName,
 
     expired,
     depositable,
 
     feePerDeposit: 0,
+    feePerDepositUSD: 0,
     accumulatedFees: 0,
+    accumulatedFeesUSD: 0,
     pendingDepositsCount: 0,
 
     userWalletBalance,
 
-    userRouterDeposit: sum(vaults.map((vault) => vault.userVaultDeposit)),
-    userRouterCommittedDeposit: sum(vaults.map((vault) => vault.userVaultCommittedDeposit)),
-    userRouterPendingDeposit: sum(vaults.map((vault) => vault.userVaultPendingDeposit)),
+    userOptimiserDeposit: sum(vaults.map((vault) => vault.userVaultDeposit)),
+    userOptimiserCommittedDeposit: sum(vaults.map((vault) => vault.userVaultCommittedDeposit)),
+    userOptimiserPendingDeposit: sum(vaults.map((vault) => vault.userVaultPendingDeposit)),
     isUserRegisteredForAutoRollover: false,
 
     vaults,

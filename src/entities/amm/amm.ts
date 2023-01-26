@@ -63,7 +63,7 @@ export class AMM {
   public readonly id: string;
   public readonly signer: Signer | null;
   public readonly provider: providers.Provider;
-  private readonly factoryAddress: string;
+  public readonly factoryAddress: string;
   public readonly marginEngineAddress: string;
   public readonly rateOracle: RateOracle;
   public readonly termStartTimestampInMS: number;
