@@ -59,7 +59,7 @@ export const networkConfigurations: { [key: string]: NetworkConfiguration } = {
         id: '0x8773315B21961828d5bdaB9a29881b9aB25147f8', // vamm address
         show: {
           general: true,
-          trader: false,
+          trader: true,
         },
         traderWithdrawable: false,
         isAaveV3: true,
