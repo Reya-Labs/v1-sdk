@@ -8,6 +8,7 @@ type PoolConfiguration = {
   traderWithdrawable: boolean;
   minLeverageAllowed?: number;
   rollover?: string;
+  isAaveV3?: boolean;
 };
 
 export type NetworkConfiguration = {
