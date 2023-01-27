@@ -23,6 +23,10 @@ const mapProtocolIdToProtocol = (protocolId: number): string => {
     return 'BORROW COMPOUND';
   }
 
+  if (protocolId === 7) {
+    return 'AAVE V3';
+  }
+
   throw new Error('Unrecognized protocol');
 };
 
