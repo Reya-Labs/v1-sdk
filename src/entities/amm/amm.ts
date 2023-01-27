@@ -21,6 +21,7 @@ import {
   CompoundBorrowRateOracle,
   AaveBorrowRateOracle__factory as aaveBorrowRateOracleFactory,
   IAaveV2LendingPool__factory as iAaveV2LendingPoolFactory,
+  AaveV3RateOracle__factory as aaveV3RateOracleFactory,
   CompoundBorrowRateOracle__factory as compoundBorrowRateOracleFactory,
 } from '../../typechain';
 import { TickMath } from '../../utils/tickMath';
@@ -1491,6 +1492,28 @@ export class AMM {
         const borrowApy =
           ((borrowRatePerBlock.toNumber() / 1e18) * blocksPerDay + 1) ** daysPerYear - 1;
         return borrowApy;
+      }
+
+      case 7: {
+        if (!this.underlyingToken.id) {
+          throw new Error('No underlying error');
+        }
+
+        const rateOracleContract = aaveV3RateOracleFactory.connect(
+          this.rateOracle.id,
+          this.provider,
+        );
+
+        const toInSeconds =
+          (await exponentialBackoff(() => this.provider.getBlock('latest'))).timestamp - 15;
+        const fromInSeconds = toInSeconds - 1 * 60 * 60;
+
+        const instantApy = await exponentialBackoff(() =>
+          rateOracleContract.getApyFromTo(fromInSeconds, toInSeconds),
+        );
+
+        // TODO: normalize this to utility descale
+        return instantApy.div(BigNumber.from(1000000000000)).toNumber() / 1000000;
       }
 
       default:

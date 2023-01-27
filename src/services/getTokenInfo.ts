@@ -20,6 +20,9 @@ export const getProtocolPrefix = (protocolId: number): string => {
     case 6: {
       return 'c';
     }
+    case 7: {
+      return 'a';
+    }
     default: {
       return '-';
     }
