@@ -33,7 +33,7 @@ describe('Mellow Optimiser:Rollover', () => {
   };
 
   const mock = async () => {
-    const block = 8375800;
+    const block = 8403950;
     await resetNetwork(block);
 
     sinon.stub(initSDK, 'getSentryTracker').callsFake(
@@ -97,7 +97,7 @@ describe('Mellow Optimiser:Rollover', () => {
       await withSigner(network, userAddress, async (signer) => {
         const optimiserState = await getMellowProduct({
           optimiserId,
-          userAddress,
+          signer,
         });
 
         const { newOptimiserState } = await exponentialBackoff(
@@ -139,7 +139,7 @@ describe('Mellow Optimiser:Rollover', () => {
       await withSigner(network, userAddress, async (signer) => {
         const optimiserState = await getMellowProduct({
           optimiserId,
-          userAddress,
+          signer,
         });
 
         const { newOptimiserState } = await exponentialBackoff(
@@ -163,7 +163,7 @@ describe('Mellow Optimiser:Rollover', () => {
 
         expect(
           newOptimiserState.vaults[3].userVaultDeposit - optimiserState.vaults[3].userVaultDeposit,
-        ).to.be.closeTo(27.3, DELTA);
+        ).to.be.closeTo(0, DELTA);
       });
     });
   });

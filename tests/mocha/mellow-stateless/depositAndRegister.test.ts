@@ -33,7 +33,7 @@ describe('Mellow Optimiser:DepositAndRegister', () => {
   };
 
   const mock = async () => {
-    const block = 8375800;
+    const block = 8403950;
     await resetNetwork(block);
 
     sinon.stub(initSDK, 'getSentryTracker').callsFake(
@@ -94,10 +94,12 @@ describe('Mellow Optimiser:DepositAndRegister', () => {
     it('deposit in ETH', async () => {
       const optimiserId = '0x704F6E9cB4f7e041CC89B6a49DF8EE2027a55164';
       const amount = 0.1;
+      const fee = 0.01;
+
       await withSigner(network, userAddress, async (signer) => {
         const optimiserState = await getMellowProduct({
           optimiserId,
-          userAddress,
+          signer,
         });
 
         const { newOptimiserState } = await exponentialBackoff(
@@ -107,7 +109,7 @@ describe('Mellow Optimiser:DepositAndRegister', () => {
               amount,
               spareWeights: [['0x5de7a5BbEDcE4a739b8a8D1cdA15D71924BDC9f7', 100]],
               signer,
-              registration: true,
+              registration: false,
             }),
           RETRY_ATTEMPTS,
         );
@@ -118,24 +120,25 @@ describe('Mellow Optimiser:DepositAndRegister', () => {
 
         expect(
           newOptimiserState.userOptimiserDeposit - optimiserState.userOptimiserDeposit,
-        ).to.be.closeTo(amount, DELTA);
+        ).to.be.closeTo(amount - fee, DELTA);
 
         expect(
           newOptimiserState.vaults[5].userVaultDeposit - optimiserState.vaults[5].userVaultDeposit,
-        ).to.be.closeTo(amount, DELTA);
+        ).to.be.closeTo(amount - fee, DELTA);
 
-        expect(newOptimiserState.isUserRegisteredForAutoRollover).to.be.eq(true);
+        expect(newOptimiserState.isUserRegisteredForAutoRollover).to.be.eq(false);
       });
     });
 
     it('deposit in USDC', async () => {
       const optimiserId = '0x9f397CD24103A0a0252DeC82a88e656480C53fB7';
       const amount = 10;
+      const fee = 1;
 
       await withSigner(network, userAddress, async (signer) => {
         const optimiserState = await getMellowProduct({
           optimiserId,
-          userAddress,
+          signer,
         });
 
         const { newOptimiserState } = await exponentialBackoff(
@@ -156,11 +159,11 @@ describe('Mellow Optimiser:DepositAndRegister', () => {
 
         expect(
           newOptimiserState.userOptimiserDeposit - optimiserState.userOptimiserDeposit,
-        ).to.be.closeTo(amount, DELTA);
+        ).to.be.closeTo(amount - fee, DELTA);
 
         expect(
           newOptimiserState.vaults[3].userVaultDeposit - optimiserState.vaults[3].userVaultDeposit,
-        ).to.be.closeTo(amount, DELTA);
+        ).to.be.closeTo(amount - fee, DELTA);
 
         expect(newOptimiserState.isUserRegisteredForAutoRollover).to.be.eq(false);
       });

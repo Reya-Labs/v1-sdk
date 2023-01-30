@@ -207,10 +207,9 @@ export const withdraw = async (params: WithdrawArgs): Promise<WithdrawResponse> 
   let optimiserInfo: OptimiserInfo | null = null;
   try {
     // Get the next state of the optimiser
-    const userAddress = await exponentialBackoff(() => signer.getAddress());
     optimiserInfo = await getMellowProduct({
       optimiserId,
-      userAddress,
+      signer,
     });
   } catch (error) {
     const errorMessage = 'Failed to get new state after deposit';

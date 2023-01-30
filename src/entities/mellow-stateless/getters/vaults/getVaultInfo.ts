@@ -107,6 +107,9 @@ export const getVaultInfo = async (
     expired,
     depositable,
 
+    autorolloverGasCostInUSD: 0,
+    canRegisterUnregister: false,
+
     feePerDeposit: 0,
     feePerDepositUSD: 0,
     accumulatedFees: 0,

@@ -10,11 +10,13 @@ import { exponentialBackoff } from '../../../../utils/retry';
 
 export const getOptimiserInfo = async (
   optimiserId: string,
-  userAddress: string = ZERO_ADDRESS,
+  signer: ethers.Signer | null,
 ): Promise<OptimiserInfo> => {
   const { MELLOW_LENS } = getMellowConfig();
   const optimiserConfig = getOptimiserConfig(optimiserId);
   const provider = getProvider();
+
+  const userAddress = signer ? await signer.getAddress() : ZERO_ADDRESS;
 
   const mellowLensContract = new ethers.Contract(MELLOW_LENS, MellowLensContractABI, provider);
 
@@ -23,7 +25,7 @@ export const getOptimiserInfo = async (
       mellowLensContract.getOptimisersInfo([optimiserConfig.optimiser], userAddress),
     );
 
-    const optimiser = mapOptimiser(optimiserConfig, optimisersContractInfo[0]);
+    const optimiser = await mapOptimiser(optimiserConfig, optimisersContractInfo[0], signer);
 
     return optimiser;
   } catch (error) {

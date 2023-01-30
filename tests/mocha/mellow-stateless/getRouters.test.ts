@@ -8,6 +8,7 @@ import * as initMellowConfig from '../../../src/entities/mellow-stateless/config
 import { MockGoerliConfig } from './utils';
 import { OptimiserInfo } from '../../../src/entities/mellow-stateless/getters/types';
 import { getAllMellowProducts } from '../../../src/entities/mellow-stateless/getters';
+import { withSigner } from '../../utils';
 
 const { provider } = waffle;
 
@@ -28,7 +29,7 @@ describe('Mellow Optimiser:GetOptimisers', () => {
   };
 
   const mock = async () => {
-    const block = 8375800;
+    const block = 8403950;
     await resetNetwork(block);
 
     sinon.stub(initSDK, 'getSentryTracker').callsFake(
@@ -61,7 +62,7 @@ describe('Mellow Optimiser:GetOptimisers', () => {
 
     before(async () => {
       await mock();
-      const mellowOptimisers = await getAllMellowProducts();
+      const mellowOptimisers = await getAllMellowProducts(null);
       await restore();
 
       ethOptimiserInfo = mellowOptimisers[1];
@@ -122,19 +123,21 @@ describe('Mellow Optimiser:GetOptimisers', () => {
 
     before(async () => {
       await mock();
-      const mellowOptimisers = await getAllMellowProducts(userAddress);
+      await withSigner(network, userAddress, async (signer) => {
+        const mellowOptimisers = await getAllMellowProducts(signer);
+        ethOptimiserInfo = mellowOptimisers[1];
+      });
       await restore();
 
-      ethOptimiserInfo = mellowOptimisers[1];
       expect(ethOptimiserInfo.optimiserId).to.be.eq(ethOptimiserId);
     });
 
     it('Optimiser info', async () => {
-      expect(ethOptimiserInfo.userWalletBalance).to.be.eq(5.505181556948178);
-      expect(ethOptimiserInfo.userOptimiserDeposit).to.be.eq(0.09164338331246726);
-      expect(ethOptimiserInfo.userOptimiserCommittedDeposit).to.be.eq(0.09164338331246726);
+      expect(ethOptimiserInfo.userWalletBalance).to.be.eq(4722.366482869646);
+      expect(ethOptimiserInfo.userOptimiserDeposit).to.be.eq(0.2953577313582509);
+      expect(ethOptimiserInfo.userOptimiserCommittedDeposit).to.be.eq(0.2953577313582509);
       expect(ethOptimiserInfo.userOptimiserPendingDeposit).to.be.eq(0);
-      expect(ethOptimiserInfo.isUserRegisteredForAutoRollover).to.be.eq(false);
+      expect(ethOptimiserInfo.isUserRegisteredForAutoRollover).to.be.eq(true);
     });
 
     it('Deprecated vault', async () => {
@@ -161,9 +164,9 @@ describe('Mellow Optimiser:GetOptimisers', () => {
       expect(vaultInfo.maturityTimestampMS).to.be.eq(1676542449000);
       expect(vaultInfo.withdrawable).to.be.eq(false);
       expect(vaultInfo.rolloverable).to.be.eq(false);
-      expect(vaultInfo.userVaultCommittedDeposit).to.be.eq(0.061193054465384554);
+      expect(vaultInfo.userVaultCommittedDeposit).to.be.eq(0.1643572955315569);
       expect(vaultInfo.userVaultPendingDeposit).to.be.eq(0);
-      expect(vaultInfo.userVaultDeposit).to.be.eq(0.061193054465384554);
+      expect(vaultInfo.userVaultDeposit).to.be.eq(0.1643572955315569);
       expect(vaultInfo.canUserManageVault).to.be.eq(false);
     });
   });
@@ -186,7 +189,7 @@ describe('getOptimisers', () => {
   };
 
   const mock = async () => {
-    const block = 8375800;
+    const block = 8403950;
     await resetNetwork(block);
 
     sinon.stub(initSDK, 'getSentryTracker').callsFake(
@@ -219,7 +222,7 @@ describe('getOptimisers', () => {
 
     before(async () => {
       await mock();
-      const mellowOptimisers = await getAllMellowProducts();
+      const mellowOptimisers = await getAllMellowProducts(null);
       await restore();
 
       ethOptimiserInfo = mellowOptimisers[1];
@@ -280,19 +283,21 @@ describe('getOptimisers', () => {
 
     before(async () => {
       await mock();
-      const mellowOptimisers = await getAllMellowProducts(userAddress);
+      await withSigner(network, userAddress, async (signer) => {
+        const mellowOptimisers = await getAllMellowProducts(signer);
+        ethOptimiserInfo = mellowOptimisers[1];
+      });
       await restore();
 
-      ethOptimiserInfo = mellowOptimisers[1];
       expect(ethOptimiserInfo.optimiserId).to.be.eq(ethOptimiserId);
     });
 
     it('Optimiser info', async () => {
-      expect(ethOptimiserInfo.userWalletBalance).to.be.eq(5.505181556948178);
-      expect(ethOptimiserInfo.userOptimiserDeposit).to.be.eq(0.09164338331246726);
-      expect(ethOptimiserInfo.userOptimiserCommittedDeposit).to.be.eq(0.09164338331246726);
+      expect(ethOptimiserInfo.userWalletBalance).to.be.eq(4722.366482869646);
+      expect(ethOptimiserInfo.userOptimiserDeposit).to.be.eq(0.2953577313582509);
+      expect(ethOptimiserInfo.userOptimiserCommittedDeposit).to.be.eq(0.2953577313582509);
       expect(ethOptimiserInfo.userOptimiserPendingDeposit).to.be.eq(0);
-      expect(ethOptimiserInfo.isUserRegisteredForAutoRollover).to.be.eq(false);
+      expect(ethOptimiserInfo.isUserRegisteredForAutoRollover).to.be.eq(true);
     });
 
     it('Deprecated vault', async () => {
@@ -319,9 +324,9 @@ describe('getOptimisers', () => {
       expect(vaultInfo.maturityTimestampMS).to.be.eq(1676542449000);
       expect(vaultInfo.withdrawable).to.be.eq(false);
       expect(vaultInfo.rolloverable).to.be.eq(false);
-      expect(vaultInfo.userVaultCommittedDeposit).to.be.eq(0.061193054465384554);
+      expect(vaultInfo.userVaultCommittedDeposit).to.be.eq(0.1643572955315569);
       expect(vaultInfo.userVaultPendingDeposit).to.be.eq(0);
-      expect(vaultInfo.userVaultDeposit).to.be.eq(0.061193054465384554);
+      expect(vaultInfo.userVaultDeposit).to.be.eq(0.1643572955315569);
       expect(vaultInfo.canUserManageVault).to.be.eq(false);
     });
   });

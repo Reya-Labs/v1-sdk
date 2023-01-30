@@ -33,7 +33,7 @@ describe('Mellow Optimiser:Gas Fee for AutoRollover Registration', () => {
   };
 
   const mock = async () => {
-    const block = 8375800;
+    const block = 8403950;
     await resetNetwork(block);
 
     sinon.stub(initSDK, 'getSentryTracker').callsFake(
@@ -97,7 +97,7 @@ describe('Mellow Optimiser:Gas Fee for AutoRollover Registration', () => {
           await registerForAutoRollover({
             onlyGasEstimate: true,
             optimiserId,
-            registration: true,
+            registration: false,
             signer,
           })
         ).gasEstimateUsd;
