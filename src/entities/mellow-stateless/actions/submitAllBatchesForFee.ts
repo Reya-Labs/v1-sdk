@@ -3,7 +3,6 @@ import { MellowMultiVaultRouterABI } from '../../../ABIs';
 import { getGasBuffer } from '../../../constants';
 import { getProvider, getSentryTracker } from '../../../init';
 import { convertGasUnitsToUSD } from '../../../utils/mellowHelpers/convertGasUnitsToUSD';
-import { exponentialBackoff } from '../../../utils/retry';
 import { getOptimiserInfo } from '../getters/optimisers/getOptimiserInfo';
 import { OptimiserInfo } from '../getters/types';
 import { getOptimiserConfig } from '../utils/getOptimiserConfig';
@@ -105,8 +104,7 @@ export const submitAllBatchesForFee = async ({
   // Get the next state of the optimiser
   let optimiserInfo: OptimiserInfo | null = null;
   try {
-    const userAddress = await exponentialBackoff(() => signer.getAddress());
-    optimiserInfo = await getOptimiserInfo(optimiserId, userAddress);
+    optimiserInfo = await getOptimiserInfo(optimiserId, signer);
   } catch (error) {
     const errorMessage = 'Failed to get new state after deposit';
 

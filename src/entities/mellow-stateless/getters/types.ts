@@ -106,6 +106,12 @@ export type OptimiserInfo = {
   // Is the user registered for auto rollover?
   isUserRegisteredForAutoRollover: boolean;
 
+  // The gas cost in USD of register/unregister for autorollover
+  autorolloverGasCostInUSD: number;
+
+  // Can user register/unregister for autorollover?
+  canRegisterUnregister: boolean;
+
   // Information about the underlying vaults
   vaults: VaultInfo[];
 };

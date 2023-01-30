@@ -2,7 +2,7 @@ import { NetworkConfiguration } from './types';
 
 const networkConfigurations: { [key: string]: NetworkConfiguration } = {
   mainnet: {
-    MELLOW_LENS: '0x0000000000000000000000000000000000000000',
+    MELLOW_LENS: '0xb34FF2F4BA8ECE3Ceb4570277D748c908Ac13E14',
     MELLOW_OPTIMISERS: [
       {
         optimiser: '0xC99c70492Bc15c056813d1ddA95C89Bb285Cdc86',
@@ -144,7 +144,7 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
     ],
   },
   goerli: {
-    MELLOW_LENS: '0xc4da22ab1f2726D073d5a796856961D02b0E4c61',
+    MELLOW_LENS: '0x3BC31926adc64587c1E48c2f3749B66B3fE366E9',
     MELLOW_OPTIMISERS: [
       {
         optimiser: '0x62E224d9ae2f4702CC88695e6Ea4aA16D0925BdB',

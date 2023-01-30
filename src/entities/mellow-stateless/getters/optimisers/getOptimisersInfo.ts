@@ -7,10 +7,12 @@ import { getMellowConfig } from '../../config/config';
 import { OptimiserInfo, ContractOptimiserInfo } from '../types';
 import { mapOptimiser } from './mappers';
 
-export const getOptimisersInfo = async (userAddress = ZERO_ADDRESS): Promise<OptimiserInfo[]> => {
+export const getOptimisersInfo = async (signer: ethers.Signer | null): Promise<OptimiserInfo[]> => {
   const config = getMellowConfig();
   const provider = getProvider();
   const optimiserConfigs = config.MELLOW_OPTIMISERS.filter((r) => !r.isVault);
+
+  const userAddress = signer ? await signer.getAddress() : ZERO_ADDRESS;
 
   const mellowLensContract = new ethers.Contract(
     config.MELLOW_LENS,
@@ -26,9 +28,18 @@ export const getOptimisersInfo = async (userAddress = ZERO_ADDRESS): Promise<Opt
     ),
   );
 
-  const optimisers = optimiserConfigs.map((optimiserConfig, index) =>
-    mapOptimiser(optimiserConfig, optimisersContractInfo[index]),
-  );
+  const optimisers = (
+    await Promise.allSettled(
+      optimiserConfigs.map((optimiserConfig, index) =>
+        mapOptimiser(optimiserConfig, optimisersContractInfo[index], signer),
+      ),
+    )
+  ).map((v) => {
+    if (v.status === 'fulfilled') {
+      return v.value;
+    }
+    throw new Error('Failed to load optimiser information.');
+  });
 
   return optimisers;
 };

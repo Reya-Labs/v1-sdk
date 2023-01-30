@@ -31,7 +31,7 @@ describe('Mellow Optimiser:RegisterForAutorollover', () => {
   };
 
   const mock = async () => {
-    const block = 8375800;
+    const block = 8403950;
     await resetNetwork(block);
 
     sinon.stub(initSDK, 'getSentryTracker').callsFake(
@@ -94,7 +94,7 @@ describe('Mellow Optimiser:RegisterForAutorollover', () => {
             registerForAutoRollover({
               optimiserId,
               signer,
-              registration: true,
+              registration: false,
             }),
           RETRY_ATTEMPTS,
         );
@@ -103,7 +103,7 @@ describe('Mellow Optimiser:RegisterForAutorollover', () => {
           throw new Error('Failure');
         }
 
-        expect(newOptimiserState.isUserRegisteredForAutoRollover).to.be.eq(true);
+        expect(newOptimiserState.isUserRegisteredForAutoRollover).to.be.eq(false);
       });
     });
 

@@ -1,14 +1,22 @@
+import { ethers } from 'ethers';
 import { getTokenInfo } from '../../../../services/getTokenInfo';
 import { sum } from '../../../../utils/functions';
 import { descale } from '../../../../utils/scaling';
 import { closeOrPastMaturity } from '../../config/utils';
 import { getMellowConfig } from '../../config/config';
 import { ContractOptimiserInfo, OptimiserInfo, VaultInfo } from '../types';
+import { geckoEthToUsd } from '../../../../utils/priceFetch';
+import { MellowMultiVaultRouterABI } from '../../../../ABIs';
+import { convertGasUnitsToUSD } from '../../../../utils/mellowHelpers/convertGasUnitsToUSD';
+import { getProvider } from '../../../../init';
 
-export const mapOptimiser = (
+export const mapOptimiser = async (
   optimiserConfig: ReturnType<typeof getMellowConfig>['MELLOW_OPTIMISERS'][0],
   optimiserContractInfo: ContractOptimiserInfo,
-): OptimiserInfo => {
+  signer: ethers.Signer | null,
+): Promise<OptimiserInfo> => {
+  const provider = getProvider();
+
   // Get token information
   const tokenId = optimiserContractInfo.token;
   const { name: tokenName, decimals: tokenDecimals } = getTokenInfo(tokenId);
@@ -95,16 +103,38 @@ export const mapOptimiser = (
     };
   });
 
+  const underlyingPrice =
+    tokenName === 'ETH' ? await geckoEthToUsd(process.env.REACT_APP_COINGECKO_API_KEY || '') : 1;
+
+  let gasEstimateUsd = 0;
+  let canRegisterUnregister = false;
+
+  if (signer) {
+    try {
+      const mellowOptimiser = new ethers.Contract(
+        optimiserConfig.optimiser,
+        MellowMultiVaultRouterABI,
+        signer,
+      );
+
+      const gasLimit = await mellowOptimiser.estimateGas.registerForAutoRollover(
+        !optimiserContractInfo.isRegisteredForAutoRollover,
+      );
+
+      gasEstimateUsd = await convertGasUnitsToUSD(provider, gasLimit.toNumber());
+
+      canRegisterUnregister = true;
+    } catch (_) {}
+  }
+
   return {
     optimiserId: optimiserConfig.optimiser,
 
     feePerDeposit,
-    // TODO: adjust here
-    feePerDepositUSD: feePerDeposit,
+    feePerDepositUSD: feePerDeposit * underlyingPrice,
 
     accumulatedFees,
-    // TODO: adjust here
-    accumulatedFeesUSD: accumulatedFees,
+    accumulatedFeesUSD: accumulatedFees * underlyingPrice,
 
     pendingDepositsCount,
 
@@ -119,6 +149,9 @@ export const mapOptimiser = (
 
     expired,
     depositable,
+
+    autorolloverGasCostInUSD: gasEstimateUsd,
+    canRegisterUnregister,
 
     userWalletBalance,
 

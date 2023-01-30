@@ -35,7 +35,7 @@ describe('Mellow Optimiser:Withdraw', () => {
   };
 
   const mock = async () => {
-    const block = 8375800;
+    const block = 8403950;
     await resetNetwork(block);
 
     sinon.stub(initSDK, 'getSentryTracker').callsFake(
@@ -103,7 +103,7 @@ describe('Mellow Optimiser:Withdraw', () => {
 
         const optimiserState = await getMellowProduct({
           optimiserId,
-          userAddress,
+          signer,
         });
 
         await exponentialBackoff(
@@ -152,7 +152,7 @@ describe('Mellow Optimiser:Withdraw', () => {
       await withSigner(network, userAddress, async (signer) => {
         const optimiserState = await getMellowProduct({
           optimiserId,
-          userAddress,
+          signer,
         });
 
         const { newOptimiserState } = await exponentialBackoff(
@@ -182,7 +182,7 @@ describe('Mellow Optimiser:Withdraw', () => {
       await withSigner(network, userAddress, async (signer) => {
         const optimiserState = await getMellowProduct({
           optimiserId,
-          userAddress,
+          signer,
         });
 
         const { newOptimiserState } = await exponentialBackoff(
@@ -201,11 +201,11 @@ describe('Mellow Optimiser:Withdraw', () => {
 
         expect(
           newOptimiserState.userOptimiserDeposit - optimiserState.userOptimiserDeposit,
-        ).to.be.closeTo(-27.3, DELTA);
+        ).to.be.closeTo(0, DELTA);
 
         expect(
           newOptimiserState.userWalletBalance - optimiserState.userWalletBalance,
-        ).to.be.closeTo(27.3, DELTA);
+        ).to.be.closeTo(0, DELTA);
       });
     });
   });

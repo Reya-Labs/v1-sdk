@@ -145,8 +145,7 @@ export const rollover = async ({
   // Get the next state of the optimiser
   let optimiserInfo: OptimiserInfo | null = null;
   try {
-    const userAddress = await exponentialBackoff(() => signer.getAddress());
-    optimiserInfo = await getOptimiserInfo(optimiserId, userAddress);
+    optimiserInfo = await getOptimiserInfo(optimiserId, signer);
   } catch (error) {
     const errorMessage = 'Failed to get new state after deposit';
 
