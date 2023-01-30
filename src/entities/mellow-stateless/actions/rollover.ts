@@ -3,7 +3,7 @@ import { Erc20RootVaultABI, MellowMultiVaultRouterABI } from '../../../ABIs';
 import { getGasBuffer } from '../../../constants';
 import { getSentryTracker } from '../../../init';
 import { exponentialBackoff } from '../../../utils/retry';
-import { getOptimiserInfo } from '../getters/optimisers/getOptimiserInfo';
+import { getIndividualOptimiserInfo } from '../getters/optimisers/getIndividualOptimiserInfo';
 import { OptimiserInfo } from '../getters/types';
 import { getOptimiserConfig } from '../utils/getOptimiserConfig';
 import { mapWeights } from '../utils/mapWeights';
@@ -145,7 +145,7 @@ export const rollover = async ({
   // Get the next state of the optimiser
   let optimiserInfo: OptimiserInfo | null = null;
   try {
-    optimiserInfo = await getOptimiserInfo(optimiserId, signer);
+    optimiserInfo = await getIndividualOptimiserInfo(optimiserId, signer);
   } catch (error) {
     const errorMessage = 'Failed to get new state after deposit';
 

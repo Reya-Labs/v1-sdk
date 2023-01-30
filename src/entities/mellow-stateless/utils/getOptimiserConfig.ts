@@ -1,8 +1,8 @@
 import { getSentryTracker } from '../../../init';
 import { getMellowConfig } from '../config/config';
-import { MellowOptimiser } from '../config/types';
+import { OptimiserConfig } from '../config/types';
 
-export const getOptimiserConfig = (optimiserId: string): MellowOptimiser => {
+export const getOptimiserConfig = (optimiserId: string): OptimiserConfig => {
   const config = getMellowConfig();
 
   const optimiserConfig = config.MELLOW_OPTIMISERS.find(

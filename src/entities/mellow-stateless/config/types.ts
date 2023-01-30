@@ -1,4 +1,4 @@
-type VaultInfo = {
+type VaultConfig = {
   address: string;
   weight: number;
   pools: string[];
@@ -6,7 +6,7 @@ type VaultInfo = {
   withdrawable: boolean;
 };
 
-export type MellowOptimiser = {
+export type OptimiserConfig = {
   isVault: boolean;
 
   optimiser: string;
@@ -15,10 +15,10 @@ export type MellowOptimiser = {
   deprecated: boolean;
   title: string;
   description: string;
-  vaults: VaultInfo[];
+  vaults: VaultConfig[];
 };
 
 export type NetworkConfiguration = {
   MELLOW_LENS: string;
-  MELLOW_OPTIMISERS: MellowOptimiser[];
+  MELLOW_OPTIMISERS: OptimiserConfig[];
 };
