@@ -1,3 +1,4 @@
+import { getSentryTracker } from '../../../init';
 import { validateWeights } from './validateWeights';
 
 export const mapWeights = (
@@ -20,8 +21,13 @@ export const mapWeights = (
   });
 
   if (!validateWeights(weights)) {
-    // TODO: add sentry
-    throw new Error('Invalid weights');
+    const errorMessage = 'Invalid weights';
+
+    // Report to Sentry
+    const sentryTracker = getSentryTracker();
+    sentryTracker.captureMessage(errorMessage);
+
+    throw new Error(errorMessage);
   }
 
   return weights;
