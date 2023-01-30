@@ -12,6 +12,7 @@ import { withdraw } from '../../../src/entities/mellow-stateless/actions/withdra
 import { getMellowProduct } from '../../../src/entities/mellow-stateless/getters/getMellowProduct';
 import { IERC20MinimalABI, MellowDepositWrapperABI } from '../../../src/ABIs';
 import { exponentialBackoff } from '../../../src/utils/retry';
+import * as priceFetch from '../../../src/utils/priceFetch';
 
 const { provider } = waffle;
 const DELTA = 0.00001;
@@ -49,17 +50,12 @@ describe('Mellow Optimiser:Withdraw', () => {
     sinon.stub(initSDK, 'getProvider').callsFake(() => provider);
 
     sinon.stub(initMellowConfig, 'getMellowConfig').callsFake(() => MockGoerliConfig);
+
+    sinon.stub(priceFetch, 'geckoEthToUsd').resolves(1);
   };
 
   const restore = async () => {
-    // restore the original implementation of initSDK.getSentryTracker
-    (initSDK.getSentryTracker as sinon.SinonStub).restore();
-
-    // restore the original implementation of initSDK.getProvider
-    (initSDK.getProvider as sinon.SinonStub).restore();
-
-    // restore the original implementation of initMellowConfig.getMellowConfig
-    (initMellowConfig.getMellowConfig as sinon.SinonStub).restore();
+    sinon.restore();
   };
 
   beforeEach(async () => {

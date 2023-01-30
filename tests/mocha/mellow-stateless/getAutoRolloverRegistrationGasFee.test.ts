@@ -8,7 +8,7 @@ import * as initMellowConfig from '../../../src/entities/mellow-stateless/config
 import { MockGoerliConfig } from './utils';
 import { fail, withSigner } from '../../utils';
 import { registerForAutoRollover } from '../../../src/entities/mellow-stateless/actions/registerForAutoRollover';
-import * as priceFetcher from '../../../src/utils/priceFetch';
+import * as priceFetch from '../../../src/utils/priceFetch';
 
 const { provider } = waffle;
 
@@ -46,23 +46,13 @@ describe('Mellow Optimiser:Gas Fee for AutoRollover Registration', () => {
 
     sinon.stub(initSDK, 'getProvider').callsFake(() => provider);
 
-    sinon.stub(priceFetcher, 'geckoEthToUsd').resolves(1);
-
     sinon.stub(initMellowConfig, 'getMellowConfig').callsFake(() => MockGoerliConfig);
+
+    sinon.stub(priceFetch, 'geckoEthToUsd').resolves(1);
   };
 
   const restore = async () => {
-    // restore the original implementation of initSDK.getSentryTracker
-    (initSDK.getSentryTracker as sinon.SinonStub).restore();
-
-    // restore the original implementation of initSDK.getProvider
-    (initSDK.getProvider as sinon.SinonStub).restore();
-
-    // restore the original implementation of priceFetcher.geckoEthToUsd
-    (priceFetcher.geckoEthToUsd as sinon.SinonStub).restore();
-
-    // restore the original implementation of initMellowConfig.getMellowConfig
-    (initMellowConfig.getMellowConfig as sinon.SinonStub).restore();
+    sinon.restore();
   };
 
   beforeEach(async () => {

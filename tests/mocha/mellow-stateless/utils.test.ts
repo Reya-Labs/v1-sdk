@@ -10,6 +10,7 @@ import { MockGoerliConfig } from './utils';
 import { getOptimiserConfig } from '../../../src/entities/mellow-stateless/utils/getOptimiserConfig';
 import { fail } from '../../utils';
 import { validateWeights } from '../../../src/entities/mellow-stateless/utils/validateWeights';
+import * as priceFetch from '../../../src/utils/priceFetch';
 
 const { provider } = waffle;
 
@@ -26,17 +27,12 @@ describe('tests for utils', () => {
     sinon.stub(initSDK, 'getProvider').callsFake(() => provider);
 
     sinon.stub(initMellowConfig, 'getMellowConfig').callsFake(() => MockGoerliConfig);
+
+    sinon.stub(priceFetch, 'geckoEthToUsd').resolves(1);
   };
 
   const restore = async () => {
-    // restore the original implementation of initSDK.getSentryTracker
-    (initSDK.getSentryTracker as sinon.SinonStub).restore();
-
-    // restore the original implementation of initSDK.getProvider
-    (initSDK.getProvider as sinon.SinonStub).restore();
-
-    // restore the original implementation of initMellowConfig.getMellowConfig
-    (initMellowConfig.getMellowConfig as sinon.SinonStub).restore();
+    sinon.restore();
   };
 
   beforeEach(async () => {
