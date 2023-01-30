@@ -86,7 +86,7 @@ export function getLeavesIpfsUri(seasonId: number, cidsRecord: Array<string>): s
   if (!cidsRecord[seasonId]) {
     throw new Error(`No IPFS CID found for season ${seasonId}`);
   }
-  return `https://gateway.pinata.cloud/ipfs/${cidsRecord[seasonId]}`;
+  return `https://ipfs.io/ipfs/${cidsRecord[seasonId]}`;
 }
 
 export function getSelectedSeasonBadgesUrl(
