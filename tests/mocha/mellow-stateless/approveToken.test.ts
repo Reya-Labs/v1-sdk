@@ -35,6 +35,7 @@ describe('Utilities:ApproveToken', () => {
 
   const mock = async () => {
     const block = 16469730;
+
     await resetNetwork(block);
 
     sinon.stub(initSDK, 'getSentryTracker').callsFake(
