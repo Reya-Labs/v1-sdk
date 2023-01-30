@@ -9,6 +9,7 @@ import { MockGoerliConfig } from './utils';
 import { OptimiserInfo } from '../../../src/entities/mellow-stateless/getters/types';
 import { getAllMellowProducts } from '../../../src/entities/mellow-stateless/getters';
 import { withSigner } from '../../utils';
+import * as priceFetch from '../../../src/utils/priceFetch';
 
 const { provider } = waffle;
 
@@ -43,17 +44,12 @@ describe('Mellow Optimiser:GetOptimisers', () => {
     sinon.stub(initSDK, 'getProvider').callsFake(() => provider);
 
     sinon.stub(initMellowConfig, 'getMellowConfig').callsFake(() => MockGoerliConfig);
+
+    sinon.stub(priceFetch, 'geckoEthToUsd').resolves(1);
   };
 
   const restore = async () => {
-    // restore the original implementation of initSDK.getSentryTracker
-    (initSDK.getSentryTracker as sinon.SinonStub).restore();
-
-    // restore the original implementation of initSDK.getProvider
-    (initSDK.getProvider as sinon.SinonStub).restore();
-
-    // restore the original implementation of initMellowConfig.getMellowConfig
-    (initMellowConfig.getMellowConfig as sinon.SinonStub).restore();
+    sinon.restore();
   };
 
   describe('ETH optimiser with no user connected', () => {
@@ -203,17 +199,12 @@ describe('getOptimisers', () => {
     sinon.stub(initSDK, 'getProvider').callsFake(() => provider);
 
     sinon.stub(initMellowConfig, 'getMellowConfig').callsFake(() => MockGoerliConfig);
+
+    sinon.stub(priceFetch, 'geckoEthToUsd').resolves(1);
   };
 
   const restore = async () => {
-    // restore the original implementation of initSDK.getSentryTracker
-    (initSDK.getSentryTracker as sinon.SinonStub).restore();
-
-    // restore the original implementation of initSDK.getProvider
-    (initSDK.getProvider as sinon.SinonStub).restore();
-
-    // restore the original implementation of initMellowConfig.getMellowConfig
-    (initMellowConfig.getMellowConfig as sinon.SinonStub).restore();
+    sinon.restore();
   };
 
   describe('ETH optimiser with no user connected', () => {

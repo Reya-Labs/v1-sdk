@@ -12,6 +12,7 @@ import { fail, withSigner } from '../../utils';
 import { approveToken } from '../../../src/entities/mellow-stateless/utils/token/approveToken';
 import { MaxUint256Bn } from '../../../src/constants';
 import { exponentialBackoff } from '../../../src/utils/retry';
+import * as priceFetch from '../../../src/utils/priceFetch';
 
 const { provider } = waffle;
 
@@ -49,17 +50,12 @@ describe('Utilities:ApproveToken', () => {
     sinon.stub(initSDK, 'getProvider').callsFake(() => provider);
 
     sinon.stub(initMellowConfig, 'getMellowConfig').callsFake(() => MockGoerliConfig);
+
+    sinon.stub(priceFetch, 'geckoEthToUsd').resolves(1000);
   };
 
   const restore = async () => {
-    // restore the original implementation of initSDK.getSentryTracker
-    (initSDK.getSentryTracker as sinon.SinonStub).restore();
-
-    // restore the original implementation of initSDK.getProvider
-    (initSDK.getProvider as sinon.SinonStub).restore();
-
-    // restore the original implementation of initMellowConfig.getMellowConfig
-    (initMellowConfig.getMellowConfig as sinon.SinonStub).restore();
+    sinon.restore();
   };
 
   beforeEach(async () => {
