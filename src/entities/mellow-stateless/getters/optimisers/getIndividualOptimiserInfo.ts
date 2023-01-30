@@ -8,7 +8,7 @@ import { mapOptimiser } from './mappers';
 import { ZERO_ADDRESS } from '../../../../constants';
 import { exponentialBackoff } from '../../../../utils/retry';
 
-export const getOptimiserInfo = async (
+export const getIndividualOptimiserInfo = async (
   optimiserId: string,
   signer: ethers.Signer | null,
 ): Promise<OptimiserInfo> => {
