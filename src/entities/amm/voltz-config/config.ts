@@ -53,7 +53,15 @@ export const networkConfigurations: { [key: string]: NetworkConfiguration } = {
         },
         traderWithdrawable: false,
       },
-
+      {
+        name: 'aUSDC_v6',
+        id: '0x2913a888C95d1300d66978905331c7F50EbC78b2', // vamm address
+        show: {
+          general: true,
+          trader: false,
+        },
+        traderWithdrawable: false,
+      },
       {
         name: 'aUSDC_v7',
         id: '0x8773315B21961828d5bdaB9a29881b9aB25147f8', // vamm address
