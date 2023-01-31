@@ -43,6 +43,7 @@ export const networkConfigurations: { [key: string]: NetworkConfiguration } = {
           trader: true,
         },
         traderWithdrawable: false,
+        rollover: '0x2913a888C95d1300d66978905331c7F50EbC78b2',
       },
       {
         name: 'aUSDC_v5',
@@ -58,7 +59,7 @@ export const networkConfigurations: { [key: string]: NetworkConfiguration } = {
         id: '0x2913a888C95d1300d66978905331c7F50EbC78b2', // vamm address
         show: {
           general: true,
-          trader: false,
+          trader: true,
         },
         traderWithdrawable: false,
       },
