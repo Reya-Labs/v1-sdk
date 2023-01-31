@@ -42,7 +42,7 @@ export const networkConfigurations: { [key: string]: NetworkConfiguration } = {
           general: true,
           trader: true,
         },
-        traderWithdrawable: false,
+        traderWithdrawable: true,
         rollover: '0x2913a888C95d1300d66978905331c7F50EbC78b2',
       },
       {
