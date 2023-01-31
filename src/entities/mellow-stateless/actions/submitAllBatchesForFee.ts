@@ -10,7 +10,7 @@ import { getOptimiserConfig } from '../utils/getOptimiserConfig';
 type SubmitAllBatchesForFeeArgs = {
   onlyGasEstimate?: boolean;
   optimiserId: string;
-  signer: ethers.Signer | null;
+  signer: ethers.Signer;
 };
 
 type SubmitAllBatchesForFeeResponse = {
@@ -41,7 +41,7 @@ export const submitAllBatchesForFee = async ({
   }
 
   // Get Optimiser contract
-  let mellowOptimiser = new ethers.Contract(optimiserId, MellowMultiVaultRouterABI, provider);
+  const mellowOptimiser = new ethers.Contract(optimiserId, MellowMultiVaultRouterABI, signer);
 
   // Simulate the transaction
   try {
@@ -78,8 +78,6 @@ export const submitAllBatchesForFee = async ({
 
     throw new Error(errorMessage);
   }
-
-  mellowOptimiser = new ethers.Contract(optimiserId, MellowMultiVaultRouterABI, signer);
 
   // Send the transaction
   const tx = await mellowOptimiser.submitAllBatchesForFee({
