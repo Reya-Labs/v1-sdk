@@ -560,7 +560,7 @@ class MellowLpVault {
   }
 
   public canManageVaultPosition = (vaultIndex: number): boolean => {
-    return false;
+    return true;
   };
 }
 
