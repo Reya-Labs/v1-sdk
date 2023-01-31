@@ -34,9 +34,9 @@ export const getVaultInfo = async (
   const tokenContract = new ethers.Contract(tokenId, IERC20MinimalABI, provider);
 
   // Get latest maturity and decide whether the entire optimiser is expired or not
-  const latestMaturityInMS: number = await exponentialBackoff(() =>
-    mellowLensContract.getVaultMaturity(vaultAddress),
-  );
+  const latestMaturityInMS: number = (
+    await exponentialBackoff(() => mellowLensContract.getVaultMaturity(vaultAddress))
+  ).toNumber();
   const expired = closeOrPastMaturity(latestMaturityInMS);
 
   // Decide whether the vault is depositable or not
