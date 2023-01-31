@@ -7,10 +7,16 @@ import { getMellowConfig } from '../../config/config';
 import { OptimiserInfo, ContractOptimiserInfo } from '../types';
 import { mapOptimiser } from './mappers';
 
-export const getOptimisersInfo = async (signer: ethers.Signer | null): Promise<OptimiserInfo[]> => {
+export const getOptimisersInfo = async (
+  signer: ethers.Signer | null,
+  type: 'all' | 'active' = 'all',
+): Promise<OptimiserInfo[]> => {
   const config = getMellowConfig();
   const provider = getProvider();
-  const optimiserConfigs = config.MELLOW_OPTIMISERS.filter((r) => !r.isVault);
+  let optimiserConfigs = config.MELLOW_OPTIMISERS.filter((o) => !o.isVault);
+  if (type === 'active') {
+    optimiserConfigs = optimiserConfigs.filter((o) => !o.deprecated);
+  }
 
   const userAddress = signer ? await signer.getAddress() : ZERO_ADDRESS;
 
