@@ -2,9 +2,15 @@ import { getMellowConfig } from '../../config/config';
 import { OptimiserInfo } from '../types';
 import { getVaultInfo } from './getVaultInfo';
 
-export const getVaultsInfo = async (userAddress: string): Promise<OptimiserInfo[]> => {
+export const getVaultsInfo = async (
+  userAddress: string,
+  type: 'all' | 'active' = 'all',
+): Promise<OptimiserInfo[]> => {
   const config = getMellowConfig();
-  const vaultConfigs = config.MELLOW_OPTIMISERS.filter((r) => r.isVault);
+  let vaultConfigs = config.MELLOW_OPTIMISERS.filter((v) => v.isVault);
+  if (type === 'active') {
+    vaultConfigs = vaultConfigs.filter((v) => !v.deprecated);
+  }
 
   // Get vaults
   const vaults: OptimiserInfo[] = [];

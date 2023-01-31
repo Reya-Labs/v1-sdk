@@ -6,10 +6,11 @@ import { ZERO_ADDRESS } from '../../../constants';
 
 export const getAllMellowProducts = async (
   signer: ethers.Signer | null,
+  type: 'all' | 'active' = 'all',
 ): Promise<OptimiserInfo[]> => {
   const userAddress = signer ? await signer.getAddress() : ZERO_ADDRESS;
-  const vaults = await getVaultsInfo(userAddress);
-  const optimisers = await getOptimisersInfo(signer);
+  const vaults = await getVaultsInfo(userAddress, type);
+  const optimisers = await getOptimisersInfo(signer, type);
 
   return vaults.concat(optimisers);
 };
