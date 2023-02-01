@@ -23,4 +23,4 @@ jobs:
       - name: Prettier check, Eslint check, Typescript check
         run: make code-quality-check
       - name: Run tests
-        run: GOERLI_URL=${{secrets.GOERLI_URL}} MAINNET_URL=${{secrets.MAINNET_URL}} yarn test:coverage
+        run: GOERLI_URL=${{secrets.GOERLI_URL}} MAINNET_URL=${{secrets.MAINNET_URL}} yarn test:cicd
