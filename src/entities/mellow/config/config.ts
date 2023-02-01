@@ -60,7 +60,7 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
               pools: ['AAVE - USDC LEND'],
               maturityTimestampMS: 1675166400000,
               estimatedHistoricApy: [0, 20],
-              withdrawable: false,
+              withdrawable: true,
             },
             {
               weight: 25,
