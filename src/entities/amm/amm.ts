@@ -1486,19 +1486,25 @@ export class AMM {
 
   // historocal rates
 
-  public async getHistoricalVariableRate(filters: {
-    granularityInSeconds: number;
-    timeframeInSeconds: number;
-  }): Promise<any[]> {
-    const result = await getHistoricalVariableRate(this.rateOracle.id, filters);
+  public async getHistoricalVariableRate(
+    subgraphUrl: string,
+    filters: {
+      granularityMs: number;
+      timeframeMs: number;
+    },
+  ): Promise<any[]> {
+    const result = await getHistoricalVariableRate(subgraphUrl, this.rateOracle.id, filters);
     return result;
   }
 
-  public async getHistoricalFixedRate(filters: {
-    granularityInSeconds: number;
-    timeframeInSeconds: number;
-  }): Promise<any[]> {
-    const result = await getHistoricalFixedRate(this.id, filters);
+  public async getHistoricalFixedRate(
+    subgraphUrl: string,
+    filters: {
+      granularityMs: number;
+      timeframeMs: number;
+    },
+  ): Promise<any[]> {
+    const result = await getHistoricalFixedRate(subgraphUrl, this.id, filters);
     return result;
   }
 
