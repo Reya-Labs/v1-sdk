@@ -51,8 +51,6 @@ export const MIN_FIXED_RATE = 0.001;
  */
 export const MAX_FIXED_RATE = 1001;
 
-export const ONE_YEAR_IN_SECONDS = 31536000;
-
 export function getGasBuffer(value: BigNumber): BigNumber {
   return value.mul(120).div(100);
 }
@@ -72,8 +70,10 @@ export const GOERLI_TWO_MILLON = 200;
 
 export const ONE_HOUR_IN_MS = 60 * 60 * 1000;
 export const ONE_DAY_IN_SECONDS = 60 * 60 * 24;
-export const ONE_YAER_IN_SECONDS = 365 * 24 * 60 * 60;
+export const ONE_YEAR_IN_SECONDS = 365 * 24 * 60 * 60;
 export const DEPOSIT_WINDOW = 48 * ONE_HOUR_IN_MS;
 
 export const GLP_PRECISION = BigNumber.from(10).pow(30);
 export const WAD_PRECISION = BigNumber.from(10).pow(18);
+
+export const WAD = BigNumber.from('1000000000000000000');
