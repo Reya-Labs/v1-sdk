@@ -4,7 +4,7 @@ export const getHistoricalFixedRate = async (
     granularityInSeconds: number;
     timeframeInSeconds: number;
   },
-): Promise<void> => {
+): Promise<any[]> => {
   // get ticks (with timeframe)
   const currentTimestamp = Date.now() / 1000;
 
@@ -31,7 +31,7 @@ export const getHistoricalFixedRate = async (
     // cut off the prevous datapoints to minimise search effort
     tickUpdates = tickUpdates.slice(beforeOrAtIndex);
   }
-  //
+  return result;
 };
 
 /// @note returns closest point before the given timestamp (beforeOrAt)

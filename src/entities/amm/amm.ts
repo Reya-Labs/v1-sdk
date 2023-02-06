@@ -72,6 +72,8 @@ import { convertGasUnitsToETH } from '../../utils/convertGasUnitsToETH';
 import { convertApyToVariableFactor } from '../../utils/convertApyToVariableFactor';
 import { calculateSettlementCashflow } from '../../utils/calculateSettlementCashflow';
 import { sum } from '../../utils/functions';
+import { getHistoricalVariableRate } from './getters/historicalRates/getHistoricalVariableRate';
+import { getHistoricalFixedRate } from './getters/historicalRates/getHistoricalFixedRate';
 
 export class AMM {
   public readonly id: string;
@@ -1480,6 +1482,24 @@ export class AMM {
     let { closestUsableTick } = this.closestTickAndFixedRate(fixedRate);
     closestUsableTick -= count * this.tickSpacing;
     return tickToFixedRate(closestUsableTick).toNumber();
+  }
+
+  // historocal rates
+
+  public async getHistoricalVariableRate(filters: {
+    granularityInSeconds: number;
+    timeframeInSeconds: number;
+  }): Promise<any[]> {
+    const result = await getHistoricalVariableRate(this.rateOracle.id, filters);
+    return result;
+  }
+
+  public async getHistoricalFixedRate(filters: {
+    granularityInSeconds: number;
+    timeframeInSeconds: number;
+  }): Promise<any[]> {
+    const result = await getHistoricalFixedRate(this.id, filters);
+    return result;
   }
 
   // balance checks
