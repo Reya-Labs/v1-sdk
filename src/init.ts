@@ -11,7 +11,6 @@ import alchemyApiKeyToURL from './utils/alchemyApiKeyToURL';
 import initSubgraphURLs from './utils/initSubgraphURLs';
 
 let sentryTracker: BrowserClient | null;
-let subgraphURLs: { [key in SubgraphURLEnum]: string } | null;
 
 // TO DO: to be deleted
 let provider: ethers.providers.JsonRpcProvider | null;
@@ -55,10 +54,7 @@ export const getSubgraphURL = (
   chainId: SupportedChainId,
   subgraphURLType: SubgraphURLEnum,
 ): string => {
-  if (!subgraphURLs) {
-    subgraphURLs = initSubgraphURLs(chainId);
-  }
-
+  const subgraphURLs = initSubgraphURLs(chainId);
   return subgraphURLs[subgraphURLType];
 };
 
