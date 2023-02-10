@@ -74,6 +74,16 @@ export const networkConfigurations: { [key: string]: NetworkConfiguration } = {
         traderWithdrawable: false,
         isAaveV3: true,
       },
+      {
+        name: 'aUSDC_v8',
+        id: '0x66Ad47d8C8A0beDd32f5692fFB2df85041CD4Bd2', // vamm address
+        show: {
+          general: true,
+          trader: false,
+        },
+        traderWithdrawable: false,
+        isAaveV3: true,
+      },
 
       // borrow aUSDC pools
       {
