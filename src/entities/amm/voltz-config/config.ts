@@ -71,7 +71,7 @@ export const networkConfigurations: { [key: string]: NetworkConfiguration } = {
           general: true,
           trader: true,
         },
-        traderWithdrawable: false,
+        traderWithdrawable: true,
         isAaveV3: true,
       },
       {
@@ -79,7 +79,7 @@ export const networkConfigurations: { [key: string]: NetworkConfiguration } = {
         id: '0x66Ad47d8C8A0beDd32f5692fFB2df85041CD4Bd2', // vamm address
         show: {
           general: true,
-          trader: false,
+          trader: true,
         },
         traderWithdrawable: false,
         isAaveV3: true,
