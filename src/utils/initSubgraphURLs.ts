@@ -1,26 +1,26 @@
 import { getNetwork } from '../init';
-import { SubgraphURLEnum, SupportedNetworksEnum } from '../types';
+import { SubgraphURLEnum, SupportedChainId } from '../types';
 
 const initSubgraphURLs = (): { [key in SubgraphURLEnum]: string } => {
   switch (getNetwork()) {
-    case SupportedNetworksEnum.mainnet: {
+    case SupportedChainId.mainnet: {
       return {
         [SubgraphURLEnum.voltzProtocol]:
           'https://api.thegraph.com/subgraphs/name/voltzprotocol/mainnet-v1',
       };
     }
-    case SupportedNetworksEnum.goerli: {
+    case SupportedChainId.goerli: {
       return {
         [SubgraphURLEnum.voltzProtocol]:
           'https://api.thegraph.com/subgraphs/name/voltzprotocol/voltz-goerli',
       };
     }
-    case SupportedNetworksEnum.arbitrum: {
+    case SupportedChainId.arbitrum: {
       return {
         [SubgraphURLEnum.voltzProtocol]: '',
       };
     }
-    case SupportedNetworksEnum.arbitrumGoerli: {
+    case SupportedChainId.arbitrumGoerli: {
       return {
         [SubgraphURLEnum.voltzProtocol]: '',
       };

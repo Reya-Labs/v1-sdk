@@ -34,7 +34,7 @@ export type MintOrBurnParams = {
   marginDelta: BigNumberish;
 };
 
-export enum SupportedNetworksEnum {
+export enum SupportedChainId {
   mainnet = 1,
   goerli = 5,
   arbitrum = 42161,
@@ -42,7 +42,7 @@ export enum SupportedNetworksEnum {
 }
 
 export type InitArgs = {
-  network: SupportedNetworksEnum;
+  network: SupportedChainId;
   alchemyApiKey: string;
 };
 
@@ -52,7 +52,7 @@ export enum SubgraphURLEnum {
 }
 
 export type SDKStorage = {
-  network: SupportedNetworksEnum | null;
+  network: SupportedChainId | null;
   provider: ethers.providers.JsonRpcProvider | null;
   subgraphURLs: { [key in SubgraphURLEnum]: string } | null;
   sentryTracker: BrowserClient | null;
