@@ -21,7 +21,8 @@ const initSubgraphURLs = (chainId: SupportedChainId): { [key in SubgraphURLEnum]
     }
     case SupportedChainId.arbitrumGoerli: {
       return {
-        [SubgraphURLEnum.voltzProtocol]: '',
+        [SubgraphURLEnum.voltzProtocol]:
+          'https://api.thegraph.com/subgraphs/name/voltzprotocol/arbitrum-goerli-v1',
       };
     }
     default: {
