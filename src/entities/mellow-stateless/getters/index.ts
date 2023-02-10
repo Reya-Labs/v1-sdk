@@ -1,1 +1,1 @@
-export { getAllMellowProducts } from './getAllMellowProducts';
+export { getAllMellowProducts, getAllMellowProductsV1 } from './getAllMellowProducts';

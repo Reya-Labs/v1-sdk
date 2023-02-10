@@ -1,8 +1,7 @@
-import { getNetwork } from '../init';
 import { SupportedChainId } from '../types';
 
-const alchemyApiKeyToURL = (apiKey: string): string => {
-  switch (getNetwork()) {
+const alchemyApiKeyToURL = (chainId: SupportedChainId, apiKey: string): string => {
+  switch (chainId) {
     case SupportedChainId.mainnet: {
       return `https://eth-mainnet.g.alchemy.com/v2/${apiKey}`;
     }
@@ -16,9 +15,7 @@ const alchemyApiKeyToURL = (apiKey: string): string => {
       return `https://arb-goerli.g.alchemy.com/v2/${apiKey}`;
     }
     default: {
-      throw new Error(
-        `Unable to convert Alchemy API Key into RPC URL for chain ID ${getNetwork()}`,
-      );
+      throw new Error(`Unable to convert Alchemy API Key into RPC URL for chain ID ${chainId}`);
     }
   }
 };

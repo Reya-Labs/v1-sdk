@@ -1,7 +1,7 @@
 import { providers } from 'ethers';
 import { NetworkConfiguration } from './types';
 import { networkConfigurations, networkConfigurationsV1 } from './config';
-import { getNetwork } from '../../../init';
+import { SupportedChainId } from '../../../types';
 
 export const getVoltzPoolConfig = ({
   network,
@@ -32,8 +32,6 @@ export const getVoltzPoolConfig = ({
   };
 };
 
-export const getVoltzPoolConfigV1 = (): NetworkConfiguration => {
-  const network = getNetwork();
-  const config = networkConfigurationsV1[network];
-  return config;
+export const getVoltzPoolConfigV1 = (chainId: SupportedChainId): NetworkConfiguration => {
+  return networkConfigurationsV1[chainId];
 };

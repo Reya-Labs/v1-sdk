@@ -3,7 +3,7 @@ import {
   Position as RawPosition,
 } from '@voltz-protocol/subgraph-data';
 import { getSentryTracker, getSubgraphURL } from '../../init';
-import { SubgraphURLEnum } from '../../types';
+import { SubgraphURLEnum, SupportedChainId } from '../../types';
 import Position from '../position';
 import { AMM } from './amm';
 
@@ -15,6 +15,7 @@ type GetPositionsArgs = {
 };
 
 type GetPositionsArgsV1 = {
+  chainId: SupportedChainId;
   userWalletId: string;
   amms: AMM[];
   type: 'Trader' | 'LP' | 'Borrowing';
@@ -138,6 +139,7 @@ export const getPositions = async (params: GetPositionsArgs): Promise<GetPositio
 };
 
 const getUninitialisedPositionsV1 = async ({
+  chainId,
   userWalletId,
   amms,
 }: GetPositionsArgsV1): Promise<GetPositionsResponse> => {
@@ -146,7 +148,7 @@ const getUninitialisedPositionsV1 = async ({
 
   try {
     rawPositions = await getRawPositions(
-      getSubgraphURL(SubgraphURLEnum.voltzProtocol),
+      getSubgraphURL(chainId, SubgraphURLEnum.voltzProtocol),
       Date.now().valueOf(),
       {
         ammIDs: amms.map((amm) => amm.id),

@@ -1,6 +1,5 @@
 import JSBI from 'jsbi';
-import { BigNumberish, ethers } from 'ethers';
-import { BrowserClient } from '@sentry/browser';
+import { BigNumberish } from 'ethers';
 
 export type BigIntish = JSBI | string | number;
 
@@ -41,19 +40,7 @@ export enum SupportedChainId {
   arbitrumGoerli = 421613,
 }
 
-export type InitArgs = {
-  network: SupportedChainId;
-  alchemyApiKey: string;
-};
-
 export enum SubgraphURLEnum {
   voltzProtocol = 1,
   // more to be added once SBT will be integrated
 }
-
-export type SDKStorage = {
-  network: SupportedChainId | null;
-  provider: ethers.providers.JsonRpcProvider | null;
-  subgraphURLs: { [key in SubgraphURLEnum]: string } | null;
-  sentryTracker: BrowserClient | null;
-};

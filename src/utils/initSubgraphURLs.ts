@@ -1,8 +1,7 @@
-import { getNetwork } from '../init';
 import { SubgraphURLEnum, SupportedChainId } from '../types';
 
-const initSubgraphURLs = (): { [key in SubgraphURLEnum]: string } => {
-  switch (getNetwork()) {
+const initSubgraphURLs = (chainId: SupportedChainId): { [key in SubgraphURLEnum]: string } => {
+  switch (chainId) {
     case SupportedChainId.mainnet: {
       return {
         [SubgraphURLEnum.voltzProtocol]:
@@ -26,7 +25,7 @@ const initSubgraphURLs = (): { [key in SubgraphURLEnum]: string } => {
       };
     }
     default: {
-      throw new Error(`Unable to get subgraph URLs for chain ID ${getNetwork()}`);
+      throw new Error(`Unable to get subgraph URLs for chain ID ${chainId}`);
     }
   }
 };

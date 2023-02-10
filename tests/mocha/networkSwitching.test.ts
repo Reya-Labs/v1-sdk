@@ -4,9 +4,7 @@ import { expect } from 'chai';
 import Sinon from 'sinon';
 import { Signer } from 'ethers';
 import { detectNetworkWithChainId, detectNetworkWithSigner } from '../../src';
-import { SubgraphURLEnum, SupportedChainId } from '../../src/types';
-import { getNetwork, getSentryTracker, getSubgraphURL, initV1, rearm } from '../../src/init';
-import alchemyApiKeyToURL from '../../src/utils/alchemyApiKeyToURL';
+import { SupportedChainId } from '../../src/types';
 
 describe('Network Switching tests', async () => {
   describe('Detect Network', async () => {
@@ -91,56 +89,56 @@ describe('Network Switching tests', async () => {
     });
   });
 
-  describe('Init and Rearm SDK', async () => {
-    const alchemyApiKeys = {
-      [SupportedChainId.mainnet]: 'abc',
-      [SupportedChainId.goerli]: 'bcd',
-      [SupportedChainId.arbitrum]: 'cde',
-      [SupportedChainId.arbitrumGoerli]: 'def',
-    };
+  // describe('Init and Rearm SDK', async () => {
+  //   const alchemyApiKeys = {
+  //     [SupportedChainId.mainnet]: 'abc',
+  //     [SupportedChainId.goerli]: 'bcd',
+  //     [SupportedChainId.arbitrum]: 'cde',
+  //     [SupportedChainId.arbitrumGoerli]: 'def',
+  //   };
 
-    let network: SupportedChainId;
+  //   let network: SupportedChainId;
 
-    it('Init', async () => {
-      network = SupportedChainId.mainnet;
-      initV1({
-        network,
-        alchemyApiKey: alchemyApiKeys[network],
-      });
+  //   it('Init', async () => {
+  //     network = SupportedChainId.mainnet;
+  //     initV1({
+  //       network,
+  //       alchemyApiKey: alchemyApiKeys[network],
+  //     });
 
-      expect(getNetwork()).to.be.eq(network);
+  //     expect(getNetwork()).to.be.eq(network);
 
-      expect(alchemyApiKeyToURL(alchemyApiKeys[network])).to.be.eq(
-        `https://eth-mainnet.g.alchemy.com/v2/${alchemyApiKeys[network]}`,
-      );
+  //     expect(alchemyApiKeyToURL(alchemyApiKeys[network])).to.be.eq(
+  //       `https://eth-mainnet.g.alchemy.com/v2/${alchemyApiKeys[network]}`,
+  //     );
 
-      expect(getSubgraphURL(SubgraphURLEnum.voltzProtocol)).to.be.eq(
-        'https://api.thegraph.com/subgraphs/name/voltzprotocol/mainnet-v1',
-      );
+  //     expect(getSubgraphURL(SubgraphURLEnum.voltzProtocol)).to.be.eq(
+  //       'https://api.thegraph.com/subgraphs/name/voltzprotocol/mainnet-v1',
+  //     );
 
-      // make sure it doesn't throw errors
-      getSentryTracker();
-    });
+  //     // make sure it doesn't throw errors
+  //     getSentryTracker();
+  //   });
 
-    it('Rearm', async () => {
-      network = SupportedChainId.goerli;
-      rearm({
-        network,
-        alchemyApiKey: alchemyApiKeys[network],
-      });
+  //   it('Rearm', async () => {
+  //     network = SupportedChainId.goerli;
+  //     rearm({
+  //       network,
+  //       alchemyApiKey: alchemyApiKeys[network],
+  //     });
 
-      expect(getNetwork()).to.be.eq(network);
+  //     expect(getNetwork()).to.be.eq(network);
 
-      expect(alchemyApiKeyToURL(alchemyApiKeys[network])).to.be.eq(
-        `https://eth-goerli.g.alchemy.com/v2/${alchemyApiKeys[network]}`,
-      );
+  //     expect(alchemyApiKeyToURL(alchemyApiKeys[network])).to.be.eq(
+  //       `https://eth-goerli.g.alchemy.com/v2/${alchemyApiKeys[network]}`,
+  //     );
 
-      expect(getSubgraphURL(SubgraphURLEnum.voltzProtocol)).to.be.eq(
-        'https://api.thegraph.com/subgraphs/name/voltzprotocol/voltz-goerli',
-      );
+  //     expect(getSubgraphURL(SubgraphURLEnum.voltzProtocol)).to.be.eq(
+  //       'https://api.thegraph.com/subgraphs/name/voltzprotocol/voltz-goerli',
+  //     );
 
-      // make sure it doesn't throw errors
-      getSentryTracker();
-    });
-  });
+  //     // make sure it doesn't throw errors
+  //     getSentryTracker();
+  //   });
+  // });
 });

@@ -1,4 +1,3 @@
-import { getNetwork } from '../../../init';
 import { SupportedChainId } from '../../../types';
 import { NetworkConfiguration } from './types';
 
@@ -623,14 +622,6 @@ const networkConfigurationsV1: { [key in SupportedChainId]: NetworkConfiguration
   },
 };
 
-export const initMellowConfigV1 = (): void => {
-  cachedConfig = networkConfigurationsV1[getNetwork()];
-};
-
-export const getMellowConfigV1 = (): NetworkConfiguration => {
-  if (!cachedConfig) {
-    throw new Error('Mellow Configuration is not set up.');
-  }
-
-  return cachedConfig;
+export const getMellowConfigV1 = (chainId: SupportedChainId): NetworkConfiguration => {
+  return networkConfigurationsV1[chainId];
 };
