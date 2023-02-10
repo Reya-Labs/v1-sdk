@@ -559,8 +559,8 @@ export const networkConfigurationsV1: { [key in SupportedChainId]: NetworkConfig
   },
 
   [SupportedChainId.arbitrumGoerli]: {
-    factoryAddress: '', // TBC
-    wethAddress: '',
+    factoryAddress: '0xCC39fF9f5413DA2dFB8475a88E3E6C8B190CeAe6', // TBC
+    wethAddress: '0xb83C277172198E8Ec6b841Ff9bEF2d7fa524f797',
     apply: false,
     defaultMinLeverageAllowed: 5,
     pools: [],
