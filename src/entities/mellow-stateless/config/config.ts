@@ -1,5 +1,5 @@
 import { getNetwork } from '../../../init';
-import { SupportedNetworksEnum } from '../../../types';
+import { SupportedChainId } from '../../../types';
 import { NetworkConfiguration } from './types';
 
 const networkConfigurations: { [key: string]: NetworkConfiguration } = {
@@ -319,8 +319,8 @@ export const getMellowConfig = (): NetworkConfiguration => {
   return cachedConfig;
 };
 
-const networkConfigurationsV1: { [key in SupportedNetworksEnum]: NetworkConfiguration } = {
-  [SupportedNetworksEnum.mainnet]: {
+const networkConfigurationsV1: { [key in SupportedChainId]: NetworkConfiguration } = {
+  [SupportedChainId.mainnet]: {
     MELLOW_LENS: '0xb34FF2F4BA8ECE3Ceb4570277D748c908Ac13E14',
     MELLOW_OPTIMISERS: [
       {
@@ -469,7 +469,7 @@ const networkConfigurationsV1: { [key in SupportedNetworksEnum]: NetworkConfigur
       },
     ],
   },
-  [SupportedNetworksEnum.goerli]: {
+  [SupportedChainId.goerli]: {
     MELLOW_LENS: '0x3BC31926adc64587c1E48c2f3749B66B3fE366E9',
     MELLOW_OPTIMISERS: [
       {
@@ -613,11 +613,11 @@ const networkConfigurationsV1: { [key in SupportedNetworksEnum]: NetworkConfigur
       },
     ],
   },
-  [SupportedNetworksEnum.arbitrum]: {
+  [SupportedChainId.arbitrum]: {
     MELLOW_LENS: '0x0000000000000000000000000000000000000000',
     MELLOW_OPTIMISERS: [],
   },
-  [SupportedNetworksEnum.arbitrumGoerli]: {
+  [SupportedChainId.arbitrumGoerli]: {
     MELLOW_LENS: '0x0000000000000000000000000000000000000000',
     MELLOW_OPTIMISERS: [],
   },

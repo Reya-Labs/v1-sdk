@@ -1,13 +1,13 @@
 import { Signer } from 'ethers';
-import { SupportedNetworksEnum } from '../types';
+import { SupportedChainId } from '../types';
 
 export type NetworkDetectedType = {
-  network: SupportedNetworksEnum | null;
+  network: SupportedChainId | null;
   isSupported: boolean;
 };
 
 export const detectNetworkWithChainId = (chainId: number): NetworkDetectedType => {
-  if (!Object.values(SupportedNetworksEnum).includes(chainId)) {
+  if (!Object.values(SupportedChainId).includes(chainId)) {
     return {
       network: null,
       isSupported: false,

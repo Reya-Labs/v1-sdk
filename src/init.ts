@@ -6,7 +6,7 @@ import {
 } from '@sentry/browser';
 import { ethers } from 'ethers';
 import { initMellowConfigV1 } from './entities/mellow-stateless/config/config';
-import { InitArgs, SDKStorage, SubgraphURLEnum, SupportedNetworksEnum } from './types';
+import { InitArgs, SDKStorage, SubgraphURLEnum, SupportedChainId } from './types';
 import alchemyApiKeyToURL from './utils/alchemyApiKeyToURL';
 import initSubgraphURLs from './utils/initSubgraphURLs';
 
@@ -32,7 +32,7 @@ export const initSentryTracker = (): BrowserClient => {
   });
 };
 
-export const getNetwork = (): SupportedNetworksEnum => {
+export const getNetwork = (): SupportedChainId => {
   if (!sdkStorage.network) {
     throw new Error('Network is not set up!');
   }
@@ -65,7 +65,7 @@ export const getSentryTracker = (): BrowserClient => {
 
 export const init = ({ providerURL, network }: { providerURL: string; network: string }): void => {
   const networkChainId = ethers.providers.getNetwork(network).chainId;
-  if (!Object.values(SupportedNetworksEnum).includes(networkChainId)) {
+  if (!Object.values(SupportedChainId).includes(networkChainId)) {
     throw new Error('Unsupported network!');
   }
 
@@ -85,7 +85,7 @@ export const rearm = ({ network, alchemyApiKey }: InitArgs): void => {
 
   sdkStorage.subgraphURLs = initSubgraphURLs();
 
-  if ([SupportedNetworksEnum.mainnet, SupportedNetworksEnum.goerli].find((x) => x === network)) {
+  if ([SupportedChainId.mainnet, SupportedChainId.goerli].find((x) => x === network)) {
     initMellowConfigV1();
   }
 };

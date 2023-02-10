@@ -4,7 +4,7 @@ import { expect } from 'chai';
 import Sinon from 'sinon';
 import { Signer } from 'ethers';
 import { detectNetworkWithChainId, detectNetworkWithSigner } from '../../src';
-import { SubgraphURLEnum, SupportedNetworksEnum } from '../../src/types';
+import { SubgraphURLEnum, SupportedChainId } from '../../src/types';
 import { getNetwork, getSentryTracker, getSubgraphURL, initV1, rearm } from '../../src/init';
 import alchemyApiKeyToURL from '../../src/utils/alchemyApiKeyToURL';
 
@@ -20,7 +20,7 @@ describe('Network Switching tests', async () => {
       {
         const networkDetected = detectNetworkWithChainId(1);
         expect(networkDetected.isSupported).to.be.eq(true);
-        expect(networkDetected.network).to.be.eq(SupportedNetworksEnum.mainnet);
+        expect(networkDetected.network).to.be.eq(SupportedChainId.mainnet);
       }
 
       {
@@ -32,19 +32,19 @@ describe('Network Switching tests', async () => {
       {
         const networkDetected = detectNetworkWithChainId(5);
         expect(networkDetected.isSupported).to.be.eq(true);
-        expect(networkDetected.network).to.be.eq(SupportedNetworksEnum.goerli);
+        expect(networkDetected.network).to.be.eq(SupportedChainId.goerli);
       }
 
       {
         const networkDetected = detectNetworkWithChainId(42161);
         expect(networkDetected.isSupported).to.be.eq(true);
-        expect(networkDetected.network).to.be.eq(SupportedNetworksEnum.arbitrum);
+        expect(networkDetected.network).to.be.eq(SupportedChainId.arbitrum);
       }
 
       {
         const networkDetected = detectNetworkWithChainId(421613);
         expect(networkDetected.isSupported).to.be.eq(true);
-        expect(networkDetected.network).to.be.eq(SupportedNetworksEnum.arbitrumGoerli);
+        expect(networkDetected.network).to.be.eq(SupportedChainId.arbitrumGoerli);
       }
     });
 
@@ -54,7 +54,7 @@ describe('Network Switching tests', async () => {
           getMockedSigner(1) as unknown as Signer,
         );
         expect(networkDetected.isSupported).to.be.eq(true);
-        expect(networkDetected.network).to.be.eq(SupportedNetworksEnum.mainnet);
+        expect(networkDetected.network).to.be.eq(SupportedChainId.mainnet);
       }
 
       {
@@ -70,7 +70,7 @@ describe('Network Switching tests', async () => {
           getMockedSigner(5) as unknown as Signer,
         );
         expect(networkDetected.isSupported).to.be.eq(true);
-        expect(networkDetected.network).to.be.eq(SupportedNetworksEnum.goerli);
+        expect(networkDetected.network).to.be.eq(SupportedChainId.goerli);
       }
 
       {
@@ -78,7 +78,7 @@ describe('Network Switching tests', async () => {
           getMockedSigner(42161) as unknown as Signer,
         );
         expect(networkDetected.isSupported).to.be.eq(true);
-        expect(networkDetected.network).to.be.eq(SupportedNetworksEnum.arbitrum);
+        expect(networkDetected.network).to.be.eq(SupportedChainId.arbitrum);
       }
 
       {
@@ -86,23 +86,23 @@ describe('Network Switching tests', async () => {
           getMockedSigner(421613) as unknown as Signer,
         );
         expect(networkDetected.isSupported).to.be.eq(true);
-        expect(networkDetected.network).to.be.eq(SupportedNetworksEnum.arbitrumGoerli);
+        expect(networkDetected.network).to.be.eq(SupportedChainId.arbitrumGoerli);
       }
     });
   });
 
   describe('Init and Rearm SDK', async () => {
     const alchemyApiKeys = {
-      [SupportedNetworksEnum.mainnet]: 'abc',
-      [SupportedNetworksEnum.goerli]: 'bcd',
-      [SupportedNetworksEnum.arbitrum]: 'cde',
-      [SupportedNetworksEnum.arbitrumGoerli]: 'def',
+      [SupportedChainId.mainnet]: 'abc',
+      [SupportedChainId.goerli]: 'bcd',
+      [SupportedChainId.arbitrum]: 'cde',
+      [SupportedChainId.arbitrumGoerli]: 'def',
     };
 
-    let network: SupportedNetworksEnum;
+    let network: SupportedChainId;
 
     it('Init', async () => {
-      network = SupportedNetworksEnum.mainnet;
+      network = SupportedChainId.mainnet;
       initV1({
         network,
         alchemyApiKey: alchemyApiKeys[network],
@@ -123,7 +123,7 @@ describe('Network Switching tests', async () => {
     });
 
     it('Rearm', async () => {
-      network = SupportedNetworksEnum.goerli;
+      network = SupportedChainId.goerli;
       rearm({
         network,
         alchemyApiKey: alchemyApiKeys[network],

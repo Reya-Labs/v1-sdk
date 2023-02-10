@@ -1,6 +1,6 @@
 import { providers } from 'ethers';
 import { getNetwork } from '../../../init';
-import { SupportedNetworksEnum } from '../../../types';
+import { SupportedChainId } from '../../../types';
 import { NetworkConfiguration } from './types';
 import { disableMaturedWeights } from './utils';
 
@@ -361,8 +361,8 @@ export const getMellowConfig = ({
   };
 };
 
-const networkConfigurationsV1: { [key in SupportedNetworksEnum]: NetworkConfiguration } = {
-  [SupportedNetworksEnum.mainnet]: {
+const networkConfigurationsV1: { [key in SupportedChainId]: NetworkConfiguration } = {
+  [SupportedChainId.mainnet]: {
     MELLOW_ETH_WRAPPER: '0x07D6D75CA125a252AEf4d5647198446e5EDc5BBa',
     MELLOW_VAULTS: [
       {
@@ -524,7 +524,7 @@ const networkConfigurationsV1: { [key in SupportedNetworksEnum]: NetworkConfigur
       },
     ],
   },
-  [SupportedNetworksEnum.goerli]: {
+  [SupportedChainId.goerli]: {
     MELLOW_ETH_WRAPPER: '0xcF2f79d8DF97E09BF5c4DBF3F953aeEF4f4a204d',
     MELLOW_VAULTS: [
       {
@@ -680,12 +680,12 @@ const networkConfigurationsV1: { [key in SupportedNetworksEnum]: NetworkConfigur
       },
     ],
   },
-  [SupportedNetworksEnum.arbitrum]: {
+  [SupportedChainId.arbitrum]: {
     MELLOW_ETH_WRAPPER: '0x0000000000000000000000000000000000000000',
     MELLOW_VAULTS: [],
     MELLOW_ROUTERS: [],
   },
-  [SupportedNetworksEnum.arbitrumGoerli]: {
+  [SupportedChainId.arbitrumGoerli]: {
     MELLOW_ETH_WRAPPER: '0x0000000000000000000000000000000000000000',
     MELLOW_VAULTS: [],
     MELLOW_ROUTERS: [],

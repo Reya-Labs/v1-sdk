@@ -1,4 +1,4 @@
-import { SupportedNetworksEnum } from '../../../types';
+import { SupportedChainId } from '../../../types';
 import { NetworkConfiguration } from './types';
 
 export const networkConfigurations: { [key: string]: NetworkConfiguration } = {
@@ -266,8 +266,8 @@ export const networkConfigurations: { [key: string]: NetworkConfiguration } = {
   },
 };
 
-export const networkConfigurationsV1: { [key in SupportedNetworksEnum]: NetworkConfiguration } = {
-  [SupportedNetworksEnum.mainnet]: {
+export const networkConfigurationsV1: { [key in SupportedChainId]: NetworkConfiguration } = {
+  [SupportedChainId.mainnet]: {
     factoryAddress: '0x6a7a5c3824508D03F0d2d24E0482Bea39E08CcAF',
     wethAddress: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
     apply: true,
@@ -522,7 +522,7 @@ export const networkConfigurationsV1: { [key in SupportedNetworksEnum]: NetworkC
     ],
   },
 
-  [SupportedNetworksEnum.goerli]: {
+  [SupportedChainId.goerli]: {
     factoryAddress: '0x9f30Ec6903F1728ca250f48f664e48c3f15038eD',
     wethAddress: '0xb4fbf271143f4fbf7b91a5ded31805e42b2208d6',
     apply: false,
@@ -530,7 +530,7 @@ export const networkConfigurationsV1: { [key in SupportedNetworksEnum]: NetworkC
     pools: [],
   },
 
-  [SupportedNetworksEnum.arbitrum]: {
+  [SupportedChainId.arbitrum]: {
     factoryAddress: '', // TBC
     wethAddress: '',
     apply: true,
@@ -538,7 +538,7 @@ export const networkConfigurationsV1: { [key in SupportedNetworksEnum]: NetworkC
     pools: [],
   },
 
-  [SupportedNetworksEnum.arbitrumGoerli]: {
+  [SupportedChainId.arbitrumGoerli]: {
     factoryAddress: '', // TBC
     wethAddress: '',
     apply: false,
