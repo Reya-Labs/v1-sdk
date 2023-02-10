@@ -16,12 +16,18 @@ export const getAllMellowProducts = async (
   return vaults.concat(optimisers);
 };
 
-export const getAllMellowProductsV1 = async (
-  signer: ethers.Signer | null,
-  type: 'all' | 'active' = 'all',
-  chainId: SupportedChainId,
-  alchemyApiKey: string,
-): Promise<OptimiserInfo[]> => {
+type GetAllMellowProductsV1Params = {
+  signer: ethers.Signer | null;
+  type: 'all' | 'active';
+  chainId: SupportedChainId;
+  alchemyApiKey: string;
+};
+export const getAllMellowProductsV1 = async ({
+  signer,
+  type = 'all',
+  chainId,
+  alchemyApiKey,
+}: GetAllMellowProductsV1Params): Promise<OptimiserInfo[]> => {
   const userAddress = signer ? await signer.getAddress() : ZERO_ADDRESS;
   const vaults = await getVaultsInfoV1(userAddress, type, chainId, alchemyApiKey);
   const optimisers = await getOptimisersInfoV1(signer, type, chainId, alchemyApiKey);
