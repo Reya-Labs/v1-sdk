@@ -85,7 +85,7 @@ export const rearm = ({ network, alchemyApiKey }: InitArgs): void => {
 
   sdkStorage.subgraphURLs = initSubgraphURLs();
 
-  if (network in [SupportedNetworksEnum.mainnet, SupportedNetworksEnum.goerli]) {
+  if ([SupportedNetworksEnum.mainnet, SupportedNetworksEnum.goerli].find((x) => x === network)) {
     initMellowConfigV1();
   }
 };
