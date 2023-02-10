@@ -1,11 +1,12 @@
 import { ethers } from 'ethers';
 import { MellowLensContractABI } from '../../../../ABIs';
 import { ZERO_ADDRESS } from '../../../../constants';
-import { getProvider } from '../../../../init';
+import { getProvider, getProviderV1 } from '../../../../init';
+import { SupportedChainId } from '../../../../types';
 import { exponentialBackoff } from '../../../../utils/retry';
-import { getMellowConfig } from '../../config/config';
+import { getMellowConfig, getMellowConfigV1 } from '../../config/config';
 import { OptimiserInfo, ContractOptimiserInfo } from '../types';
-import { mapOptimiser } from './mappers';
+import { mapOptimiser, mapOptimiserV1 } from './mappers';
 
 export const getOptimisersInfo = async (
   signer: ethers.Signer | null,
@@ -38,6 +39,57 @@ export const getOptimisersInfo = async (
     await Promise.allSettled(
       optimiserConfigs.map((optimiserConfig, index) =>
         mapOptimiser(optimiserConfig, optimisersContractInfo[index], signer),
+      ),
+    )
+  ).map((v) => {
+    if (v.status === 'fulfilled') {
+      return v.value;
+    }
+    throw new Error('Failed to load optimiser information.');
+  });
+
+  return optimisers;
+};
+
+export const getOptimisersInfoV1 = async (
+  signer: ethers.Signer | null,
+  type: 'all' | 'active' = 'all',
+  chainId: SupportedChainId,
+  alchemyApiKey: string,
+): Promise<OptimiserInfo[]> => {
+  const config = getMellowConfigV1(chainId);
+  const provider = getProviderV1(chainId, alchemyApiKey);
+  let optimiserConfigs = config.MELLOW_OPTIMISERS.filter((o) => !o.isVault);
+  if (type === 'active') {
+    optimiserConfigs = optimiserConfigs.filter((o) => !o.deprecated);
+  }
+
+  const userAddress = signer ? await signer.getAddress() : ZERO_ADDRESS;
+
+  const mellowLensContract = new ethers.Contract(
+    config.MELLOW_LENS,
+    MellowLensContractABI,
+    provider,
+  );
+
+  // Get optimisers
+  const optimisersContractInfo: ContractOptimiserInfo[] = await exponentialBackoff(() =>
+    mellowLensContract.getOptimisersInfo(
+      optimiserConfigs.map((optimiserConfig) => optimiserConfig.optimiser),
+      userAddress,
+    ),
+  );
+
+  const optimisers = (
+    await Promise.allSettled(
+      optimiserConfigs.map((optimiserConfig, index) =>
+        mapOptimiserV1(
+          optimiserConfig,
+          optimisersContractInfo[index],
+          signer,
+          chainId,
+          alchemyApiKey,
+        ),
       ),
     )
   ).map((v) => {

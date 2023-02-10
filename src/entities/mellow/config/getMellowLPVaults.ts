@@ -1,4 +1,5 @@
-import { getProvider } from '../../../init';
+import { getProviderV1 } from '../../../init';
+import { SupportedChainId } from '../../../types';
 import MellowLpRouter from '../mellowLpRouter';
 import MellowLpVault from '../mellowLpVault';
 import { getMellowConfig, getMellowConfigV1 } from './config';
@@ -68,8 +69,14 @@ export const getMellowLPVaults = ({
   return routers.concat(vaults);
 };
 
-export const getMellowLPVaultsV1 = (): MellowProduct[] => {
-  const config = getMellowConfigV1();
+export const getMellowLPVaultsV1 = ({
+  chainId,
+  alchemyApiKey,
+}: {
+  chainId: SupportedChainId;
+  alchemyApiKey: string;
+}): MellowProduct[] => {
+  const config = getMellowConfigV1(chainId);
 
   const vaults: MellowProduct[] = config.MELLOW_VAULTS.filter((item) => item.metadata.show).map(
     (item) => {
@@ -77,7 +84,7 @@ export const getMellowLPVaultsV1 = (): MellowProduct[] => {
         id: item.voltzVault,
         ethWrapperAddress: config.MELLOW_ETH_WRAPPER,
         erc20RootVaultAddress: item.erc20RootVault,
-        provider: getProvider(),
+        provider: getProviderV1(chainId, alchemyApiKey),
         metadata: {
           ...item.metadata,
           underlyingPools: item.metadata.vaults.reduce((allPools, currentVault) => {
@@ -103,7 +110,7 @@ export const getMellowLPVaultsV1 = (): MellowProduct[] => {
             ? 'mellow-eth-cost-opt'
             : `mellow-${item.metadata.token.toLowerCase()}`,
         mellowRouterAddress: item.router,
-        provider: getProvider(),
+        provider: getProviderV1(chainId, alchemyApiKey),
         metadata: {
           ...item.metadata,
           underlyingPools: item.metadata.vaults.reduce((allPools, currentVault) => {

@@ -1,7 +1,7 @@
 import { getAMMs as getRawAMMs, AMM as RawAMM } from '@voltz-protocol/subgraph-data';
 import { isUndefined } from 'lodash';
-import { getProvider, getSentryTracker, getSubgraphURL } from '../../init';
-import { SubgraphURLEnum } from '../../types';
+import { getProviderV1, getSentryTracker, getSubgraphURL } from '../../init';
+import { SubgraphURLEnum, SupportedChainId } from '../../types';
 import { RateOracle } from '../rateOracle';
 import Token from '../token';
 import { AMM } from './amm';
@@ -89,8 +89,16 @@ export const getAMMs = async ({
   };
 };
 
-export const getAMMsV1 = async (): Promise<GetAMMsResponse> => {
-  const config = getVoltzPoolConfigV1();
+type GetAMMsArgsV1 = {
+  chainId: SupportedChainId;
+  alchemyApiKey: string;
+};
+
+export const getAMMsV1 = async ({
+  chainId,
+  alchemyApiKey,
+}: GetAMMsArgsV1): Promise<GetAMMsResponse> => {
+  const config = getVoltzPoolConfigV1(chainId);
 
   const poolIds = config.pools.map((pool) => pool.id.toLowerCase());
   const whitelistedPoolIds = config.pools
@@ -102,7 +110,7 @@ export const getAMMsV1 = async (): Promise<GetAMMsResponse> => {
 
   try {
     rawAMMs = await getRawAMMs(
-      getSubgraphURL(SubgraphURLEnum.voltzProtocol),
+      getSubgraphURL(chainId, SubgraphURLEnum.voltzProtocol),
       Date.now().valueOf(),
       {
         ammIDs: config.apply ? whitelistedPoolIds : undefined,
@@ -127,7 +135,7 @@ export const getAMMsV1 = async (): Promise<GetAMMsResponse> => {
     return new AMM({
       id: rawAmm.id,
       signer: null,
-      provider: getProvider(),
+      provider: getProviderV1(chainId, alchemyApiKey),
       factoryAddress: config.factoryAddress,
       marginEngineAddress: rawAmm.marginEngineId,
       rateOracle: new RateOracle({

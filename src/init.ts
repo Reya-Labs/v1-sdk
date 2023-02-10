@@ -5,16 +5,23 @@ import {
   defaultIntegrations,
 } from '@sentry/browser';
 import { ethers } from 'ethers';
-import { initMellowConfigV1 } from './entities/mellow-stateless/config/config';
-import { InitArgs, SDKStorage, SubgraphURLEnum, SupportedChainId } from './types';
+import { initMellowConfig } from './entities/mellow-stateless/config/config';
+import { SubgraphURLEnum, SupportedChainId } from './types';
 import alchemyApiKeyToURL from './utils/alchemyApiKeyToURL';
 import initSubgraphURLs from './utils/initSubgraphURLs';
 
-const sdkStorage: SDKStorage = {
-  network: null,
-  provider: null,
-  subgraphURLs: null,
-  sentryTracker: null,
+let sentryTracker: BrowserClient | null;
+let subgraphURLs: { [key in SubgraphURLEnum]: string } | null;
+
+// TO DO: to be deleted
+let provider: ethers.providers.JsonRpcProvider | null;
+// TO DO: to be deleted
+export const getProvider = (): ethers.providers.JsonRpcProvider => {
+  if (!provider) {
+    throw new Error('Provider is not set up!');
+  }
+
+  return provider;
 };
 
 export const initSentryTracker = (): BrowserClient => {
@@ -32,35 +39,34 @@ export const initSentryTracker = (): BrowserClient => {
   });
 };
 
-export const getNetwork = (): SupportedChainId => {
-  if (!sdkStorage.network) {
-    throw new Error('Network is not set up!');
+export const getProviderV1 = (
+  chainId: SupportedChainId,
+  alchemyApiKey: string,
+): ethers.providers.JsonRpcProvider => {
+  if (provider) {
+    return provider;
   }
 
-  return sdkStorage.network;
+  const providerURL = alchemyApiKeyToURL(chainId, alchemyApiKey);
+  return new ethers.providers.JsonRpcProvider(providerURL);
 };
 
-export const getProvider = (): ethers.providers.JsonRpcProvider => {
-  if (!sdkStorage.provider) {
-    throw new Error('Provider is not set up!');
+export const getSubgraphURL = (
+  chainId: SupportedChainId,
+  subgraphURLType: SubgraphURLEnum,
+): string => {
+  if (!subgraphURLs) {
+    subgraphURLs = initSubgraphURLs(chainId);
   }
 
-  return sdkStorage.provider;
-};
-
-export const getSubgraphURL = (subgraphURLType: SubgraphURLEnum): string => {
-  if (!sdkStorage.subgraphURLs) {
-    throw new Error('Subgraph URLs are not set up!');
-  }
-
-  return sdkStorage.subgraphURLs[subgraphURLType];
+  return subgraphURLs[subgraphURLType];
 };
 
 export const getSentryTracker = (): BrowserClient => {
-  if (!sdkStorage.sentryTracker) {
+  if (!sentryTracker) {
     throw new Error('Sentry tracker is not set up!');
   }
-  return sdkStorage.sentryTracker;
+  return sentryTracker;
 };
 
 export const init = ({ providerURL, network }: { providerURL: string; network: string }): void => {
@@ -69,28 +75,11 @@ export const init = ({ providerURL, network }: { providerURL: string; network: s
     throw new Error('Unsupported network!');
   }
 
-  sdkStorage.sentryTracker = initSentryTracker();
-
-  sdkStorage.network = networkChainId;
-  sdkStorage.provider = new ethers.providers.JsonRpcProvider(providerURL);
-
-  initMellowConfigV1();
+  sentryTracker = initSentryTracker();
+  provider = new ethers.providers.JsonRpcProvider(providerURL);
+  initMellowConfig(network);
 };
 
-export const rearm = ({ network, alchemyApiKey }: InitArgs): void => {
-  sdkStorage.network = network;
-
-  const providerURL = alchemyApiKeyToURL(alchemyApiKey);
-  sdkStorage.provider = new ethers.providers.JsonRpcProvider(providerURL);
-
-  sdkStorage.subgraphURLs = initSubgraphURLs();
-
-  if ([SupportedChainId.mainnet, SupportedChainId.goerli].find((x) => x === network)) {
-    initMellowConfigV1();
-  }
-};
-
-export const initV1 = ({ network, alchemyApiKey }: InitArgs): void => {
-  rearm({ network, alchemyApiKey });
-  sdkStorage.sentryTracker = initSentryTracker();
+export const initV1 = (): void => {
+  sentryTracker = initSentryTracker();
 };

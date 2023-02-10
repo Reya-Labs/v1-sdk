@@ -1,5 +1,4 @@
 import { providers } from 'ethers';
-import { getNetwork } from '../../../init';
 import { SupportedChainId } from '../../../types';
 import { NetworkConfiguration } from './types';
 import { disableMaturedWeights } from './utils';
@@ -692,9 +691,8 @@ const networkConfigurationsV1: { [key in SupportedChainId]: NetworkConfiguration
   },
 };
 
-export const getMellowConfigV1 = (): NetworkConfiguration => {
-  const network = getNetwork();
-  let config = networkConfigurationsV1[network];
+export const getMellowConfigV1 = (chainId: SupportedChainId): NetworkConfiguration => {
+  let config = networkConfigurationsV1[chainId];
   config = disableMaturedWeights(config);
   return config;
 };
