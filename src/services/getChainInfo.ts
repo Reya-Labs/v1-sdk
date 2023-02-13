@@ -1,6 +1,6 @@
 import { SupportedChainId } from '../types';
 
-export interface BaseChainInfo {
+export type ChainInfo = {
   readonly label: string;
   readonly nativeCurrency: {
     name: string; // e.g. 'Goerli ETH',
@@ -9,9 +9,9 @@ export interface BaseChainInfo {
   };
   readonly explorer: string;
   readonly defaultRpcUrl: string;
-}
+};
 
-const CHAIN_INFO: Record<SupportedChainId, BaseChainInfo> = {
+const CHAIN_INFO: Record<SupportedChainId, ChainInfo> = {
   [SupportedChainId.mainnet]: {
     explorer: 'https://etherscan.io/',
     label: 'Ethereum',
@@ -38,7 +38,7 @@ const CHAIN_INFO: Record<SupportedChainId, BaseChainInfo> = {
   },
 };
 
-export function getChainInfo(chainId: SupportedChainId): BaseChainInfo | undefined {
+export function getChainInfo(chainId: SupportedChainId): ChainInfo | undefined {
   if (chainId) {
     return CHAIN_INFO[chainId] ?? undefined;
   }
