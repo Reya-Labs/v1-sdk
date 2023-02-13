@@ -42,5 +42,6 @@ export enum SupportedChainId {
 
 export enum SubgraphURLEnum {
   voltzProtocol = 1,
-  // more to be added once SBT will be integrated
+  badgesCurrentSeasonNoIPFS = 2,
+  badgesRollingSeason = 3,
 }
