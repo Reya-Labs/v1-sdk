@@ -24,6 +24,7 @@ import {
   AaveV3RateOracle__factory as aaveV3RateOracleFactory,
   CompoundBorrowRateOracle__factory as compoundBorrowRateOracleFactory,
   GlpRateOracle__factory as glpRateOracleFactory,
+  GlpRateOracle,
 } from '../../typechain';
 import { TickMath } from '../../utils/tickMath';
 import { fixedRateToClosestTick, tickToFixedRate } from '../../utils/priceTickConversions';
@@ -60,6 +61,7 @@ import {
 import { geckoEthToUsd } from '../../utils/priceFetch';
 import { getVariableFactor, RateOracle } from '../rateOracle';
 import { exponentialBackoff } from '../../utils/retry';
+import { AaveV3RateOracle } from '../../typechain/AaveV3RateOracle';
 
 export class AMM {
   public readonly id: string;
@@ -1501,13 +1503,13 @@ export class AMM {
           throw new Error('No underlying error');
         }
 
-        const rateOracleContract = aaveV3RateOracleFactory.connect(
+        let rateOracleContract: AaveV3RateOracle | GlpRateOracle = aaveV3RateOracleFactory.connect(
           this.rateOracle.id,
           this.provider,
         );
         if (this.rateOracle.protocolId === 8) {
           // glp
-          glpRateOracleFactory.connect(this.rateOracle.id, this.provider);
+          rateOracleContract = glpRateOracleFactory.connect(this.rateOracle.id, this.provider);
         }
 
         const toInSeconds =
