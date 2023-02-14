@@ -8,6 +8,7 @@ export type { AaveRateOracle } from "./AaveRateOracle";
 export type { BaseRateOracle } from "./BaseRateOracle";
 export type { CompoundBorrowRateOracle } from "./CompoundBorrowRateOracle";
 export type { CompoundRateOracle } from "./CompoundRateOracle";
+export type { GlpRateOracle } from "./GlpRateOracle";
 export type { ICToken } from "./ICToken";
 export type { IERC20Minimal } from "./IERC20Minimal";
 
@@ -24,4 +25,5 @@ export { AaveV3RateOracle__factory } from "./factories/AaveV3RateOracle__factory
 export { BaseRateOracle__factory } from "./factories/BaseRateOracle__factory";
 export { CompoundBorrowRateOracle__factory } from "./factories/CompoundBorrowRateOracle__factory";
 export { CompoundRateOracle__factory } from "./factories/CompoundRateOracle__factory";
+export { GlpRateOracle__factory } from "./factories/GlpRateOracle__factory";
 
