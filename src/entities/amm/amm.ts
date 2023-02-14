@@ -23,6 +23,7 @@ import {
   IAaveV2LendingPool__factory as iAaveV2LendingPoolFactory,
   AaveV3RateOracle__factory as aaveV3RateOracleFactory,
   CompoundBorrowRateOracle__factory as compoundBorrowRateOracleFactory,
+  GlpRateOracle__factory as glpRateOracleFactory,
 } from '../../typechain';
 import { TickMath } from '../../utils/tickMath';
 import { fixedRateToClosestTick, tickToFixedRate } from '../../utils/priceTickConversions';
@@ -1494,7 +1495,8 @@ export class AMM {
         return borrowApy;
       }
 
-      case 7: {
+      case 7:
+      case 8: {
         if (!this.underlyingToken.id) {
           throw new Error('No underlying error');
         }
@@ -1503,6 +1505,10 @@ export class AMM {
           this.rateOracle.id,
           this.provider,
         );
+        if (this.rateOracle.protocolId === 8) {
+          // glp
+          glpRateOracleFactory.connect(this.rateOracle.id, this.provider);
+        }
 
         const toInSeconds =
           (await exponentialBackoff(() => this.provider.getBlock('latest'))).timestamp - 15;
