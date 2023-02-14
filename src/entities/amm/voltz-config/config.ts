@@ -558,7 +558,7 @@ export const networkConfigurationsV1: { [key in SupportedChainId]: NetworkConfig
     pools: [
       {
         name: 'glp',
-        id: '0xC1a44601a9F141ECA8823f99b0b7fFF55F2A6e17', // vamm address
+        id: '0xB69c2b77C844b55F9924242df4299a1598753320', // vamm address
         show: {
           general: true,
           trader: true,

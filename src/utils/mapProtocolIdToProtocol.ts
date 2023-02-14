@@ -27,6 +27,10 @@ const mapProtocolIdToProtocol = (protocolId: number): string => {
     return 'AAVE V3';
   }
 
+  if (protocolId === 8) {
+    return 'GLP';
+  }
+
   throw new Error('Unrecognized protocol');
 };
 
