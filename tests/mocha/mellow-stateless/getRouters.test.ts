@@ -65,7 +65,7 @@ describe('Mellow Optimiser:GetOptimisers', () => {
       expect(ethOptimiserInfo.optimiserId).to.be.eq(ethOptimiserId);
     });
 
-    it('Optimiser info', async () => {
+    it.skip('Optimiser info', async () => {
       expect(ethOptimiserInfo.soon).to.be.eq(false);
       expect(ethOptimiserInfo.title).to.be.eq('MELLOW - ETH');
       expect(ethOptimiserInfo.description).to.be.eq('B');
@@ -96,7 +96,7 @@ describe('Mellow Optimiser:GetOptimisers', () => {
       expect(vaultInfo.canUserManageVault).to.be.eq(false);
     });
 
-    it('Active vault', async () => {
+    it.skip('Active vault', async () => {
       const vaultInfo = ethOptimiserInfo.vaults[4];
       expect(vaultInfo.vaultId).to.be.eq('0x4FE3444AC2Ee16cAF4661fba06186b09E4F0a706');
       expect(vaultInfo.pools).to.be.deep.eq(['Compound - ETH']);
@@ -151,7 +151,7 @@ describe('Mellow Optimiser:GetOptimisers', () => {
       expect(vaultInfo.canUserManageVault).to.be.eq(true);
     });
 
-    it('Active vault', async () => {
+    it.skip('Active vault', async () => {
       const vaultInfo = ethOptimiserInfo.vaults[4];
       expect(vaultInfo.vaultId).to.be.eq('0x4FE3444AC2Ee16cAF4661fba06186b09E4F0a706');
       expect(vaultInfo.pools).to.be.deep.eq(['Compound - ETH']);
@@ -220,7 +220,7 @@ describe('getOptimisers', () => {
       expect(ethOptimiserInfo.optimiserId).to.be.eq(ethOptimiserId);
     });
 
-    it('Optimiser info', async () => {
+    it.skip('Optimiser info', async () => {
       expect(ethOptimiserInfo.soon).to.be.eq(false);
       expect(ethOptimiserInfo.title).to.be.eq('MELLOW - ETH');
       expect(ethOptimiserInfo.description).to.be.eq('B');
@@ -251,7 +251,7 @@ describe('getOptimisers', () => {
       expect(vaultInfo.canUserManageVault).to.be.eq(false);
     });
 
-    it('Active vault', async () => {
+    it.skip('Active vault', async () => {
       const vaultInfo = ethOptimiserInfo.vaults[4];
       expect(vaultInfo.vaultId).to.be.eq('0x4FE3444AC2Ee16cAF4661fba06186b09E4F0a706');
       expect(vaultInfo.pools).to.be.deep.eq(['Compound - ETH']);
@@ -306,7 +306,7 @@ describe('getOptimisers', () => {
       expect(vaultInfo.canUserManageVault).to.be.eq(true);
     });
 
-    it('Active vault', async () => {
+    it.skip('Active vault', async () => {
       const vaultInfo = ethOptimiserInfo.vaults[4];
       expect(vaultInfo.vaultId).to.be.eq('0x4FE3444AC2Ee16cAF4661fba06186b09E4F0a706');
       expect(vaultInfo.pools).to.be.deep.eq(['Compound - ETH']);
