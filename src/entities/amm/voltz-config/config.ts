@@ -551,11 +551,21 @@ export const networkConfigurationsV1: { [key in SupportedChainId]: NetworkConfig
   },
 
   [SupportedChainId.arbitrum]: {
-    factoryAddress: '', // TBC
-    wethAddress: '',
+    factoryAddress: '0xda66a7584da7210fd26726EFb12585734F7688c1',
+    wethAddress: '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1',
     apply: true,
     defaultMinLeverageAllowed: 10,
-    pools: [],
+    pools: [
+      {
+        name: 'glp',
+        id: '0xC1a44601a9F141ECA8823f99b0b7fFF55F2A6e17', // vamm address
+        show: {
+          general: true,
+          trader: true,
+        },
+        traderWithdrawable: true,
+      },
+    ],
   },
 
   [SupportedChainId.arbitrumGoerli]: {
