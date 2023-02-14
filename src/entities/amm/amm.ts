@@ -24,7 +24,6 @@ import {
   AaveV3RateOracle__factory as aaveV3RateOracleFactory,
   CompoundBorrowRateOracle__factory as compoundBorrowRateOracleFactory,
   GlpRateOracle__factory as glpRateOracleFactory,
-  GlpRateOracle,
 } from '../../typechain';
 import { TickMath } from '../../utils/tickMath';
 import { fixedRateToClosestTick, tickToFixedRate } from '../../utils/priceTickConversions';
@@ -61,7 +60,6 @@ import {
 import { geckoEthToUsd } from '../../utils/priceFetch';
 import { getVariableFactor, RateOracle } from '../rateOracle';
 import { exponentialBackoff } from '../../utils/retry';
-import { AaveV3RateOracle } from '../../typechain/AaveV3RateOracle';
 
 export class AMM {
   public readonly id: string;
@@ -1497,20 +1495,34 @@ export class AMM {
         return borrowApy;
       }
 
-      case 7:
+      case 7: {
+        if (!this.underlyingToken.id) {
+          throw new Error('No underlying error');
+        }
+
+        const rateOracleContract = aaveV3RateOracleFactory.connect(
+          this.rateOracle.id,
+          this.provider,
+        );
+
+        const toInSeconds =
+          (await exponentialBackoff(() => this.provider.getBlock('latest'))).timestamp - 15;
+        const fromInSeconds = toInSeconds - 1 * 60 * 60;
+
+        const instantApy = await exponentialBackoff(() =>
+          rateOracleContract.getApyFromTo(fromInSeconds, toInSeconds),
+        );
+
+        // TODO: normalize this to utility descale
+        return instantApy.div(BigNumber.from(1000000000000)).toNumber() / 1000000;
+      }
+
       case 8: {
         if (!this.underlyingToken.id) {
           throw new Error('No underlying error');
         }
 
-        let rateOracleContract: AaveV3RateOracle | GlpRateOracle = aaveV3RateOracleFactory.connect(
-          this.rateOracle.id,
-          this.provider,
-        );
-        if (this.rateOracle.protocolId === 8) {
-          // glp
-          rateOracleContract = glpRateOracleFactory.connect(this.rateOracle.id, this.provider);
-        }
+        const rateOracleContract = glpRateOracleFactory.connect(this.rateOracle.id, this.provider);
 
         const toInSeconds =
           (await exponentialBackoff(() => this.provider.getBlock('latest'))).timestamp - 15;
