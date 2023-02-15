@@ -26,9 +26,9 @@ const CHAIN_INFO: Record<SupportedChainId, ChainInfo> = {
   },
   [SupportedChainId.arbitrum]: {
     explorer: 'https://arbiscan.io/',
-    label: 'Arbitrum',
+    label: 'Arbitrum One',
     nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-    defaultRpcUrl: 'https://arbitrum-mainnet.infura.io',
+    defaultRpcUrl: 'https://arb1.arbitrum.io/rpc',
   },
   [SupportedChainId.arbitrumGoerli]: {
     explorer: 'https://goerli.arbiscan.io/',
