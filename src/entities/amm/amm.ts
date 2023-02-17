@@ -1525,8 +1525,10 @@ export class AMM {
 
         const rateOracleContract = glpRateOracleFactory.connect(this.rateOracle.id, this.provider);
 
+        const currentBlock = await this.provider.getBlock('latest');
+
         const rateFromOneDayAgo = await rateOracleContract.getRateFrom(
-          Math.round(Date.now() / 1000) - ONE_DAY_IN_SECONDS,
+          currentBlock.timestamp - ONE_DAY_IN_SECONDS,
         ); // one day ago
 
         const instantApy = rateFromOneDayAgo.mul(365);
