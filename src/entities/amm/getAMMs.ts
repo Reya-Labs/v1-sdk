@@ -1,12 +1,14 @@
 import { getAMMs as getRawAMMs, AMM as RawAMM } from '@voltz-protocol/subgraph-data';
 import { isUndefined } from 'lodash';
-import { getProviderV1, getSentryTracker, getSubgraphURL } from '../../init';
+import { getProvider, getProviderV1, getSentryTracker, getSubgraphURL } from '../../init';
 import { SubgraphURLEnum, SupportedChainId } from '../../types';
 import { RateOracle } from '../rateOracle';
 import Token from '../token';
 import { AMM } from './amm';
 import { getVoltzPoolConfig } from './voltz-config';
 import { getVoltzPoolConfigV1 } from './voltz-config/getConfig';
+import { Factory__factory as factoryFactory } from '../../typechain';
+import { exponentialBackoff } from '../../utils/retry';
 
 type GetAMMsArgs = {
   network: string;
@@ -56,11 +58,15 @@ export const getAMMs = async ({
     return aIndex - bIndex;
   });
 
+  const factoryContract = factoryFactory.connect(config.factoryAddress, getProvider());
+  const peripheryAddress = await exponentialBackoff(() => factoryContract.periphery());
+
   const amms = sortedRawAMMs.map((rawAmm, index) => {
     return new AMM({
       id: rawAmm.id,
       signer: null,
       provider: config.PROVIDER,
+      peripheryAddress,
       factoryAddress: config.factoryAddress,
       marginEngineAddress: rawAmm.marginEngineId,
       rateOracle: new RateOracle({
@@ -131,11 +137,18 @@ export const getAMMsV1 = async ({
     return aIndex - bIndex;
   });
 
+  const factoryContract = factoryFactory.connect(
+    config.factoryAddress,
+    getProviderV1(chainId, alchemyApiKey),
+  );
+  const peripheryAddress = await exponentialBackoff(() => factoryContract.periphery());
+
   const amms = sortedRawAMMs.map((rawAmm, index) => {
     return new AMM({
       id: rawAmm.id,
       signer: null,
       provider: getProviderV1(chainId, alchemyApiKey),
+      peripheryAddress,
       factoryAddress: config.factoryAddress,
       marginEngineAddress: rawAmm.marginEngineId,
       rateOracle: new RateOracle({

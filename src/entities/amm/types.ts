@@ -7,8 +7,9 @@ import Token from '../token';
 export type AMMConstructorArgs = {
   id: string;
   signer: Signer | null;
-  provider?: providers.Provider;
+  provider: providers.Provider;
 
+  peripheryAddress: string;
   factoryAddress: string;
   marginEngineAddress: string;
   rateOracle: RateOracle;
