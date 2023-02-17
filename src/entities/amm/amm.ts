@@ -8,6 +8,7 @@ import {
   MaxUint256Bn,
   TresholdApprovalBn,
   getGasBuffer,
+  ONE_DAY_IN_SECONDS,
 } from '../../constants';
 import {
   Periphery__factory as peripheryFactory,
@@ -1524,16 +1525,13 @@ export class AMM {
 
         const rateOracleContract = glpRateOracleFactory.connect(this.rateOracle.id, this.provider);
 
-        const toInSeconds =
-          (await exponentialBackoff(() => this.provider.getBlock('latest'))).timestamp - 15;
-        const fromInSeconds = toInSeconds - 1 * 60 * 60;
+        const rateFromOneDayAgo = await rateOracleContract.getRateFrom(
+          Math.round(Date.now() / 1000) - ONE_DAY_IN_SECONDS,
+        ); // one day ago
 
-        const instantApy = await exponentialBackoff(() =>
-          rateOracleContract.getApyFromTo(fromInSeconds, toInSeconds),
-        );
+        const instantApy = rateFromOneDayAgo.mul(365);
 
-        // TODO: normalize this to utility descale
-        return instantApy.div(BigNumber.from(1000000000000)).toNumber() / 1000000;
+        return instantApy.div(BigNumber.from(10).pow(12)).toNumber() / 1000000;
       }
 
       default:
