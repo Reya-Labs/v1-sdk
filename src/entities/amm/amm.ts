@@ -13,7 +13,6 @@ import {
 import {
   Periphery__factory as peripheryFactory,
   MarginEngine__factory as marginEngineFactory,
-  Factory__factory as factoryFactory,
   IERC20Minimal__factory as tokenFactory,
   BaseRateOracle__factory as baseRateOracleFactory,
   ICToken__factory as iCTokenFactory,
@@ -66,6 +65,7 @@ export class AMM {
   public readonly id: string;
   public readonly signer: Signer | null;
   public readonly provider: providers.Provider;
+  public readonly peripheryAddress: string;
   public readonly factoryAddress: string;
   public readonly marginEngineAddress: string;
   public readonly rateOracle: RateOracle;
@@ -89,6 +89,7 @@ export class AMM {
     id,
     signer,
     provider,
+    peripheryAddress,
     factoryAddress,
     marginEngineAddress,
     rateOracle,
@@ -102,6 +103,7 @@ export class AMM {
   }: AMMConstructorArgs) {
     this.id = id;
     this.signer = signer;
+    this.peripheryAddress = peripheryAddress;
     this.factoryAddress = factoryAddress;
     this.marginEngineAddress = marginEngineAddress;
     this.rateOracle = rateOracle;
@@ -114,28 +116,12 @@ export class AMM {
     this.ethPrice =
       ethPrice || (() => geckoEthToUsd(process.env.REACT_APP_COINGECKO_API_KEY || ''));
 
-    const chosenProvider = provider || signer?.provider;
-    if (!chosenProvider) {
-      const sentryTracker = getSentryTracker();
-      sentryTracker.captureMessage("Provider doesn't exist");
-      throw new Error("Provider doesn't exist");
-    }
-    this.provider = chosenProvider;
+    this.provider = provider;
 
     this.variableFactor = getVariableFactor(this.provider, this.rateOracle.id);
 
     this.minLeverageAllowed = minLeverageAllowed;
   }
-
-  private peripheryAddress: string | null = null;
-  public getPeripheryAddress = async (): Promise<string> => {
-    if (!this.peripheryAddress) {
-      const factoryContract = factoryFactory.connect(this.factoryAddress, this.provider);
-      this.peripheryAddress = await exponentialBackoff(() => factoryContract.periphery());
-    }
-
-    return this.peripheryAddress;
-  };
 
   public getUserAddress = async (): Promise<string> => {
     if (!this.signer) {
@@ -202,8 +188,7 @@ export class AMM {
       sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MIN_TICK + 1).toString();
     }
 
-    const peripheryAddress = await this.getPeripheryAddress();
-    const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
+    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.signer);
     const scaledNotional = this.scale(notional);
 
     // Get the margin delta in underlying ERC20 tokens and ETH
@@ -324,8 +309,7 @@ export class AMM {
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
-    const peripheryAddress = await this.getPeripheryAddress();
-    const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
+    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.signer);
     const scaledNotional = this.scale(notional);
 
     // Get the margin delta in underlying ERC20 tokens and ETH
@@ -462,9 +446,7 @@ export class AMM {
 
     const scaledNotional = this.scale(notional);
 
-    const peripheryAddress = await this.getPeripheryAddress();
-
-    const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
+    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.signer);
     const swapPeripheryParams: SwapPeripheryParams = {
       marginEngine: this.marginEngineAddress,
       isFT,
@@ -703,9 +685,7 @@ export class AMM {
       sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MIN_TICK + 1).toString();
     }
 
-    const peripheryAddress = await this.getPeripheryAddress();
-
-    const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
+    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.signer);
     const scaledNotional = this.scale(notional);
 
     let swapPeripheryParams: SwapPeripheryParams;
@@ -851,9 +831,7 @@ export class AMM {
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
-    const peripheryAddress = await this.getPeripheryAddress();
-
-    const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
+    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.signer);
     const scaledNotional = this.scale(notional);
     const mintOrBurnParams: MintOrBurnParams = {
       marginEngine: this.marginEngineAddress,
@@ -928,9 +906,7 @@ export class AMM {
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
-    const peripheryAddress = await this.getPeripheryAddress();
-
-    const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
+    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.signer);
     const scaledNotional = this.scale(notional);
 
     let mintOrBurnParams: MintOrBurnParams;
@@ -1022,9 +998,7 @@ export class AMM {
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
-    const peripheryAddress = await this.getPeripheryAddress();
-
-    const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
+    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.signer);
 
     const scaledNotional = this.scale(notional);
 
@@ -1102,9 +1076,7 @@ export class AMM {
       scaledMarginDelta = this.scale(marginDelta);
     }
 
-    const peripheryAddress = await this.getPeripheryAddress();
-
-    const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
+    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.signer);
 
     await peripheryContract.callStatic
       .updatePositionMargin(
@@ -1174,8 +1146,7 @@ export class AMM {
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
-    const peripheryAddress = await this.getPeripheryAddress();
-    const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
+    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.signer);
 
     await peripheryContract.callStatic
       .settlePositionAndWithdrawMargin(
@@ -1258,9 +1229,8 @@ export class AMM {
     const tokenAddress = this.underlyingToken.id;
     const token = tokenFactory.connect(tokenAddress, this.signer);
 
-    const peripheryAddress = await this.getPeripheryAddress();
     const allowance = await exponentialBackoff(() =>
-      token.allowance(signerAddress, peripheryAddress),
+      token.allowance(signerAddress, this.peripheryAddress),
     );
 
     if (scaledAmount === undefined) {
@@ -1281,11 +1251,9 @@ export class AMM {
     const tokenAddress = this.underlyingToken.id;
     const token = tokenFactory.connect(tokenAddress, this.signer);
 
-    const peripheryAddress = await this.getPeripheryAddress();
-
     let estimatedGas;
     try {
-      estimatedGas = await token.estimateGas.approve(peripheryAddress, MaxUint256Bn);
+      estimatedGas = await token.estimateGas.approve(this.peripheryAddress, MaxUint256Bn);
     } catch (error) {
       const sentryTracker = getSentryTracker();
       sentryTracker.captureException(error);
@@ -1293,12 +1261,12 @@ export class AMM {
         `Could not increase periphery allowance (${tokenAddress}, ${await this.getUserAddress()}, ${MaxUint256Bn.toString()})`,
       );
       throw new Error(
-        `Unable to approve. If your existing allowance is non-zero but lower than needed, some tokens like USDT require you to call approve("${peripheryAddress}", 0) before you can increase the allowance.`,
+        `Unable to approve. If your existing allowance is non-zero but lower than needed, some tokens like USDT require you to call approve("${this.peripheryAddress}", 0) before you can increase the allowance.`,
       );
     }
 
     const approvalTransaction = await token
-      .approve(peripheryAddress, MaxUint256Bn, {
+      .approve(this.peripheryAddress, MaxUint256Bn, {
         gasLimit: getGasBuffer(estimatedGas),
       })
       .catch((error) => {
@@ -1339,9 +1307,7 @@ export class AMM {
   }
 
   public async getFixedApr(): Promise<number> {
-    const peripheryAddress = await this.getPeripheryAddress();
-
-    const peripheryContract = peripheryFactory.connect(peripheryAddress, this.provider);
+    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.provider);
     const currentTick = await exponentialBackoff(() =>
       peripheryContract.getCurrentTick(this.marginEngineAddress),
     );
