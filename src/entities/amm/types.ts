@@ -154,3 +154,8 @@ export type ClosestTickAndFixedRate = {
   closestUsableTick: number;
   closestUsableFixedRate: Price;
 };
+
+export type AvailableNotionals = {
+  availableNotionalFT: number;
+  availableNotionalVT: number;
+};

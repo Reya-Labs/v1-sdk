@@ -60,6 +60,7 @@ import {
   AMMSettlePositionArgs,
   ClosestTickAndFixedRate,
   ExpectedApyArgs,
+  AvailableNotionals,
 } from './types';
 import { geckoEthToUsd } from '../../utils/priceFetch';
 import { getVariableFactor, RateOracle } from '../rateOracle';
@@ -1518,5 +1519,61 @@ export class AMM {
       default:
         throw new Error('Unrecognized protocol');
     }
+  }
+
+  private async getAvailableNotional({
+    isFT,
+    sqrtPriceLimitX96,
+  }: {
+    isFT: boolean;
+    sqrtPriceLimitX96: BigNumber;
+  }): Promise<number> {
+    const swapPeripheryParamsLargeSwap = {
+      marginEngine: this.marginEngineAddress,
+      isFT,
+      notional: this.scale(1000000000000000),
+      sqrtPriceLimitX96,
+      tickLower: -69060,
+      tickUpper: 0,
+      marginDelta: '0',
+    };
+
+    let availableNotional = BigNumber.from(0);
+
+    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.provider);
+    await peripheryContract.callStatic.swap(swapPeripheryParamsLargeSwap).then(
+      (result: any) => {
+        availableNotional = result[1];
+      },
+      (error: any) => {
+        const result = decodeInfoPostSwap(error);
+        availableNotional = result.availableNotional;
+      },
+    );
+
+    return this.descale(availableNotional);
+  }
+
+  public async getAvailableNotionals(): Promise<AvailableNotionals> {
+    const availableNotionals: AvailableNotionals = {
+      availableNotionalFT: 0,
+      availableNotionalVT: 0,
+    };
+
+    availableNotionals.availableNotionalFT = await this.getAvailableNotional({
+      isFT: true,
+      sqrtPriceLimitX96: BigNumber.from(
+        TickMath.getSqrtRatioAtTick(TickMath.MAX_TICK - 1).toString(),
+      ),
+    });
+
+    availableNotionals.availableNotionalVT = await this.getAvailableNotional({
+      isFT: false,
+      sqrtPriceLimitX96: BigNumber.from(
+        TickMath.getSqrtRatioAtTick(TickMath.MIN_TICK + 1).toString(),
+      ),
+    });
+
+    return availableNotionals;
   }
 }
