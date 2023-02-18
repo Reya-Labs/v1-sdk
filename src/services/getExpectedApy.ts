@@ -13,6 +13,10 @@ export const getExpectedApy = (
   predictedApr: number, // the predicted variable APY between current and end
   rateOracleID: number, // the rate oracle ID that suggests what type of APY is used (linear vs. compounding)
 ): [number, number] => {
+  if (end <= current) {
+    return [0, 0];
+  }
+
   let vf = 0;
 
   switch (rateOracleID) {
