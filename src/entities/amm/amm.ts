@@ -155,7 +155,7 @@ export class AMM {
   ): [number, number] => {
     const now = Math.round(new Date().getTime() / 1000);
     const end = this.termEndTimestampInMS / 1000;
-    const [pnl, ecs] = getExpectedApy(now, end, ft, vt, margin, rate);
+    const [pnl, ecs] = getExpectedApy(now, end, ft, vt, margin, rate, this.rateOracle.protocolId);
     return [100 * pnl, ecs];
   };
 
