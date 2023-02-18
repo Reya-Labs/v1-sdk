@@ -1,7 +1,7 @@
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-lonely-if */
 import { Swap } from '@voltz-protocol/subgraph-data';
-import { utils } from 'ethers';
+import { BigNumber, utils } from 'ethers';
 import { ONE_YEAR_IN_SECONDS } from '../constants';
 import { BaseRateOracle } from '../typechain';
 import { exponentialBackoff } from '../utils/retry';
@@ -54,10 +54,15 @@ async function getAccruedCashflowBetween(
 
   const nTime = getAnnualizedTime(from, to);
   const variableRate = Number(
-    utils.formatUnits(await exponentialBackoff(() => rateOracle.getApyFromTo(from, to), 18)),
+    utils.formatUnits(
+      await exponentialBackoff(
+        () => rateOracle.getRateFromTo(BigNumber.from(from), BigNumber.from(to)),
+        18,
+      ),
+    ),
   );
 
-  return notional * nTime * (variableRate - fixedRate);
+  return notional * (variableRate - nTime * fixedRate);
 }
 
 // in the case of an unwind, get the locked "profit" in the fixed token balance
