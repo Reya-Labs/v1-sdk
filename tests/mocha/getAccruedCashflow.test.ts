@@ -1,4 +1,4 @@
-import { BigNumber, BigNumberish } from 'ethers';
+import { BigNumber } from 'ethers';
 import { toBn } from 'evm-bn';
 import { expect } from 'chai';
 import { before, describe, it } from 'mocha';
@@ -7,6 +7,7 @@ import { BrowserClient } from '@sentry/browser';
 import { getAccruedCashflow } from '../../src/services/getAccruedCashflow';
 import { BaseRateOracle } from '../../src/typechain';
 import * as initSDK from '../../src/init';
+import { ONE_YEAR_IN_SECONDS } from '../../src/constants';
 
 class MockBaseRateOracle {
   public apy: BigNumber = toBn('0');
@@ -16,8 +17,8 @@ class MockBaseRateOracle {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async getApyFromTo(from: BigNumberish, to: BigNumberish) {
-    return this.apy;
+  async getRateFromTo(from: BigNumber, to: BigNumber) {
+    return this.apy.mul(to.sub(from)).div(ONE_YEAR_IN_SECONDS);
   }
 }
 
