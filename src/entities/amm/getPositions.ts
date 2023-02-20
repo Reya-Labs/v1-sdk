@@ -31,7 +31,7 @@ const isBorrowingPosition = (p: Position) => {
 };
 
 const isTraderPosition = (p: Position) => {
-  return p.positionType === 1 || p.positionType === 2;
+  return p.positionType === 1 || p.positionType === 2 || p.swaps.length > 0;
 };
 
 const isLPPosition = (p: Position) => {
@@ -98,7 +98,21 @@ export const getPositions = async (params: GetPositionsArgs): Promise<GetPositio
 
   switch (params.type) {
     case 'Trader': {
-      positions = positions.filter((pos) => isTraderPosition(pos));
+      positions = positions
+        .filter((pos) => isTraderPosition(pos))
+        .map((position) => {
+          return new Position({
+            ...position,
+            positionType:
+              1 +
+              (position.swaps.reduce(
+                (sumVT, currentSwap) => sumVT + currentSwap.variableTokenDelta,
+                0,
+              ) > 0
+                ? 1
+                : 0),
+          });
+        });
       break;
     }
     case 'LP': {
@@ -198,9 +212,24 @@ export const getPositionsV1 = async (params: GetPositionsArgsV1): Promise<GetPos
 
   switch (params.type) {
     case 'Trader': {
-      positions = positions.filter((pos) => isTraderPosition(pos));
+      positions = positions
+        .filter((pos) => isTraderPosition(pos))
+        .map((position) => {
+          return new Position({
+            ...position,
+            positionType:
+              1 +
+              (position.swaps.reduce(
+                (sumVT, currentSwap) => sumVT + currentSwap.variableTokenDelta,
+                0,
+              ) > 0
+                ? 1
+                : 0),
+          });
+        });
       break;
     }
+
     case 'LP': {
       positions = positions.filter((pos) => isLPPosition(pos));
       break;
