@@ -3,7 +3,7 @@ import { MellowMultiVaultRouterABI } from '../../../ABIs';
 import { getGasBuffer } from '../../../constants';
 import { getProvider, getProviderV1, getSentryTracker } from '../../../init';
 import { SupportedChainId } from '../../../types';
-import { convertGasUnitsToUSD } from '../../../utils/mellowHelpers/convertGasUnitsToUSD';
+import { convertGasUnitsToUSD } from '../../../utils/convertGasUnitsToUSD';
 import {
   getIndividualOptimiserInfo,
   getIndividualOptimiserInfoV1,

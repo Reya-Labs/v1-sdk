@@ -7,7 +7,7 @@ import { getMellowConfig, getMellowConfigV1 } from '../../config/config';
 import { ContractOptimiserInfo, OptimiserInfo, VaultInfo } from '../types';
 import { geckoEthToUsd } from '../../../../utils/priceFetch';
 import { MellowMultiVaultRouterABI } from '../../../../ABIs';
-import { convertGasUnitsToUSD } from '../../../../utils/mellowHelpers/convertGasUnitsToUSD';
+import { convertGasUnitsToUSD } from '../../../../utils/convertGasUnitsToUSD';
 import { getProvider, getProviderV1 } from '../../../../init';
 import { SupportedChainId } from '../../../../types';
 

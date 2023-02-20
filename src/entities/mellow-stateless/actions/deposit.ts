@@ -12,7 +12,7 @@ import {
 } from '../getters/optimisers/getIndividualOptimiserInfo';
 import { exponentialBackoff } from '../../../utils/retry';
 import { getProvider, getProviderV1, getSentryTracker } from '../../../init';
-import { convertGasUnitsToUSD } from '../../../utils/mellowHelpers/convertGasUnitsToUSD';
+import { convertGasUnitsToUSD } from '../../../utils/convertGasUnitsToUSD';
 import { SupportedChainId } from '../../../types';
 
 type DepositArgs = {

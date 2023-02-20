@@ -1,8 +1,7 @@
 import { BigNumber, ethers, providers } from 'ethers';
-import { getSentryTracker } from '../../init';
-import { geckoEthToUsd } from '../priceFetch';
+import { getSentryTracker } from '../init';
 
-export async function convertGasUnitsToUSD(
+export async function convertGasUnitsToETH(
   provider: providers.Provider,
   gasUnits: number,
 ): Promise<number> {
@@ -22,9 +21,6 @@ export async function convertGasUnitsToUSD(
     }
   }
 
-  const ethPrice = await geckoEthToUsd(process.env.REACT_APP_COINGECKO_API_KEY || '');
-
-  const gasUnitsToUSD = parseFloat(ethers.utils.formatEther(gasPriceWei)) * gasUnits * ethPrice;
-
-  return gasUnitsToUSD;
+  const gasUnitsToETH = parseFloat(ethers.utils.formatEther(gasPriceWei)) * gasUnits;
+  return gasUnitsToETH;
 }
