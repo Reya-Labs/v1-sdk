@@ -1,6 +1,6 @@
 {
   "name": "@voltz-protocol/v1-sdk",
-  "version": "1.71.0",
+  "version": "1.71.1",
   "description": "A TypeScript wrapper for the Voltz smart contract",
   "main": "dist/index.js",
   "types": "dist/types",
@@ -54,12 +54,9 @@
     "concurrently": "7.6.0",
     "dotenv": "^16.0.3",
     "eslint": "7.32.0",
-    "eslint-config-airbnb": "18.2.1",
     "eslint-config-prettier": "8.3.0",
     "eslint-plugin-import": "2.26.0",
-    "eslint-plugin-jsx-a11y": "^6.4.1",
     "eslint-plugin-prettier": "4.0.0",
-    "eslint-plugin-react": "^7.26.0",
     "eslint-plugin-unused-imports": "2.0.0",
     "ethereum-waffle": "^3.4.4",
     "hardhat": "^2.12.2",
@@ -97,7 +94,6 @@
     "lodash": "^4.17.21",
     "luxon": "^2.3.0",
     "merkletreejs": "^0.3.0",
-    "react": "^18.2.0",
     "tiny-invariant": "^1.2.0",
     "toformat": "^2.0.0"
   },
