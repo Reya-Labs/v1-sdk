@@ -4,6 +4,7 @@ import {
 } from '@voltz-protocol/subgraph-data';
 import { getSentryTracker, getSubgraphURL } from '../../init';
 import { SubgraphURLEnum, SupportedChainId } from '../../types';
+import { sum } from '../../utils/functions';
 import Position from '../position';
 import { AMM } from './amm';
 
@@ -103,14 +104,7 @@ export const getPositions = async (params: GetPositionsArgs): Promise<GetPositio
         .map((position) => {
           return new Position({
             ...position,
-            positionType:
-              1 +
-              (position.swaps.reduce(
-                (sumVT, currentSwap) => sumVT + currentSwap.variableTokenDelta,
-                0,
-              ) > 0
-                ? 1
-                : 0),
+            positionType: sum(position.swaps.map((swap) => swap.variableTokenDelta)) < 0 ? 1 : 2,
           });
         });
       break;
