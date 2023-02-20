@@ -211,14 +211,7 @@ export const getPositionsV1 = async (params: GetPositionsArgsV1): Promise<GetPos
         .map((position) => {
           return new Position({
             ...position,
-            positionType:
-              1 +
-              (position.swaps.reduce(
-                (sumVT, currentSwap) => sumVT + currentSwap.variableTokenDelta,
-                0,
-              ) > 0
-                ? 1
-                : 0),
+            positionType: sum(position.swaps.map((swap) => swap.variableTokenDelta)) < 0 ? 1 : 2,
           });
         });
       break;
