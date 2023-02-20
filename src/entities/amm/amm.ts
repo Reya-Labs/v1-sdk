@@ -61,10 +61,12 @@ import {
   ClosestTickAndFixedRate,
   ExpectedApyArgs,
   AvailableNotionals,
+  InfoPostSwapV1,
 } from './types';
 import { geckoEthToUsd } from '../../utils/priceFetch';
 import { getVariableFactor, RateOracle } from '../rateOracle';
 import { exponentialBackoff } from '../../utils/retry';
+import { convertGasUnitsToETH } from '../../utils/convertGasUnitsToETH';
 
 export class AMM {
   public readonly id: string;
@@ -553,6 +555,138 @@ export class AMM {
       fixedTokenDeltaUnbalanced: this.descale(fixedTokenDeltaUnbalanced),
       maxAvailableNotional:
         scaledMaxAvailableNotional < 0 ? -scaledMaxAvailableNotional : scaledMaxAvailableNotional,
+    };
+
+    return result;
+  }
+
+  public async getInfoPostSwapV1({
+    isFT,
+    notional,
+    fixedRateLimit,
+    fixedLow,
+    fixedHigh,
+  }: AMMGetInfoPostSwapArgs): Promise<InfoPostSwapV1> {
+    if (!this.signer) {
+      throw new Error('Wallet not connected');
+    }
+
+    if (fixedLow >= fixedHigh) {
+      throw new Error('Lower Rate must be smaller than Upper Rate');
+    }
+
+    if (fixedLow < MIN_FIXED_RATE) {
+      throw new Error('Lower Rate is too low');
+    }
+
+    if (fixedHigh > MAX_FIXED_RATE) {
+      throw new Error('Upper Rate is too high');
+    }
+
+    if (notional <= 0) {
+      throw new Error('Amount of notional must be greater than 0');
+    }
+
+    const signerAddress = await this.getUserAddress();
+
+    const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
+    const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
+
+    let sqrtPriceLimitX96;
+    if (fixedRateLimit) {
+      const { closestUsableTick: tickLimit } = this.closestTickAndFixedRate(fixedRateLimit);
+      sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(tickLimit).toString();
+    } else if (isFT) {
+      sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MAX_TICK - 1).toString();
+    } else {
+      sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MIN_TICK + 1).toString();
+    }
+
+    const scaledNotional = this.scale(notional);
+
+    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.signer);
+    const swapPeripheryParams: SwapPeripheryParams = {
+      marginEngine: this.marginEngineAddress,
+      isFT,
+      notional: scaledNotional,
+      sqrtPriceLimitX96,
+      tickLower,
+      tickUpper,
+      marginDelta: '0',
+    };
+
+    const tickBefore = await exponentialBackoff(() =>
+      peripheryContract.getCurrentTick(this.marginEngineAddress),
+    );
+    let tickAfter = 0;
+    let marginRequirement: BigNumber = BigNumber.from(0);
+    let fee = BigNumber.from(0);
+    let availableNotional = BigNumber.from(0);
+    let fixedTokenDeltaUnbalanced = BigNumber.from(0);
+    let fixedTokenDelta = BigNumber.from(0);
+
+    await peripheryContract.callStatic.swap(swapPeripheryParams).then(
+      (result: any) => {
+        availableNotional = result[1];
+        fee = result[2];
+        fixedTokenDeltaUnbalanced = result[3];
+        marginRequirement = result[4];
+        tickAfter = parseInt(result[5], 10);
+        fixedTokenDelta = result[0];
+      },
+      (error: any) => {
+        const result = decodeInfoPostSwap(error);
+        marginRequirement = result.marginRequirement;
+        tickAfter = result.tick;
+        fee = result.fee;
+        availableNotional = result.availableNotional;
+        fixedTokenDeltaUnbalanced = result.fixedTokenDeltaUnbalanced;
+        fixedTokenDelta = result.fixedTokenDelta;
+      },
+    );
+
+    const fixedRateBefore = tickToFixedRate(tickBefore);
+    const fixedRateAfter = tickToFixedRate(tickAfter);
+
+    const fixedRateDelta = fixedRateAfter.subtract(fixedRateBefore);
+    const fixedRateDeltaRaw = fixedRateDelta.toNumber();
+
+    const marginEngineContract = marginEngineFactory.connect(this.marginEngineAddress, this.signer);
+    const currentMargin = (
+      await exponentialBackoff(() =>
+        marginEngineContract.callStatic.getPosition(signerAddress, tickLower, tickUpper),
+      )
+    ).margin;
+
+    const scaledCurrentMargin = this.descale(currentMargin);
+    const scaledAvailableNotional = this.descale(availableNotional);
+    const scaledFee = this.descale(fee);
+    const scaledMarginRequirement = (this.descale(marginRequirement) + scaledFee) * 1.01;
+
+    const additionalMargin =
+      scaledMarginRequirement > scaledCurrentMargin
+        ? scaledMarginRequirement - scaledCurrentMargin
+        : 0;
+
+    const averageFixedRate = availableNotional.eq(BigNumber.from(0))
+      ? 0
+      : fixedTokenDeltaUnbalanced.mul(BigNumber.from(1000)).div(availableNotional).toNumber() /
+        1000;
+
+    const swapGasUnits = await peripheryContract.estimateGas.swap(swapPeripheryParams);
+    const gasFeeETH = await convertGasUnitsToETH(this.provider, swapGasUnits.toNumber());
+
+    const result: InfoPostSwapV1 = {
+      marginRequirement: additionalMargin,
+      availableNotional:
+        scaledAvailableNotional < 0 ? -scaledAvailableNotional : scaledAvailableNotional,
+      fee: scaledFee < 0 ? -scaledFee : scaledFee,
+      slippage: fixedRateDeltaRaw < 0 ? -fixedRateDeltaRaw : fixedRateDeltaRaw,
+      averageFixedRate: averageFixedRate < 0 ? -averageFixedRate : averageFixedRate,
+      fixedTokenDeltaBalance: this.descale(fixedTokenDelta),
+      variableTokenDeltaBalance: this.descale(availableNotional),
+      fixedTokenDeltaUnbalanced: this.descale(fixedTokenDeltaUnbalanced),
+      gasFeeETH,
     };
 
     return result;

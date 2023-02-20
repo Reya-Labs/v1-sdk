@@ -60,6 +60,18 @@ export type InfoPostSwap = {
   maxAvailableNotional?: number;
 };
 
+export type InfoPostSwapV1 = {
+  marginRequirement: number;
+  availableNotional: number;
+  fee: number;
+  slippage: number;
+  averageFixedRate: number;
+  fixedTokenDeltaBalance: number;
+  variableTokenDeltaBalance: number;
+  fixedTokenDeltaUnbalanced: number;
+  gasFeeETH: number;
+};
+
 export type ExpectedApyArgs = {
   margin: number;
   position?: Position;
