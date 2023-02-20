@@ -2,7 +2,6 @@
   "extends": [
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
-    "airbnb",
     "plugin:prettier/recommended",
     "prettier",
     "plugin:import/recommended",
