@@ -76,6 +76,7 @@ const getUninitialisedPositions = async ({
           amm: correspondingAmm,
           createdTimestamp: rawPos.creationTimestampInMS / 1000,
           positionType: rawPos.positionType,
+          isBothTraderAndLP: rawPos.mints.length > 0 && rawPos.swaps.length > 0,
         });
       }
 
@@ -183,6 +184,7 @@ const getUninitialisedPositionsV1 = async ({
           amm: correspondingAmm,
           createdTimestamp: rawPos.creationTimestampInMS / 1000,
           positionType: rawPos.positionType,
+          isBothTraderAndLP: rawPos.mints.length > 0 && rawPos.swaps.length > 0,
         });
       }
 

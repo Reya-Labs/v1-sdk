@@ -41,6 +41,8 @@ export type PositionConstructorArgs = {
   marginUpdates: MarginUpdate[];
   liquidations: Liquidation[];
   settlements: Settlement[];
+
+  isBothTraderAndLP: boolean;
 };
 
 class Position {
@@ -57,6 +59,7 @@ class Position {
   public readonly marginUpdates: Array<MarginUpdate>;
   public readonly liquidations: Array<Liquidation>;
   public readonly settlements: Array<Settlement>;
+  public readonly isBothTraderAndLP: boolean;
 
   public initialized = false;
 
@@ -109,6 +112,7 @@ class Position {
     marginUpdates,
     liquidations,
     settlements,
+    isBothTraderAndLP,
   }: PositionConstructorArgs) {
     this.id = id;
     this.createdTimestamp = createdTimestamp;
@@ -125,6 +129,8 @@ class Position {
     this.tickLower = tickLower;
     this.tickUpper = tickUpper;
     this.positionType = positionType;
+
+    this.isBothTraderAndLP = isBothTraderAndLP;
   }
 
   public get priceLower(): Price {
