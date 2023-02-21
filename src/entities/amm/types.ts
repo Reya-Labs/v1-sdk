@@ -171,3 +171,16 @@ export type AvailableNotionals = {
   availableNotionalFT: number;
   availableNotionalVT: number;
 };
+
+export type ExpectedCashflowArgs = {
+  position: Position | undefined;
+  fixedTokenDeltaBalance: number;
+  variableTokenDeltaBalance: number;
+  variableFactorStartNow: number;
+  predictedVariableApy: number;
+};
+
+export type ExpectedCashflowInfo = {
+  additionalCashflow: number;
+  totalCashflow: number;
+};
