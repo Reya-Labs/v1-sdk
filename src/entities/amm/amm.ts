@@ -58,11 +58,16 @@ import {
   ExpectedApyArgs,
   AvailableNotionals,
   InfoPostSwapV1,
+  ExpectedCashflowArgs,
+  ExpectedCashflowInfo,
 } from './types';
 import { geckoEthToUsd } from '../../utils/priceFetch';
 import { getVariableFactor, RateOracle } from '../rateOracle';
 import { exponentialBackoff } from '../../utils/retry';
 import { convertGasUnitsToETH } from '../../utils/convertGasUnitsToETH';
+import { convertApyToVariableFactor } from '../../utils/convertApyToVariableFactor';
+import { calculateSettlementCashflow } from '../../utils/calculateSettlementCashflow';
+import { sum } from '../../utils/functions';
 
 export class AMM {
   public readonly id: string;
@@ -1696,5 +1701,50 @@ export class AMM {
     });
 
     return availableNotionals;
+  }
+
+  public getExpectedCashflowInfo({
+    position,
+    fixedTokenDeltaBalance,
+    variableTokenDeltaBalance,
+    variableFactorStartNow,
+    predictedVariableApy,
+  }: ExpectedCashflowArgs): ExpectedCashflowInfo {
+    const variableFactorNowEnd = convertApyToVariableFactor(
+      predictedVariableApy,
+      Date.now() / 1000,
+      this.termEndTimestampInMS / 1000,
+      this.rateOracle.protocolId,
+    );
+
+    const variableFactorStartEnd = variableFactorStartNow + variableFactorNowEnd;
+
+    const additionalCashflow = calculateSettlementCashflow(
+      fixedTokenDeltaBalance,
+      variableTokenDeltaBalance,
+      this.termStartTimestampInMS / 1000,
+      this.termEndTimestampInMS / 1000,
+      variableFactorStartEnd,
+    );
+
+    let totalCashflow = additionalCashflow;
+    if (position) {
+      const positionFixedTokenBalance = sum(position.swaps.map((swap) => swap.fixedTokenDelta));
+      const positionVariableTokenBalance = sum(
+        position.swaps.map((swap) => swap.variableTokenDelta),
+      );
+      totalCashflow += calculateSettlementCashflow(
+        positionFixedTokenBalance,
+        positionVariableTokenBalance,
+        this.termStartTimestampInMS / 1000,
+        this.termEndTimestampInMS / 1000,
+        variableFactorStartEnd,
+      );
+    }
+
+    return {
+      additionalCashflow,
+      totalCashflow,
+    };
   }
 }
