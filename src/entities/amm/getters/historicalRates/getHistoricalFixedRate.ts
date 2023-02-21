@@ -1,73 +1,76 @@
 import {
   getHistoricalFixedRate as getTickUpdates,
+  getHistoricalVariableIndex,
+  RateUpdate,
   TickUpdate,
 } from '@voltz-protocol/subgraph-data';
 
-export const getHistoricalFixedRates = async (
+export enum Granularity {
+  ONE_HOUR = 3600,
+  ONE_DAY = 86400,
+  ONE_WEEK = 604800,
+}
+
+export const getHistoricalRates = async (
   subgraphUrl: string,
-  ammId: string,
+  isFixed: boolean,
   filters: {
-    granularityMs: number;
+    granularity: Granularity;
     timeframeMs: number;
   },
+  ammId?: string,
+  rateOracleId?: string,
 ): Promise<any[]> => {
+  // check ids
+  let parentObjectId;
+  if (isFixed && ammId) {
+    parentObjectId = ammId;
+  } else if (!isFixed && rateOracleId) {
+    parentObjectId = rateOracleId;
+  } else {
+    throw new Error('Unable to get rates, parent object not provided');
+  }
+
   // get ticks (with timeframe)
   const currentTimestamp = Date.now();
 
-  const startTime = currentTimestamp - filters.timeframeMs;
-  const endTime = currentTimestamp; // if end timestamp > last point => extrapolate
+  const startTime = Math.round((currentTimestamp - filters.timeframeMs) / 1000);
+  const endTime = Math.round(currentTimestamp / 1000);
 
-  let tickUpdates: TickUpdate[] = await getSubgraphData(subgraphUrl, ammId, startTime, endTime); // get from subgraph-data
+  // subgraph-data should output points in asc order by timestamp
+  const rateUpdates: TickUpdate[] = await getSubgraphData(
+    subgraphUrl,
+    isFixed,
+    parentObjectId,
+    startTime,
+    endTime,
+  );
 
   const result: any[] = [];
 
-  for (let timestamp = startTime; timestamp <= endTime; timestamp += filters.granularityMs) {
-    if (tickUpdates.length == 0 || timestamp < tickUpdates[0].timestampInMS) {
-      result.push({ rate: 1, timestampMs: timestamp });
-      continue;
-    }
-    // find closest two points
-    const beforeOrAtIndex = binarySearch(tickUpdates, timestamp);
-    const beforeOrAt = tickUpdates[beforeOrAtIndex];
-
-    const rate = 1 / 1.0001 ** beforeOrAt.tick.toNumber();
-
-    result.push({ rate, timestampMs: timestamp });
-
-    // cut off the previous datapoints to minimise search effort
-    if (beforeOrAtIndex >= 1) {
-      tickUpdates = tickUpdates.slice(beforeOrAtIndex - 1);
+  // NOTE: points will be registered exactly every hour on the ETHEREUM mainnet
+  // but on chains with arbitrary block interval, this won't be the case
+  let latestParsedTimestamp = 0;
+  for (const p of rateUpdates) {
+    if (latestParsedTimestamp + filters.granularity <= p.timestampInMS / 1000) {
+      result.push(p);
+      latestParsedTimestamp = p.timestampInMS;
     }
   }
+
   return result;
 };
 
 export const getSubgraphData = async (
   subgraphUrl: string,
-  ammId: string,
+  isFixed: boolean,
+  parentObjectId: string,
   startTime: number,
   endTime: number,
-): Promise<TickUpdate[]> => {
-  const res = await getTickUpdates(subgraphUrl, ammId, startTime, endTime);
+): Promise<TickUpdate[] | RateUpdate[]> => {
+  const res = isFixed
+    ? await getTickUpdates(subgraphUrl, parentObjectId, startTime, endTime)
+    : await getHistoricalVariableIndex(subgraphUrl, parentObjectId, startTime, endTime);
+
   return res;
 };
-
-/// @note returns closest point before the given timestamp (beforeOrAt)
-function binarySearch(array: TickUpdate[], timestamp: number): number {
-  let left = 0;
-  let right = array.length;
-
-  if (timestamp >= array[array.length - 1].timestampInMS) return array.length - 1;
-  if (timestamp < array[0].timestampInMS) return -1;
-
-  while (left < right) {
-    const mid = Math.ceil((left + right) / 2);
-    if (timestamp < array[mid].timestampInMS) {
-      right = mid - 1;
-    } else {
-      left = mid;
-    }
-  }
-
-  return left;
-}
