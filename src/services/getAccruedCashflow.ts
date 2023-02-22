@@ -55,10 +55,10 @@ async function getAccruedCashflowBetween(
   const nTime = getAnnualizedTime(from, to);
   const variableRate = Number(
     utils.formatUnits(
-      await exponentialBackoff(
-        () => rateOracle.getRateFromTo(BigNumber.from(from), BigNumber.from(to)),
-        18,
+      await exponentialBackoff(() =>
+        rateOracle.getRateFromTo(BigNumber.from(from), BigNumber.from(to)),
       ),
+      18,
     ),
   );
 
