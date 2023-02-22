@@ -565,6 +565,16 @@ export const networkConfigurationsV1: { [key in SupportedChainId]: NetworkConfig
         },
         traderWithdrawable: true,
       },
+      {
+        name: 'aUSDC_v1',
+        id: '0x1d7E4d7c1629c9D6E3Bb6a344496b1B782c9ca9a', // vamm address
+        show: {
+          general: true,
+          trader: true,
+        },
+        traderWithdrawable: false,
+        isAaveV3: true,
+      },
     ],
   },
 
