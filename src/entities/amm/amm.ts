@@ -8,7 +8,9 @@ import {
   MaxUint256Bn,
   TresholdApprovalBn,
   getGasBuffer,
-  ONE_DAY_IN_SECONDS,
+  ONE_YEAR_IN_SECONDS,
+  GLP_PRECISION,
+  WAD_PRECISION,
 } from '../../constants';
 import {
   Periphery__factory as peripheryFactory,
@@ -24,6 +26,8 @@ import {
   AaveV3RateOracle__factory as aaveV3RateOracleFactory,
   CompoundBorrowRateOracle__factory as compoundBorrowRateOracleFactory,
   GlpRateOracle__factory as glpRateOracleFactory,
+  IRewardTracker__factory as rewardTrackerFactory,
+  IGlpManager__factory as glpManagerFactory,
 } from '../../typechain';
 import { TickMath } from '../../utils/tickMath';
 import { fixedRateToClosestTick, tickToFixedRate } from '../../utils/priceTickConversions';
@@ -1629,17 +1633,26 @@ export class AMM {
           throw new Error('No underlying error');
         }
 
+        const ethUsdPrice = await this.ethPrice();
+        const ethUsdPriceWad = BigNumber.from(Math.round(ethUsdPrice * 1000))
+          .mul(WAD_PRECISION)
+          .div(1000);
+
         const rateOracleContract = glpRateOracleFactory.connect(this.rateOracle.id, this.provider);
+        const rewardTrackerAddress = await rateOracleContract.rewardTracker();
+        const rewardTracker = rewardTrackerFactory.connect(rewardTrackerAddress, this.provider);
+        const tokensPerIntervalWad = await rewardTracker.tokensPerInterval();
 
-        const currentBlock = await this.provider.getBlock('latest');
+        const glpManagerAddress = await rateOracleContract.glpManager();
+        const glpManager = await glpManagerFactory.connect(glpManagerAddress, this.provider);
+        const aumUsdWad = (await glpManager.getAum(false)).mul(WAD_PRECISION).div(GLP_PRECISION);
 
-        const rateFromOneDayAgo = await rateOracleContract.getRateFrom(
-          currentBlock.timestamp - ONE_DAY_IN_SECONDS,
-        ); // one day ago
+        const instantApy = tokensPerIntervalWad
+          .mul(ONE_YEAR_IN_SECONDS)
+          .mul(ethUsdPriceWad)
+          .div(aumUsdWad);
 
-        const instantApy = rateFromOneDayAgo.mul(365);
-
-        return instantApy.div(BigNumber.from(10).pow(12)).toNumber() / 1000000;
+        return instantApy.div(BigNumber.from(1000000000000)).toNumber() / 1000000;
       }
 
       default:
