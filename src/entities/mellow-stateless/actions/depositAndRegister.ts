@@ -5,7 +5,7 @@ import { getGasBuffer } from '../../../constants';
 import { getProvider, getProviderV1, getSentryTracker } from '../../../init';
 import { getTokenInfo } from '../../../services/getTokenInfo';
 import { SupportedChainId } from '../../../types';
-import { convertGasUnitsToUSD } from '../../../utils/mellowHelpers/convertGasUnitsToUSD';
+import { convertGasUnitsToUSD } from '../../../utils/convertGasUnitsToUSD';
 import { exponentialBackoff } from '../../../utils/retry';
 import { scale } from '../../../utils/scaling';
 import {

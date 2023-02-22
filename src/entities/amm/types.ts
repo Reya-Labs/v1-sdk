@@ -7,8 +7,9 @@ import Token from '../token';
 export type AMMConstructorArgs = {
   id: string;
   signer: Signer | null;
-  provider?: providers.Provider;
+  provider: providers.Provider;
 
+  peripheryAddress: string;
   factoryAddress: string;
   marginEngineAddress: string;
   rateOracle: RateOracle;
@@ -57,6 +58,18 @@ export type InfoPostSwap = {
   variableTokenDeltaBalance: number;
   fixedTokenDeltaUnbalanced: number;
   maxAvailableNotional?: number;
+};
+
+export type InfoPostSwapV1 = {
+  marginRequirement: number;
+  availableNotional: number;
+  fee: number;
+  slippage: number;
+  averageFixedRate: number;
+  fixedTokenDeltaBalance: number;
+  variableTokenDeltaBalance: number;
+  fixedTokenDeltaUnbalanced: number;
+  gasFeeETH: number;
 };
 
 export type ExpectedApyArgs = {
@@ -152,4 +165,22 @@ export enum HealthFactorStatus {
 export type ClosestTickAndFixedRate = {
   closestUsableTick: number;
   closestUsableFixedRate: Price;
+};
+
+export type AvailableNotionals = {
+  availableNotionalFT: number;
+  availableNotionalVT: number;
+};
+
+export type ExpectedCashflowArgs = {
+  position: Position | undefined;
+  fixedTokenDeltaBalance: number;
+  variableTokenDeltaBalance: number;
+  variableFactorStartNow: number;
+  predictedVariableApy: number;
+};
+
+export type ExpectedCashflowInfo = {
+  additionalCashflow: number;
+  totalCashflow: number;
 };

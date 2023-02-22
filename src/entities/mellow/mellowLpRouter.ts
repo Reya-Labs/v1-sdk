@@ -23,7 +23,7 @@ import { abi as MellowMultiVaultRouterABI } from '../../ABIs/MellowMultiVaultRou
 import { getSentryTracker } from '../../init';
 import { MellowProductMetadata } from './config/types';
 import { closeOrPastMaturity } from './config/utils';
-import { convertGasUnitsToUSD } from '../../utils/mellowHelpers/convertGasUnitsToUSD';
+import { convertGasUnitsToUSD } from '../../utils/convertGasUnitsToUSD';
 import { geckoEthToUsd } from '../../utils/priceFetch';
 import { exponentialBackoff } from '../../utils/retry';
 

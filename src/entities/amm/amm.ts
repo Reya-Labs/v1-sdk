@@ -8,12 +8,13 @@ import {
   MaxUint256Bn,
   TresholdApprovalBn,
   getGasBuffer,
-  ONE_DAY_IN_SECONDS,
+  ONE_YEAR_IN_SECONDS,
+  GLP_PRECISION,
+  WAD_PRECISION,
 } from '../../constants';
 import {
   Periphery__factory as peripheryFactory,
   MarginEngine__factory as marginEngineFactory,
-  Factory__factory as factoryFactory,
   IERC20Minimal__factory as tokenFactory,
   BaseRateOracle__factory as baseRateOracleFactory,
   ICToken__factory as iCTokenFactory,
@@ -25,6 +26,8 @@ import {
   AaveV3RateOracle__factory as aaveV3RateOracleFactory,
   CompoundBorrowRateOracle__factory as compoundBorrowRateOracleFactory,
   GlpRateOracle__factory as glpRateOracleFactory,
+  IRewardTracker__factory as rewardTrackerFactory,
+  IGlpManager__factory as glpManagerFactory,
 } from '../../typechain';
 import { TickMath } from '../../utils/tickMath';
 import { fixedRateToClosestTick, tickToFixedRate } from '../../utils/priceTickConversions';
@@ -57,15 +60,24 @@ import {
   AMMSettlePositionArgs,
   ClosestTickAndFixedRate,
   ExpectedApyArgs,
+  AvailableNotionals,
+  InfoPostSwapV1,
+  ExpectedCashflowArgs,
+  ExpectedCashflowInfo,
 } from './types';
 import { geckoEthToUsd } from '../../utils/priceFetch';
 import { getVariableFactor, RateOracle } from '../rateOracle';
 import { exponentialBackoff } from '../../utils/retry';
+import { convertGasUnitsToETH } from '../../utils/convertGasUnitsToETH';
+import { convertApyToVariableFactor } from '../../utils/convertApyToVariableFactor';
+import { calculateSettlementCashflow } from '../../utils/calculateSettlementCashflow';
+import { sum } from '../../utils/functions';
 
 export class AMM {
   public readonly id: string;
   public readonly signer: Signer | null;
   public readonly provider: providers.Provider;
+  public readonly peripheryAddress: string;
   public readonly factoryAddress: string;
   public readonly marginEngineAddress: string;
   public readonly rateOracle: RateOracle;
@@ -89,6 +101,7 @@ export class AMM {
     id,
     signer,
     provider,
+    peripheryAddress,
     factoryAddress,
     marginEngineAddress,
     rateOracle,
@@ -102,6 +115,7 @@ export class AMM {
   }: AMMConstructorArgs) {
     this.id = id;
     this.signer = signer;
+    this.peripheryAddress = peripheryAddress;
     this.factoryAddress = factoryAddress;
     this.marginEngineAddress = marginEngineAddress;
     this.rateOracle = rateOracle;
@@ -114,28 +128,12 @@ export class AMM {
     this.ethPrice =
       ethPrice || (() => geckoEthToUsd(process.env.REACT_APP_COINGECKO_API_KEY || ''));
 
-    const chosenProvider = provider || signer?.provider;
-    if (!chosenProvider) {
-      const sentryTracker = getSentryTracker();
-      sentryTracker.captureMessage("Provider doesn't exist");
-      throw new Error("Provider doesn't exist");
-    }
-    this.provider = chosenProvider;
+    this.provider = provider;
 
     this.variableFactor = getVariableFactor(this.provider, this.rateOracle.id);
 
     this.minLeverageAllowed = minLeverageAllowed;
   }
-
-  private peripheryAddress: string | null = null;
-  public getPeripheryAddress = async (): Promise<string> => {
-    if (!this.peripheryAddress) {
-      const factoryContract = factoryFactory.connect(this.factoryAddress, this.provider);
-      this.peripheryAddress = await exponentialBackoff(() => factoryContract.periphery());
-    }
-
-    return this.peripheryAddress;
-  };
 
   public getUserAddress = async (): Promise<string> => {
     if (!this.signer) {
@@ -202,8 +200,7 @@ export class AMM {
       sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MIN_TICK + 1).toString();
     }
 
-    const peripheryAddress = await this.getPeripheryAddress();
-    const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
+    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.signer);
     const scaledNotional = this.scale(notional);
 
     // Get the margin delta in underlying ERC20 tokens and ETH
@@ -324,8 +321,7 @@ export class AMM {
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
-    const peripheryAddress = await this.getPeripheryAddress();
-    const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
+    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.signer);
     const scaledNotional = this.scale(notional);
 
     // Get the margin delta in underlying ERC20 tokens and ETH
@@ -462,9 +458,7 @@ export class AMM {
 
     const scaledNotional = this.scale(notional);
 
-    const peripheryAddress = await this.getPeripheryAddress();
-
-    const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
+    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.signer);
     const swapPeripheryParams: SwapPeripheryParams = {
       marginEngine: this.marginEngineAddress,
       isFT,
@@ -566,6 +560,138 @@ export class AMM {
       fixedTokenDeltaUnbalanced: this.descale(fixedTokenDeltaUnbalanced),
       maxAvailableNotional:
         scaledMaxAvailableNotional < 0 ? -scaledMaxAvailableNotional : scaledMaxAvailableNotional,
+    };
+
+    return result;
+  }
+
+  public async getInfoPostSwapV1({
+    isFT,
+    notional,
+    fixedRateLimit,
+    fixedLow,
+    fixedHigh,
+  }: AMMGetInfoPostSwapArgs): Promise<InfoPostSwapV1> {
+    if (!this.signer) {
+      throw new Error('Wallet not connected');
+    }
+
+    if (fixedLow >= fixedHigh) {
+      throw new Error('Lower Rate must be smaller than Upper Rate');
+    }
+
+    if (fixedLow < MIN_FIXED_RATE) {
+      throw new Error('Lower Rate is too low');
+    }
+
+    if (fixedHigh > MAX_FIXED_RATE) {
+      throw new Error('Upper Rate is too high');
+    }
+
+    if (notional <= 0) {
+      throw new Error('Amount of notional must be greater than 0');
+    }
+
+    const signerAddress = await this.getUserAddress();
+
+    const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
+    const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
+
+    let sqrtPriceLimitX96;
+    if (fixedRateLimit) {
+      const { closestUsableTick: tickLimit } = this.closestTickAndFixedRate(fixedRateLimit);
+      sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(tickLimit).toString();
+    } else if (isFT) {
+      sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MAX_TICK - 1).toString();
+    } else {
+      sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MIN_TICK + 1).toString();
+    }
+
+    const scaledNotional = this.scale(notional);
+
+    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.signer);
+    const swapPeripheryParams: SwapPeripheryParams = {
+      marginEngine: this.marginEngineAddress,
+      isFT,
+      notional: scaledNotional,
+      sqrtPriceLimitX96,
+      tickLower,
+      tickUpper,
+      marginDelta: '0',
+    };
+
+    const tickBefore = await exponentialBackoff(() =>
+      peripheryContract.getCurrentTick(this.marginEngineAddress),
+    );
+    let tickAfter = 0;
+    let marginRequirement: BigNumber = BigNumber.from(0);
+    let fee = BigNumber.from(0);
+    let availableNotional = BigNumber.from(0);
+    let fixedTokenDeltaUnbalanced = BigNumber.from(0);
+    let fixedTokenDelta = BigNumber.from(0);
+
+    await peripheryContract.callStatic.swap(swapPeripheryParams).then(
+      (result: any) => {
+        availableNotional = result[1];
+        fee = result[2];
+        fixedTokenDeltaUnbalanced = result[3];
+        marginRequirement = result[4];
+        tickAfter = parseInt(result[5], 10);
+        fixedTokenDelta = result[0];
+      },
+      (error: any) => {
+        const result = decodeInfoPostSwap(error);
+        marginRequirement = result.marginRequirement;
+        tickAfter = result.tick;
+        fee = result.fee;
+        availableNotional = result.availableNotional;
+        fixedTokenDeltaUnbalanced = result.fixedTokenDeltaUnbalanced;
+        fixedTokenDelta = result.fixedTokenDelta;
+      },
+    );
+
+    const fixedRateBefore = tickToFixedRate(tickBefore);
+    const fixedRateAfter = tickToFixedRate(tickAfter);
+
+    const fixedRateDelta = fixedRateAfter.subtract(fixedRateBefore);
+    const fixedRateDeltaRaw = fixedRateDelta.toNumber();
+
+    const marginEngineContract = marginEngineFactory.connect(this.marginEngineAddress, this.signer);
+    const currentMargin = (
+      await exponentialBackoff(() =>
+        marginEngineContract.callStatic.getPosition(signerAddress, tickLower, tickUpper),
+      )
+    ).margin;
+
+    const scaledCurrentMargin = this.descale(currentMargin);
+    const scaledAvailableNotional = this.descale(availableNotional);
+    const scaledFee = this.descale(fee);
+    const scaledMarginRequirement = (this.descale(marginRequirement) + scaledFee) * 1.01;
+
+    const additionalMargin =
+      scaledMarginRequirement > scaledCurrentMargin
+        ? scaledMarginRequirement - scaledCurrentMargin
+        : 0;
+
+    const averageFixedRate = availableNotional.eq(BigNumber.from(0))
+      ? 0
+      : fixedTokenDeltaUnbalanced.mul(BigNumber.from(1000)).div(availableNotional).toNumber() /
+        1000;
+
+    const swapGasUnits = await peripheryContract.estimateGas.swap(swapPeripheryParams);
+    const gasFeeETH = await convertGasUnitsToETH(this.provider, swapGasUnits.toNumber());
+
+    const result: InfoPostSwapV1 = {
+      marginRequirement: additionalMargin,
+      availableNotional:
+        scaledAvailableNotional < 0 ? -scaledAvailableNotional : scaledAvailableNotional,
+      fee: scaledFee < 0 ? -scaledFee : scaledFee,
+      slippage: fixedRateDeltaRaw < 0 ? -fixedRateDeltaRaw : fixedRateDeltaRaw,
+      averageFixedRate: averageFixedRate < 0 ? -averageFixedRate : averageFixedRate,
+      fixedTokenDeltaBalance: this.descale(fixedTokenDelta),
+      variableTokenDeltaBalance: this.descale(availableNotional),
+      fixedTokenDeltaUnbalanced: this.descale(fixedTokenDeltaUnbalanced),
+      gasFeeETH,
     };
 
     return result;
@@ -703,9 +829,7 @@ export class AMM {
       sqrtPriceLimitX96 = TickMath.getSqrtRatioAtTick(TickMath.MIN_TICK + 1).toString();
     }
 
-    const peripheryAddress = await this.getPeripheryAddress();
-
-    const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
+    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.signer);
     const scaledNotional = this.scale(notional);
 
     let swapPeripheryParams: SwapPeripheryParams;
@@ -851,9 +975,7 @@ export class AMM {
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
-    const peripheryAddress = await this.getPeripheryAddress();
-
-    const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
+    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.signer);
     const scaledNotional = this.scale(notional);
     const mintOrBurnParams: MintOrBurnParams = {
       marginEngine: this.marginEngineAddress,
@@ -928,9 +1050,7 @@ export class AMM {
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
-    const peripheryAddress = await this.getPeripheryAddress();
-
-    const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
+    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.signer);
     const scaledNotional = this.scale(notional);
 
     let mintOrBurnParams: MintOrBurnParams;
@@ -1022,9 +1142,7 @@ export class AMM {
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
-    const peripheryAddress = await this.getPeripheryAddress();
-
-    const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
+    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.signer);
 
     const scaledNotional = this.scale(notional);
 
@@ -1102,9 +1220,7 @@ export class AMM {
       scaledMarginDelta = this.scale(marginDelta);
     }
 
-    const peripheryAddress = await this.getPeripheryAddress();
-
-    const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
+    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.signer);
 
     await peripheryContract.callStatic
       .updatePositionMargin(
@@ -1174,8 +1290,7 @@ export class AMM {
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
 
-    const peripheryAddress = await this.getPeripheryAddress();
-    const peripheryContract = peripheryFactory.connect(peripheryAddress, this.signer);
+    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.signer);
 
     await peripheryContract.callStatic
       .settlePositionAndWithdrawMargin(
@@ -1258,9 +1373,8 @@ export class AMM {
     const tokenAddress = this.underlyingToken.id;
     const token = tokenFactory.connect(tokenAddress, this.signer);
 
-    const peripheryAddress = await this.getPeripheryAddress();
     const allowance = await exponentialBackoff(() =>
-      token.allowance(signerAddress, peripheryAddress),
+      token.allowance(signerAddress, this.peripheryAddress),
     );
 
     if (scaledAmount === undefined) {
@@ -1281,11 +1395,9 @@ export class AMM {
     const tokenAddress = this.underlyingToken.id;
     const token = tokenFactory.connect(tokenAddress, this.signer);
 
-    const peripheryAddress = await this.getPeripheryAddress();
-
     let estimatedGas;
     try {
-      estimatedGas = await token.estimateGas.approve(peripheryAddress, MaxUint256Bn);
+      estimatedGas = await token.estimateGas.approve(this.peripheryAddress, MaxUint256Bn);
     } catch (error) {
       const sentryTracker = getSentryTracker();
       sentryTracker.captureException(error);
@@ -1293,12 +1405,12 @@ export class AMM {
         `Could not increase periphery allowance (${tokenAddress}, ${await this.getUserAddress()}, ${MaxUint256Bn.toString()})`,
       );
       throw new Error(
-        `Unable to approve. If your existing allowance is non-zero but lower than needed, some tokens like USDT require you to call approve("${peripheryAddress}", 0) before you can increase the allowance.`,
+        `Unable to approve. If your existing allowance is non-zero but lower than needed, some tokens like USDT require you to call approve("${this.peripheryAddress}", 0) before you can increase the allowance.`,
       );
     }
 
     const approvalTransaction = await token
-      .approve(peripheryAddress, MaxUint256Bn, {
+      .approve(this.peripheryAddress, MaxUint256Bn, {
         gasLimit: getGasBuffer(estimatedGas),
       })
       .catch((error) => {
@@ -1339,9 +1451,7 @@ export class AMM {
   }
 
   public async getFixedApr(): Promise<number> {
-    const peripheryAddress = await this.getPeripheryAddress();
-
-    const peripheryContract = peripheryFactory.connect(peripheryAddress, this.provider);
+    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.provider);
     const currentTick = await exponentialBackoff(() =>
       peripheryContract.getCurrentTick(this.marginEngineAddress),
     );
@@ -1523,21 +1633,131 @@ export class AMM {
           throw new Error('No underlying error');
         }
 
+        const ethUsdPrice = await this.ethPrice();
+        const ethUsdPriceWad = BigNumber.from(Math.round(ethUsdPrice * 1000))
+          .mul(WAD_PRECISION)
+          .div(1000);
+
         const rateOracleContract = glpRateOracleFactory.connect(this.rateOracle.id, this.provider);
+        const rewardTrackerAddress = await rateOracleContract.rewardTracker();
+        const rewardTracker = rewardTrackerFactory.connect(rewardTrackerAddress, this.provider);
+        const tokensPerIntervalWad = await rewardTracker.tokensPerInterval();
 
-        const currentBlock = await this.provider.getBlock('latest');
+        const glpManagerAddress = await rateOracleContract.glpManager();
+        const glpManager = await glpManagerFactory.connect(glpManagerAddress, this.provider);
+        const aumUsdWad = (await glpManager.getAum(false)).mul(WAD_PRECISION).div(GLP_PRECISION);
 
-        const rateFromOneDayAgo = await rateOracleContract.getRateFrom(
-          currentBlock.timestamp - ONE_DAY_IN_SECONDS,
-        ); // one day ago
+        const instantApy = tokensPerIntervalWad
+          .mul(ONE_YEAR_IN_SECONDS)
+          .mul(ethUsdPriceWad)
+          .div(aumUsdWad);
 
-        const instantApy = rateFromOneDayAgo.mul(365);
-
-        return instantApy.div(BigNumber.from(10).pow(12)).toNumber() / 1000000;
+        return instantApy.div(BigNumber.from(1000000000000)).toNumber() / 1000000;
       }
 
       default:
         throw new Error('Unrecognized protocol');
     }
+  }
+
+  private async getAvailableNotional({
+    isFT,
+    sqrtPriceLimitX96,
+  }: {
+    isFT: boolean;
+    sqrtPriceLimitX96: BigNumber;
+  }): Promise<number> {
+    const swapPeripheryParamsLargeSwap = {
+      marginEngine: this.marginEngineAddress,
+      isFT,
+      notional: this.scale(1000000000000000),
+      sqrtPriceLimitX96,
+      tickLower: -69060,
+      tickUpper: 0,
+      marginDelta: '0',
+    };
+
+    let availableNotional = BigNumber.from(0);
+
+    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.provider);
+    await peripheryContract.callStatic.swap(swapPeripheryParamsLargeSwap).then(
+      (result: any) => {
+        availableNotional = result[1];
+      },
+      (error: any) => {
+        const result = decodeInfoPostSwap(error);
+        availableNotional = result.availableNotional;
+      },
+    );
+
+    return this.descale(availableNotional);
+  }
+
+  public async getAvailableNotionals(): Promise<AvailableNotionals> {
+    const availableNotionals: AvailableNotionals = {
+      availableNotionalFT: 0,
+      availableNotionalVT: 0,
+    };
+
+    availableNotionals.availableNotionalFT = await this.getAvailableNotional({
+      isFT: true,
+      sqrtPriceLimitX96: BigNumber.from(
+        TickMath.getSqrtRatioAtTick(TickMath.MAX_TICK - 1).toString(),
+      ),
+    });
+
+    availableNotionals.availableNotionalVT = await this.getAvailableNotional({
+      isFT: false,
+      sqrtPriceLimitX96: BigNumber.from(
+        TickMath.getSqrtRatioAtTick(TickMath.MIN_TICK + 1).toString(),
+      ),
+    });
+
+    return availableNotionals;
+  }
+
+  public getExpectedCashflowInfo({
+    position,
+    fixedTokenDeltaBalance,
+    variableTokenDeltaBalance,
+    variableFactorStartNow,
+    predictedVariableApy,
+  }: ExpectedCashflowArgs): ExpectedCashflowInfo {
+    const variableFactorNowEnd = convertApyToVariableFactor(
+      predictedVariableApy,
+      Date.now() / 1000,
+      this.termEndTimestampInMS / 1000,
+      this.rateOracle.protocolId,
+    );
+
+    const variableFactorStartEnd = variableFactorStartNow + variableFactorNowEnd;
+
+    const additionalCashflow = calculateSettlementCashflow(
+      fixedTokenDeltaBalance,
+      variableTokenDeltaBalance,
+      this.termStartTimestampInMS / 1000,
+      this.termEndTimestampInMS / 1000,
+      variableFactorStartEnd,
+    );
+
+    let totalCashflow = additionalCashflow;
+    if (position) {
+      const positionFixedTokenBalance = sum(position.swaps.map((swap) => swap.fixedTokenDelta));
+      const positionVariableTokenBalance = sum(
+        position.swaps.map((swap) => swap.variableTokenDelta),
+      );
+      totalCashflow += calculateSettlementCashflow(
+        positionFixedTokenBalance,
+        positionVariableTokenBalance,
+        this.termStartTimestampInMS / 1000,
+        this.termEndTimestampInMS / 1000,
+        variableFactorStartEnd,
+      );
+    }
+
+    return {
+      additionalCashflow,
+      totalCashflow,
+    };
   }
 }

@@ -3,7 +3,7 @@ import { waffle, network } from 'hardhat';
 import { BrowserClient } from '@sentry/browser';
 import * as sinon from 'sinon';
 import axios from 'axios';
-import { convertGasUnitsToUSD } from '../../src/utils/mellowHelpers/convertGasUnitsToUSD';
+import { convertGasUnitsToUSD } from '../../src/utils/convertGasUnitsToUSD';
 import { geckoEthToUsd } from '../../src/utils/priceFetch';
 import * as initSDK from '../../src/init';
 import { exponentialBackoff } from '../../src/utils/retry';
