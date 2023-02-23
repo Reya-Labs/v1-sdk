@@ -1,7 +1,7 @@
 import { Wallet } from 'ethers';
 
 const getDummyWallet = (): Wallet => {
-  return Wallet.fromMnemonic('test test test test test test test test test test test junk');
+  return new Wallet(`0x0000000000000000000000000000000000000000000000000000000000000001`);
 };
 
 export default getDummyWallet;
