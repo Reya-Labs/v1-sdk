@@ -77,6 +77,7 @@ import {
   Granularity,
   HistoricalRates,
 } from './getters/historicalRates/getHistoricalRate';
+import getDummyWallet from '../../utils/getDummyWallet';
 
 export class AMM {
   public readonly id: string;
@@ -102,7 +103,7 @@ export class AMM {
   }>;
   public readonly minLeverageAllowed: number;
 
-  private readonly testWallet: Wallet;
+  private readonly dummyWallet: Wallet;
 
   public constructor({
     id,
@@ -141,9 +142,7 @@ export class AMM {
 
     this.minLeverageAllowed = minLeverageAllowed;
 
-    this.testWallet = Wallet.fromMnemonic(
-      'test test test test test test test test test test test junk',
-    ).connect(this.provider);
+    this.dummyWallet = getDummyWallet().connect(this.provider);
   }
 
   public getUserAddress = async (): Promise<string> => {
@@ -1714,7 +1713,7 @@ export class AMM {
 
     let availableNotional = BigNumber.from(0);
 
-    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.testWallet);
+    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.dummyWallet);
     await peripheryContract.callStatic.swap(swapPeripheryParamsLargeSwap).then(
       (result: any) => {
         availableNotional = result[1];
