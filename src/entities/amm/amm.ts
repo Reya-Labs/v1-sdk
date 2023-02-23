@@ -1,4 +1,4 @@
-import { providers, BigNumber, ContractReceipt, Signer, utils } from 'ethers';
+import { providers, BigNumber, ContractReceipt, Signer, utils, Wallet } from 'ethers';
 import { DateTime } from 'luxon';
 
 import { SwapPeripheryParams, MintOrBurnParams, SupportedChainId } from '../../types';
@@ -102,6 +102,8 @@ export class AMM {
   }>;
   public readonly minLeverageAllowed: number;
 
+  private readonly testWallet: Wallet;
+
   public constructor({
     id,
     signer,
@@ -138,6 +140,10 @@ export class AMM {
     this.variableFactor = getVariableFactor(this.provider, this.rateOracle.id);
 
     this.minLeverageAllowed = minLeverageAllowed;
+
+    this.testWallet = Wallet.fromMnemonic(
+      'test test test test test test test test test test test junk',
+    ).connect(this.provider);
   }
 
   public getUserAddress = async (): Promise<string> => {
@@ -1708,14 +1714,14 @@ export class AMM {
 
     let availableNotional = BigNumber.from(0);
 
-    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.provider);
+    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.testWallet);
     await peripheryContract.callStatic.swap(swapPeripheryParamsLargeSwap).then(
       (result: any) => {
         availableNotional = result[1];
       },
       (error: any) => {
         const result = decodeInfoPostSwap(error);
-        availableNotional = result.availableNotional;
+        availableNotional = result.availableNotional.abs();
       },
     );
 
