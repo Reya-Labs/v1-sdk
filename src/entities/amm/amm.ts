@@ -72,8 +72,7 @@ import { convertGasUnitsToETH } from '../../utils/convertGasUnitsToETH';
 import { convertApyToVariableFactor } from '../../utils/convertApyToVariableFactor';
 import { calculateSettlementCashflow } from '../../utils/calculateSettlementCashflow';
 import { sum } from '../../utils/functions';
-import { getHistoricalVariableRate } from './getters/historicalRates/getHistoricalVariableRate';
-import { getHistoricalFixedRate } from './getters/historicalRates/getHistoricalFixedRate';
+import { getHistoricalRates, Granularity } from './getters/historicalRates/getHistoricalRate';
 
 export class AMM {
   public readonly id: string;
@@ -1489,22 +1488,28 @@ export class AMM {
   public async getHistoricalVariableRate(
     subgraphUrl: string,
     filters: {
-      granularityMs: number;
+      granularity: Granularity;
       timeframeMs: number;
     },
   ): Promise<any[]> {
-    const result = await getHistoricalVariableRate(subgraphUrl, this.rateOracle.id, filters);
+    const result = await getHistoricalRates(
+      subgraphUrl,
+      false,
+      filters,
+      undefined,
+      this.rateOracle.id,
+    );
     return result;
   }
 
   public async getHistoricalFixedRate(
     subgraphUrl: string,
     filters: {
-      granularityMs: number;
+      granularity: Granularity;
       timeframeMs: number;
     },
   ): Promise<any[]> {
-    const result = await getHistoricalFixedRate(subgraphUrl, this.id, filters);
+    const result = await getHistoricalRates(subgraphUrl, true, filters, this.id, undefined);
     return result;
   }
 
