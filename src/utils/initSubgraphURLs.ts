@@ -10,6 +10,8 @@ const initSubgraphURLs = (chainId: SupportedChainId): { [key in SubgraphURLEnum]
           'https://api.studio.thegraph.com/query/36721/main-v2-voltz-badges/v0.0.5',
         [SubgraphURLEnum.badgesRollingSeason]:
           'https://api.studio.thegraph.com/query/36721/main-v2-voltz-badges/v0.0.5',
+        [SubgraphURLEnum.historicalRates]:
+          'https://api.studio.thegraph.com/query/36721/voltz-historical-rates-mainnet/v0.0.3',
       };
     }
     case SupportedChainId.goerli: {
@@ -20,6 +22,7 @@ const initSubgraphURLs = (chainId: SupportedChainId): { [key in SubgraphURLEnum]
           'https://api.thegraph.com/subgraphs/name/voltzprotocol/badges-goerli',
         [SubgraphURLEnum.badgesRollingSeason]:
           'https://api.thegraph.com/subgraphs/name/voltzprotocol/badges-goerli',
+        [SubgraphURLEnum.historicalRates]: '',
       };
     }
     case SupportedChainId.arbitrum: {
@@ -28,6 +31,7 @@ const initSubgraphURLs = (chainId: SupportedChainId): { [key in SubgraphURLEnum]
           'https://api.thegraph.com/subgraphs/name/voltzprotocol/arbitrum-v1',
         [SubgraphURLEnum.badgesCurrentSeasonNoIPFS]: '',
         [SubgraphURLEnum.badgesRollingSeason]: '',
+        [SubgraphURLEnum.historicalRates]: '',
       };
     }
     case SupportedChainId.arbitrumGoerli: {
@@ -36,6 +40,7 @@ const initSubgraphURLs = (chainId: SupportedChainId): { [key in SubgraphURLEnum]
           'https://api.thegraph.com/subgraphs/name/voltzprotocol/arbitrum-goerli-v1',
         [SubgraphURLEnum.badgesCurrentSeasonNoIPFS]: '',
         [SubgraphURLEnum.badgesRollingSeason]: '',
+        [SubgraphURLEnum.historicalRates]: '',
       };
     }
     default: {

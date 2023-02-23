@@ -44,4 +44,5 @@ export enum SubgraphURLEnum {
   voltzProtocol = 1,
   badgesCurrentSeasonNoIPFS = 2,
   badgesRollingSeason = 3,
+  historicalRates = 4,
 }
