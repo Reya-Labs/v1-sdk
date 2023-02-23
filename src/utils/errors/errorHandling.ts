@@ -43,6 +43,12 @@ const getErrorData = (error: any): string => {
     }
   } catch (_) {}
 
+  try {
+    if (typeof error.errorSignature === 'string') {
+      return iface.encodeErrorResult(error.errorSignature, error.errorArgs);
+    }
+  } catch (_) {}
+
   console.error(`Unknown error type. ${error}`);
   const sentryTracker = getSentryTracker();
   sentryTracker.captureException(error);
