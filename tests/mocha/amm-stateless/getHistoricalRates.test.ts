@@ -7,6 +7,7 @@ import { getHistoricalRates } from '../../../src/entities';
 import * as fun from '../../../src/entities/amm/getters/historicalRates/getHistoricalRate';
 import { ONE_DAY_IN_SECONDS } from '../../../src/constants';
 import { BigNumber } from 'ethers';
+import { SupportedChainId } from '../../../src/types';
 
 
 describe('getHistoricalRates', () => {
@@ -38,7 +39,7 @@ describe('getHistoricalRates', () => {
       await mock(obseravtions);
   
       const resultFixed : fun.HistoricalRates[] = await getHistoricalRates(
-          "mockUrl",
+          SupportedChainId.arbitrumGoerli,
           true,
           {
               granularity: fun.Granularity.ONE_DAY, 
@@ -52,7 +53,7 @@ describe('getHistoricalRates', () => {
       expect(resultFixed[0].value).to.be.eq(0.0474);
 
       const resultVariable : fun.HistoricalRates[] = await getHistoricalRates(
-        "mockUrl",
+        SupportedChainId.arbitrumGoerli,
         false,
         {
             granularity: fun.Granularity.ONE_DAY, 
@@ -76,7 +77,7 @@ describe('getHistoricalRates', () => {
         await mock(obseravtions);
     
         const resultFixed : fun.HistoricalRates[] = await getHistoricalRates(
-            "mockUrl", 
+            SupportedChainId.arbitrumGoerli, 
             true,
             {
                 granularity: fun.Granularity.ONE_DAY, 
@@ -89,7 +90,7 @@ describe('getHistoricalRates', () => {
         expect(resultFixed.length).to.be.eq(0);
 
         const resultVariable : fun.HistoricalRates[] = await getHistoricalRates(
-            "mockUrl",
+            SupportedChainId.arbitrumGoerli,
             false,
             {
                 granularity: fun.Granularity.ONE_DAY, 
@@ -114,7 +115,7 @@ describe('getHistoricalRates', () => {
         await mock(obseravtions);
     
         const resultFixed : fun.HistoricalRates[] = await getHistoricalRates(
-            "mockUrl", 
+            SupportedChainId.arbitrumGoerli, 
             true,
             {
                 granularity: fun.Granularity.ONE_DAY, 
@@ -129,7 +130,7 @@ describe('getHistoricalRates', () => {
         expect(resultFixed[1].value).to.be.eq(0.047);
 
         const resultVariable : fun.HistoricalRates[] = await getHistoricalRates(
-            "mockUrl",
+            SupportedChainId.arbitrumGoerli,
             false,
             {
                 granularity: fun.Granularity.ONE_DAY, 
@@ -152,7 +153,7 @@ describe('getHistoricalRates', () => {
         await mock(obseravtions);
     
         const resultFixed : fun.HistoricalRates[] = await getHistoricalRates(
-            "mockUrl", 
+            SupportedChainId.arbitrumGoerli, 
             true,
             {
                 granularity: fun.Granularity.ONE_DAY, 
@@ -166,7 +167,7 @@ describe('getHistoricalRates', () => {
         expect(resultFixed[0].value).to.be.eq(0.047);
 
         const resultVariable : fun.HistoricalRates[] = await getHistoricalRates(
-            "mockUrl",
+            SupportedChainId.arbitrumGoerli,
             false,
             {
                 granularity: fun.Granularity.ONE_DAY, 
@@ -186,7 +187,7 @@ describe('getHistoricalRates', () => {
         await mock(obseravtions);
     
         const resultFixed : fun.HistoricalRates[] = await getHistoricalRates(
-            "mockUrl", 
+            SupportedChainId.arbitrumGoerli, 
             true,
             {
                 granularity: fun.Granularity.ONE_DAY, 
@@ -199,7 +200,7 @@ describe('getHistoricalRates', () => {
         expect(resultFixed.length).to.be.eq(0);
 
         const resultVariable : fun.HistoricalRates[] = await getHistoricalRates(
-            "mockUrl",
+            SupportedChainId.arbitrumGoerli,
             false,
             {
                 granularity: fun.Granularity.ONE_DAY, 

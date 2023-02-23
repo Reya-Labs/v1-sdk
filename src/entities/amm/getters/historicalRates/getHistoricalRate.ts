@@ -3,6 +3,8 @@ import {
   getHistoricalVariableIndex,
 } from '@voltz-protocol/subgraph-data';
 import { BigNumber } from 'ethers';
+import { getSubgraphURL } from '../../../../init';
+import { SubgraphURLEnum, SupportedChainId } from '../../../../types';
 
 export enum Granularity {
   ONE_HOUR = 3600 * 1000,
@@ -16,7 +18,7 @@ export type HistoricalRates = {
 };
 
 export const getHistoricalRates = async (
-  subgraphUrl: string,
+  chainId: SupportedChainId,
   isFixed: boolean,
   filters: {
     granularity: Granularity;
@@ -34,6 +36,8 @@ export const getHistoricalRates = async (
   } else {
     throw new Error('Unable to get rates, parent object not provided');
   }
+
+  const subgraphUrl = getSubgraphURL(chainId, SubgraphURLEnum.historicalRates);
 
   // get ticks (with timeframe)
   const currentTimestamp = Date.now();
