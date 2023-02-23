@@ -2843,10 +2843,10 @@
     "@typescript-eslint/types" "4.31.2"
     eslint-visitor-keys "^2.0.0"
 
-"@voltz-protocol/subgraph-data@1.18.0":
-  version "1.18.0"
-  resolved "https://registry.yarnpkg.com/@voltz-protocol/subgraph-data/-/subgraph-data-1.18.0.tgz#9a4fca3422d8f5253eb86d3a2d79f6367feba041"
-  integrity sha512-c2K1nyvPQXwW2hnnM/uefmM6/VtVOV948cVkAzUq7E15ZQjf2CARrVxn+bqiRyTHKDkdPDHfuyo/ZOpsuChAeQ==
+"@voltz-protocol/subgraph-data@1.18.1":
+  version "1.18.1"
+  resolved "https://registry.yarnpkg.com/@voltz-protocol/subgraph-data/-/subgraph-data-1.18.1.tgz#0c562c1841238e5cc66e8295be774e99c0b719a4"
+  integrity sha512-8Q2KKD2KrMmQrWIx/f7CAP+oDDdke+1FjiZc54ntVGdZ2JJlCum7gHTnWvYRqp0uhAxTrjeDaaWCmNbGIRGOew==
   dependencies:
     ethers "5.5.4"
     graphql "16.3.0"
