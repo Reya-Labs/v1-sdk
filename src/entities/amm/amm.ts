@@ -68,7 +68,6 @@ import {
 import { geckoEthToUsd } from '../../utils/priceFetch';
 import { getVariableFactor, RateOracle } from '../rateOracle';
 import { exponentialBackoff } from '../../utils/retry';
-import { convertGasUnitsToETH } from '../../utils/convertGasUnitsToETH';
 import { convertApyToVariableFactor } from '../../utils/convertApyToVariableFactor';
 import { calculateSettlementCashflow } from '../../utils/calculateSettlementCashflow';
 import { sum } from '../../utils/functions';
@@ -152,6 +151,19 @@ export class AMM {
 
     const signer = this.signer;
     return exponentialBackoff(() => signer.getAddress());
+  };
+
+  public getUserAddressV1 = async (includeDummyWallet?: boolean): Promise<string> => {
+    let wallet = this.signer;
+    if (!wallet && includeDummyWallet) {
+      wallet = this.dummyWallet;
+    }
+
+    if (!wallet) {
+      throw new Error('Wallet not connected');
+    }
+
+    return exponentialBackoff(() => (wallet as Signer).getAddress());
   };
 
   // expected apy
@@ -582,10 +594,6 @@ export class AMM {
     fixedLow,
     fixedHigh,
   }: AMMGetInfoPostSwapArgs): Promise<InfoPostSwapV1> {
-    if (!this.signer) {
-      throw new Error('Wallet not connected');
-    }
-
     if (fixedLow >= fixedHigh) {
       throw new Error('Lower Rate must be smaller than Upper Rate');
     }
@@ -602,7 +610,8 @@ export class AMM {
       throw new Error('Amount of notional must be greater than 0');
     }
 
-    const signerAddress = await this.getUserAddress();
+    const wallet = this.signer || this.dummyWallet;
+    const walletAddress = await this.getUserAddressV1(true);
 
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
@@ -619,7 +628,7 @@ export class AMM {
 
     const scaledNotional = this.scale(notional);
 
-    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.signer);
+    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, wallet);
     const swapPeripheryParams: SwapPeripheryParams = {
       marginEngine: this.marginEngineAddress,
       isFT,
@@ -666,10 +675,10 @@ export class AMM {
     const fixedRateDelta = fixedRateAfter.subtract(fixedRateBefore);
     const fixedRateDeltaRaw = fixedRateDelta.toNumber();
 
-    const marginEngineContract = marginEngineFactory.connect(this.marginEngineAddress, this.signer);
+    const marginEngineContract = marginEngineFactory.connect(this.marginEngineAddress, wallet);
     const currentMargin = (
       await exponentialBackoff(() =>
-        marginEngineContract.callStatic.getPosition(signerAddress, tickLower, tickUpper),
+        marginEngineContract.callStatic.getPosition(walletAddress, tickLower, tickUpper),
       )
     ).margin;
 
@@ -688,11 +697,8 @@ export class AMM {
       : fixedTokenDeltaUnbalanced.mul(BigNumber.from(1000)).div(availableNotional).toNumber() /
         1000;
 
-    let gasFeeETH = 0;
-    try {
-      const swapGasUnits = await peripheryContract.estimateGas.swap(swapPeripheryParams);
-      gasFeeETH = await convertGasUnitsToETH(this.provider, swapGasUnits.toNumber());
-    } catch (_) {}
+    // const swapGasUnits = await peripheryContract.estimateGas.swap(swapPeripheryParams);
+    // const gasFeeETH = await convertGasUnitsToETH(this.provider, swapGasUnits.toNumber());
 
     const result: InfoPostSwapV1 = {
       marginRequirement: additionalMargin,
@@ -704,7 +710,7 @@ export class AMM {
       fixedTokenDeltaBalance: this.descale(fixedTokenDelta),
       variableTokenDeltaBalance: this.descale(availableNotional),
       fixedTokenDeltaUnbalanced: this.descale(fixedTokenDeltaUnbalanced),
-      gasFeeETH,
+      gasFeeETH: 0,
     };
 
     return result;
