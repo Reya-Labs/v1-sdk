@@ -1,1 +1,1 @@
-export { Granularity, getHistoricalRates } from './getHistoricalRate';
+export { Granularity, HistoricalRatesParams, getHistoricalRates } from './getHistoricalRate';

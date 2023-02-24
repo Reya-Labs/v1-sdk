@@ -74,7 +74,7 @@ import { sum } from '../../utils/functions';
 import {
   getHistoricalRates,
   Granularity,
-  HistoricalRates,
+  RatesData,
 } from './getters/historicalRates/getHistoricalRate';
 import getDummyWallet from '../../utils/getDummyWallet';
 
@@ -1509,8 +1509,14 @@ export class AMM {
       granularity: Granularity;
       timeframeMs: number;
     },
-  ): Promise<HistoricalRates[]> {
-    const result = await getHistoricalRates(chainId, false, filters, undefined, this.rateOracle.id);
+  ): Promise<RatesData> {
+    const result = await getHistoricalRates({
+      chainId,
+      isFixed: false,
+      filters,
+      ammId: this.id,
+      rateOracleId: this.rateOracle.id,
+    });
     return result;
   }
 
@@ -1520,8 +1526,14 @@ export class AMM {
       granularity: Granularity;
       timeframeMs: number;
     },
-  ): Promise<HistoricalRates[]> {
-    const result = await getHistoricalRates(chainId, true, filters, this.id, undefined);
+  ): Promise<RatesData> {
+    const result = await getHistoricalRates({
+      chainId,
+      isFixed: true,
+      filters,
+      ammId: this.id,
+      rateOracleId: this.rateOracle.id,
+    });
     return result;
   }
 
