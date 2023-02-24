@@ -22,7 +22,8 @@ const initSubgraphURLs = (chainId: SupportedChainId): { [key in SubgraphURLEnum]
           'https://api.thegraph.com/subgraphs/name/voltzprotocol/badges-goerli',
         [SubgraphURLEnum.badgesRollingSeason]:
           'https://api.thegraph.com/subgraphs/name/voltzprotocol/badges-goerli',
-        [SubgraphURLEnum.historicalRates]: '',
+        [SubgraphURLEnum.historicalRates]:
+          'https://api.studio.thegraph.com/query/36721/voltz-goerli-historical-rates/v0.0.1',
       };
     }
     case SupportedChainId.arbitrum: {

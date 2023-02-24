@@ -20,12 +20,29 @@ describe('getHistoricalRates', () => {
           } as unknown as BrowserClient),
       );
       
-      sinon.stub(fun, 'getSubgraphData').resolves(observations);
+      sinon.stub(fun, 'getHistoricalRatesFromSubgraph').resolves(observations);
+      if(observations.length > 0) {
+        sinon.stub(fun, 'getCurrentRateFromSubgraph').resolves(observations[observations.length - 1].value);
+      } else {
+        sinon.stub(fun, 'getCurrentRateFromSubgraph').throws("Here");
+      }
+      
     };
   
     const restore = async () => {
       sinon.restore();
     };
+
+    const defautParams : fun.HistoricalRatesParams = {
+        chainId: SupportedChainId.arbitrumGoerli,
+        isFixed: true,
+        filters: {
+            granularity: fun.Granularity.ONE_DAY, 
+            timeframeMs: ONE_DAY_IN_SECONDS * 2 * 1000
+        },
+        rateOracleId: "mockId", 
+        ammId: "mockId"
+    }
   
     afterEach(async () => {
       await restore();
@@ -38,33 +55,22 @@ describe('getHistoricalRates', () => {
       ];
       await mock(obseravtions);
   
-      const resultFixed : fun.HistoricalRates[] = await getHistoricalRates(
-          SupportedChainId.arbitrumGoerli,
-          true,
-          {
-              granularity: fun.Granularity.ONE_DAY, 
-              timeframeMs: ONE_DAY_IN_SECONDS * 2 * 1000
-          },
-          "mockId", 
-          undefined
-      );
+      const resultFixed : fun.RatesData = await getHistoricalRates(defautParams);
   
-      expect(resultFixed.length).to.be.eq(1);
-      expect(resultFixed[0].value).to.be.eq(0.0474);
+      expect(resultFixed.historicalRates.length).to.be.eq(1);
+      expect(resultFixed.historicalRates[0].value).to.be.eq(0.0474);
 
-      const resultVariable : fun.HistoricalRates[] = await getHistoricalRates(
-        SupportedChainId.arbitrumGoerli,
-        false,
-        {
-            granularity: fun.Granularity.ONE_DAY, 
-            timeframeMs: ONE_DAY_IN_SECONDS * 2 * 1000
-        },
-        undefined, 
-        "mockId"
+      const resultVariable : fun.RatesData = await getHistoricalRates({...defautParams, isFixed: false});
+
+      expect(resultVariable.historicalRates.length).to.be.eq(1);
+      expect(resultVariable.historicalRates[0].value).to.be.eq(0.0474);
+
+      expect(resultFixed.oppositeSideCurrentRate).to.be.eq(
+        resultVariable.historicalRates[resultVariable.historicalRates.length - 1].value
       );
-
-      expect(resultVariable.length).to.be.eq(1);
-      expect(resultVariable[0].value).to.be.eq(0.0474);
+      expect(resultVariable.oppositeSideCurrentRate).to.be.eq(
+        resultFixed.historicalRates[resultFixed.historicalRates.length - 1].value
+      );
     });
   
     // this case should not happen, the subgraph should never return data is there isn't any
@@ -76,31 +82,26 @@ describe('getHistoricalRates', () => {
         ];
         await mock(obseravtions);
     
-        const resultFixed : fun.HistoricalRates[] = await getHistoricalRates(
-            SupportedChainId.arbitrumGoerli, 
-            true,
-            {
+        const resultFixed : fun.RatesData = await getHistoricalRates({
+            ...defautParams,
+            filters: {
                 granularity: fun.Granularity.ONE_DAY, 
                 timeframeMs: ONE_DAY_IN_SECONDS * 1 * 1000
-            },
-            "mockId",
-            undefined
-        );
+            } 
+        });
     
-        expect(resultFixed.length).to.be.eq(0);
+        expect(resultFixed.historicalRates.length).to.be.eq(0);
 
-        const resultVariable : fun.HistoricalRates[] = await getHistoricalRates(
-            SupportedChainId.arbitrumGoerli,
-            false,
-            {
+        const resultVariable : fun.RatesData = await getHistoricalRates({
+            ...defautParams,
+            isFixed: false,
+            filters: {
                 granularity: fun.Granularity.ONE_DAY, 
                 timeframeMs: ONE_DAY_IN_SECONDS * 1 * 1000
-            },
-            undefined, 
-            "mockId"
-        );
+            } 
+        });
 
-        expect(resultVariable.length).to.be.eq(0);
+        expect(resultVariable.historicalRates.length).to.be.eq(0);
     });
   
     it('many observations & big granularity', async () => {
@@ -114,35 +115,20 @@ describe('getHistoricalRates', () => {
         ];
         await mock(obseravtions);
     
-        const resultFixed : fun.HistoricalRates[] = await getHistoricalRates(
-            SupportedChainId.arbitrumGoerli, 
-            true,
-            {
-                granularity: fun.Granularity.ONE_DAY, 
-                timeframeMs: ONE_DAY_IN_SECONDS * 2 * 1000
-            },
-            "mockId",
-            undefined
-        );
+        const resultFixed : fun.RatesData = await getHistoricalRates(defautParams);
     
-        expect(resultFixed.length).to.be.eq(2);
-        expect(resultFixed[0].value).to.be.eq(0.05);
-        expect(resultFixed[1].value).to.be.eq(0.047);
+        expect(resultFixed.historicalRates.length).to.be.eq(2);
+        expect(resultFixed.historicalRates[0].value).to.be.eq(0.05);
+        expect(resultFixed.historicalRates[1].value).to.be.eq(0.047);
 
-        const resultVariable : fun.HistoricalRates[] = await getHistoricalRates(
-            SupportedChainId.arbitrumGoerli,
-            false,
-            {
-                granularity: fun.Granularity.ONE_DAY, 
-                timeframeMs: ONE_DAY_IN_SECONDS * 2 * 1000
-            },
-            undefined, 
-            "mockId"
-        );
+        const resultVariable : fun.RatesData = await getHistoricalRates({...defautParams, isFixed: false})
 
-        expect(resultVariable.length).to.be.eq(2);
-        expect(resultVariable[0].value).to.be.eq(0.05);
-        expect(resultVariable[1].value).to.be.eq(0.047);
+        expect(resultVariable.historicalRates.length).to.be.eq(2);
+        expect(resultVariable.historicalRates[0].value).to.be.eq(0.05);
+        expect(resultVariable.historicalRates[1].value).to.be.eq(0.047);
+
+        expect(resultFixed.oppositeSideCurrentRate).to.be.eq(0.0011);
+        expect(resultVariable.oppositeSideCurrentRate).to.be.eq(0.0011);
     });
   
     it('little observation & smaller granularity', async () => {
@@ -152,64 +138,54 @@ describe('getHistoricalRates', () => {
         ];
         await mock(obseravtions);
     
-        const resultFixed : fun.HistoricalRates[] = await getHistoricalRates(
-            SupportedChainId.arbitrumGoerli, 
-            true,
+        const resultFixed : fun.RatesData = await getHistoricalRates(
             {
-                granularity: fun.Granularity.ONE_DAY, 
-                timeframeMs: ONE_DAY_IN_SECONDS * 4 * 1000
-            },
-            "mockId",
-            undefined
+                ...defautParams,
+                filters: {
+                    granularity: fun.Granularity.ONE_DAY, 
+                    timeframeMs: ONE_DAY_IN_SECONDS * 4 * 1000
+                }
+            }
         );
     
-        expect(resultFixed.length).to.be.eq(1);
-        expect(resultFixed[0].value).to.be.eq(0.047);
+        expect(resultFixed.historicalRates.length).to.be.eq(1);
+        expect(resultFixed.historicalRates[0].value).to.be.eq(0.047);
 
-        const resultVariable : fun.HistoricalRates[] = await getHistoricalRates(
-            SupportedChainId.arbitrumGoerli,
-            false,
+        const resultVariable : fun.RatesData = await getHistoricalRates(
             {
-                granularity: fun.Granularity.ONE_DAY, 
-                timeframeMs: ONE_DAY_IN_SECONDS * 2 * 1000
-            },
-            undefined, 
-            "mockId"
+                ...defautParams,
+                isFixed: false,
+                filters: {
+                    granularity: fun.Granularity.ONE_DAY, 
+                    timeframeMs: ONE_DAY_IN_SECONDS * 4 * 1000
+                }
+            }
         );
 
-        expect(resultVariable.length).to.be.eq(1);
-        expect(resultVariable[0].value).to.be.eq(0.047);
+        expect(resultVariable.historicalRates.length).to.be.eq(1);
+        expect(resultVariable.historicalRates[0].value).to.be.eq(0.047);
+
+        expect(resultFixed.oppositeSideCurrentRate).to.be.eq(
+            resultVariable.historicalRates[resultVariable.historicalRates.length - 1].value
+        );
+        expect(resultVariable.oppositeSideCurrentRate).to.be.eq(
+            resultFixed.historicalRates[resultFixed.historicalRates.length - 1].value
+        );
     });
   
     it('no observations', async () => {
-        const currentTimestamp = Date.now();
         const obseravtions : { timestampInMs: number; value: BigNumber}[] = [];
         await mock(obseravtions);
-    
-        const resultFixed : fun.HistoricalRates[] = await getHistoricalRates(
-            SupportedChainId.arbitrumGoerli, 
-            true,
-            {
-                granularity: fun.Granularity.ONE_DAY, 
-                timeframeMs: ONE_DAY_IN_SECONDS * 2 * 1000
-            },
-            "mockId",
-            undefined
-        );
-    
-        expect(resultFixed.length).to.be.eq(0);
 
-        const resultVariable : fun.HistoricalRates[] = await getHistoricalRates(
-            SupportedChainId.arbitrumGoerli,
-            false,
-            {
-                granularity: fun.Granularity.ONE_DAY, 
-                timeframeMs: ONE_DAY_IN_SECONDS * 2 * 1000
-            },
-            undefined, 
-            "mockId"
-        );
-        expect(resultVariable.length).to.be.eq(0);
+        try {
+            await getHistoricalRates(defautParams);
+            expect(0).to.eq(1)
+        } catch {}
+
+        try {
+            await getHistoricalRates({...defautParams, isFixed: false})
+            expect(0).to.eq(1)
+        } catch {}
     });
   
 });

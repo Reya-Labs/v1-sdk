@@ -3,6 +3,7 @@ import {
   getHistoricalVariableIndex,
 } from '@voltz-protocol/subgraph-data';
 import { BigNumber } from 'ethers';
+import { ONE_DAY_IN_SECONDS } from '../../../../constants';
 import { getSubgraphURL } from '../../../../init';
 import { SubgraphURLEnum, SupportedChainId } from '../../../../types';
 
@@ -17,25 +18,32 @@ export type HistoricalRates = {
   value: number;
 };
 
-export const getHistoricalRates = async (
-  chainId: SupportedChainId,
-  isFixed: boolean,
+export type RatesData = {
+  historicalRates: HistoricalRates[];
+  oppositeSideCurrentRate: number;
+};
+
+export type HistoricalRatesParams = {
+  chainId: SupportedChainId;
+  isFixed: boolean;
   filters: {
     granularity: Granularity;
     timeframeMs: number;
-  },
-  ammId?: string,
-  rateOracleId?: string,
-): Promise<HistoricalRates[]> => {
+  };
+  ammId: string;
+  rateOracleId: string;
+};
+
+export const getHistoricalRates = async ({
+  chainId,
+  isFixed,
+  filters,
+  ammId,
+  rateOracleId,
+}: HistoricalRatesParams): Promise<RatesData> => {
   // check ids
-  let parentObjectId;
-  if (isFixed && ammId) {
-    parentObjectId = ammId;
-  } else if (!isFixed && rateOracleId) {
-    parentObjectId = rateOracleId;
-  } else {
-    throw new Error('Unable to get rates, parent object not provided');
-  }
+  const parentObjectId = isFixed ? ammId : rateOracleId;
+  const opositeSideObjectId = isFixed ? rateOracleId : ammId;
 
   const subgraphUrl = getSubgraphURL(chainId, SubgraphURLEnum.historicalRates);
 
@@ -46,12 +54,19 @@ export const getHistoricalRates = async (
   const endTime = currentTimestamp;
 
   // subgraph-data should output points in asc order by timestamp
-  const rateUpdates = await getSubgraphData(
+  const rateUpdates = await getHistoricalRatesFromSubgraph(
     subgraphUrl,
     isFixed,
     parentObjectId,
     Math.round(startTime / 1000),
     Math.round(endTime / 1000),
+  );
+
+  const opositeSideCurrentRate = await getCurrentRateFromSubgraph(
+    subgraphUrl,
+    isFixed,
+    opositeSideObjectId,
+    endTime,
   );
 
   const result = [];
@@ -67,16 +82,19 @@ export const getHistoricalRates = async (
     ) {
       result.push({
         timestampInMs: p.timestampInMs,
-        value: p.value.div(BigNumber.from(1000000000000)).toNumber() / 1000000,
+        value: descaleRate(p.value),
       });
       latestParsedTimestamp = p.timestampInMs;
     }
   }
 
-  return result;
+  return {
+    historicalRates: result,
+    oppositeSideCurrentRate: descaleRate(opositeSideCurrentRate),
+  };
 };
 
-export const getSubgraphData = async (
+export const getHistoricalRatesFromSubgraph = async (
   subgraphUrl: string,
   isFixed: boolean,
   parentObjectId: string,
@@ -102,4 +120,31 @@ export const getSubgraphData = async (
     value: r.historicalVariableRate,
   }));
   return mappedResult;
+};
+
+// gets the last rate update
+export const getCurrentRateFromSubgraph = async (
+  subgraphUrl: string,
+  isFixed: boolean,
+  parentObjectId: string,
+  endTime: number,
+): Promise<BigNumber> => {
+  // give subgraph a buffer of one day
+  const startTime = endTime - ONE_DAY_IN_SECONDS;
+  if (!isFixed) {
+    const res = await getTickUpdates(subgraphUrl, parentObjectId, startTime, endTime);
+    if (res.length === 0) {
+      throw new Error('No variable rate registerd in the last day');
+    }
+    return res[res.length - 1].historicalFixedRate;
+  }
+  const res = await getHistoricalVariableIndex(subgraphUrl, parentObjectId, startTime, endTime);
+  if (res.length === 0) {
+    throw new Error('No fixed rate registerd in the last day');
+  }
+  return res[res.length - 1].historicalVariableRate;
+};
+
+const descaleRate = (rate: BigNumber): number => {
+  return rate.div(BigNumber.from(1000000000000)).toNumber() / 1000000;
 };
