@@ -688,8 +688,11 @@ export class AMM {
       : fixedTokenDeltaUnbalanced.mul(BigNumber.from(1000)).div(availableNotional).toNumber() /
         1000;
 
-    const swapGasUnits = await peripheryContract.estimateGas.swap(swapPeripheryParams);
-    const gasFeeETH = await convertGasUnitsToETH(this.provider, swapGasUnits.toNumber());
+    let gasFeeETH = 0;
+    try {
+      const swapGasUnits = await peripheryContract.estimateGas.swap(swapPeripheryParams);
+      gasFeeETH = await convertGasUnitsToETH(this.provider, swapGasUnits.toNumber());
+    } catch (_) {}
 
     const result: InfoPostSwapV1 = {
       marginRequirement: additionalMargin,
