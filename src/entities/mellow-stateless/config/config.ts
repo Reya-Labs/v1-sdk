@@ -370,7 +370,7 @@ const networkConfigurationsV1: { [key in SupportedChainId]: NetworkConfiguration
             weight: 0,
             pools: ['AAVE - USDC LEND'],
             estimatedHistoricApy: [0, 20],
-            withdrawable: false,
+            withdrawable: true,
           },
           {
             address: '0xedF3cb10dE6Ad6449B9F9Ee561f18e50b6B79234',
