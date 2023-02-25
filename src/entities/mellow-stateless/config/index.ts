@@ -1,1 +1,1 @@
-export { closeOrPastMaturity as closeOrPastMaturityStateless } from './utils';
+export { closeOrPastMaturity } from './utils';
