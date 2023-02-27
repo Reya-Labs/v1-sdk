@@ -4,7 +4,7 @@ import {
 } from '@voltz-protocol/subgraph-data';
 import { BigNumber } from 'ethers';
 import { ONE_DAY_IN_SECONDS } from '../../../../constants';
-import { getSubgraphURL } from '../../../../init';
+import { getSentryTracker, getSubgraphURL } from '../../../../init';
 import { SubgraphURLEnum, SupportedChainId } from '../../../../types';
 
 export enum Granularity {
@@ -43,7 +43,7 @@ export const getHistoricalRates = async ({
 }: HistoricalRatesParams): Promise<RatesData> => {
   // check ids
   const parentObjectId = isFixed ? ammId : rateOracleId;
-  const opositeSideObjectId = isFixed ? rateOracleId : ammId;
+  const opositeSideObjectId = !isFixed ? rateOracleId : ammId;
 
   const subgraphUrl = getSubgraphURL(chainId, SubgraphURLEnum.historicalRates);
 
@@ -134,13 +134,19 @@ export const getCurrentRateFromSubgraph = async (
   if (!isFixed) {
     const res = await getTickUpdates(subgraphUrl, parentObjectId, startTime, endTime);
     if (res.length === 0) {
-      throw new Error('No variable rate registerd in the last day');
+      const sentryTracker = getSentryTracker();
+      sentryTracker.captureException(new Error('No variable rate registerd in the last day'));
+      sentryTracker.captureMessage('No variable rate registerd in the last day');
+      return BigNumber.from(-1);
     }
     return res[res.length - 1].historicalFixedRate;
   }
   const res = await getHistoricalVariableIndex(subgraphUrl, parentObjectId, startTime, endTime);
   if (res.length === 0) {
-    throw new Error('No fixed rate registerd in the last day');
+    const sentryTracker = getSentryTracker();
+    sentryTracker.captureException(new Error('No fixed rate registerd in the last day'));
+    sentryTracker.captureMessage('No fixed rate registerd in the last day');
+    return BigNumber.from(-1);
   }
   return res[res.length - 1].historicalVariableRate;
 };
