@@ -77,6 +77,7 @@ import {
   RatesData,
 } from './getters/historicalRates/getHistoricalRate';
 import getDummyWallet from '../../utils/getDummyWallet';
+import { getMarket, Market } from '../../utils/getMarket';
 
 export class AMM {
   public readonly id: string;
@@ -1457,6 +1458,10 @@ export class AMM {
     const prefix = getProtocolPrefix(this.rateOracle.protocolId);
 
     return `${prefix}${tokenName}`;
+  }
+
+  public get market(): Market {
+    return getMarket(this.rateOracle.protocolId);
   }
 
   // start and end dates
