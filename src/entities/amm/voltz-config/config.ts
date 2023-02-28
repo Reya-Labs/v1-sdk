@@ -62,7 +62,7 @@ export const networkConfigurations: { [key: string]: NetworkConfiguration } = {
           general: true,
           trader: true,
         },
-        traderWithdrawable: false,
+        traderWithdrawable: true,
       },
       {
         name: 'aUSDC_v7',
@@ -77,6 +77,26 @@ export const networkConfigurations: { [key: string]: NetworkConfiguration } = {
       {
         name: 'aUSDC_v8',
         id: '0x66Ad47d8C8A0beDd32f5692fFB2df85041CD4Bd2', // vamm address
+        show: {
+          general: true,
+          trader: true,
+        },
+        traderWithdrawable: true,
+        isAaveV3: true,
+      },
+      {
+        name: 'aUSDC_v9',
+        id: '0x47C46765d633B6BC03d31cC224585c6856beeCB2', // vamm address
+        show: {
+          general: true,
+          trader: true,
+        },
+        traderWithdrawable: false,
+      },
+
+      {
+        name: 'aUSDC_v10',
+        id: '0x943309c6D1fD572414A640C68F6F71Ef2113171c', // vamm address
         show: {
           general: true,
           trader: true,
@@ -337,7 +357,7 @@ export const networkConfigurationsV1: { [key in SupportedChainId]: NetworkConfig
           general: true,
           trader: true,
         },
-        traderWithdrawable: false,
+        traderWithdrawable: true,
       },
       {
         name: 'aUSDC_v7',
@@ -352,6 +372,27 @@ export const networkConfigurationsV1: { [key in SupportedChainId]: NetworkConfig
       {
         name: 'aUSDC_v8',
         id: '0x66Ad47d8C8A0beDd32f5692fFB2df85041CD4Bd2', // vamm address
+        show: {
+          general: true,
+          trader: true,
+        },
+        traderWithdrawable: true,
+        isAaveV3: true,
+      },
+
+      {
+        name: 'aUSDC_v9',
+        id: '0x47C46765d633B6BC03d31cC224585c6856beeCB2', // vamm address
+        show: {
+          general: true,
+          trader: true,
+        },
+        traderWithdrawable: false,
+      },
+
+      {
+        name: 'aUSDC_v10',
+        id: '0x943309c6D1fD572414A640C68F6F71Ef2113171c', // vamm address
         show: {
           general: true,
           trader: true,
