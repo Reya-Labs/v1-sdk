@@ -20,7 +20,6 @@ class MockProvider {
     return Math.floor(this.genesisTimestamp + blockNumber * this.secondsPerBlock);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async getBlock(blockHashOrBlockTag: number | string) {
     if (typeof blockHashOrBlockTag === 'string') {
       if (blockHashOrBlockTag !== 'latest') {
