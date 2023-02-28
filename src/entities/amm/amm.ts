@@ -80,6 +80,7 @@ import getDummyWallet from '../../utils/getDummyWallet';
 import { getMarket, Market } from '../../utils/getMarket';
 import { estimateSwapGasUnits } from '../../utils/estimateSwapGasUnits';
 import { convertGasUnitsToETH } from '../../utils/convertGasUnitsToETH';
+import { getBlockAtTimestampHeuristic } from '../../utils/getBlockAtTimestamp';
 
 export class AMM {
   public readonly id: string;
@@ -1562,7 +1563,12 @@ export class AMM {
   }
 
   // instant apy
-  async getInstantApy(): Promise<number> {
+  async getInstantApy(timestampInMS?: number): Promise<number> {
+    let block = (await exponentialBackoff(() => this.provider.getBlock('latest'))).number;
+    if (timestampInMS) {
+      block = await getBlockAtTimestampHeuristic(this.provider, timestampInMS / 1000);
+    }
+
     const blocksPerDay = 6570; // 13.15 seconds per block
 
     switch (this.rateOracle.protocolId) {
@@ -1576,11 +1582,11 @@ export class AMM {
           this.provider,
         );
         const lendingPoolAddress = await exponentialBackoff(() =>
-          rateOracleContract.aaveLendingPool(),
+          rateOracleContract.aaveLendingPool({ blockTag: block }),
         );
         const lendingPool = iAaveV2LendingPoolFactory.connect(lendingPoolAddress, this.provider);
         const reservesData = await exponentialBackoff(() =>
-          lendingPool.getReserveData(this.underlyingToken.id),
+          lendingPool.getReserveData(this.underlyingToken.id, { blockTag: block }),
         );
         const rateInRay = reservesData.currentLiquidityRate;
         const result = rateInRay.div(BigNumber.from(10).pow(21)).toNumber() / 1000000;
@@ -1590,11 +1596,11 @@ export class AMM {
         const daysPerYear = 365;
         const rateOracle = compoundRateOracleFactory.connect(this.rateOracle.id, this.provider);
         const cTokenAddress = await exponentialBackoff(() =>
-          (rateOracle as CompoundRateOracle).ctoken(),
+          (rateOracle as CompoundRateOracle).ctoken({ blockTag: block }),
         );
         const cTokenContract = iCTokenFactory.connect(cTokenAddress, this.provider);
         const supplyRatePerBlock = await exponentialBackoff(() =>
-          cTokenContract.supplyRatePerBlock(),
+          cTokenContract.supplyRatePerBlock({ blockTag: block }),
         );
         const supplyApy =
           ((supplyRatePerBlock.toNumber() / 1e18) * blocksPerDay + 1) ** daysPerYear - 1;
@@ -1604,13 +1610,13 @@ export class AMM {
       case 3:
       case 4: {
         const toInSeconds =
-          (await exponentialBackoff(() => this.provider.getBlock('latest'))).timestamp - 15;
+          (await exponentialBackoff(() => this.provider.getBlock(block))).timestamp - 15;
         const fromInSeconds = toInSeconds - 28 * 60 * 60;
 
         const rateOracleContract = baseRateOracleFactory.connect(this.rateOracle.id, this.provider);
 
         const instantApy = await exponentialBackoff(() =>
-          rateOracleContract.getApyFromTo(fromInSeconds, toInSeconds),
+          rateOracleContract.getApyFromTo(fromInSeconds, toInSeconds, { blockTag: block }),
         );
 
         // TODO: normalize this to utility descale
@@ -1627,11 +1633,11 @@ export class AMM {
           this.provider,
         );
         const lendingPoolAddress = await exponentialBackoff(() =>
-          rateOracleContract.aaveLendingPool(),
+          rateOracleContract.aaveLendingPool({ blockTag: block }),
         );
         const lendingPool = iAaveV2LendingPoolFactory.connect(lendingPoolAddress, this.provider);
         const reservesData = await exponentialBackoff(() =>
-          lendingPool.getReserveData(this.underlyingToken.id),
+          lendingPool.getReserveData(this.underlyingToken.id, { blockTag: block }),
         );
         const rateInRay = reservesData.currentVariableBorrowRate;
         const result = rateInRay.div(BigNumber.from(10).pow(21)).toNumber() / 1000000;
@@ -1647,12 +1653,12 @@ export class AMM {
         );
 
         const cTokenAddress = await exponentialBackoff(() =>
-          (rateOracle as CompoundBorrowRateOracle).ctoken(),
+          (rateOracle as CompoundBorrowRateOracle).ctoken({ blockTag: block }),
         );
         const cTokenContract = iCTokenFactory.connect(cTokenAddress, this.provider);
 
         const borrowRatePerBlock = await exponentialBackoff(() =>
-          cTokenContract.borrowRatePerBlock(),
+          cTokenContract.borrowRatePerBlock({ blockTag: block }),
         );
         const borrowApy =
           ((borrowRatePerBlock.toNumber() / 1e18) * blocksPerDay + 1) ** daysPerYear - 1;
@@ -1670,11 +1676,11 @@ export class AMM {
         );
 
         const toInSeconds =
-          (await exponentialBackoff(() => this.provider.getBlock('latest'))).timestamp - 15;
+          (await exponentialBackoff(() => this.provider.getBlock(block))).timestamp - 15;
         const fromInSeconds = toInSeconds - 1 * 60 * 60;
 
         const instantApy = await exponentialBackoff(() =>
-          rateOracleContract.getApyFromTo(fromInSeconds, toInSeconds),
+          rateOracleContract.getApyFromTo(fromInSeconds, toInSeconds, { blockTag: block }),
         );
 
         // TODO: normalize this to utility descale
@@ -1686,19 +1692,29 @@ export class AMM {
           throw new Error('No underlying error');
         }
 
-        const ethUsdPrice = await this.ethPrice();
+        const ethUsdPrice = await exponentialBackoff(() => this.ethPrice());
         const ethUsdPriceWad = BigNumber.from(Math.round(ethUsdPrice * 1000))
           .mul(WAD_PRECISION)
           .div(1000);
 
         const rateOracleContract = glpRateOracleFactory.connect(this.rateOracle.id, this.provider);
-        const rewardTrackerAddress = await rateOracleContract.rewardTracker();
+        const rewardTrackerAddress = await exponentialBackoff(() =>
+          rateOracleContract.rewardTracker({ blockTag: block }),
+        );
         const rewardTracker = rewardTrackerFactory.connect(rewardTrackerAddress, this.provider);
-        const tokensPerIntervalWad = await rewardTracker.tokensPerInterval();
+        const tokensPerIntervalWad = await exponentialBackoff(() =>
+          rewardTracker.tokensPerInterval({ blockTag: block }),
+        );
 
-        const glpManagerAddress = await rateOracleContract.glpManager();
-        const glpManager = await glpManagerFactory.connect(glpManagerAddress, this.provider);
-        const aumUsdWad = (await glpManager.getAum(false)).mul(WAD_PRECISION).div(GLP_PRECISION);
+        const glpManagerAddress = await exponentialBackoff(() =>
+          rateOracleContract.glpManager({ blockTag: block }),
+        );
+        const glpManager = glpManagerFactory.connect(glpManagerAddress, this.provider);
+        const aumUsdWad = (
+          await exponentialBackoff(() => glpManager.getAum(false, { blockTag: block }))
+        )
+          .mul(WAD_PRECISION)
+          .div(GLP_PRECISION);
 
         const instantApy = tokensPerIntervalWad
           .mul(ONE_YEAR_IN_SECONDS)
