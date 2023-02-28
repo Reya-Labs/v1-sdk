@@ -78,6 +78,8 @@ import {
 } from './getters/historicalRates/getHistoricalRate';
 import getDummyWallet from '../../utils/getDummyWallet';
 import { getMarket, Market } from '../../utils/getMarket';
+import { estimateSwapGasUnits } from '../../utils/estimateSwapGasUnits';
+import { convertGasUnitsToETH } from '../../utils/convertGasUnitsToETH';
 
 export class AMM {
   public readonly id: string;
@@ -145,26 +147,13 @@ export class AMM {
     this.dummyWallet = getDummyWallet().connect(this.provider);
   }
 
-  public getUserAddress = async (): Promise<string> => {
-    if (!this.signer) {
+  public getUserAddress = async (_signer?: Signer): Promise<string> => {
+    const signer = _signer || this.signer;
+    if (!signer) {
       throw new Error('Wallet not connected');
     }
 
-    const signer = this.signer;
     return exponentialBackoff(() => signer.getAddress());
-  };
-
-  public getUserAddressV1 = async (includeDummyWallet?: boolean): Promise<string> => {
-    let wallet = this.signer;
-    if (!wallet && includeDummyWallet) {
-      wallet = this.dummyWallet;
-    }
-
-    if (!wallet) {
-      throw new Error('Wallet not connected');
-    }
-
-    return exponentialBackoff(() => (wallet as Signer).getAddress());
   };
 
   // expected apy
@@ -612,7 +601,7 @@ export class AMM {
     }
 
     const wallet = this.signer || this.dummyWallet;
-    const walletAddress = await this.getUserAddressV1(true);
+    const walletAddress = await this.getUserAddress(wallet);
 
     const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
     const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
@@ -698,8 +687,12 @@ export class AMM {
       : fixedTokenDeltaUnbalanced.mul(BigNumber.from(1000)).div(availableNotional).toNumber() /
         1000;
 
-    // const swapGasUnits = await peripheryContract.estimateGas.swap(swapPeripheryParams);
-    // const gasFeeETH = await convertGasUnitsToETH(this.provider, swapGasUnits.toNumber());
+    let swapGasUnits = 0;
+    const chainId = await wallet.getChainId();
+    if (Object.values(SupportedChainId).includes(chainId)) {
+      swapGasUnits = estimateSwapGasUnits(chainId);
+    }
+    const gasFeeETH = await convertGasUnitsToETH(this.provider, swapGasUnits);
 
     const result: InfoPostSwapV1 = {
       marginRequirement: additionalMargin,
@@ -711,7 +704,7 @@ export class AMM {
       fixedTokenDeltaBalance: this.descale(fixedTokenDelta),
       variableTokenDeltaBalance: this.descale(availableNotional),
       fixedTokenDeltaUnbalanced: this.descale(fixedTokenDeltaUnbalanced),
-      gasFeeETH: 0,
+      gasFeeETH,
     };
 
     return result;
