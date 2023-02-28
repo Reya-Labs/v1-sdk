@@ -22,7 +22,7 @@
     "lint:fix": "eslint --fix 'src/**/*.ts'",
     "yalc:push-changes": "yarn build-release && npx yalc publish && npx yalc push --sig",
     "test": "jest tests/jest/*.ts && hardhat test",
-    "test:cicd": "yarn test:jest && hardhat test tests/mocha/mellow-stateless/*.test.ts tests/mocha/services/*.test.ts ests/mocha/getBlockAtTimestamp.test.ts",
+    "test:cicd": "yarn test:jest && hardhat test tests/mocha/mellow-stateless/*.test.ts tests/mocha/services/*.test.ts tests/mocha/getBlockAtTimestamp.test.ts",
     "test:jest": "jest tests/jest/*.ts",
     "test:coverage": "yarn test:jest --coverage",
     "release": "semantic-release",
