@@ -167,9 +167,11 @@ export type ClosestTickAndFixedRate = {
   closestUsableFixedRate: Price;
 };
 
-export type AvailableNotionals = {
+export type PoolSwapInfo = {
   availableNotionalFT: number;
   availableNotionalVT: number;
+  maxLeverageFT: number;
+  maxLeverageVT: number;
 };
 
 export type ExpectedCashflowArgs = {

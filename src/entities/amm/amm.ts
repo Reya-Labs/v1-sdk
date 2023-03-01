@@ -60,10 +60,10 @@ import {
   AMMSettlePositionArgs,
   ClosestTickAndFixedRate,
   ExpectedApyArgs,
-  AvailableNotionals,
   InfoPostSwapV1,
   ExpectedCashflowArgs,
   ExpectedCashflowInfo,
+  PoolSwapInfo,
 } from './types';
 import { geckoEthToUsd } from '../../utils/priceFetch';
 import { getVariableFactor, RateOracle } from '../rateOracle';
@@ -1713,60 +1713,111 @@ export class AMM {
     }
   }
 
-  private async getAvailableNotional({
+  private async getPoolSwapInfoOneSide({
     isFT,
     sqrtPriceLimitX96,
   }: {
     isFT: boolean;
     sqrtPriceLimitX96: BigNumber;
-  }): Promise<number> {
-    const swapPeripheryParamsLargeSwap = {
-      marginEngine: this.marginEngineAddress,
-      isFT,
-      notional: this.scale(1000000000000000),
-      sqrtPriceLimitX96,
-      tickLower: -69060,
-      tickUpper: 0,
-      marginDelta: '0',
-    };
+  }): Promise<{
+    availableNotional: number;
+    maxLeverage: number;
+  }> {
+    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.dummyWallet);
 
     let availableNotional = BigNumber.from(0);
+    let maxLeverage = BigNumber.from(0);
 
-    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.dummyWallet);
-    await peripheryContract.callStatic.swap(swapPeripheryParamsLargeSwap).then(
-      (result: any) => {
-        availableNotional = result[1];
-      },
-      (error: any) => {
-        const result = decodeInfoPostSwap(error);
-        availableNotional = result.availableNotional.abs();
-      },
-    );
+    {
+      const swapPeripheryParamsLargeSwap = {
+        marginEngine: this.marginEngineAddress,
+        isFT,
+        notional: this.scale(1000000000000000),
+        sqrtPriceLimitX96,
+        tickLower: -69060,
+        tickUpper: 0,
+        marginDelta: '0',
+      };
 
-    return this.descale(availableNotional);
+      await peripheryContract.callStatic.swap(swapPeripheryParamsLargeSwap).then(
+        (result: any) => {
+          availableNotional = result[1];
+        },
+        (error: any) => {
+          const result = decodeInfoPostSwap(error);
+          availableNotional = result.availableNotional.abs();
+        },
+      );
+    }
+
+    {
+      const smallNotionalScaled = this.scale(1);
+      const swapPeripheryParamsSmallSwap = {
+        marginEngine: this.marginEngineAddress,
+        isFT,
+        notional: smallNotionalScaled,
+        sqrtPriceLimitX96,
+        tickLower: -69060,
+        tickUpper: 0,
+        marginDelta: '0',
+      };
+
+      let marginRequirement = BigNumber.from(0);
+      await peripheryContract.callStatic.swap(swapPeripheryParamsSmallSwap).then(
+        (result: any) => {
+          marginRequirement = result[4];
+        },
+        (error: any) => {
+          const result = decodeInfoPostSwap(error);
+          marginRequirement = result.marginRequirement;
+        },
+      );
+
+      if (marginRequirement.gt(0)) {
+        // should always happen, since we connect with dummy account
+        maxLeverage = BigNumber.from(smallNotionalScaled)
+          .mul(BigNumber.from(10).pow(this.underlyingToken.decimals))
+          .div(marginRequirement);
+      }
+    }
+
+    return {
+      availableNotional: this.descale(availableNotional),
+      maxLeverage: Math.floor(this.descale(maxLeverage)),
+    };
   }
 
-  public async getAvailableNotionals(): Promise<AvailableNotionals> {
-    const availableNotionals: AvailableNotionals = {
+  public async getPoolSwapInfo(): Promise<PoolSwapInfo> {
+    const poolSwapInfo: PoolSwapInfo = {
       availableNotionalFT: 0,
       availableNotionalVT: 0,
+      maxLeverageFT: 0,
+      maxLeverageVT: 0,
     };
 
-    availableNotionals.availableNotionalFT = await this.getAvailableNotional({
-      isFT: true,
-      sqrtPriceLimitX96: BigNumber.from(
-        TickMath.getSqrtRatioAtTick(TickMath.MAX_TICK - 1).toString(),
-      ),
-    });
+    {
+      const { availableNotional, maxLeverage } = await this.getPoolSwapInfoOneSide({
+        isFT: true,
+        sqrtPriceLimitX96: BigNumber.from(
+          TickMath.getSqrtRatioAtTick(TickMath.MAX_TICK - 1).toString(),
+        ),
+      });
+      poolSwapInfo.availableNotionalFT = availableNotional;
+      poolSwapInfo.maxLeverageFT = maxLeverage;
+    }
 
-    availableNotionals.availableNotionalVT = await this.getAvailableNotional({
-      isFT: false,
-      sqrtPriceLimitX96: BigNumber.from(
-        TickMath.getSqrtRatioAtTick(TickMath.MIN_TICK + 1).toString(),
-      ),
-    });
+    {
+      const { availableNotional, maxLeverage } = await this.getPoolSwapInfoOneSide({
+        isFT: false,
+        sqrtPriceLimitX96: BigNumber.from(
+          TickMath.getSqrtRatioAtTick(TickMath.MIN_TICK + 1).toString(),
+        ),
+      });
+      poolSwapInfo.availableNotionalVT = availableNotional;
+      poolSwapInfo.maxLeverageVT = maxLeverage;
+    }
 
-    return availableNotionals;
+    return poolSwapInfo;
   }
 
   public getExpectedCashflowInfo({
