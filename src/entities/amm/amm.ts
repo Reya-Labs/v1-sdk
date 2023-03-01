@@ -1564,9 +1564,11 @@ export class AMM {
 
   // instant apy
   async getInstantApy(timestampInMS?: number): Promise<number> {
-    let block = (await exponentialBackoff(() => this.provider.getBlock('latest'))).number;
+    let block: number;
     if (timestampInMS) {
       block = await getBlockAtTimestampHeuristic(this.provider, timestampInMS / 1000);
+    } else {
+      block = (await exponentialBackoff(() => this.provider.getBlock('latest'))).number;
     }
 
     const blocksPerDay = 6570; // 13.15 seconds per block
