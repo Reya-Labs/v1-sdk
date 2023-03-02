@@ -1397,6 +1397,36 @@ export class AMM {
     return allowance.gte(scaledAmount);
   }
 
+  public async getUnderlyingTokenAllowance({
+    forceErc20Check,
+  }: {
+    forceErc20Check: boolean;
+  }): Promise<number> {
+    if (!forceErc20Check && this.isETH) {
+      return Number.MAX_SAFE_INTEGER;
+    }
+
+    if (!this.signer) {
+      throw new Error('Wallet not connected');
+    }
+
+    const signerAddress = await this.getUserAddress();
+
+    const tokenAddress = this.underlyingToken.id;
+    const token = tokenFactory.connect(tokenAddress, this.signer);
+
+    const allowance = await exponentialBackoff(() =>
+      token.allowance(signerAddress, this.peripheryAddress),
+    );
+
+    const scaledMaxSafeInteger = BigNumber.from(this.scale(Number.MAX_SAFE_INTEGER));
+    if (scaledMaxSafeInteger.lt(allowance)) {
+      return Number.MAX_SAFE_INTEGER;
+    }
+
+    return this.descale(allowance);
+  }
+
   public async approveUnderlyingTokenForPeriphery(): Promise<void> {
     if (!this.underlyingToken.id) {
       throw new Error('No underlying token');
@@ -1436,6 +1466,58 @@ export class AMM {
 
     try {
       await approvalTransaction.wait();
+    } catch (error) {
+      const sentryTracker = getSentryTracker();
+      sentryTracker.captureException(error);
+      sentryTracker.captureMessage('Token approval failed');
+      throw new Error('Token approval failed');
+    }
+  }
+
+  public async approveUnderlyingTokenForPeripheryV1({
+    forceErc20Check,
+  }: {
+    forceErc20Check: boolean;
+  }): Promise<number> {
+    if (!this.underlyingToken.id) {
+      throw new Error('No underlying token');
+    }
+
+    if (!this.signer) {
+      throw new Error('Wallet not connected');
+    }
+
+    const tokenAddress = this.underlyingToken.id;
+    const token = tokenFactory.connect(tokenAddress, this.signer);
+
+    let estimatedGas;
+    try {
+      estimatedGas = await token.estimateGas.approve(this.peripheryAddress, MaxUint256Bn);
+    } catch (error) {
+      const sentryTracker = getSentryTracker();
+      sentryTracker.captureException(error);
+      sentryTracker.captureMessage(
+        `Could not increase periphery allowance (${tokenAddress}, ${await this.getUserAddress()}, ${MaxUint256Bn.toString()})`,
+      );
+      throw new Error(
+        `Unable to approve. If your existing allowance is non-zero but lower than needed, some tokens like USDT require you to call approve("${this.peripheryAddress}", 0) before you can increase the allowance.`,
+      );
+    }
+
+    const approvalTransaction = await token
+      .approve(this.peripheryAddress, MaxUint256Bn, {
+        gasLimit: getGasBuffer(estimatedGas),
+      })
+      .catch((error) => {
+        const sentryTracker = getSentryTracker();
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage('Transaction Confirmation Error');
+        throw new Error('Transaction Confirmation Error');
+      });
+
+    try {
+      await approvalTransaction.wait();
+      return await this.getUnderlyingTokenAllowance({ forceErc20Check });
     } catch (error) {
       const sentryTracker = getSentryTracker();
       sentryTracker.captureException(error);
