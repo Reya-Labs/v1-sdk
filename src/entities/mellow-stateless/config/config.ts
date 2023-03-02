@@ -57,14 +57,14 @@ const networkConfigurations: { [key: string]: NetworkConfiguration } = {
           },
           {
             address: '0xedF3cb10dE6Ad6449B9F9Ee561f18e50b6B79234',
-            weight: 25,
+            weight: 50,
             pools: ['AAVE - USDC LEND'],
             estimatedHistoricApy: [0, 20],
             withdrawable: false,
           },
           {
             address: '0x9Fe673EAefd59281679dad8eaf1a86212ab24654',
-            weight: 25,
+            weight: 0,
             pools: ['AAVE - USDC LEND'],
             estimatedHistoricApy: [0, 20],
             withdrawable: true,
@@ -374,14 +374,14 @@ const networkConfigurationsV1: { [key in SupportedChainId]: NetworkConfiguration
           },
           {
             address: '0xedF3cb10dE6Ad6449B9F9Ee561f18e50b6B79234',
-            weight: 25,
+            weight: 50,
             pools: ['AAVE - USDC LEND'],
             estimatedHistoricApy: [0, 20],
             withdrawable: false,
           },
           {
             address: '0x9Fe673EAefd59281679dad8eaf1a86212ab24654',
-            weight: 25,
+            weight: 0,
             pools: ['AAVE - USDC LEND'],
             estimatedHistoricApy: [0, 20],
             withdrawable: true,
