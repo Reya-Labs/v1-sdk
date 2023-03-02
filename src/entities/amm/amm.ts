@@ -1845,7 +1845,7 @@ export class AMM {
         },
         (error: any) => {
           const result = decodeInfoPostSwap(error);
-          availableNotional = result.availableNotional.abs();
+          availableNotional = result.availableNotional;
         },
       );
     }
@@ -1882,7 +1882,7 @@ export class AMM {
     }
 
     return {
-      availableNotional: this.descale(availableNotional),
+      availableNotional: this.descale(availableNotional.abs()),
       maxLeverage: Math.floor(this.descale(maxLeverage)),
     };
   }
