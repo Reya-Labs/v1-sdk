@@ -11,7 +11,7 @@ const initSubgraphURLs = (chainId: SupportedChainId): { [key in SubgraphURLEnum]
         [SubgraphURLEnum.badgesRollingSeason]:
           'https://api.studio.thegraph.com/query/36721/main-v2-voltz-badges/v0.0.5',
         [SubgraphURLEnum.historicalRates]:
-          'https://api.studio.thegraph.com/query/36721/voltz-historical-rates-mainnet/v0.0.3',
+          'https://api.studio.thegraph.com/query/36721/voltz-historical-rates-mainnet/v0.0.7',
       };
     }
     case SupportedChainId.goerli: {
@@ -23,7 +23,7 @@ const initSubgraphURLs = (chainId: SupportedChainId): { [key in SubgraphURLEnum]
         [SubgraphURLEnum.badgesRollingSeason]:
           'https://api.thegraph.com/subgraphs/name/voltzprotocol/badges-goerli',
         [SubgraphURLEnum.historicalRates]:
-          'https://api.studio.thegraph.com/query/36721/voltz-goerli-historical-rates/v0.0.1',
+          'https://api.studio.thegraph.com/query/36721/voltz-goerli-historical-rates/v0.0.2',
       };
     }
     case SupportedChainId.arbitrum: {
