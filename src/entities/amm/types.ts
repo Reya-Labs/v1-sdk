@@ -62,6 +62,7 @@ export type InfoPostSwap = {
 
 export type InfoPostSwapV1 = {
   marginRequirement: number;
+  maxMarginWithdrawable: number;
   availableNotional: number;
   fee: number;
   slippage: number;
