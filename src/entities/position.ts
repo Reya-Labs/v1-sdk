@@ -98,6 +98,8 @@ class Position {
 
   public isSettled = false;
 
+  public maxMarginWithdrawable = 0;
+
   public constructor({
     id,
     createdTimestamp,
@@ -265,6 +267,10 @@ class Position {
             ),
           );
           this.safetyThreshold = this.amm.descale(scaledSafeT);
+          this.maxMarginWithdrawable = Math.max(
+            0,
+            this.amm.descale(freshInfo.margin.sub(scaledSafeT).sub(BigNumber.from(1))),
+          );
         } catch (error) {
           const sentryTracker = getSentryTracker();
           sentryTracker.captureMessage('Failed to compute the safety threshold');
