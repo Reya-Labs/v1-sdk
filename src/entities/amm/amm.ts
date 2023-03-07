@@ -695,8 +695,14 @@ export class AMM {
     }
     const gasFeeETH = await convertGasUnitsToETH(this.provider, swapGasUnits);
 
+    const maxMarginWithdrawable = Math.max(
+      0,
+      this.descale(currentMargin.sub(marginRequirement).sub(BigNumber.from(1))),
+    );
+
     const result: InfoPostSwapV1 = {
       marginRequirement: additionalMargin,
+      maxMarginWithdrawable: maxMarginWithdrawable,
       availableNotional:
         scaledAvailableNotional < 0 ? -scaledAvailableNotional : scaledAvailableNotional,
       fee: scaledFee < 0 ? -scaledFee : scaledFee,
