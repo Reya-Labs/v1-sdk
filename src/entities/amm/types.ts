@@ -182,7 +182,8 @@ export type ExpectedCashflowArgs = {
 };
 
 export type ExpectedCashflowInfo = {
-  accruedCashflowNewPosition: number;
-  estimatedFutureCashflowNewPosition: (estimatedApy: number) => number;
+  averageFixedRateEditPosition: number;
+  accruedCashflowEditPosition: number;
+  estimatedFutureCashflowEditPosition: (estimatedApy: number) => number;
   estimatedFutureCashflowNewSwap: (estimatedApy: number) => number;
 };
