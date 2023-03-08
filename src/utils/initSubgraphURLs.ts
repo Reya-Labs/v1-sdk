@@ -32,7 +32,8 @@ const initSubgraphURLs = (chainId: SupportedChainId): { [key in SubgraphURLEnum]
           'https://api.thegraph.com/subgraphs/name/voltzprotocol/arbitrum-v1',
         [SubgraphURLEnum.badgesCurrentSeasonNoIPFS]: '',
         [SubgraphURLEnum.badgesRollingSeason]: '',
-        [SubgraphURLEnum.historicalRates]: '',
+        [SubgraphURLEnum.historicalRates]:
+          'https://api.thegraph.com/subgraphs/name/voltzprotocol/voltz-historical-rates-arb-one',
       };
     }
     case SupportedChainId.arbitrumGoerli: {
@@ -41,7 +42,8 @@ const initSubgraphURLs = (chainId: SupportedChainId): { [key in SubgraphURLEnum]
           'https://api.thegraph.com/subgraphs/name/voltzprotocol/arbitrum-goerli-v1',
         [SubgraphURLEnum.badgesCurrentSeasonNoIPFS]: '',
         [SubgraphURLEnum.badgesRollingSeason]: '',
-        [SubgraphURLEnum.historicalRates]: '',
+        [SubgraphURLEnum.historicalRates]:
+          'https://api.thegraph.com/subgraphs/name/voltzprotocol/voltz-historical-rates-arbgrli',
       };
     }
     default: {
