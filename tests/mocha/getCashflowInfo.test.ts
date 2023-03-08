@@ -4,7 +4,7 @@ import { expect } from 'chai';
 import { before, describe, it } from 'mocha';
 import * as sinon from 'sinon';
 import { BrowserClient } from '@sentry/browser';
-import { getCashflowInfo } from '../../src/services/getAccruedCashflow';
+import { getCashflowInfo } from '../../src/services/getCashflowInfo';
 import { BaseRateOracle } from '../../src/typechain';
 import * as initSDK from '../../src/init';
 import { ONE_YEAR_IN_SECONDS } from '../../src/constants';

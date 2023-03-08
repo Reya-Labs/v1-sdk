@@ -18,7 +18,7 @@ import {
   MarginEngine__factory as marginEngineFactory,
   BaseRateOracle__factory as baseRateOracleFactory,
 } from '../typechain';
-import { getCashflowInfo, transformSwaps } from '../services/getAccruedCashflow';
+import { getCashflowInfo, transformSwaps } from '../services/getCashflowInfo';
 import { getSentryTracker } from '../init';
 import { getRangeHealthFactor } from '../utils/rangeHealthFactor';
 import { exponentialBackoff } from '../utils/retry';
