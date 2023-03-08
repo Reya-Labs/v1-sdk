@@ -1,5 +1,4 @@
 import { providers, Signer } from 'ethers';
-import { TransformedSwap } from '../../services';
 import { Price } from '../fractions/price';
 import Position from '../position';
 import { RateOracle } from '../rateOracle';
@@ -178,7 +177,8 @@ export type PoolSwapInfo = {
 
 export type ExpectedCashflowArgs = {
   position: Position | undefined;
-  prospectiveSwap: TransformedSwap;
+  prospectiveSwapAvgFixedRate: number;
+  prospectiveSwapNotional: number;
 };
 
 export type ExpectedCashflowInfo = {

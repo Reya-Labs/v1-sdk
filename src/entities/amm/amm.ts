@@ -40,7 +40,11 @@ import {
   getReadableErrorMessage,
 } from '../../utils/errors/errorHandling';
 import { getExpectedApy } from '../../services/getExpectedApy';
-import { getCashflowInfo, transformSwaps } from '../../services/getAccruedCashflow';
+import {
+  getCashflowInfo,
+  TransformedSwap,
+  transformSwaps,
+} from '../../services/getAccruedCashflow';
 
 import { getProtocolPrefix } from '../../services/getTokenInfo';
 
@@ -1925,11 +1929,18 @@ export class AMM {
 
   public async getExpectedCashflowInfo({
     position,
-    prospectiveSwap,
+    prospectiveSwapAvgFixedRate,
+    prospectiveSwapNotional,
   }: ExpectedCashflowArgs): Promise<ExpectedCashflowInfo> {
     const rateOracleContract = baseRateOracleFactory.connect(this.rateOracle.id, this.provider);
     const lastBlockTimestamp =
       (await exponentialBackoff(() => this.provider.getBlock('latest'))).timestamp - 15;
+
+    const prospectiveSwap: TransformedSwap = {
+      avgFixedRate: prospectiveSwapAvgFixedRate,
+      notional: prospectiveSwapNotional,
+      time: lastBlockTimestamp,
+    };
 
     const newSwapCashflowInfo = await getCashflowInfo({
       swaps: [prospectiveSwap],
