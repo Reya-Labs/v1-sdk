@@ -4,7 +4,7 @@ import { expect } from 'chai';
 import { before, describe, it } from 'mocha';
 import * as sinon from 'sinon';
 import { BrowserClient } from '@sentry/browser';
-import { getAccruedCashflow } from '../../src/services/getAccruedCashflow';
+import { getCashflowInfo } from '../../src/services/getAccruedCashflow';
 import { BaseRateOracle } from '../../src/typechain';
 import * as initSDK from '../../src/init';
 import { ONE_YEAR_IN_SECONDS } from '../../src/constants';
@@ -22,7 +22,7 @@ class MockBaseRateOracle {
   }
 }
 
-describe('accrued cashflow tests', () => {
+describe('cashflow info tests', () => {
   let rateOracle: MockBaseRateOracle;
 
   before(async () => {
@@ -46,7 +46,7 @@ describe('accrued cashflow tests', () => {
   });
 
   it('FT and extend FT', async () => {
-    const result = await getAccruedCashflow({
+    const result = await getCashflowInfo({
       swaps: [
         {
           avgFixedRate: 0.05,
@@ -69,10 +69,15 @@ describe('accrued cashflow tests', () => {
 
     expect(result.avgFixedRate).to.be.closeTo(6, 6);
     expect(result.accruedCashflow).to.be.closeTo(16.02739726, 6);
+
+    // estimated future cashflow: (6% - x%) * 1500 * 95 / 365
+    expect(result.estimatedFutureCashflow(2)).to.be.closeTo(15.61, 0.01);
+    expect(result.estimatedFutureCashflow(6)).to.be.closeTo(0, 0.0001);
+    expect(result.estimatedFutureCashflow(8)).to.be.closeTo(-7.8, 0.01);
   });
 
   it('FT and partial unwind VT', async () => {
-    const result = await getAccruedCashflow({
+    const result = await getCashflowInfo({
       swaps: [
         {
           avgFixedRate: 0.05,
@@ -96,10 +101,15 @@ describe('accrued cashflow tests', () => {
 
     expect(result.avgFixedRate).to.be.closeTo(5, 6);
     expect(result.accruedCashflow).to.be.closeTo(4.86301369, 6);
+
+    // estimated future cashflow: (5% - x%) * 500 * 95 / 365
+    expect(result.estimatedFutureCashflow(2)).to.be.closeTo(3.9, 0.01);
+    expect(result.estimatedFutureCashflow(5)).to.be.closeTo(0, 0.0001);
+    expect(result.estimatedFutureCashflow(10)).to.be.closeTo(-6.5, 0.01);
   });
 
   it('FT and larger unwind VT', async () => {
-    const result = await getAccruedCashflow({
+    const result = await getCashflowInfo({
       swaps: [
         {
           avgFixedRate: 0.05,
@@ -123,10 +133,15 @@ describe('accrued cashflow tests', () => {
 
     expect(result.avgFixedRate).to.be.closeTo(6, 6);
     expect(result.accruedCashflow).to.be.closeTo(-3.83561643, 6);
+
+    // estimated future cashflow: (x% - 6%) * 500 * 95 / 365
+    expect(result.estimatedFutureCashflow(2.5)).to.be.closeTo(-4.55, 0.01);
+    expect(result.estimatedFutureCashflow(6)).to.be.closeTo(0, 0.0001);
+    expect(result.estimatedFutureCashflow(6.1)).to.be.closeTo(0.13, 0.001);
   });
 
   it('VT and extend VT', async () => {
-    const result = await getAccruedCashflow({
+    const result = await getCashflowInfo({
       swaps: [
         {
           avgFixedRate: 0.05,
@@ -149,10 +164,15 @@ describe('accrued cashflow tests', () => {
 
     expect(result.avgFixedRate).to.be.closeTo(6, 6);
     expect(result.accruedCashflow).to.be.closeTo(-16.02739726, 6);
+
+    // estimated future cashflow: (x% - 6%) * 1500 * 95 / 365
+    expect(result.estimatedFutureCashflow(2.5)).to.be.closeTo(-13.66, 0.01);
+    expect(result.estimatedFutureCashflow(6)).to.be.closeTo(0, 0.0001);
+    expect(result.estimatedFutureCashflow(6.1)).to.be.closeTo(0.39, 0.001);
   });
 
   it('VT and partial unwind FT', async () => {
-    const result = await getAccruedCashflow({
+    const result = await getCashflowInfo({
       swaps: [
         {
           avgFixedRate: 0.05,
@@ -176,10 +196,15 @@ describe('accrued cashflow tests', () => {
 
     expect(result.avgFixedRate).to.be.closeTo(5, 6);
     expect(result.accruedCashflow).to.be.closeTo(0.20547945, 6);
+
+    // estimated future cashflow: (x% - 5%) * 500 * 95 / 365
+    expect(result.estimatedFutureCashflow(2.5)).to.be.closeTo(-3.253, 0.01);
+    expect(result.estimatedFutureCashflow(5)).to.be.closeTo(0, 0.0001);
+    expect(result.estimatedFutureCashflow(6.1)).to.be.closeTo(1.432, 0.001);
   });
 
   it('VT and larger unwind FT', async () => {
-    const result = await getAccruedCashflow({
+    const result = await getCashflowInfo({
       swaps: [
         {
           avgFixedRate: 0.05,
@@ -203,10 +228,15 @@ describe('accrued cashflow tests', () => {
 
     expect(result.avgFixedRate).to.be.closeTo(8, 6);
     expect(result.accruedCashflow).to.be.closeTo(16.43835616, 6);
+
+    // estimated future cashflow: (8% - x%) * 500 * 95 / 365
+    expect(result.estimatedFutureCashflow(2)).to.be.closeTo(7.808, 0.01);
+    expect(result.estimatedFutureCashflow(8)).to.be.closeTo(0, 0.0001);
+    expect(result.estimatedFutureCashflow(100)).to.be.closeTo(-119.726, 0.001);
   });
 
   it('mixed case', async () => {
-    const result = await getAccruedCashflow({
+    const result = await getCashflowInfo({
       swaps: [
         {
           avgFixedRate: 0.05,
@@ -240,5 +270,10 @@ describe('accrued cashflow tests', () => {
 
     expect(result.avgFixedRate).to.be.closeTo(6.2, 6);
     expect(result.accruedCashflow).to.be.closeTo(-8.56164383, 6);
+
+    // estimated future cashflow: (x% - 6.2%) * 1250 * 95 / 365
+    expect(result.estimatedFutureCashflow(6)).to.be.closeTo(-0.65, 0.01);
+    expect(result.estimatedFutureCashflow(6.2)).to.be.closeTo(0, 0.0001);
+    expect(result.estimatedFutureCashflow(7)).to.be.closeTo(2.602, 0.001);
   });
 });
