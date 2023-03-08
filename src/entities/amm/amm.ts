@@ -1945,7 +1945,7 @@ export class AMM {
       endTime: this.termEndTimestampInMS / 1000,
     });
 
-    const newPositionCashflowInfo = await getCashflowInfo({
+    const editPositionCashflowInfo = await getCashflowInfo({
       swaps: (position ? transformSwaps(position.swaps) : []).concat(prospectiveSwap),
       rateOracle: rateOracleContract,
       currentTime: Number(lastBlockTimestamp.toString()),
@@ -1953,8 +1953,9 @@ export class AMM {
     });
 
     return {
-      accruedCashflowNewPosition: newPositionCashflowInfo.accruedCashflow,
-      estimatedFutureCashflowNewPosition: newPositionCashflowInfo.estimatedFutureCashflow,
+      averageFixedRateEditPosition: editPositionCashflowInfo.avgFixedRate,
+      accruedCashflowEditPosition: editPositionCashflowInfo.accruedCashflow,
+      estimatedFutureCashflowEditPosition: editPositionCashflowInfo.estimatedFutureCashflow,
       estimatedFutureCashflowNewSwap: newSwapCashflowInfo.estimatedFutureCashflow,
     };
   }
