@@ -10,9 +10,11 @@ const getAnnualizedTime = (start: number, end: number): number => {
   return (end - start) / ONE_YEAR_IN_SECONDS;
 };
 
-export type AccruedCashflowInfo = {
+export type CashflowInfo = {
   avgFixedRate: number;
+  netNotional: number;
   accruedCashflow: number;
+  estimatedFutureCashflow: (estimatedApy: number) => number; // 1% is represented as 1
 };
 
 export type TransformedSwap = {
@@ -21,7 +23,7 @@ export type TransformedSwap = {
   time: number;
 };
 
-export type AccruedCashflowArgs = {
+export type CashflowInfoArgs = {
   swaps: TransformedSwap[];
   rateOracle: BaseRateOracle;
   currentTime: number;
@@ -82,16 +84,18 @@ function getLockedInProfit(
 }
 
 // get the accrued cashflow and average fixed rate of particular position
-export const getAccruedCashflow = async ({
+export const getCashflowInfo = async ({
   swaps,
   rateOracle,
   currentTime,
   endTime,
-}: AccruedCashflowArgs): Promise<AccruedCashflowInfo> => {
+}: CashflowInfoArgs): Promise<CashflowInfo> => {
   if (swaps.length === 0) {
     return {
       avgFixedRate: 0,
+      netNotional: 0,
       accruedCashflow: 0,
+      estimatedFutureCashflow: () => 0,
     };
   }
   let info = {
@@ -273,8 +277,16 @@ export const getAccruedCashflow = async ({
     };
   }
 
+  const netNotional = info.notional;
+  const estimatedFutureCashflow = (estimatedApy: number) =>
+    netNotional *
+    getAnnualizedTime(currentTime, endTime) *
+    (estimatedApy / 100 - info.avgFixedRate);
+
   return {
     avgFixedRate: 100 * info.avgFixedRate,
+    netNotional: info.notional,
     accruedCashflow: info.accruedCashflow,
+    estimatedFutureCashflow,
   };
 };

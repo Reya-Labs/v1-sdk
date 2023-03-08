@@ -18,7 +18,7 @@ import {
   MarginEngine__factory as marginEngineFactory,
   BaseRateOracle__factory as baseRateOracleFactory,
 } from '../typechain';
-import { getAccruedCashflow, transformSwaps } from '../services/getAccruedCashflow';
+import { getCashflowInfo, transformSwaps } from '../services/getAccruedCashflow';
 import { getSentryTracker } from '../init';
 import { getRangeHealthFactor } from '../utils/rangeHealthFactor';
 import { exponentialBackoff } from '../utils/retry';
@@ -213,7 +213,7 @@ class Position {
       if (this.swaps.length > 0) {
         if (!this.isPoolMatured) {
           try {
-            const accruedCashflowInfo = await getAccruedCashflow({
+            const accruedCashflowInfo = await getCashflowInfo({
               swaps: transformSwaps(this.swaps),
               rateOracle: rateOracleContract,
               currentTime,

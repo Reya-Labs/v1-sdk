@@ -40,7 +40,7 @@ import {
   getReadableErrorMessage,
 } from '../../utils/errors/errorHandling';
 import { getExpectedApy } from '../../services/getExpectedApy';
-import { getAccruedCashflow, transformSwaps } from '../../services/getAccruedCashflow';
+import { getCashflowInfo, transformSwaps } from '../../services/getAccruedCashflow';
 
 import { getProtocolPrefix } from '../../services/getTokenInfo';
 
@@ -68,9 +68,6 @@ import {
 import { geckoEthToUsd } from '../../utils/priceFetch';
 import { getVariableFactor, RateOracle } from '../rateOracle';
 import { exponentialBackoff } from '../../utils/retry';
-import { convertApyToVariableFactor } from '../../utils/convertApyToVariableFactor';
-import { calculateSettlementCashflow } from '../../utils/calculateSettlementCashflow';
-import { sum } from '../../utils/functions';
 import {
   getHistoricalRates,
   Granularity,
@@ -774,7 +771,7 @@ export class AMM {
 
       try {
         if (position.swaps.length > 0) {
-          const accruedCashflowInfo = await getAccruedCashflow({
+          const accruedCashflowInfo = await getCashflowInfo({
             swaps: transformSwaps(position.swaps),
             rateOracle: rateOracleContract,
             currentTime: Number(lastBlockTimestamp.toString()),
@@ -1926,48 +1923,32 @@ export class AMM {
     return poolSwapInfo;
   }
 
-  public getExpectedCashflowInfo({
+  public async getExpectedCashflowInfo({
     position,
-    fixedTokenDeltaBalance,
-    variableTokenDeltaBalance,
-    variableFactorStartNow,
-    predictedVariableApy,
-  }: ExpectedCashflowArgs): ExpectedCashflowInfo {
-    const variableFactorNowEnd = convertApyToVariableFactor(
-      predictedVariableApy,
-      Date.now() / 1000,
-      this.termEndTimestampInMS / 1000,
-      this.rateOracle.protocolId,
-    );
+    prospectiveSwap,
+  }: ExpectedCashflowArgs): Promise<ExpectedCashflowInfo> {
+    const rateOracleContract = baseRateOracleFactory.connect(this.rateOracle.id, this.provider);
+    const lastBlockTimestamp =
+      (await exponentialBackoff(() => this.provider.getBlock('latest'))).timestamp - 15;
 
-    const variableFactorStartEnd = variableFactorStartNow + variableFactorNowEnd;
+    const newSwapCashflowInfo = await getCashflowInfo({
+      swaps: [prospectiveSwap],
+      rateOracle: rateOracleContract,
+      currentTime: Number(lastBlockTimestamp.toString()),
+      endTime: this.termEndTimestampInMS / 1000,
+    });
 
-    const additionalCashflow = calculateSettlementCashflow(
-      fixedTokenDeltaBalance,
-      variableTokenDeltaBalance,
-      this.termStartTimestampInMS / 1000,
-      this.termEndTimestampInMS / 1000,
-      variableFactorStartEnd,
-    );
-
-    let totalCashflow = additionalCashflow;
-    if (position) {
-      const positionFixedTokenBalance = sum(position.swaps.map((swap) => swap.fixedTokenDelta));
-      const positionVariableTokenBalance = sum(
-        position.swaps.map((swap) => swap.variableTokenDelta),
-      );
-      totalCashflow += calculateSettlementCashflow(
-        positionFixedTokenBalance,
-        positionVariableTokenBalance,
-        this.termStartTimestampInMS / 1000,
-        this.termEndTimestampInMS / 1000,
-        variableFactorStartEnd,
-      );
-    }
+    const newPositionCashflowInfo = await getCashflowInfo({
+      swaps: (position ? transformSwaps(position.swaps) : []).concat(prospectiveSwap),
+      rateOracle: rateOracleContract,
+      currentTime: Number(lastBlockTimestamp.toString()),
+      endTime: this.termEndTimestampInMS / 1000,
+    });
 
     return {
-      additionalCashflow,
-      totalCashflow,
+      accruedCashflowNewPosition: newPositionCashflowInfo.accruedCashflow,
+      estimatedFutureCashflowNewPosition: newPositionCashflowInfo.estimatedFutureCashflow,
+      estimatedFutureCashflowNewSwap: newSwapCashflowInfo.estimatedFutureCashflow,
     };
   }
 }
