@@ -40,11 +40,7 @@ import {
   getReadableErrorMessage,
 } from '../../utils/errors/errorHandling';
 import { getExpectedApy } from '../../services/getExpectedApy';
-import {
-  getCashflowInfo,
-  TransformedSwap,
-  transformSwaps,
-} from '../../services/getAccruedCashflow';
+import { getCashflowInfo, TransformedSwap, transformSwaps } from '../../services/getCashflowInfo';
 
 import { getProtocolPrefix } from '../../services/getTokenInfo';
 
