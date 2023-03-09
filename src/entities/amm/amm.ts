@@ -1954,7 +1954,8 @@ export class AMM {
 
     return {
       averageFixedRate: editPositionCashflowInfo.avgFixedRate,
-      accruedCashflow: editPositionCashflowInfo.accruedCashflow,
+      accruedCashflowExistingPosition: existingPositionCashflowInfo.accruedCashflow,
+      accruedCashflowEditPosition: editPositionCashflowInfo.accruedCashflow,
       estimatedAdditionalCashflow: (estimatedApy: number) =>
         editPositionCashflowInfo.estimatedTotalCashflow(estimatedApy) -
         existingPositionCashflowInfo.estimatedTotalCashflow(estimatedApy),
