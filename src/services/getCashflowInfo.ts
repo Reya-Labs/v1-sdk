@@ -15,6 +15,7 @@ export type CashflowInfo = {
   netNotional: number;
   accruedCashflow: number;
   estimatedFutureCashflow: (estimatedApy: number) => number; // 1% is represented as 1
+  estimatedTotalCashflow: (estimatedApy: number) => number; // 1% is represented as 1
 };
 
 export type TransformedSwap = {
@@ -96,6 +97,7 @@ export const getCashflowInfo = async ({
       netNotional: 0,
       accruedCashflow: 0,
       estimatedFutureCashflow: () => 0,
+      estimatedTotalCashflow: () => 0,
     };
   }
   let info = {
@@ -282,11 +284,14 @@ export const getCashflowInfo = async ({
     netNotional *
     getAnnualizedTime(currentTime, endTime) *
     (estimatedApy / 100 - info.avgFixedRate);
+  const estimatedTotalCashflow = (estimatedApy: number) =>
+    info.accruedCashflow + estimatedFutureCashflow(estimatedApy);
 
   return {
     avgFixedRate: 100 * info.avgFixedRate,
     netNotional: info.notional,
     accruedCashflow: info.accruedCashflow,
     estimatedFutureCashflow,
+    estimatedTotalCashflow,
   };
 };

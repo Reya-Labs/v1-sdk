@@ -62,8 +62,8 @@ import {
   ExpectedApyArgs,
   InfoPostSwapV1,
   ExpectedCashflowArgs,
-  ExpectedCashflowInfo,
   PoolSwapInfo,
+  ExpectedCashflowInfo,
 } from './types';
 import { geckoEthToUsd } from '../../utils/priceFetch';
 import { getVariableFactor, RateOracle } from '../rateOracle';
@@ -1938,8 +1938,8 @@ export class AMM {
       time: lastBlockTimestamp,
     };
 
-    const newSwapCashflowInfo = await getCashflowInfo({
-      swaps: [prospectiveSwap],
+    const existingPositionCashflowInfo = await getCashflowInfo({
+      swaps: position ? transformSwaps(position.swaps) : [],
       rateOracle: rateOracleContract,
       currentTime: Number(lastBlockTimestamp.toString()),
       endTime: this.termEndTimestampInMS / 1000,
@@ -1953,10 +1953,12 @@ export class AMM {
     });
 
     return {
-      averageFixedRateEditPosition: editPositionCashflowInfo.avgFixedRate,
-      accruedCashflowEditPosition: editPositionCashflowInfo.accruedCashflow,
-      estimatedFutureCashflowEditPosition: editPositionCashflowInfo.estimatedFutureCashflow,
-      estimatedFutureCashflowNewSwap: newSwapCashflowInfo.estimatedFutureCashflow,
+      averageFixedRate: editPositionCashflowInfo.avgFixedRate,
+      accruedCashflow: editPositionCashflowInfo.accruedCashflow,
+      estimatedAdditionalCashflow: (estimatedApy: number) =>
+        editPositionCashflowInfo.estimatedTotalCashflow(estimatedApy) -
+        existingPositionCashflowInfo.estimatedTotalCashflow(estimatedApy),
+      estimatedTotalCashflow: editPositionCashflowInfo.estimatedTotalCashflow,
     };
   }
 }

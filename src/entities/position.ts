@@ -81,6 +81,12 @@ class Position {
   public accruedCashflow = 0;
   public accruedCashflowInUSD = 0;
 
+  public estimatedFutureCashflow: (estimatedApy: number) => number = () => 0;
+  public estimatedFutureCashflowInUSD: (estimatedApy: number) => number = () => 0;
+
+  public estimatedTotalCashflow: (estimatedApy: number) => number = () => 0;
+  public estimatedTotalCashflowInUSD: (estimatedApy: number) => number = () => 0;
+
   public settlementCashflow = 0;
   public settlementCashflowInUSD = 0;
 
@@ -213,16 +219,18 @@ class Position {
       if (this.swaps.length > 0) {
         if (!this.isPoolMatured) {
           try {
-            const accruedCashflowInfo = await getCashflowInfo({
+            const cashflowInfo = await getCashflowInfo({
               swaps: transformSwaps(this.swaps),
               rateOracle: rateOracleContract,
               currentTime,
               endTime: this.amm.endDateTime.toSeconds(),
             });
-            this.accruedCashflow = accruedCashflowInfo.accruedCashflow;
+            this.accruedCashflow = cashflowInfo.accruedCashflow;
+            this.estimatedFutureCashflow = cashflowInfo.estimatedFutureCashflow;
+            this.estimatedTotalCashflow = cashflowInfo.estimatedTotalCashflow;
 
             // Get receiving and paying rates
-            const avgFixedRate = accruedCashflowInfo.avgFixedRate;
+            const avgFixedRate = cashflowInfo.avgFixedRate;
             const avgVariableRate = (await this.amm.getInstantApy()) * 100;
 
             [this.receivingRate, this.payingRate] =
@@ -235,6 +243,8 @@ class Position {
           }
         } else {
           this.accruedCashflow = this.settlementCashflow;
+          this.estimatedFutureCashflow = () => 0;
+          this.estimatedTotalCashflow = () => 0;
         }
       }
 
@@ -307,6 +317,10 @@ class Position {
       this.marginInUSD = this.margin * usdExchangeRate;
       this.feesInUSD = this.fees * usdExchangeRate;
       this.accruedCashflowInUSD = this.accruedCashflow * usdExchangeRate;
+      this.estimatedFutureCashflowInUSD = (estimatedApy) =>
+        this.estimatedFutureCashflow(estimatedApy) * usdExchangeRate;
+      this.estimatedTotalCashflowInUSD = (estimatedApy) =>
+        this.estimatedTotalCashflow(estimatedApy) * usdExchangeRate;
       this.settlementCashflowInUSD = this.settlementCashflow * usdExchangeRate;
     }
 
