@@ -20,7 +20,6 @@ export type HistoricalRates = {
 
 export type RatesData = {
   historicalRates: HistoricalRates[];
-  oppositeSideCurrentRate: number;
 };
 
 export type HistoricalRatesParams = {
@@ -43,7 +42,6 @@ export const getHistoricalRates = async ({
 }: HistoricalRatesParams): Promise<RatesData> => {
   // check ids
   const parentObjectId = isFixed ? ammId : rateOracleId;
-  const oppositeSideObjectId = isFixed ? rateOracleId : ammId;
 
   const subgraphUrl = getSubgraphURL(chainId, SubgraphURLEnum.historicalRates);
 
@@ -59,13 +57,6 @@ export const getHistoricalRates = async ({
     isFixed,
     parentObjectId,
     Math.round(startTime / 1000),
-    Math.round(endTime / 1000),
-  );
-
-  const oppositeSideCurrentRate = await getCurrentRateFromSubgraph(
-    subgraphUrl,
-    isFixed,
-    oppositeSideObjectId,
     Math.round(endTime / 1000),
   );
 
@@ -90,7 +81,6 @@ export const getHistoricalRates = async ({
 
   return {
     historicalRates: result,
-    oppositeSideCurrentRate: descaleRate(oppositeSideCurrentRate),
   };
 };
 
