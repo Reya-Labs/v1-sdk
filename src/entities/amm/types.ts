@@ -183,7 +183,10 @@ export type ExpectedCashflowArgs = {
 
 export type ExpectedCashflowInfo = {
   averageFixedRate: number;
-  accruedCashflow: number;
+  accruedCashflowExistingPosition: number;
+  accruedCashflowEditPosition: number;
+  // Additional cashflow resulted from executing the prospective swap
   estimatedAdditionalCashflow: (estimatedApy: number) => number;
+  // Total cashflow of resulting position
   estimatedTotalCashflow: (estimatedApy: number) => number;
 };
