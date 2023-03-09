@@ -74,6 +74,13 @@ describe('cashflow info tests', () => {
     expect(result.estimatedFutureCashflow(2)).to.be.closeTo(15.61, 0.01);
     expect(result.estimatedFutureCashflow(6)).to.be.closeTo(0, 0.0001);
     expect(result.estimatedFutureCashflow(8)).to.be.closeTo(-7.8, 0.01);
+
+    for (const estimatedApy of [2, 6, 8]) {
+      expect(result.estimatedTotalCashflow(estimatedApy)).to.be.closeTo(
+        result.accruedCashflow + result.estimatedFutureCashflow(estimatedApy),
+        0.0001,
+      );
+    }
   });
 
   it('FT and partial unwind VT', async () => {
@@ -106,6 +113,13 @@ describe('cashflow info tests', () => {
     expect(result.estimatedFutureCashflow(2)).to.be.closeTo(3.9, 0.01);
     expect(result.estimatedFutureCashflow(5)).to.be.closeTo(0, 0.0001);
     expect(result.estimatedFutureCashflow(10)).to.be.closeTo(-6.5, 0.01);
+
+    for (const estimatedApy of [2, 5, 10]) {
+      expect(result.estimatedTotalCashflow(estimatedApy)).to.be.closeTo(
+        result.accruedCashflow + result.estimatedFutureCashflow(estimatedApy),
+        0.0001,
+      );
+    }
   });
 
   it('FT and larger unwind VT', async () => {
@@ -138,6 +152,13 @@ describe('cashflow info tests', () => {
     expect(result.estimatedFutureCashflow(2.5)).to.be.closeTo(-4.55, 0.01);
     expect(result.estimatedFutureCashflow(6)).to.be.closeTo(0, 0.0001);
     expect(result.estimatedFutureCashflow(6.1)).to.be.closeTo(0.13, 0.001);
+
+    for (const estimatedApy of [2.5, 6, 6.1]) {
+      expect(result.estimatedTotalCashflow(estimatedApy)).to.be.closeTo(
+        result.accruedCashflow + result.estimatedFutureCashflow(estimatedApy),
+        0.0001,
+      );
+    }
   });
 
   it('VT and extend VT', async () => {
@@ -169,6 +190,13 @@ describe('cashflow info tests', () => {
     expect(result.estimatedFutureCashflow(2.5)).to.be.closeTo(-13.66, 0.01);
     expect(result.estimatedFutureCashflow(6)).to.be.closeTo(0, 0.0001);
     expect(result.estimatedFutureCashflow(6.1)).to.be.closeTo(0.39, 0.001);
+
+    for (const estimatedApy of [2.5, 6, 6.1]) {
+      expect(result.estimatedTotalCashflow(estimatedApy)).to.be.closeTo(
+        result.accruedCashflow + result.estimatedFutureCashflow(estimatedApy),
+        0.0001,
+      );
+    }
   });
 
   it('VT and partial unwind FT', async () => {
@@ -201,6 +229,13 @@ describe('cashflow info tests', () => {
     expect(result.estimatedFutureCashflow(2.5)).to.be.closeTo(-3.253, 0.01);
     expect(result.estimatedFutureCashflow(5)).to.be.closeTo(0, 0.0001);
     expect(result.estimatedFutureCashflow(6.1)).to.be.closeTo(1.432, 0.001);
+
+    for (const estimatedApy of [2.5, 5, 6.1]) {
+      expect(result.estimatedTotalCashflow(estimatedApy)).to.be.closeTo(
+        result.accruedCashflow + result.estimatedFutureCashflow(estimatedApy),
+        0.0001,
+      );
+    }
   });
 
   it('VT and larger unwind FT', async () => {
@@ -233,6 +268,13 @@ describe('cashflow info tests', () => {
     expect(result.estimatedFutureCashflow(2)).to.be.closeTo(7.808, 0.01);
     expect(result.estimatedFutureCashflow(8)).to.be.closeTo(0, 0.0001);
     expect(result.estimatedFutureCashflow(100)).to.be.closeTo(-119.726, 0.001);
+
+    for (const estimatedApy of [2, 8, 100]) {
+      expect(result.estimatedTotalCashflow(estimatedApy)).to.be.closeTo(
+        result.accruedCashflow + result.estimatedFutureCashflow(estimatedApy),
+        0.0001,
+      );
+    }
   });
 
   it('mixed case', async () => {
@@ -275,5 +317,12 @@ describe('cashflow info tests', () => {
     expect(result.estimatedFutureCashflow(6)).to.be.closeTo(-0.65, 0.01);
     expect(result.estimatedFutureCashflow(6.2)).to.be.closeTo(0, 0.0001);
     expect(result.estimatedFutureCashflow(7)).to.be.closeTo(2.602, 0.001);
+
+    for (const estimatedApy of [6, 6.2, 7]) {
+      expect(result.estimatedTotalCashflow(estimatedApy)).to.be.closeTo(
+        result.accruedCashflow + result.estimatedFutureCashflow(estimatedApy),
+        0.0001,
+      );
+    }
   });
 });
