@@ -40,7 +40,12 @@ import {
   getReadableErrorMessage,
 } from '../../utils/errors/errorHandling';
 import { getExpectedApy } from '../../services/getExpectedApy';
-import { getCashflowInfo, TransformedSwap, transformSwaps } from '../../services/getCashflowInfo';
+import {
+  CashflowInfo,
+  getCashflowInfo,
+  TransformedSwap,
+  transformSwaps,
+} from '../../services/getCashflowInfo';
 
 import { getProtocolPrefix } from '../../services/getTokenInfo';
 
@@ -1945,12 +1950,17 @@ export class AMM {
       endTime: this.termEndTimestampInMS / 1000,
     });
 
-    const editPositionCashflowInfo = await getCashflowInfo({
-      swaps: (position ? transformSwaps(position.swaps) : []).concat(prospectiveSwap),
-      rateOracle: rateOracleContract,
-      currentTime: Number(lastBlockTimestamp.toString()),
-      endTime: this.termEndTimestampInMS / 1000,
-    });
+    let editPositionCashflowInfo: CashflowInfo;
+    if (prospectiveSwap.notional === 0) {
+      editPositionCashflowInfo = existingPositionCashflowInfo;
+    } else {
+      editPositionCashflowInfo = await getCashflowInfo({
+        swaps: (position ? transformSwaps(position.swaps) : []).concat(prospectiveSwap),
+        rateOracle: rateOracleContract,
+        currentTime: Number(lastBlockTimestamp.toString()),
+        endTime: this.termEndTimestampInMS / 1000,
+      });
+    }
 
     return {
       averageFixedRate: editPositionCashflowInfo.avgFixedRate,
