@@ -38,7 +38,10 @@ export function transformSwaps(swaps: Swap[]): TransformedSwap[] {
       return {
         notional: s.variableTokenDelta,
         time: s.creationTimestampInMS / 1000,
-        avgFixedRate: Math.abs(s.unbalancedFixedTokenDelta / s.variableTokenDelta / 100),
+        avgFixedRate:
+          s.variableTokenDelta === 0
+            ? 0
+            : Math.abs(s.unbalancedFixedTokenDelta / s.variableTokenDelta / 100),
       };
     })
     .sort((a, b) => a.time - b.time);
@@ -179,8 +182,10 @@ export const getCashflowInfo = async ({
           notional: info.notional + swaps[i].notional,
           time: swaps[i].time,
           avgFixedRate:
-            (info.avgFixedRate * info.notional + swaps[i].avgFixedRate * swaps[i].notional) /
-            (info.notional + swaps[i].notional),
+            info.notional + swaps[i].notional === 0
+              ? 0
+              : (info.avgFixedRate * info.notional + swaps[i].avgFixedRate * swaps[i].notional) /
+                (info.notional + swaps[i].notional),
         };
       }
     } else {
@@ -202,8 +207,10 @@ export const getCashflowInfo = async ({
           notional: info.notional + swaps[i].notional,
           time: swaps[i].time,
           avgFixedRate:
-            (info.avgFixedRate * info.notional + swaps[i].avgFixedRate * swaps[i].notional) /
-            (info.notional + swaps[i].notional),
+            info.notional + swaps[i].notional === 0
+              ? 0
+              : (info.avgFixedRate * info.notional + swaps[i].avgFixedRate * swaps[i].notional) /
+                (info.notional + swaps[i].notional),
         };
       } else {
         // swap: VT
