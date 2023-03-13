@@ -1598,6 +1598,7 @@ export class AMM {
       granularity: Granularity;
       timeframeMs: number;
     },
+    historicalRatesApiKey: string,
   ): Promise<RatesData> {
     const result = await getHistoricalRates({
       chainId,
@@ -1605,6 +1606,7 @@ export class AMM {
       filters,
       ammId: this.id,
       rateOracleId: this.rateOracle.id,
+      historicalRatesApiKey: historicalRatesApiKey,
     });
     return result;
   }
@@ -1615,6 +1617,7 @@ export class AMM {
       granularity: Granularity;
       timeframeMs: number;
     },
+    historicalRatesApiKey: string,
   ): Promise<RatesData> {
     const result = await getHistoricalRates({
       chainId,
@@ -1622,6 +1625,7 @@ export class AMM {
       filters,
       ammId: this.id,
       rateOracleId: this.rateOracle.id,
+      historicalRatesApiKey: historicalRatesApiKey,
     });
     return result;
   }
