@@ -101,7 +101,7 @@ export const getHistoricalRates = async ({
   };
 };
 
-const getHistoricalRatesFromSubgraph = async (
+export const getHistoricalRatesFromSubgraph = async (
   subgraphUrl: string,
   isFixed: boolean,
   parentObjectId: string,
