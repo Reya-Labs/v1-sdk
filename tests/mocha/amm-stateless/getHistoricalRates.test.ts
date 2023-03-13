@@ -34,7 +34,7 @@ describe('getHistoricalRates', () => {
   };
 
   const defautParams: fun.HistoricalRatesParams = {
-    chainId: SupportedChainId.arbitrumGoerli,
+    chainId: SupportedChainId.goerli,
     isFixed: true,
     filters: {
       granularity: fun.Granularity.ONE_DAY,
@@ -42,6 +42,7 @@ describe('getHistoricalRates', () => {
     },
     rateOracleId: 'mockId',
     ammId: 'mockId',
+    historicalRatesApiKey: "mockKey"
   };
 
   afterEach(async () => {
@@ -52,7 +53,7 @@ describe('getHistoricalRates', () => {
     const currentTimestamp = Date.now();
     const obseravtions = [
       {
-        value: BigNumber.from('47400000000000000'),
+        value: 0.474,
         timestampInMs: currentTimestamp - fun.Granularity.ONE_DAY,
       },
     ];
@@ -61,7 +62,7 @@ describe('getHistoricalRates', () => {
     const resultFixed: fun.RatesData = await getHistoricalRates(defautParams);
 
     expect(resultFixed.historicalRates.length).to.be.eq(1);
-    expect(resultFixed.historicalRates[0].value).to.be.eq(0.0474);
+    expect(resultFixed.historicalRates[0].value).to.be.eq(0.474);
 
     const resultVariable: fun.RatesData = await getHistoricalRates({
       ...defautParams,
@@ -69,7 +70,7 @@ describe('getHistoricalRates', () => {
     });
 
     expect(resultVariable.historicalRates.length).to.be.eq(1);
-    expect(resultVariable.historicalRates[0].value).to.be.eq(0.0474);
+    expect(resultVariable.historicalRates[0].value).to.be.eq(0.474);
   });
 
   // this case should not happen, the subgraph should never return data is there isn't any
@@ -77,11 +78,11 @@ describe('getHistoricalRates', () => {
     const currentTimestamp = Date.now();
     const obseravtions = [
       {
-        value: BigNumber.from('47400000000000000'),
+        value: 0.474,
         timestampInMs: currentTimestamp - fun.Granularity.ONE_DAY * 2,
       },
       {
-        value: BigNumber.from('49100000000000000'),
+        value: 0.491,
         timestampInMs: currentTimestamp - fun.Granularity.ONE_DAY - 60000,
       },
     ];
@@ -113,30 +114,30 @@ describe('getHistoricalRates', () => {
     const currentTimestamp = Date.now() + 1000;
     const obseravtions = [
       {
-        value: BigNumber.from('50000000000000000'),
+        value: 0.5,
         timestampInMs: currentTimestamp - ONE_DAY_IN_SECONDS * 2 * 1000,
       },
       {
-        value: BigNumber.from('40000000000000000'),
+        value: 0.4,
         timestampInMs: currentTimestamp - ONE_DAY_IN_SECONDS * 1.5 * 1000,
       },
       {
-        value: BigNumber.from('47000000000000000'),
+        value: 0.47,
         timestampInMs: currentTimestamp - ONE_DAY_IN_SECONDS * 1 * 1000,
       },
       {
-        value: BigNumber.from('400000000000000000'),
+        value: 0.4,
         timestampInMs: currentTimestamp - ONE_DAY_IN_SECONDS * 0.5 * 1000,
       },
-      { value: BigNumber.from('1100000000000000'), timestampInMs: currentTimestamp },
+      { value: 0.11, timestampInMs: currentTimestamp },
     ];
     await mock(obseravtions);
 
     const resultFixed: fun.RatesData = await getHistoricalRates(defautParams);
 
     expect(resultFixed.historicalRates.length).to.be.eq(2);
-    expect(resultFixed.historicalRates[0].value).to.be.eq(0.05);
-    expect(resultFixed.historicalRates[1].value).to.be.eq(0.047);
+    expect(resultFixed.historicalRates[0].value).to.be.eq(0.5);
+    expect(resultFixed.historicalRates[1].value).to.be.eq(0.47);
 
     const resultVariable: fun.RatesData = await getHistoricalRates({
       ...defautParams,
@@ -144,15 +145,15 @@ describe('getHistoricalRates', () => {
     });
 
     expect(resultVariable.historicalRates.length).to.be.eq(2);
-    expect(resultVariable.historicalRates[0].value).to.be.eq(0.05);
-    expect(resultVariable.historicalRates[1].value).to.be.eq(0.047);
+    expect(resultVariable.historicalRates[0].value).to.be.eq(0.5);
+    expect(resultVariable.historicalRates[1].value).to.be.eq(0.47);
   });
 
   it('little observation & smaller granularity', async () => {
     const currentTimestamp = Date.now();
     const obseravtions = [
       {
-        value: BigNumber.from('47000000000000000'),
+        value: 0.47,
         timestampInMs: currentTimestamp - ONE_DAY_IN_SECONDS * 1 * 1000,
       },
     ];
@@ -167,7 +168,7 @@ describe('getHistoricalRates', () => {
     });
 
     expect(resultFixed.historicalRates.length).to.be.eq(1);
-    expect(resultFixed.historicalRates[0].value).to.be.eq(0.047);
+    expect(resultFixed.historicalRates[0].value).to.be.eq(0.47);
 
     const resultVariable: fun.RatesData = await getHistoricalRates({
       ...defautParams,
@@ -179,7 +180,7 @@ describe('getHistoricalRates', () => {
     });
 
     expect(resultVariable.historicalRates.length).to.be.eq(1);
-    expect(resultVariable.historicalRates[0].value).to.be.eq(0.047);
+    expect(resultVariable.historicalRates[0].value).to.be.eq(0.47);
   });
 
   it('no observations', async () => {
