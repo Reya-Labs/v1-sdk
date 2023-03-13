@@ -78,7 +78,6 @@
   },
   "dependencies": {
     "@ethersproject/address": "^5.7.0",
-    "@google-cloud/bigquery": "^6.1.0",
     "@metamask/detect-provider": "^1.2.0",
     "@sentry/browser": "7.25.0",
     "@sentry/tracing": "7.25.0",
