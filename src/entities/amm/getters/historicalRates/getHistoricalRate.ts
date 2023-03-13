@@ -1,3 +1,4 @@
+import { BigQuery } from '@google-cloud/bigquery';
 import {
   getHistoricalFixedRate as getTickUpdates,
   getHistoricalVariableIndex,
@@ -31,6 +32,7 @@ export type HistoricalRatesParams = {
   };
   ammId: string;
   rateOracleId: string;
+  gCloudAuth: string;
 };
 
 export const getHistoricalRates = async ({
@@ -39,11 +41,10 @@ export const getHistoricalRates = async ({
   filters,
   ammId,
   rateOracleId,
+  gCloudAuth,
 }: HistoricalRatesParams): Promise<RatesData> => {
   // check ids
   const parentObjectId = isFixed ? ammId : rateOracleId;
-
-  const subgraphUrl = getSubgraphURL(chainId, SubgraphURLEnum.historicalRates);
 
   // get ticks (with timeframe)
   const currentTimestamp = Date.now();
@@ -51,14 +52,30 @@ export const getHistoricalRates = async ({
   const startTime = currentTimestamp - filters.timeframeMs;
   const endTime = currentTimestamp;
 
+  let rateUpdates: {
+    timestampInMs: number;
+    value: number;
+  }[];
+
   // subgraph-data should output points in asc order by timestamp
-  const rateUpdates = await getHistoricalRatesFromSubgraph(
-    subgraphUrl,
-    isFixed,
-    parentObjectId,
-    Math.round(startTime / 1000),
-    Math.round(endTime / 1000),
-  );
+  if (chainId === SupportedChainId.mainnet || chainId === SupportedChainId.goerli) {
+    const subgraphUrl = getSubgraphURL(chainId, SubgraphURLEnum.historicalRates);
+    rateUpdates = await getHistoricalRatesFromSubgraph(
+      subgraphUrl,
+      isFixed,
+      parentObjectId,
+      Math.round(startTime / 1000),
+      Math.round(endTime / 1000),
+    );
+  } else {
+    rateUpdates = await getHistoricalRatesFromBigQuery(
+      gCloudAuth,
+      isFixed,
+      parentObjectId,
+      Math.round(startTime / 1000),
+      Math.round(endTime / 1000),
+    );
+  }
 
   const result = [];
 
@@ -73,7 +90,7 @@ export const getHistoricalRates = async ({
     ) {
       result.push({
         timestampInMs: p.timestampInMs,
-        value: descaleRate(p.value),
+        value: p.value,
       });
       latestParsedTimestamp = p.timestampInMs;
     }
@@ -93,14 +110,14 @@ export const getHistoricalRatesFromSubgraph = async (
 ): Promise<
   {
     timestampInMs: number;
-    value: BigNumber;
+    value: number;
   }[]
 > => {
   if (isFixed) {
     const res = await getTickUpdates(subgraphUrl, parentObjectId, startTime, endTime);
     const mappedResult = res.map((r) => ({
       timestampInMs: r.timestampInMS,
-      value: r.historicalFixedRate,
+      value: descaleRate(r.historicalFixedRate),
     }));
     return mappedResult;
   }
@@ -108,6 +125,45 @@ export const getHistoricalRatesFromSubgraph = async (
   const mappedResult = res.map((r) => ({
     timestampInMs: r.timestampInMS,
     value: r.historicalVariableRate,
+  }));
+  return mappedResult;
+};
+
+export const getHistoricalRatesFromBigQuery = async (
+  gCloudAuth: string,
+  isFixed: boolean,
+  parentObjectId: string,
+  startTime: number,
+  endTime: number,
+): Promise<
+  {
+    timestampInMs: number;
+    value: number;
+  }[]
+> => {
+  const big_query_credentials = JSON.parse(gCloudAuth);
+
+  const bigquery = new BigQuery({
+    credentials: big_query_credentials,
+    projectId: 'voltz-protocol-v1',
+  });
+
+  let query: string;
+  if (isFixed) {
+    query =
+      'SELECT fixed_rate as rate, timestamp FROM `historical_rates.fixed_rates` ' +
+      `WHERE vamm_address = ${parentObjectId}` +
+      `AND timestamp >= ${startTime} AND timestamp <= ${endTime}`;
+  } else {
+    query =
+      'SELECT variable_rate as rate, timestamp FROM `historical_rates.variable_rates` ' +
+      `WHERE rate_oracle_address = ${parentObjectId}` +
+      `AND timestamp >= ${startTime} AND timestamp <= ${endTime}`;
+  }
+  const res = (await bigquery.query(query))[0];
+  const mappedResult = res.map((r) => ({
+    timestampInMs: r.timestamp * 1000,
+    value: r.rate,
   }));
   return mappedResult;
 };
