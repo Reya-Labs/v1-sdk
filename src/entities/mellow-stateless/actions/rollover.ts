@@ -4,20 +4,10 @@ import { getGasBuffer } from '../../../constants';
 import { getSentryTracker } from '../../../init';
 import { SupportedChainId } from '../../../types';
 import { exponentialBackoff } from '../../../utils/retry';
-import {
-  getIndividualOptimiserInfo,
-  getIndividualOptimiserInfoV1,
-} from '../getters/optimisers/getIndividualOptimiserInfo';
+import { getIndividualOptimiserInfo } from '../getters/optimisers/getIndividualOptimiserInfo';
 import { OptimiserInfo } from '../getters/types';
-import { getOptimiserConfig, getOptimiserConfigV1 } from '../utils/getOptimiserConfig';
+import { getOptimiserConfig } from '../utils/getOptimiserConfig';
 import { mapWeights } from '../utils/mapWeights';
-
-type RolloverArgs = {
-  optimiserId: string;
-  vaultId: string;
-  spareWeights: [string, number][];
-  signer: ethers.Signer;
-};
 
 type RolloverResponse = {
   transaction: {
@@ -26,149 +16,7 @@ type RolloverResponse = {
   newOptimiserState: OptimiserInfo | null;
 };
 
-export const rollover = async ({
-  optimiserId,
-  vaultId,
-  spareWeights,
-  signer,
-}: RolloverArgs): Promise<RolloverResponse> => {
-  // Get Mellow Config
-  const optimiserConfig = getOptimiserConfig(optimiserId);
-
-  // Rollover is only allowed for optimisers
-  if (optimiserConfig.isVault) {
-    const errorMessage = 'Rollover not supported for vaults.';
-
-    // Report to Sentry
-    const sentryTracker = getSentryTracker();
-    sentryTracker.captureMessage(errorMessage);
-
-    throw new Error(errorMessage);
-  }
-
-  // Get Optimiser contract
-  const mellowOptimiser = new ethers.Contract(optimiserId, MellowMultiVaultRouterABI, signer);
-
-  // Get the index of the specified vault
-  const optimiserVaultIds = optimiserConfig.vaults.map((v) => v.address);
-  const vaultIndex = optimiserVaultIds.findIndex((item) => item === vaultId);
-  if (vaultIndex < 0) {
-    const errorMessage = 'Vault ID not found.';
-
-    // Report to Sentry
-    const sentryTracker = getSentryTracker();
-    sentryTracker.captureMessage(errorMessage);
-
-    throw new Error(errorMessage);
-  }
-
-  // Get the Vault Contract
-  const erc20RootVaultContract = new ethers.Contract(
-    optimiserVaultIds[vaultIndex],
-    Erc20RootVaultABI,
-    signer,
-  );
-
-  // Map spare weights to array
-  const weights = mapWeights(
-    optimiserConfig.vaults.map((v) => v.address),
-    spareWeights,
-  );
-
-  // Build the parameters
-  let subvaultsCount: number;
-  try {
-    subvaultsCount = (await exponentialBackoff(() => erc20RootVaultContract.subvaultNfts())).length;
-  } catch (error) {
-    const errorMessage = 'Failed to fetch number of subvaults';
-
-    // Report to Sentry
-    const sentryTracker = getSentryTracker();
-    sentryTracker.captureException(error);
-    sentryTracker.captureMessage(errorMessage);
-
-    throw new Error(errorMessage);
-  }
-
-  const minTokenAmounts = BigNumber.from(0);
-  const vaultsOptions = new Array(subvaultsCount).fill(0x0);
-
-  // Simulate the transaction
-  try {
-    await mellowOptimiser.callStatic.rolloverLPTokens(
-      vaultIndex,
-      [minTokenAmounts],
-      vaultsOptions,
-      weights,
-    );
-  } catch (error) {
-    const errorMessage = 'Unsuccessful rolloverLPTokens simulation.';
-
-    // Report to Sentry
-    const sentryTracker = getSentryTracker();
-    sentryTracker.captureException(error);
-    sentryTracker.captureMessage(errorMessage);
-
-    throw new Error(errorMessage);
-  }
-
-  // Get the gas limit
-  const gasLimit = await mellowOptimiser.estimateGas.rolloverLPTokens(
-    vaultIndex,
-    [minTokenAmounts],
-    vaultsOptions,
-    weights,
-  );
-
-  // Send the transaction
-  const tx = await mellowOptimiser.rolloverLPTokens(
-    vaultIndex,
-    [minTokenAmounts],
-    vaultsOptions,
-    weights,
-    {
-      gasLimit: getGasBuffer(gasLimit),
-    },
-  );
-
-  // Wait for the receipt
-  let receipt: ethers.ContractReceipt;
-  try {
-    receipt = await tx.wait();
-  } catch (error) {
-    const errorMessage = 'Transaction Confirmation Error';
-
-    // Report to Sentry
-    const sentryTracker = getSentryTracker();
-    sentryTracker.captureException(error);
-    sentryTracker.captureMessage(errorMessage);
-
-    throw new Error(errorMessage);
-  }
-
-  // Get the next state of the optimiser
-  let optimiserInfo: OptimiserInfo | null = null;
-  try {
-    optimiserInfo = await getIndividualOptimiserInfo(optimiserId, signer);
-  } catch (error) {
-    const errorMessage = 'Failed to get new state after deposit';
-
-    // Report to Sentry
-    const sentryTracker = getSentryTracker();
-    sentryTracker.captureException(error);
-    sentryTracker.captureMessage(errorMessage);
-  }
-
-  // Return the response
-  return {
-    transaction: {
-      receipt,
-    },
-    newOptimiserState: optimiserInfo,
-  };
-};
-
-type RolloverArgsV1 = {
+type RolloverArgs = {
   optimiserId: string;
   vaultId: string;
   spareWeights: [string, number][];
@@ -177,16 +25,16 @@ type RolloverArgsV1 = {
   alchemyApiKey: string;
 };
 
-export const rolloverV1 = async ({
+export const rollover = async ({
   optimiserId,
   vaultId,
   spareWeights,
   signer,
   chainId,
   alchemyApiKey,
-}: RolloverArgsV1): Promise<RolloverResponse> => {
+}: RolloverArgs): Promise<RolloverResponse> => {
   // Get Mellow Config
-  const optimiserConfig = getOptimiserConfigV1(chainId, optimiserId);
+  const optimiserConfig = getOptimiserConfig(chainId, optimiserId);
 
   // Rollover is only allowed for optimisers
   if (optimiserConfig.isVault) {
@@ -302,7 +150,7 @@ export const rolloverV1 = async ({
   // Get the next state of the optimiser
   let optimiserInfo: OptimiserInfo | null = null;
   try {
-    optimiserInfo = await getIndividualOptimiserInfoV1(optimiserId, signer, chainId, alchemyApiKey);
+    optimiserInfo = await getIndividualOptimiserInfo(optimiserId, signer, chainId, alchemyApiKey);
   } catch (error) {
     const errorMessage = 'Failed to get new state after deposit';
 
