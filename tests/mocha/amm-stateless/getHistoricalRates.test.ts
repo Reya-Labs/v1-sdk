@@ -7,7 +7,6 @@ import { getHistoricalRates } from '../../../src/entities';
 import * as fun from '../../../src/entities/amm/getters/historicalRates/getHistoricalRate';
 import { ONE_DAY_IN_SECONDS } from '../../../src/constants';
 import { BigNumber } from 'ethers';
-import { SupportedChainId } from '../../../src/types';
 
 describe('getHistoricalRates', () => {
   const mock = async (observations: any[]) => {
@@ -19,7 +18,7 @@ describe('getHistoricalRates', () => {
         } as unknown as BrowserClient),
     );
 
-    sinon.stub(fun, 'getHistoricalRatesFromSubgraph').resolves(observations);
+    sinon.stub(fun, 'getHistoricalRatesFromBigQuery').resolves(observations);
     if (observations.length > 0) {
       sinon
         .stub(fun, 'getCurrentRateFromSubgraph')
@@ -34,7 +33,6 @@ describe('getHistoricalRates', () => {
   };
 
   const defautParams: fun.HistoricalRatesParams = {
-    chainId: SupportedChainId.goerli,
     isFixed: true,
     filters: {
       granularity: fun.Granularity.ONE_DAY,

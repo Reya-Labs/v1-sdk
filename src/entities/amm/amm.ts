@@ -1601,7 +1601,6 @@ export class AMM {
     historicalRatesApiKey: string,
   ): Promise<RatesData> {
     const result = await getHistoricalRates({
-      chainId,
       isFixed: false,
       filters,
       ammId: this.id,
@@ -1620,7 +1619,6 @@ export class AMM {
     historicalRatesApiKey: string,
   ): Promise<RatesData> {
     const result = await getHistoricalRates({
-      chainId,
       isFixed: true,
       filters,
       ammId: this.id,

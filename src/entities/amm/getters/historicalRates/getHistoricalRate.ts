@@ -5,8 +5,7 @@ import {
 import axios from 'axios';
 import { BigNumber } from 'ethers';
 import { ONE_DAY_IN_SECONDS } from '../../../../constants';
-import { getSentryTracker, getSubgraphURL } from '../../../../init';
-import { SubgraphURLEnum, SupportedChainId } from '../../../../types';
+import { getSentryTracker } from '../../../../init';
 
 export enum Granularity {
   ONE_HOUR = 3600 * 1000,
@@ -24,7 +23,6 @@ export type RatesData = {
 };
 
 export type HistoricalRatesParams = {
-  chainId: SupportedChainId;
   isFixed: boolean;
   filters: {
     granularity: Granularity;
@@ -36,7 +34,6 @@ export type HistoricalRatesParams = {
 };
 
 export const getHistoricalRates = async ({
-  chainId,
   isFixed,
   filters,
   ammId,
@@ -52,35 +49,16 @@ export const getHistoricalRates = async ({
   const startTime = currentTimestamp - filters.timeframeMs;
   const endTime = currentTimestamp;
 
-  let rateUpdates: {
-    timestampInMs: number;
-    value: number;
-  }[];
-
-  // subgraph-data should output points in asc order by timestamp
-  if (chainId === SupportedChainId.mainnet || chainId === SupportedChainId.goerli) {
-    const subgraphUrl = getSubgraphURL(chainId, SubgraphURLEnum.historicalRates);
-    rateUpdates = await getHistoricalRatesFromSubgraph(
-      subgraphUrl,
-      isFixed,
-      parentObjectId,
-      Math.round(startTime / 1000),
-      Math.round(endTime / 1000),
-    );
-  } else {
-    rateUpdates = await getHistoricalRatesFromBigQuery(
-      historicalRatesApiKey,
-      isFixed,
-      parentObjectId,
-      Math.round(startTime / 1000),
-      Math.round(endTime / 1000),
-    );
-  }
+  const rateUpdates = await getHistoricalRatesFromBigQuery(
+    historicalRatesApiKey,
+    isFixed,
+    parentObjectId,
+    Math.round(startTime / 1000),
+    Math.round(endTime / 1000),
+  );
 
   const result = [];
 
-  // NOTE: points will be registered exactly every hour on the ETHEREUM mainnet
-  // but on chains with arbitrary block interval, this won't be the case
   let latestParsedTimestamp = 0;
   for (const p of rateUpdates) {
     if (
@@ -101,35 +79,7 @@ export const getHistoricalRates = async ({
   };
 };
 
-export const getHistoricalRatesFromSubgraph = async (
-  subgraphUrl: string,
-  isFixed: boolean,
-  parentObjectId: string,
-  startTime: number,
-  endTime: number,
-): Promise<
-  {
-    timestampInMs: number;
-    value: number;
-  }[]
-> => {
-  if (isFixed) {
-    const res = await getTickUpdates(subgraphUrl, parentObjectId, startTime, endTime);
-    const mappedResult = res.map((r) => ({
-      timestampInMs: r.timestampInMS,
-      value: descaleRate(r.historicalFixedRate),
-    }));
-    return mappedResult;
-  }
-  const res = await getHistoricalVariableIndex(subgraphUrl, parentObjectId, startTime, endTime);
-  const mappedResult = res.map((r) => ({
-    timestampInMs: r.timestampInMS,
-    value: descaleRate(r.historicalVariableRate),
-  }));
-  return mappedResult;
-};
-
-const getHistoricalRatesFromBigQuery = async (
+export const getHistoricalRatesFromBigQuery = async (
   historicalRatesApiKey: string,
   isFixed: boolean,
   parentObjectId: string,
@@ -200,8 +150,4 @@ export const getCurrentRateFromSubgraph = async (
     return BigNumber.from(-10).pow(16); // default to -0.01
   }
   return res[res.length - 1].historicalVariableRate;
-};
-
-const descaleRate = (rate: BigNumber): number => {
-  return rate.div(BigNumber.from(1000000000000)).toNumber() / 1000000;
 };
