@@ -18,31 +18,31 @@ describe('Network Switching tests', async () => {
       {
         const networkDetected = detectNetworkWithChainId(1);
         expect(networkDetected.isSupported).to.be.eq(true);
-        expect(networkDetected.network).to.be.eq(SupportedChainId.mainnet);
+        expect(networkDetected.chainId).to.be.eq(SupportedChainId.mainnet);
       }
 
       {
         const networkDetected = detectNetworkWithChainId(2);
         expect(networkDetected.isSupported).to.be.eq(false);
-        expect(networkDetected.network).to.be.eq(null);
+        expect(networkDetected.chainId).to.be.eq(null);
       }
 
       {
         const networkDetected = detectNetworkWithChainId(5);
         expect(networkDetected.isSupported).to.be.eq(true);
-        expect(networkDetected.network).to.be.eq(SupportedChainId.goerli);
+        expect(networkDetected.chainId).to.be.eq(SupportedChainId.goerli);
       }
 
       {
         const networkDetected = detectNetworkWithChainId(42161);
         expect(networkDetected.isSupported).to.be.eq(true);
-        expect(networkDetected.network).to.be.eq(SupportedChainId.arbitrum);
+        expect(networkDetected.chainId).to.be.eq(SupportedChainId.arbitrum);
       }
 
       {
         const networkDetected = detectNetworkWithChainId(421613);
         expect(networkDetected.isSupported).to.be.eq(true);
-        expect(networkDetected.network).to.be.eq(SupportedChainId.arbitrumGoerli);
+        expect(networkDetected.chainId).to.be.eq(SupportedChainId.arbitrumGoerli);
       }
     });
 
@@ -52,7 +52,7 @@ describe('Network Switching tests', async () => {
           getMockedSigner(1) as unknown as Signer,
         );
         expect(networkDetected.isSupported).to.be.eq(true);
-        expect(networkDetected.network).to.be.eq(SupportedChainId.mainnet);
+        expect(networkDetected.chainId).to.be.eq(SupportedChainId.mainnet);
       }
 
       {
@@ -60,7 +60,7 @@ describe('Network Switching tests', async () => {
           getMockedSigner(2) as unknown as Signer,
         );
         expect(networkDetected.isSupported).to.be.eq(false);
-        expect(networkDetected.network).to.be.eq(null);
+        expect(networkDetected.chainId).to.be.eq(null);
       }
 
       {
@@ -68,7 +68,7 @@ describe('Network Switching tests', async () => {
           getMockedSigner(5) as unknown as Signer,
         );
         expect(networkDetected.isSupported).to.be.eq(true);
-        expect(networkDetected.network).to.be.eq(SupportedChainId.goerli);
+        expect(networkDetected.chainId).to.be.eq(SupportedChainId.goerli);
       }
 
       {
@@ -76,7 +76,7 @@ describe('Network Switching tests', async () => {
           getMockedSigner(42161) as unknown as Signer,
         );
         expect(networkDetected.isSupported).to.be.eq(true);
-        expect(networkDetected.network).to.be.eq(SupportedChainId.arbitrum);
+        expect(networkDetected.chainId).to.be.eq(SupportedChainId.arbitrum);
       }
 
       {
@@ -84,61 +84,8 @@ describe('Network Switching tests', async () => {
           getMockedSigner(421613) as unknown as Signer,
         );
         expect(networkDetected.isSupported).to.be.eq(true);
-        expect(networkDetected.network).to.be.eq(SupportedChainId.arbitrumGoerli);
+        expect(networkDetected.chainId).to.be.eq(SupportedChainId.arbitrumGoerli);
       }
     });
   });
-
-  // describe('Init and Rearm SDK', async () => {
-  //   const alchemyApiKeys = {
-  //     [SupportedChainId.mainnet]: 'abc',
-  //     [SupportedChainId.goerli]: 'bcd',
-  //     [SupportedChainId.arbitrum]: 'cde',
-  //     [SupportedChainId.arbitrumGoerli]: 'def',
-  //   };
-
-  //   let network: SupportedChainId;
-
-  //   it('Init', async () => {
-  //     network = SupportedChainId.mainnet;
-  //     initV1({
-  //       network,
-  //       alchemyApiKey: alchemyApiKeys[network],
-  //     });
-
-  //     expect(getNetwork()).to.be.eq(network);
-
-  //     expect(alchemyApiKeyToURL(alchemyApiKeys[network])).to.be.eq(
-  //       `https://eth-mainnet.g.alchemy.com/v2/${alchemyApiKeys[network]}`,
-  //     );
-
-  //     expect(getSubgraphURL(SubgraphURLEnum.voltzProtocol)).to.be.eq(
-  //       'https://api.thegraph.com/subgraphs/name/voltzprotocol/mainnet-v1',
-  //     );
-
-  //     // make sure it doesn't throw errors
-  //     getSentryTracker();
-  //   });
-
-  //   it('Rearm', async () => {
-  //     network = SupportedChainId.goerli;
-  //     rearm({
-  //       network,
-  //       alchemyApiKey: alchemyApiKeys[network],
-  //     });
-
-  //     expect(getNetwork()).to.be.eq(network);
-
-  //     expect(alchemyApiKeyToURL(alchemyApiKeys[network])).to.be.eq(
-  //       `https://eth-goerli.g.alchemy.com/v2/${alchemyApiKeys[network]}`,
-  //     );
-
-  //     expect(getSubgraphURL(SubgraphURLEnum.voltzProtocol)).to.be.eq(
-  //       'https://api.thegraph.com/subgraphs/name/voltzprotocol/voltz-goerli',
-  //     );
-
-  //     // make sure it doesn't throw errors
-  //     getSentryTracker();
-  //   });
-  // });
 });

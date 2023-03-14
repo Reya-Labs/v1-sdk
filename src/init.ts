@@ -5,23 +5,11 @@ import {
   defaultIntegrations,
 } from '@sentry/browser';
 import { ethers } from 'ethers';
-import { initMellowConfig } from './entities/mellow-stateless/config/config';
 import { SubgraphURLEnum, SupportedChainId } from './types';
 import alchemyApiKeyToURL from './utils/alchemyApiKeyToURL';
 import initSubgraphURLs from './utils/initSubgraphURLs';
 
 let sentryTracker: BrowserClient | null;
-
-// TO DO: to be deleted
-let provider: ethers.providers.JsonRpcProvider | null;
-// TO DO: to be deleted
-export const getProvider = (): ethers.providers.JsonRpcProvider => {
-  if (!provider) {
-    throw new Error('Provider is not set up!');
-  }
-
-  return provider;
-};
 
 export const initSentryTracker = (): BrowserClient => {
   return new BrowserClient({
@@ -38,14 +26,10 @@ export const initSentryTracker = (): BrowserClient => {
   });
 };
 
-export const getProviderV1 = (
+export const getProvider = (
   chainId: SupportedChainId,
   alchemyApiKey: string,
 ): ethers.providers.JsonRpcProvider => {
-  if (provider) {
-    return provider;
-  }
-
   const providerURL = alchemyApiKeyToURL(chainId, alchemyApiKey);
   return new ethers.providers.JsonRpcProvider(providerURL);
 };
@@ -65,17 +49,6 @@ export const getSentryTracker = (): BrowserClient => {
   return sentryTracker;
 };
 
-export const init = ({ providerURL, network }: { providerURL: string; network: string }): void => {
-  const networkChainId = ethers.providers.getNetwork(network).chainId;
-  if (!Object.values(SupportedChainId).includes(networkChainId)) {
-    throw new Error('Unsupported network!');
-  }
-
-  sentryTracker = initSentryTracker();
-  provider = new ethers.providers.JsonRpcProvider(providerURL);
-  initMellowConfig(network);
-};
-
-export const initV1 = (): void => {
+export const init = (): void => {
   sentryTracker = initSentryTracker();
 };
