@@ -6,6 +6,7 @@ import axios from 'axios';
 import { BigNumber } from 'ethers';
 import { ONE_DAY_IN_SECONDS } from '../../../../constants';
 import { getSentryTracker } from '../../../../init';
+import { SupportedChainId } from '../../../../types';
 
 export enum Granularity {
   ONE_HOUR = 3600 * 1000,
@@ -23,6 +24,7 @@ export type RatesData = {
 };
 
 export type HistoricalRatesParams = {
+  chainId: SupportedChainId;
   isFixed: boolean;
   filters: {
     granularity: Granularity;
@@ -34,6 +36,7 @@ export type HistoricalRatesParams = {
 };
 
 export const getHistoricalRates = async ({
+  chainId,
   isFixed,
   filters,
   ammId,
@@ -55,10 +58,13 @@ export const getHistoricalRates = async ({
     parentObjectId,
     Math.round(startTime / 1000),
     Math.round(endTime / 1000),
+    chainId,
   );
 
   const result = [];
 
+  // NOTE: points will be registered exactly every hour on the ETHEREUM mainnet
+  // but on chains with arbitrary block interval, this won't be the case
   let latestParsedTimestamp = 0;
   for (const p of rateUpdates) {
     if (
@@ -85,6 +91,7 @@ export const getHistoricalRatesFromBigQuery = async (
   parentObjectId: string,
   startTime: number,
   endTime: number,
+  chainId: SupportedChainId,
 ): Promise<
   {
     timestampInMs: number;
@@ -95,6 +102,7 @@ export const getHistoricalRatesFromBigQuery = async (
     key: historicalRatesApiKey,
     start_time: startTime,
     end_time: endTime,
+    chain_id: chainId,
   };
 
   let resp: { data: { rate: number; timestamp: number }[] };
