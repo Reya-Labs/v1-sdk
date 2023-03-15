@@ -397,6 +397,17 @@ export const networkConfigurationsV1: { [key in SupportedChainId]: NetworkConfig
           general: true,
           trader: true,
         },
+        traderWithdrawable: true,
+        isAaveV3: true,
+      },
+
+      {
+        name: 'aUSDC_v11',
+        id: '0x57c2a977b01b8e91ee6ce10d8425c5a43c101e7d', // vamm address
+        show: {
+          general: true,
+          trader: true,
+        },
         traderWithdrawable: false,
         isAaveV3: true,
       },
@@ -598,13 +609,22 @@ export const networkConfigurationsV1: { [key in SupportedChainId]: NetworkConfig
     defaultMinLeverageAllowed: 10,
     pools: [
       {
-        name: 'glp',
+        name: 'glpETH_v1',
         id: '0xB69c2b77C844b55F9924242df4299a1598753320', // vamm address
         show: {
           general: true,
           trader: true,
         },
         traderWithdrawable: true,
+      },
+      {
+        name: 'glpETH_v2',
+        id: '0x1aac6232b7c7cd6c8479077844eb0302cca0d2af', // vamm address
+        show: {
+          general: true,
+          trader: true,
+        },
+        traderWithdrawable: false,
       },
       {
         name: 'aUSDC_v1',
