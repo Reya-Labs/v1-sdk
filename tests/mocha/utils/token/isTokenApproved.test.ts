@@ -4,19 +4,21 @@ import * as sinon from 'sinon';
 import { BrowserClient } from '@sentry/browser';
 import { expect } from 'chai';
 import { ethers } from 'ethers';
-import { IERC20MinimalABI } from '../../../src/ABIs';
-import * as initSDK from '../../../src/init';
-import * as initMellowConfig from '../../../src/entities/mellow-stateless/config/config';
-import { MockGoerliConfig, RETRY_ATTEMPTS } from './utils';
-import { withSigner } from '../../utils';
-import { isTokenApproved } from '../../../src/entities/mellow-stateless/utils/token/isTokenApproved';
-import { exponentialBackoff } from '../../../src/utils/retry';
-import * as priceFetch from '../../../src/utils/priceFetch';
+import { IERC20MinimalABI } from '../../../../src/ABIs';
+import * as initSDK from '../../../../src/init';
+import * as initMellowConfig from '../../../../src/entities/mellow-stateless/config/config';
+import { MockGoerliConfig, RETRY_ATTEMPTS } from '../../mellow-stateless/utils';
+import { withSigner } from '../../../utils';
+import { isTokenApproved } from '../../../../src/services/token/isTokenApproved';
+import { exponentialBackoff } from '../../../../src/utils/retry';
+import * as priceFetch from '../../../../src/utils/priceFetch';
 
 const { provider } = waffle;
 
 describe('Utilities:IsTokenApproved', () => {
   const userAddress = '0xf8f6b70a36f4398f0853a311dc6699aba8333cc1';
+  const chainId = 1;
+  const alchemyApiKey = 'key';
 
   const resetNetwork = async (blockNumber: number) => {
     await network.provider.request({
@@ -73,6 +75,8 @@ describe('Utilities:IsTokenApproved', () => {
         tokenId,
         userAddress,
         to,
+        chainId,
+        alchemyApiKey,
       });
 
       expect(approval).to.be.eq(false);
@@ -87,6 +91,8 @@ describe('Utilities:IsTokenApproved', () => {
         userAddress,
         to,
         threshold: 1,
+        chainId,
+        alchemyApiKey,
       });
 
       expect(approval).to.be.eq(false);
@@ -101,6 +107,8 @@ describe('Utilities:IsTokenApproved', () => {
         userAddress,
         to,
         threshold: 0,
+        chainId,
+        alchemyApiKey,
       });
 
       expect(approval).to.be.eq(true);
@@ -121,6 +129,8 @@ describe('Utilities:IsTokenApproved', () => {
         userAddress,
         to,
         threshold: 1,
+        chainId,
+        alchemyApiKey,
       });
 
       expect(approval).to.be.eq(true);
@@ -141,6 +151,8 @@ describe('Utilities:IsTokenApproved', () => {
         userAddress,
         to,
         threshold: 10,
+        chainId,
+        alchemyApiKey,
       });
 
       expect(approval).to.be.eq(false);
@@ -160,6 +172,8 @@ describe('Utilities:IsTokenApproved', () => {
         tokenId,
         userAddress,
         to,
+        chainId,
+        alchemyApiKey,
       });
 
       expect(approval).to.be.eq(false);
@@ -173,6 +187,8 @@ describe('Utilities:IsTokenApproved', () => {
         tokenId,
         userAddress,
         to,
+        chainId,
+        alchemyApiKey,
       });
 
       expect(approval).to.be.eq(true);
@@ -187,6 +203,8 @@ describe('Utilities:IsTokenApproved', () => {
         userAddress,
         to,
         forceErc20: true,
+        chainId,
+        alchemyApiKey,
       });
 
       expect(approval).to.be.eq(false);
@@ -211,6 +229,8 @@ describe('Utilities:IsTokenApproved', () => {
         to,
         forceErc20: true,
         threshold: 2,
+        chainId,
+        alchemyApiKey,
       });
 
       expect(approval).to.be.eq(true);
@@ -235,6 +255,8 @@ describe('Utilities:IsTokenApproved', () => {
         to,
         forceErc20: true,
         threshold: 10,
+        chainId,
+        alchemyApiKey,
       });
 
       expect(approval).to.be.eq(false);

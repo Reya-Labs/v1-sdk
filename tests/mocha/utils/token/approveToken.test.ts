@@ -4,15 +4,15 @@ import * as sinon from 'sinon';
 import { BrowserClient } from '@sentry/browser';
 import { expect } from 'chai';
 import { ethers } from 'ethers';
-import { IERC20MinimalABI } from '../../../src/ABIs';
-import * as initSDK from '../../../src/init';
-import * as initMellowConfig from '../../../src/entities/mellow-stateless/config/config';
-import { MockGoerliConfig, RETRY_ATTEMPTS } from './utils';
-import { fail, withSigner } from '../../utils';
-import { approveToken } from '../../../src/entities/mellow-stateless/utils/token/approveToken';
-import { MaxUint256Bn } from '../../../src/constants';
-import { exponentialBackoff } from '../../../src/utils/retry';
-import * as priceFetch from '../../../src/utils/priceFetch';
+import { IERC20MinimalABI } from '../../../../src/ABIs';
+import * as initSDK from '../../../../src/init';
+import * as initMellowConfig from '../../../../src/entities/mellow-stateless/config/config';
+import { MockGoerliConfig, RETRY_ATTEMPTS } from '../../mellow-stateless/utils';
+import { fail, withSigner } from '../../../utils';
+import { approveToken } from '../../../../src/services/token/approveToken';
+import { MaxUint256Bn } from '../../../../src/constants';
+import { exponentialBackoff } from '../../../../src/utils/retry';
+import * as priceFetch from '../../../../src/utils/priceFetch';
 
 const { provider } = waffle;
 

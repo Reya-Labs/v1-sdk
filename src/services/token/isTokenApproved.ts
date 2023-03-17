@@ -1,12 +1,12 @@
 import { ethers } from 'ethers';
 import { isUndefined } from 'lodash';
-import { IERC20MinimalABI } from '../../../../ABIs';
-import { TresholdApprovalBn } from '../../../../constants';
-import { getProvider } from '../../../../init';
-import { getTokenInfo } from '../../../../services/getTokenInfo';
-import { SupportedChainId } from '../../../../types';
-import { exponentialBackoff } from '../../../../utils/retry';
-import { scale } from '../../../../utils/scaling';
+import { IERC20MinimalABI } from '../../ABIs';
+import { TresholdApprovalBn } from '../../constants';
+import { getProvider } from '../../init';
+import { getTokenInfo } from '../getTokenInfo';
+import { SupportedChainId } from '../../types';
+import { exponentialBackoff } from '../../utils/retry';
+import { scale } from '../../utils/scaling';
 
 type IsTokenApprovedArgs = {
   tokenId: string;
