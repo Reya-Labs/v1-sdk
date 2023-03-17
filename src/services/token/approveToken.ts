@@ -1,10 +1,10 @@
-import { ethers } from 'ethers';
+import { BigNumber, ethers } from 'ethers';
 import { isUndefined } from 'lodash';
-import { IERC20MinimalABI } from '../../../../ABIs';
-import { MaxUint256Bn, getGasBuffer } from '../../../../constants';
-import { getTokenInfo } from '../../../../services/getTokenInfo';
-import { exponentialBackoff } from '../../../../utils/retry';
-import { scale } from '../../../../utils/scaling';
+import { IERC20MinimalABI } from '../../ABIs';
+import { MaxUint256Bn, getGasBuffer } from '../../constants';
+import { getTokenInfo } from '../getTokenInfo';
+import { exponentialBackoff } from '../../utils/retry';
+import { scale } from '../../utils/scaling';
 
 type ApproveTokenArgs = {
   tokenId: string;
@@ -14,12 +14,12 @@ type ApproveTokenArgs = {
 };
 
 type ApproveTokenResponse = {
+  allowance: BigNumber;
   transaction: {
     receipt: ethers.ContractReceipt;
   };
 };
 
-// Move to utilities
 export const approveToken = async ({
   tokenId,
   to,
@@ -35,9 +35,9 @@ export const approveToken = async ({
   // Get the token contract
   const tokenContract = new ethers.Contract(tokenId, IERC20MinimalABI, signer);
 
+  const userAddress = await exponentialBackoff(() => signer.getAddress());
   if (tokenName === 'USDT') {
-    const userAddress = await exponentialBackoff(() => signer.getAddress());
-    const allowance: ethers.BigNumber = await exponentialBackoff(() =>
+    const allowance: BigNumber = await exponentialBackoff(() =>
       tokenContract.allowance(userAddress, to),
     );
 
@@ -57,8 +57,13 @@ export const approveToken = async ({
   // Wait for the transaction receipt
   const receipt: ethers.ContractReceipt = await tx.wait();
 
+  const allowance: ethers.BigNumber = await exponentialBackoff(() =>
+    tokenContract.allowance(userAddress, to),
+  );
+
   // Return the receipt
   return {
+    allowance,
     transaction: {
       receipt,
     },
