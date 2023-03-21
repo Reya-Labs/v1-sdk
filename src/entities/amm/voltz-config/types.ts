@@ -13,6 +13,7 @@ type PoolConfiguration = {
 
 export type NetworkConfiguration = {
   factoryAddress: string;
+  voltzPausabilityWrapper: string;
   wethAddress: string;
   apply: boolean;
   defaultMinLeverageAllowed: number;

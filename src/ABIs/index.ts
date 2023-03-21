@@ -9,3 +9,4 @@ export { abi as MellowMultiVaultRouterABI } from './MellowMultiVaultRouterABI.js
 export { abi as VoltzVaultABI } from './VoltzVault.json';
 export { abi as WethABI } from './WethABI.json';
 export { abi as Erc20RootVaultGovernanceABI } from './Erc20RootVaultGovernance.json';
+export { abi as VoltzPausabilityWrapperABI } from './VoltzPausabilityWrapper.json';
