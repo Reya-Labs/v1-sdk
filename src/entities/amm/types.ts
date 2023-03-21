@@ -73,6 +73,12 @@ export type InfoPostSwapV1 = {
   gasFeeETH: number;
 };
 
+export type InfoPostLpV1 = {
+  marginRequirement: number;
+  maxMarginWithdrawable: number;
+  gasFeeETH: number;
+};
+
 export type ExpectedApyArgs = {
   margin: number;
   position?: Position;

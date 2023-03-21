@@ -581,6 +581,8 @@ export class AMM {
     return result;
   }
 
+  // todo: ab create getInfoPostLpV1 function by making it a superset of the info post mint
+
   public async getInfoPostSwapV1({
     isFT,
     notional,
