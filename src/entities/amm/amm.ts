@@ -2068,6 +2068,8 @@ export class AMM {
     };
   }
 
+  // todo: add getPoolLpInfo
+
   public async getPoolSwapInfo(): Promise<PoolSwapInfo> {
     const poolSwapInfo: PoolSwapInfo = {
       availableNotionalFT: 0,
