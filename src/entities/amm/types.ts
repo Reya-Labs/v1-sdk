@@ -60,6 +60,12 @@ export type InfoPostSwap = {
   maxAvailableNotional?: number;
 };
 
+export type InfoPostLp = {
+  marginRequirement: number;
+  maxMarginWithdrawable: number;
+  gasFeeETH: number;
+};
+
 export type InfoPostSwapV1 = {
   marginRequirement: number;
   maxMarginWithdrawable: number;
@@ -70,12 +76,6 @@ export type InfoPostSwapV1 = {
   fixedTokenDeltaBalance: number;
   variableTokenDeltaBalance: number;
   fixedTokenDeltaUnbalanced: number;
-  gasFeeETH: number;
-};
-
-export type InfoPostLpV1 = {
-  marginRequirement: number;
-  maxMarginWithdrawable: number;
   gasFeeETH: number;
 };
 
@@ -109,6 +109,23 @@ export type AMMRolloverWithSwapArgs = {
     tickUpper: number;
     settlementBalance: number;
   };
+};
+
+// lp
+
+export type AMMLpArgs = {
+  addLiquidity: boolean;
+  fixedLow: number;
+  fixedHigh: number;
+  notional: number;
+  margin: number;
+};
+
+export type AMMGetInfoPostLpArgs = {
+  addLiquidity: boolean;
+  fixedLow: number;
+  fixedHigh: number;
+  notional: number;
 };
 
 // mint
