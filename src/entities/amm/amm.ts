@@ -60,6 +60,7 @@ import {
   AMMSwapArgs,
   AMMGetInfoPostMintArgs,
   AMMMintArgs,
+  AMMLpArgs,
   AMMBurnArgs,
   AMMUpdatePositionMarginArgs,
   AMMSettlePositionArgs,
@@ -969,7 +970,112 @@ export class AMM {
     }
   }
 
-  // lp -> mintOrBurn
+  // lp
+
+  public async lp({
+    addLiquidity,
+    fixedLow,
+    fixedHigh,
+    notional,
+    margin,
+  }: AMMLpArgs): Promise<ContractReceipt> {
+    if (!this.signer) {
+      throw new Error('Wallet not connected');
+    }
+
+    if (fixedLow >= fixedHigh) {
+      throw new Error('Lower Rate must be smaller than Upper Rate');
+    }
+
+    if (fixedLow < MIN_FIXED_RATE) {
+      throw new Error('Lower Rate is too low');
+    }
+
+    if (fixedHigh > MAX_FIXED_RATE) {
+      throw new Error('Upper Rate is too high');
+    }
+
+    if (notional <= 0) {
+      throw new Error('Amount of notional must be greater than 0');
+    }
+
+    if (margin < 0) {
+      throw new Error('Amount of margin cannot be negative');
+    }
+
+    if (!this.underlyingToken.id) {
+      throw new Error('No underlying error');
+    }
+
+    const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
+    const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
+
+    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.signer);
+    const scaledNotional = this.scale(notional);
+
+    let mintOrBurnParams: MintOrBurnParams;
+    const tempOverrides: { value?: BigNumber; gasLimit?: BigNumber } = {};
+
+    if (this.isETH && margin > 0) {
+      mintOrBurnParams = {
+        marginEngine: this.marginEngineAddress,
+        tickLower,
+        tickUpper,
+        notional: scaledNotional,
+        isMint: addLiquidity,
+        marginDelta: 0, // passed as ETH
+      };
+
+      tempOverrides.value = utils.parseEther(margin.toFixed(18).toString());
+    } else {
+      const scaledMarginDelta = this.scale(margin);
+
+      mintOrBurnParams = {
+        marginEngine: this.marginEngineAddress,
+        tickLower,
+        tickUpper,
+        notional: scaledNotional,
+        isMint: true,
+        marginDelta: scaledMarginDelta,
+      };
+    }
+
+    await peripheryContract.callStatic
+      .mintOrBurn(mintOrBurnParams, tempOverrides)
+      .catch((error) => {
+        const errorMessage = getReadableErrorMessage(error);
+        throw new Error(errorMessage);
+      });
+
+    const estimatedGas = await peripheryContract.estimateGas
+      .mintOrBurn(mintOrBurnParams, tempOverrides)
+      .catch((error) => {
+        const errorMessage = getReadableErrorMessage(error);
+        throw new Error(errorMessage);
+      });
+
+    tempOverrides.gasLimit = getGasBuffer(estimatedGas);
+
+    const lpTransaction = await peripheryContract
+      .mintOrBurn(mintOrBurnParams, tempOverrides)
+      .catch((error) => {
+        const sentryTracker = getSentryTracker();
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage('Transaction Confirmation Error');
+        throw new Error('Transaction Confirmation Error');
+      });
+
+    try {
+      const receipt = await lpTransaction.wait();
+      return receipt;
+    } catch (error) {
+      const sentryTracker = getSentryTracker();
+      sentryTracker.captureException(error);
+      sentryTracker.captureMessage('Transaction Confirmation Error');
+      throw new Error('Transaction Confirmation Error');
+    }
+  }
+
   public async getInfoPostLp({
     addLiquidity,
     fixedLow,
