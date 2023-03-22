@@ -69,6 +69,8 @@ import {
   ExpectedCashflowArgs,
   PoolSwapInfo,
   ExpectedCashflowInfo,
+  InfoPostLp,
+  AMMGetInfoPostLpArgs,
 } from './types';
 import { geckoEthToUsd } from '../../utils/priceFetch';
 import { getVariableFactor, RateOracle } from '../rateOracle';
@@ -581,8 +583,6 @@ export class AMM {
     return result;
   }
 
-  // todo: ab create getInfoPostLpV1 function by making it a superset of the info post mint
-
   public async getInfoPostSwapV1({
     isFT,
     notional,
@@ -967,6 +967,100 @@ export class AMM {
       sentryTracker.captureMessage('Transaction Confirmation Error');
       throw new Error('Transaction Confirmation Error');
     }
+  }
+
+  // lp -> mintOrBurn
+  public async getInfoPostLp({
+    addLiquidity,
+    fixedLow,
+    fixedHigh,
+    notional,
+  }: AMMGetInfoPostLpArgs): Promise<InfoPostLp> {
+    if (!this.signer) {
+      throw new Error('Wallet not connected');
+    }
+
+    if (fixedLow >= fixedHigh) {
+      throw new Error('Lower Rate must be smaller than Upper Rate');
+    }
+
+    if (fixedLow < MIN_FIXED_RATE) {
+      throw new Error('Lower Rate is too low');
+    }
+
+    if (fixedHigh > MAX_FIXED_RATE) {
+      throw new Error('Upper Rate is too high');
+    }
+
+    if (notional <= 0) {
+      throw new Error('Amount of notional must be greater than 0');
+    }
+
+    // todo: amount of notional should also be lower than what the user has already provided if removing liquidity
+
+    const signerAddress = await this.getUserAddress();
+    const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
+    const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
+
+    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.signer);
+    const scaledNotional = this.scale(notional);
+    const mintOrBurnParams: MintOrBurnParams = {
+      marginEngine: this.marginEngineAddress,
+      tickLower,
+      tickUpper,
+      notional: scaledNotional,
+      isMint: addLiquidity,
+      marginDelta: '0',
+    };
+
+    let marginRequirement = BigNumber.from('0');
+    await peripheryContract.callStatic.mintOrBurn(mintOrBurnParams).then(
+      (result) => {
+        marginRequirement = BigNumber.from(result);
+      },
+      (error) => {
+        const result = decodeInfoPostMint(error);
+        marginRequirement = result.marginRequirement;
+      },
+    );
+
+    const marginEngineContract = marginEngineFactory.connect(this.marginEngineAddress, this.signer);
+    const currentMargin = (
+      await exponentialBackoff(() =>
+        marginEngineContract.callStatic.getPosition(signerAddress, tickLower, tickUpper),
+      )
+    ).margin;
+
+    // todo: confirm logic below is correct and test!
+    let additionalMargin = 0;
+    const scaledCurrentMargin = this.descale(currentMargin);
+    const scaledMarginRequirement = this.descale(marginRequirement) * 1.01;
+
+    if (scaledMarginRequirement > scaledCurrentMargin) {
+      additionalMargin = scaledMarginRequirement - scaledCurrentMargin;
+    }
+
+    const wallet = this.signer || this.dummyWallet;
+    let lpGasUnits = 0;
+    const chainId = await wallet.getChainId();
+    if (Object.values(SupportedChainId).includes(chainId)) {
+      lpGasUnits = estimateSwapGasUnits(chainId);
+    }
+
+    const gasFeeETH = await convertGasUnitsToETH(this.provider, lpGasUnits);
+
+    const maxMarginWithdrawable = Math.max(
+      0,
+      this.descale(currentMargin.sub(marginRequirement).sub(BigNumber.from(1))),
+    );
+
+    const result: InfoPostLp = {
+      marginRequirement: additionalMargin,
+      maxMarginWithdrawable: maxMarginWithdrawable,
+      gasFeeETH,
+    };
+
+    return result;
   }
 
   // mint
