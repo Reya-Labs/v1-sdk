@@ -69,6 +69,7 @@ import {
   InfoPostSwapV1,
   ExpectedCashflowArgs,
   PoolSwapInfo,
+  PoolLpInfo,
   ExpectedCashflowInfo,
   InfoPostLp,
   AMMGetInfoPostLpArgs,
@@ -2068,7 +2069,47 @@ export class AMM {
     };
   }
 
-  // todo: add getPoolLpInfo
+  public async getPoolLpInfo(fixedLow: number, fixedHigh: number): Promise<PoolLpInfo> {
+    const poolLpInfo: PoolLpInfo = {
+      maxLeverage: 0,
+    };
+
+    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.dummyWallet);
+    const smallNotionalScaled = this.scale(1);
+    const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
+    const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
+
+    const mintOrBurnParams: MintOrBurnParams = {
+      marginEngine: this.marginEngineAddress,
+      tickLower,
+      tickUpper,
+      notional: smallNotionalScaled,
+      isMint: true,
+      marginDelta: '0',
+    };
+
+    let marginRequirement = BigNumber.from('0');
+
+    await peripheryContract.callStatic.mintOrBurn(mintOrBurnParams).then(
+      (result) => {
+        marginRequirement = BigNumber.from(result);
+      },
+      (error) => {
+        const result = decodeInfoPostMint(error);
+        marginRequirement = result.marginRequirement;
+      },
+    );
+
+    if (marginRequirement.gt(0)) {
+      // should always happen, since we connect with dummy account
+      const maxLeverage: BigNumber = BigNumber.from(smallNotionalScaled)
+        .mul(BigNumber.from(10).pow(this.underlyingToken.decimals))
+        .div(marginRequirement);
+      poolLpInfo.maxLeverage = Math.floor(this.descale(maxLeverage));
+    }
+
+    return poolLpInfo;
+  }
 
   public async getPoolSwapInfo(): Promise<PoolSwapInfo> {
     const poolSwapInfo: PoolSwapInfo = {

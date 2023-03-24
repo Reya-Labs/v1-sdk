@@ -198,6 +198,10 @@ export type PoolSwapInfo = {
   maxLeverageVT: number;
 };
 
+export type PoolLpInfo = {
+  maxLeverage: number;
+};
+
 export type ExpectedCashflowArgs = {
   position: Position | undefined;
   prospectiveSwapAvgFixedRate: number;
