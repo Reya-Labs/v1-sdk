@@ -1036,7 +1036,7 @@ export class AMM {
         tickLower,
         tickUpper,
         notional: scaledNotional,
-        isMint: true,
+        isMint: addLiquidity,
         marginDelta: scaledMarginDelta,
       };
     }
