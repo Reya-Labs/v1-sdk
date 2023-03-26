@@ -1000,10 +1000,6 @@ export class AMM {
       throw new Error('Amount of notional must be greater than 0');
     }
 
-    if (margin < 0) {
-      throw new Error('Amount of margin cannot be negative');
-    }
-
     if (!this.underlyingToken.id) {
       throw new Error('No underlying error');
     }
