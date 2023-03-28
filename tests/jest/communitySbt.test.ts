@@ -51,8 +51,8 @@ describe('getSeasonBadges: general', () => {
       id: 'testId',
       signer: ethers.provider.getSigner(),
       coingeckoKey: 'coingecko_api',
-      currentBadgesSubgraphUrl: 'current_badges_subgraph',
-      nextBadgesSubgraphUrl: 'next_badges_subgraph',
+      currentBadgesSubgraphId: 'current_badges_subgraph',
+      nextBadgesSubgraphId: 'next_badges_subgraph',
       nonProgDbUrl: 'non=prog-db',
       referralsDbUrl: 'referralsDbUrl',
       subgraphUrl: 'subgraphUrl',
@@ -589,8 +589,8 @@ describe('getReferrorBadges', () => {
       id: 'testId',
       signer: ethers.provider.getSigner(),
       coingeckoKey: 'coingecko_api',
-      currentBadgesSubgraphUrl: 'current_badges_subgraph',
-      nextBadgesSubgraphUrl: 'next_badges_subgraph',
+      currentBadgesSubgraphId: 'current_badges_subgraph',
+      nextBadgesSubgraphId: 'next_badges_subgraph',
       nonProgDbUrl: 'non=prog-db',
       referralsDbUrl: 'referralsDbUrl',
       subgraphUrl: 'subgraphUrl',
@@ -747,8 +747,8 @@ describe('end of season automation', () => {
       id: 'testId',
       signer: ethers.provider.getSigner(),
       coingeckoKey: 'coingecko_api',
-      currentBadgesSubgraphUrl: 'current_badges_subgraph',
-      nextBadgesSubgraphUrl: 'next_badges_subgraph',
+      currentBadgesSubgraphId: 'current_badges_subgraph',
+      nextBadgesSubgraphId: 'next_badges_subgraph',
       nonProgDbUrl: 'non=prog-db',
       referralsDbUrl: 'referralsDbUrl',
       subgraphUrl: 'subgraphUrl',
@@ -761,6 +761,7 @@ describe('end of season automation', () => {
   test('getSelectedSeasonBadgesUrl current', async () => {
     const selectedSubgraph = getSelectedSeasonBadgesUrl(
       2,
+      'key',
       ['a', 'b'],
       'current_badges_subgraph',
       'next_badges_subgraph',
@@ -771,6 +772,7 @@ describe('end of season automation', () => {
   test('getSelectedSeasonBadgesUrl no CID lag, next season', async () => {
     const selectedSubgraph = getSelectedSeasonBadgesUrl(
       2,
+      'key',
       ['a'],
       'current_badges_subgraph',
       'next_badges_subgraph',
@@ -781,6 +783,7 @@ describe('end of season automation', () => {
   test('getSelectedSeasonBadgesUrl no CID lag, previous season', async () => {
     const selectedSubgraph = getSelectedSeasonBadgesUrl(
       1,
+      'key',
       ['a'],
       'current_badges_subgraph',
       'next_badges_subgraph',
