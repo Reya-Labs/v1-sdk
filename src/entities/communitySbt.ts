@@ -29,8 +29,9 @@ export type SBTConstructorArgs = {
   id: string;
   signer: Signer | null;
   coingeckoKey?: string;
-  currentBadgesSubgraphUrl?: string;
-  nextBadgesSubgraphUrl?: string;
+  currentBadgesSubgraphId?: string;
+  nextBadgesSubgraphId?: string;
+  subgraphApiKey?: string;
   nonProgDbUrl?: string;
   referralsDbUrl?: string;
   subgraphUrl?: string;
@@ -93,7 +94,7 @@ export type BadgeWithStatus = {
 };
 
 export type GetBadgesStatusArgs = {
-  apiKey: string;
+  subgraphApiKey: string;
   subgraphUrl: string;
   season: number;
   potentialClaimingBadgeTypes: Array<number>;
@@ -165,8 +166,9 @@ class SBT {
   public readonly signer: Signer | null;
   public readonly provider: providers.Provider | undefined;
   public readonly coingeckoKey?: string;
-  public readonly currentBadgesSubgraphUrl?: string;
-  public readonly nextBadgesSubgraphUrl?: string;
+  public readonly currentBadgesSubgraphId?: string;
+  public readonly nextBadgesSubgraphId?: string;
+  public readonly subgraphApiKey?: string;
   public readonly nonProgDbUrl?: string;
   public readonly referralsDbUrl?: string;
   public readonly subgraphUrl?: string;
@@ -185,8 +187,9 @@ class SBT {
     id,
     signer,
     coingeckoKey,
-    currentBadgesSubgraphUrl,
-    nextBadgesSubgraphUrl,
+    currentBadgesSubgraphId,
+    nextBadgesSubgraphId,
+    subgraphApiKey,
     nonProgDbUrl,
     referralsDbUrl,
     subgraphUrl,
@@ -198,8 +201,9 @@ class SBT {
     this.signer = signer;
 
     this.coingeckoKey = coingeckoKey;
-    this.currentBadgesSubgraphUrl = currentBadgesSubgraphUrl;
-    this.nextBadgesSubgraphUrl = nextBadgesSubgraphUrl;
+    this.currentBadgesSubgraphId = currentBadgesSubgraphId;
+    this.nextBadgesSubgraphId = nextBadgesSubgraphId;
+    this.subgraphApiKey = subgraphApiKey;
     this.nonProgDbUrl = nonProgDbUrl;
     this.referralsDbUrl = referralsDbUrl;
     this.subgraphUrl = subgraphUrl;
@@ -236,9 +240,10 @@ class SBT {
 
     const selectedBadgesSubgraphUrl = getSelectedSeasonBadgesUrl(
       seasonId,
+      this.subgraphApiKey,
       this.badgesCids,
-      this.currentBadgesSubgraphUrl,
-      this.nextBadgesSubgraphUrl,
+      this.currentBadgesSubgraphId,
+      this.nextBadgesSubgraphId,
     );
 
     try {
@@ -308,9 +313,10 @@ class SBT {
 
     const selectedBadgesSubgraphUrl = getSelectedSeasonBadgesUrl(
       seasonId,
+      this.subgraphApiKey,
       this.badgesCids,
-      this.currentBadgesSubgraphUrl,
-      this.nextBadgesSubgraphUrl,
+      this.currentBadgesSubgraphId,
+      this.nextBadgesSubgraphId,
     );
 
     const claimedBadgeTypes: number[] = [];
@@ -368,9 +374,10 @@ class SBT {
     try {
       const selectedBadgesSubgraphUrl = getSelectedSeasonBadgesUrl(
         seasonId,
+        this.subgraphApiKey,
         this.badgesCids,
-        this.currentBadgesSubgraphUrl,
-        this.nextBadgesSubgraphUrl,
+        this.currentBadgesSubgraphId,
+        this.nextBadgesSubgraphId,
       );
       if (seasonEnd < DateTime.now().toSeconds() && this.badgesCids && this.badgesCids[seasonId]) {
         const badges = await this.getOldSeasonBadges({
@@ -616,7 +623,7 @@ class SBT {
 
     const scoreArgs: GetScoresArgs = {
       season: seasonId,
-      subgraphUrl: this.nextBadgesSubgraphUrl || '',
+      subgraphUrl: this.nextBadgesSubgraphId || '',
       ignoredWalletIds: this.ignoredWalletIds,
     };
 
@@ -800,7 +807,7 @@ class SBT {
     const network = await this.provider?.getNetwork();
     const networkName = network ? network.name : '';
 
-    const getURL = getEtherscanURL(networkName, args.apiKey, userAddress);
+    const getURL = getEtherscanURL(networkName, args.subgraphApiKey, userAddress);
     const resp = await axios.get(getURL);
 
     if (!resp.data) {
@@ -837,9 +844,10 @@ class SBT {
     // badges claiming status in subgraph - includes all bades earned by user in given season
     const selectedBadgesSubgraphUrl = getSelectedSeasonBadgesUrl(
       args.season,
+      this.subgraphApiKey,
       this.badgesCids,
-      this.currentBadgesSubgraphUrl,
-      this.nextBadgesSubgraphUrl,
+      this.currentBadgesSubgraphId,
+      this.nextBadgesSubgraphId,
     );
     const subgraphClaimedBadges = await SBT.claimedBadgesInSubgraph(
       userAddress,
