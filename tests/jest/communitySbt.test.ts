@@ -53,6 +53,7 @@ describe('getSeasonBadges: general', () => {
       coingeckoKey: 'coingecko_api',
       currentBadgesSubgraphId: 'current_badges_subgraph',
       nextBadgesSubgraphId: 'next_badges_subgraph',
+      subgraphApiKey: 'key',
       nonProgDbUrl: 'non=prog-db',
       referralsDbUrl: 'referralsDbUrl',
       subgraphUrl: 'subgraphUrl',
@@ -749,6 +750,7 @@ describe('end of season automation', () => {
       coingeckoKey: 'coingecko_api',
       currentBadgesSubgraphId: 'current_badges_subgraph',
       nextBadgesSubgraphId: 'next_badges_subgraph',
+      subgraphApiKey: 'key',
       nonProgDbUrl: 'non=prog-db',
       referralsDbUrl: 'referralsDbUrl',
       subgraphUrl: 'subgraphUrl',
@@ -766,7 +768,7 @@ describe('end of season automation', () => {
       'current_badges_subgraph',
       'next_badges_subgraph',
     );
-    expect(selectedSubgraph).toBe('current_badges_subgraph');
+    expect(selectedSubgraph).toBe(`https://gateway.thegraph.com/api/key/subgraphs/id/current_badges_subgraph`);
   });
 
   test('getSelectedSeasonBadgesUrl no CID lag, next season', async () => {
@@ -777,7 +779,7 @@ describe('end of season automation', () => {
       'current_badges_subgraph',
       'next_badges_subgraph',
     );
-    expect(selectedSubgraph).toBe('next_badges_subgraph');
+    expect(selectedSubgraph).toBe('https://gateway.thegraph.com/api/key/subgraphs/id/next_badges_subgraph');
   });
 
   test('getSelectedSeasonBadgesUrl no CID lag, previous season', async () => {
@@ -788,7 +790,7 @@ describe('end of season automation', () => {
       'current_badges_subgraph',
       'next_badges_subgraph',
     );
-    expect(selectedSubgraph).toBe('current_badges_subgraph');
+    expect(selectedSubgraph).toBe('https://gateway.thegraph.com/api/key/subgraphs/id/current_badges_subgraph');
   });
 
   test('get badges from ipfs', async () => {
