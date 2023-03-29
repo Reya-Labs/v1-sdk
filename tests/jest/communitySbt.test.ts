@@ -4,7 +4,7 @@ import { jest } from '@jest/globals';
 import { ethers } from 'hardhat';
 import { Badge, SeasonUser } from '@voltz-protocol/subgraph-data';
 import { ONE_DAY_IN_SECONDS } from '../../src/constants';
-import { CommunitySBT as SBT } from '../../src';
+import { CommunitySBT as SBT, SupportedChainId } from '../../src';
 import { getSelectedSeasonBadgesUrl, toMillis } from '../../src/utils/communitySbt/helpers';
 import { getSubgraphBadges } from '../../src/utils/communitySbt/getSubgraphBadges';
 import {
@@ -49,6 +49,7 @@ describe('getSeasonBadges: general', () => {
   beforeEach(() => {
     communitySbt = new SBT({
       id: 'testId',
+      chainId: SupportedChainId.goerli,
       signer: ethers.provider.getSigner(),
       coingeckoKey: 'coingecko_api',
       currentBadgesSubgraphUrl: 'current_badges_subgraph',
@@ -336,7 +337,6 @@ describe('getSeasonBadges: general', () => {
     let { topLpBadge: badge } = await communitySbt.getTopBadges(
       'wallet1',
       seasonId,
-      s1SeasonStart,
       s1SeasonEnd,
       'current_badges_subgraph',
     );
@@ -346,7 +346,6 @@ describe('getSeasonBadges: general', () => {
       await communitySbt.getTopBadges(
         'wallet2',
         seasonId,
-        s1SeasonStart,
         s1SeasonEnd,
         'current_badges_subgraph',
       )
@@ -357,7 +356,6 @@ describe('getSeasonBadges: general', () => {
       await communitySbt.getTopBadges(
         'wallet3',
         seasonId,
-        s1SeasonStart,
         s1SeasonEnd,
         'current_badges_subgraph',
       )
@@ -368,7 +366,6 @@ describe('getSeasonBadges: general', () => {
       await communitySbt.getTopBadges(
         'wallet4',
         seasonId,
-        s1SeasonStart,
         s1SeasonEnd,
         'current_badges_subgraph',
       )
@@ -379,7 +376,6 @@ describe('getSeasonBadges: general', () => {
       await communitySbt.getTopBadges(
         'wallet5',
         seasonId,
-        s1SeasonStart,
         s1SeasonEnd,
         'current_badges_subgraph',
       )
@@ -390,7 +386,6 @@ describe('getSeasonBadges: general', () => {
       await communitySbt.getTopBadges(
         'wallet6',
         seasonId,
-        s1SeasonStart,
         s1SeasonEnd,
         'current_badges_subgraph',
       )
@@ -460,7 +455,6 @@ describe('getSeasonBadges: general', () => {
     let { topTraderBadge: badge } = await communitySbt.getTopBadges(
       'wallet1',
       seasonId,
-      s1SeasonStart,
       s1SeasonEnd,
       'current_badges_subgraph',
     );
@@ -470,7 +464,6 @@ describe('getSeasonBadges: general', () => {
       await communitySbt.getTopBadges(
         'wallet2',
         seasonId,
-        s1SeasonStart,
         s1SeasonEnd,
         'current_badges_subgraph',
       )
@@ -481,7 +474,6 @@ describe('getSeasonBadges: general', () => {
       await communitySbt.getTopBadges(
         'wallet3',
         seasonId,
-        s1SeasonStart,
         s1SeasonEnd,
         'current_badges_subgraph',
       )
@@ -492,7 +484,6 @@ describe('getSeasonBadges: general', () => {
       await communitySbt.getTopBadges(
         'wallet4',
         seasonId,
-        s1SeasonStart,
         s1SeasonEnd,
         'current_badges_subgraph',
       )
@@ -503,7 +494,6 @@ describe('getSeasonBadges: general', () => {
       await communitySbt.getTopBadges(
         'wallet5',
         seasonId,
-        s1SeasonStart,
         s1SeasonEnd,
         'current_badges_subgraph',
       )
@@ -514,7 +504,6 @@ describe('getSeasonBadges: general', () => {
       await communitySbt.getTopBadges(
         'wallet6',
         seasonId,
-        s1SeasonStart,
         s1SeasonEnd,
         'current_badges_subgraph',
       )
@@ -552,7 +541,6 @@ describe('getSeasonBadges: general', () => {
     let { topTraderBadge: badge } = await communitySbt.getTopBadges(
       'wallet1',
       seasonId,
-      s1SeasonStart,
       s1SeasonEnd,
       'current_badges_subgraph',
     );
@@ -562,7 +550,6 @@ describe('getSeasonBadges: general', () => {
       await communitySbt.getTopBadges(
         'wallet2',
         seasonId,
-        s1SeasonStart,
         s1SeasonEnd,
         'current_badges_subgraph',
       )
@@ -573,7 +560,6 @@ describe('getSeasonBadges: general', () => {
       await communitySbt.getTopBadges(
         'wallet3',
         seasonId,
-        s1SeasonStart,
         s1SeasonEnd,
         'current_badges_subgraph',
       )
@@ -587,6 +573,7 @@ describe('getReferrorBadges', () => {
   beforeEach(() => {
     communitySbt = new SBT({
       id: 'testId',
+      chainId: SupportedChainId.goerli,
       signer: ethers.provider.getSigner(),
       coingeckoKey: 'coingecko_api',
       currentBadgesSubgraphUrl: 'current_badges_subgraph',
@@ -745,6 +732,7 @@ describe('end of season automation', () => {
   beforeEach(() => {
     communitySbt = new SBT({
       id: 'testId',
+      chainId: SupportedChainId.goerli,
       signer: ethers.provider.getSigner(),
       coingeckoKey: 'coingecko_api',
       currentBadgesSubgraphUrl: 'current_badges_subgraph',

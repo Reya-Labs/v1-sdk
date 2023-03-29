@@ -24,10 +24,12 @@ import { getSubgraphBadges } from '../utils/communitySbt/getSubgraphBadges';
 import { getSentryTracker } from '../init';
 import { geckoEthToUsd } from '../utils/priceFetch';
 import { getScores, GetScoresArgs } from '../utils/communitySbt/getScores';
+import { SupportedChainId } from '../types';
 
 export type SBTConstructorArgs = {
   id: string;
   signer: Signer | null;
+  chainId: SupportedChainId | null;
   coingeckoKey?: string;
   currentBadgesSubgraphUrl?: string;
   nextBadgesSubgraphUrl?: string;
@@ -163,6 +165,7 @@ export const NON_SUBGRAPH_BADGES_SEASONS: Record<number, string[]> = {
 class SBT {
   public readonly id: string;
   public readonly signer: Signer | null;
+  public readonly chainId: SupportedChainId | null;
   public readonly provider: providers.Provider | undefined;
   public readonly coingeckoKey?: string;
   public readonly currentBadgesSubgraphUrl?: string;
@@ -184,6 +187,7 @@ class SBT {
   public constructor({
     id,
     signer,
+    chainId,
     coingeckoKey,
     currentBadgesSubgraphUrl,
     nextBadgesSubgraphUrl,
@@ -206,6 +210,7 @@ class SBT {
     this.ignoredWalletIds = ignoredWalletIds ?? {};
     this.badgesCids = badgesCids;
     this.leavesCids = leavesCids;
+    this.chainId = chainId;
     if (signer) {
       this.contract = CommunitySBT__factory.connect(id, signer);
       this.provider = signer.provider;
@@ -247,7 +252,8 @@ class SBT {
         !this.coingeckoKey ||
         !this.subgraphUrl ||
         !this.provider ||
-        !this.leavesCids
+        !this.leavesCids ||
+        !this.chainId
       ) {
         throw new Error('Missing env vars');
       }
@@ -485,29 +491,35 @@ class SBT {
       });
 
       // referrer badges & non-programatic badges
-      let referroorBadges: Record<string, BadgeResponse> = {};
-      let nonProgBadges: Record<string, BadgeResponse> = {};
-      if (this.nonProgDbUrl) {
-        nonProgBadges = await this.getNonProgramaticBadges(
-          userId,
-          seasonId,
-          seasonStart,
-          seasonEnd,
-        );
-      }
-
-      if (this.referralsDbUrl && selectedBadgesSubgraphUrl) {
-        referroorBadges = await this.getReferrorBadges(userId, seasonId, selectedBadgesSubgraphUrl);
-      }
-
-      for (const badgeType of NON_SUBGRAPH_BADGES_SEASONS[seasonId]) {
-        if (nonProgBadges[badgeType]) {
-          const nonProgBadge = nonProgBadges[badgeType];
-          badgesResponse.push(nonProgBadge);
+      if (this.chainId === SupportedChainId.mainnet || this.chainId === SupportedChainId.goerli) {
+        let referroorBadges: Record<string, BadgeResponse> = {};
+        let nonProgBadges: Record<string, BadgeResponse> = {};
+        if (this.nonProgDbUrl) {
+          nonProgBadges = await this.getNonProgramaticBadges(
+            userId,
+            seasonId,
+            seasonStart,
+            seasonEnd,
+          );
         }
-        if (referroorBadges[badgeType]) {
-          const referroorBadge = referroorBadges[badgeType];
-          badgesResponse.push(referroorBadge);
+
+        if (this.referralsDbUrl && selectedBadgesSubgraphUrl) {
+          referroorBadges = await this.getReferrorBadges(
+            userId,
+            seasonId,
+            selectedBadgesSubgraphUrl,
+          );
+        }
+
+        for (const badgeType of NON_SUBGRAPH_BADGES_SEASONS[seasonId]) {
+          if (nonProgBadges[badgeType]) {
+            const nonProgBadge = nonProgBadges[badgeType];
+            badgesResponse.push(nonProgBadge);
+          }
+          if (referroorBadges[badgeType]) {
+            const referroorBadge = referroorBadges[badgeType];
+            badgesResponse.push(referroorBadge);
+          }
         }
       }
 
@@ -521,7 +533,6 @@ class SBT {
         const { topLpBadge, topTraderBadge } = await this.getTopBadges(
           userId,
           seasonId,
-          seasonStart,
           seasonEnd,
           selectedBadgesSubgraphUrl,
         );
@@ -546,7 +557,6 @@ class SBT {
   public async getTopBadges(
     userId: string,
     seasonId: number,
-    seasonStart: number,
     seasonEnd: number,
     selectedBadgesSubgraphUrl?: string,
   ): Promise<{
@@ -648,7 +658,7 @@ class SBT {
    * @dev Query the Badges subgraph to assess if the top
    * badge was claimed. Create a Badge Response with
    * the awarded time as end of season and claimed time
-   * as eithr zero if not claimed or subgrap's minted timestamp
+   * as either zero if not claimed or subgraph's minted timestamp
    */
   static async constructTopBadge(
     userId: string,
