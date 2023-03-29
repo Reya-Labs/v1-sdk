@@ -30,8 +30,10 @@ const initSubgraphURLs = (chainId: SupportedChainId): { [key in SubgraphURLEnum]
       return {
         [SubgraphURLEnum.voltzProtocol]:
           'https://api.thegraph.com/subgraphs/name/voltzprotocol/arbitrum-v1',
-        [SubgraphURLEnum.badgesCurrentSeasonNoIPFS]: '',
-        [SubgraphURLEnum.badgesRollingSeason]: '',
+        [SubgraphURLEnum.badgesCurrentSeasonNoIPFS]:
+          'https://api.thegraph.com/subgraphs/name/voltzprotocol/staging-voltz-badges-arbitrum',
+        [SubgraphURLEnum.badgesRollingSeason]:
+          'https://api.thegraph.com/subgraphs/name/voltzprotocol/staging-voltz-badges-arbitrum',
         [SubgraphURLEnum.historicalRates]:
           'https://api.thegraph.com/subgraphs/name/voltzprotocol/voltz-historical-rates-arb-one',
       };
