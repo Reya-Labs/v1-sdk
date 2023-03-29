@@ -7,9 +7,9 @@ const initSubgraphURLs = (chainId: SupportedChainId): { [key in SubgraphURLEnum]
         [SubgraphURLEnum.voltzProtocol]:
           'https://api.thegraph.com/subgraphs/name/voltzprotocol/mainnet-v1',
         [SubgraphURLEnum.badgesCurrentSeasonNoIPFS]:
-          'https://api.studio.thegraph.com/query/36721/main-v2-voltz-badges/v0.0.5',
+          'https://api.thegraph.com/subgraphs/name/voltzprotocol/main-voltz-badges',
         [SubgraphURLEnum.badgesRollingSeason]:
-          'https://api.studio.thegraph.com/query/36721/main-v2-voltz-badges/v0.0.5',
+          'https://api.thegraph.com/subgraphs/name/voltzprotocol/main-voltz-badges',
         [SubgraphURLEnum.historicalRates]:
           'https://api.studio.thegraph.com/query/36721/voltz-historical-rates-mainnet/v0.0.7',
       };
