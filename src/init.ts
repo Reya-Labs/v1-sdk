@@ -37,8 +37,9 @@ export const getProvider = (
 export const getSubgraphURL = (
   chainId: SupportedChainId,
   subgraphURLType: SubgraphURLEnum,
+  apiKey?: string,
 ): string => {
-  const subgraphURLs = initSubgraphURLs(chainId);
+  const subgraphURLs = initSubgraphURLs(chainId, apiKey);
   return subgraphURLs[subgraphURLType];
 };
 

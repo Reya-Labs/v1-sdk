@@ -1,15 +1,16 @@
 import { SubgraphURLEnum, SupportedChainId } from '../types';
 
-const initSubgraphURLs = (chainId: SupportedChainId): { [key in SubgraphURLEnum]: string } => {
+const initSubgraphURLs = (
+  chainId: SupportedChainId,
+  apiKey?: string,
+): { [key in SubgraphURLEnum]: string } => {
   switch (chainId) {
     case SupportedChainId.mainnet: {
       return {
         [SubgraphURLEnum.voltzProtocol]:
           'https://api.thegraph.com/subgraphs/name/voltzprotocol/mainnet-v1',
-        [SubgraphURLEnum.badgesCurrentSeasonNoIPFS]:
-          'https://api.studio.thegraph.com/query/36721/main-v2-voltz-badges/v0.0.5',
-        [SubgraphURLEnum.badgesRollingSeason]:
-          'https://api.studio.thegraph.com/query/36721/main-v2-voltz-badges/v0.0.5',
+        [SubgraphURLEnum.badgesCurrentSeasonNoIPFS]: `https://gateway.thegraph.com/api/${apiKey}/subgraphs/id/B4defqxwFvMHMgm5XuTzyYZyLXKhv7tbqbiDCcPLtGUq`,
+        [SubgraphURLEnum.badgesRollingSeason]: `https://gateway.thegraph.com/api/${apiKey}/subgraphs/id/B4defqxwFvMHMgm5XuTzyYZyLXKhv7tbqbiDCcPLtGUq`,
         [SubgraphURLEnum.historicalRates]:
           'https://api.studio.thegraph.com/query/36721/voltz-historical-rates-mainnet/v0.0.7',
       };
