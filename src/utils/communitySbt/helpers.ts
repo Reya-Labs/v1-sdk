@@ -91,18 +91,16 @@ export function getLeavesIpfsUri(seasonId: number, cidsRecord: Array<string>): s
 
 export function getSelectedSeasonBadgesUrl(
   seasonId: number,
-  apiKey?: string,
   badgesCids?: string[],
-  currentId?: string,
-  nextId?: string,
+  currentUrl?: string,
+  nextUrl?: string,
 ): string {
-  let selectedBadgesSubgraphId = currentId;
+  let selectedBadgesSubgraphUrl = currentUrl;
   if (badgesCids && badgesCids?.length < seasonId) {
-    selectedBadgesSubgraphId = nextId;
+    selectedBadgesSubgraphUrl = nextUrl;
   }
-  if (!selectedBadgesSubgraphId || !badgesCids || !apiKey) {
+  if (!selectedBadgesSubgraphUrl || !badgesCids) {
     throw new Error(`Unable to find badges subgraph URL`);
   }
-  const selectedBadgesSubgraphUrl = `https://gateway.thegraph.com/api/${apiKey}/subgraphs/id/${selectedBadgesSubgraphId}`;
   return selectedBadgesSubgraphUrl;
 }
