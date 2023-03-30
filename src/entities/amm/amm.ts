@@ -73,6 +73,7 @@ import {
   ExpectedCashflowInfo,
   InfoPostLp,
   AMMGetInfoPostLpArgs,
+  AMMGetSettlementCashflowArgs,
 } from './types';
 import { geckoEthToUsd } from '../../utils/priceFetch';
 import { getVariableFactor, RateOracle } from '../rateOracle';
@@ -1494,6 +1495,26 @@ export class AMM {
       sentryTracker.captureMessage('Transaction Confirmation Error');
       throw new Error('Transaction Confirmation Error');
     }
+  }
+
+  // settlement cashflow
+
+  public async getSettlementCashflow({
+    fixedTokenBalance,
+    variableTokenBalance,
+  }: AMMGetSettlementCashflowArgs): Promise<number> {
+    const fixedFactor =
+      (this.endDateTime.toMillis() - this.startDateTime.toMillis()) / ONE_YEAR_IN_SECONDS / 1000;
+
+    const { scaled: variableFactor } = await this.variableFactor(
+      this.termStartTimestampInMS,
+      this.termEndTimestampInMS,
+    );
+
+    const settlementCashflow =
+      fixedTokenBalance * fixedFactor * 0.01 + variableTokenBalance * variableFactor;
+
+    return settlementCashflow;
   }
 
   // settlement

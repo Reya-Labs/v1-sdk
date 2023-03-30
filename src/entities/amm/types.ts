@@ -171,6 +171,12 @@ export type AMMUpdatePositionMarginArgs = {
   marginDelta: number;
 };
 
+// settlement cashflow
+export type AMMGetSettlementCashflowArgs = {
+  fixedTokenBalance: number;
+  variableTokenBalance: number;
+};
+
 // settlement
 
 export type AMMSettlePositionArgs = {
