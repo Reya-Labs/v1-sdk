@@ -4,7 +4,7 @@ import { IERC20MinimalABI } from '../../ABIs';
 import { MaxUint256Bn, getGasBuffer } from '../../constants';
 import { getTokenInfo } from '../getTokenInfo';
 import { exponentialBackoff } from '../../utils/retry';
-import { scale } from '../../utils/scaling';
+import { scale, descale } from '../../utils/scaling';
 
 type ApproveTokenArgs = {
   tokenId: string;
@@ -14,7 +14,7 @@ type ApproveTokenArgs = {
 };
 
 type ApproveTokenResponse = {
-  allowance: BigNumber;
+  allowance: number; // descaled and capped at Number.MAX_SAFE_INTEGER
   transaction: {
     receipt: ethers.ContractReceipt;
   };
@@ -61,9 +61,16 @@ export const approveToken = async ({
     tokenContract.allowance(userAddress, to),
   );
 
+  let descaledCappedAllowance;
+  if (allowance.gt(scale(Number.MAX_SAFE_INTEGER, tokenDecimals))) {
+    descaledCappedAllowance = Number.MAX_SAFE_INTEGER;
+  } else {
+    descaledCappedAllowance = descale(allowance, tokenDecimals);
+  }
+
   // Return the receipt
   return {
-    allowance,
+    allowance: descaledCappedAllowance,
     transaction: {
       receipt,
     },

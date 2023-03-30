@@ -1613,9 +1613,9 @@ export class AMM {
     forceErc20Check: boolean;
     chainId: SupportedChainId;
     alchemyApiKey: string;
-  }): Promise<BigNumber> {
+  }): Promise<number> {
     if (!forceErc20Check && this.isETH) {
-      return TresholdApprovalBn;
+      return Number.MAX_SAFE_INTEGER;
     }
 
     if (!this.signer) {
@@ -1681,7 +1681,7 @@ export class AMM {
     }
   }
 
-  public async approveUnderlyingTokenForPeripheryV1(): Promise<BigNumber> {
+  public async approveUnderlyingTokenForPeripheryV1(): Promise<number> {
     if (!this.underlyingToken.id) {
       throw new Error('No underlying token');
     }
