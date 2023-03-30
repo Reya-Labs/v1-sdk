@@ -82,6 +82,15 @@ export const getMarket = (protocolId: number): Market => {
         },
       };
 
+    case 9:
+      return {
+        name: 'Aave',
+        tags: {
+          isBorrowing: true,
+          isAaveV3: true,
+        },
+      };
+
     default:
       break;
   }

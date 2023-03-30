@@ -92,7 +92,7 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
           general: true,
           trader: true,
         },
-        traderWithdrawable: false,
+        traderWithdrawable: true,
       },
 
       {
@@ -113,6 +113,27 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
           general: true,
           trader: true,
         },
+        traderWithdrawable: true,
+        isAaveV3: true,
+      },
+
+      {
+        name: 'aUSDC_v12',
+        id: '0xf222043c6ebd7cd5d2a055333897dbb215cbbeb7', // vamm address
+        show: {
+          general: true,
+          trader: true,
+        },
+        traderWithdrawable: false,
+      },
+
+      {
+        name: 'aUSDC_v13',
+        id: '0x14441c6dae81d4897921ef0134d119076a0741a7', // vamm address
+        show: {
+          general: true,
+          trader: true,
+        },
         traderWithdrawable: false,
         isAaveV3: true,
       },
@@ -121,6 +142,16 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
       {
         name: 'borrow_aUSDC_v1',
         id: '0x0f91a255b5ba8e59f3b97b1ede91dec88bcc17eb', // vamm address
+        show: {
+          general: true,
+          trader: true,
+        },
+        traderWithdrawable: true,
+      },
+
+      {
+        name: 'borrow_aUSDC_v2',
+        id: '0xb1842fe197320359271d061b42795d7ce4b77513', // vamm address
         show: {
           general: true,
           trader: true,
@@ -163,7 +194,7 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
           general: true,
           trader: true,
         },
-        traderWithdrawable: false,
+        traderWithdrawable: true,
       },
 
       // cDAI pools
@@ -201,7 +232,7 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
           general: true,
           trader: true,
         },
-        traderWithdrawable: false,
+        traderWithdrawable: true,
       },
 
       // stETH pools
@@ -217,6 +248,15 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
       {
         name: 'stETH_v2',
         id: '0x05cae5fe1faab605f795b018be6ba979c2c89cdb', // vamm address
+        show: {
+          general: true,
+          trader: true,
+        },
+        traderWithdrawable: true,
+      },
+      {
+        name: 'stETH_v3',
+        id: '0xb7edbed9c7ec58fb781a972091d94846a25097e9', // vamm address
         show: {
           general: true,
           trader: true,
@@ -237,6 +277,15 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
       {
         name: 'rETH_v2',
         id: '0xe07324a394acfff8fe24a09c3f2e2bd62e929efb', // vamm address
+        show: {
+          general: true,
+          trader: true,
+        },
+        traderWithdrawable: true,
+      },
+      {
+        name: 'rETH_v3',
+        id: '0x0d05e6cf8cd82b0447eff4f2ca732d02308aa848', // vamm address
         show: {
           general: true,
           trader: true,
@@ -272,6 +321,15 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
           general: true,
           trader: true,
         },
+        traderWithdrawable: true,
+      },
+      {
+        name: 'borrow_aETH_v3',
+        id: '0xf6421486af95c3ea6c4555554d55ef0c3a2048ba', // vamm address
+        show: {
+          general: true,
+          trader: true,
+        },
         traderWithdrawable: false,
       },
 
@@ -283,6 +341,15 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
           general: true,
           trader: true,
         },
+        traderWithdrawable: true,
+      },
+      {
+        name: 'borrow_cUSDT_v2',
+        id: '0x67665a9ed20849b48a89c267a69fe70c4de8af56', // vamm address
+        show: {
+          general: true,
+          trader: true,
+        },
         traderWithdrawable: false,
       },
 
@@ -290,6 +357,15 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
       {
         name: 'borrow_aUSDT_v1',
         id: '0x9a37bcc8ff3055d7223b169bc9c9fe2157a1b60e', // vamm address
+        show: {
+          general: true,
+          trader: true,
+        },
+        traderWithdrawable: true,
+      },
+      {
+        name: 'borrow_aUSDT_v2',
+        id: '0xacf59c72660d1e6629a721fd958f7a8c64379835', // vamm address
         show: {
           general: true,
           trader: true,
@@ -313,6 +389,41 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
     apply: true,
     defaultMinLeverageAllowed: 10,
     pools: [
+      // aUSDC pools
+      {
+        name: 'aUSDC_v1',
+        id: '0x1d7E4d7c1629c9D6E3Bb6a344496b1B782c9ca9a', // vamm address
+        show: {
+          general: true,
+          trader: true,
+        },
+        traderWithdrawable: true,
+        isAaveV3: true,
+      },
+      {
+        name: 'aUSDC_v2',
+        id: '0x0c6dbf063fd1effe971ecf4091a40064936eae35', // vamm address
+        show: {
+          general: true,
+          trader: true,
+        },
+        traderWithdrawable: false,
+        isAaveV3: true,
+      },
+
+      // borrow aUSDC pools
+      {
+        name: 'borrow_aUSDC_v1',
+        id: '0x8ce24926b49f9e1b97dc21109ed8ab67cf0293c2', // vamm address
+        show: {
+          general: true,
+          trader: true,
+        },
+        traderWithdrawable: false,
+        isAaveV3: true,
+      },
+
+      // GLP pools
       {
         name: 'glpETH_v1',
         id: '0xB69c2b77C844b55F9924242df4299a1598753320', // vamm address
@@ -330,16 +441,6 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
           trader: true,
         },
         traderWithdrawable: false,
-      },
-      {
-        name: 'aUSDC_v1',
-        id: '0x1d7E4d7c1629c9D6E3Bb6a344496b1B782c9ca9a', // vamm address
-        show: {
-          general: true,
-          trader: true,
-        },
-        traderWithdrawable: false,
-        isAaveV3: true,
       },
     ],
   },

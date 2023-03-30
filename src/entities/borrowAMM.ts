@@ -38,7 +38,7 @@ class BorrowAMM {
     this.amm = amm;
 
     const protocolId = this.amm.rateOracle.protocolId;
-    if (protocolId !== 6 && protocolId !== 5) {
+    if (protocolId !== 6 && protocolId !== 5 && protocolId !== 9) {
       throw new Error('Not a borrow market');
     }
   }
