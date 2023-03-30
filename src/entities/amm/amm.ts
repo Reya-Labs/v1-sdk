@@ -1927,7 +1927,8 @@ export class AMM {
         return borrowApy;
       }
 
-      case 7: {
+      case 7:
+      case 9: {
         if (!this.underlyingToken.id) {
           throw new Error('No underlying error');
         }
