@@ -644,9 +644,16 @@ class SBT {
       };
     }
 
+    const selectedBadgesSubgraphUrl = getSelectedSeasonBadgesUrl(
+      seasonId,
+      this.badgesCids,
+      this.currentBadgesSubgraphUrl,
+      this.nextBadgesSubgraphUrl,
+    );
+
     const scoreArgs: GetScoresArgs = {
       season: seasonId,
-      subgraphUrl: this.nextBadgesSubgraphUrl || '',
+      subgraphUrl: selectedBadgesSubgraphUrl || '',
       ignoredWalletIds: this.ignoredWalletIds,
     };
 
