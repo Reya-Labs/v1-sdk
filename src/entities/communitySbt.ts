@@ -108,8 +108,8 @@ export type NonProgramaticBadgeResponse = {
 };
 
 export const TOP_BADGES_VARIANT: Record<string, string[]> = {
-  trader: ['15', '31', '56'],
-  liquidityProvider: ['12', '28', '53'],
+  trader: ['15', '31', '56', '79'],
+  liquidityProvider: ['12', '28', '53', '76'],
 };
 
 export const NON_PROGRAMATIC_BADGES_VARIANT: Record<number, Record<string, string>> = {

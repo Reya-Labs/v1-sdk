@@ -9,7 +9,7 @@ const initSubgraphURLs = (chainId: SupportedChainId): { [key in SubgraphURLEnum]
         [SubgraphURLEnum.badgesCurrentSeasonNoIPFS]:
           'https://api.thegraph.com/subgraphs/name/voltzprotocol/main-voltz-badges',
         [SubgraphURLEnum.badgesRollingSeason]:
-          'https://api.thegraph.com/subgraphs/name/voltzprotocol/main-voltz-badges',
+          'https://api.thegraph.com/subgraphs/name/voltzprotocol/main-badges-season-3-mainnet',
         [SubgraphURLEnum.historicalRates]:
           'https://api.studio.thegraph.com/query/36721/voltz-historical-rates-mainnet/v0.0.7',
       };
@@ -31,9 +31,9 @@ const initSubgraphURLs = (chainId: SupportedChainId): { [key in SubgraphURLEnum]
         [SubgraphURLEnum.voltzProtocol]:
           'https://api.thegraph.com/subgraphs/name/voltzprotocol/arbitrum-v1',
         [SubgraphURLEnum.badgesCurrentSeasonNoIPFS]:
-          'https://api.thegraph.com/subgraphs/name/voltzprotocol/staging-voltz-badges-arbitrum',
+          'https://api.thegraph.com/subgraphs/name/voltzprotocol/main-badges-season-3-arbitrum',
         [SubgraphURLEnum.badgesRollingSeason]:
-          'https://api.thegraph.com/subgraphs/name/voltzprotocol/staging-voltz-badges-arbitrum',
+          'https://api.thegraph.com/subgraphs/name/voltzprotocol/main-badges-season-3-arbitrum',
         [SubgraphURLEnum.historicalRates]:
           'https://api.thegraph.com/subgraphs/name/voltzprotocol/voltz-historical-rates-arb-one',
       };
