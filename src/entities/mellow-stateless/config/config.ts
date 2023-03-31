@@ -43,10 +43,10 @@ const networkConfigurations: { [key in SupportedChainId]: NetworkConfiguration }
           },
           {
             address: '0xfd89E1274D96884381601D533e8d051bCf20fC71',
-            weight: 50,
+            weight: 0,
             pools: ['AAVE - USDC BORROW'],
             estimatedHistoricApy: [0, 20],
-            withdrawable: false,
+            withdrawable: true,
           },
           {
             address: '0x87065A6e0e6609583976404fd33F670FaA310390',
@@ -57,10 +57,10 @@ const networkConfigurations: { [key in SupportedChainId]: NetworkConfiguration }
           },
           {
             address: '0xedF3cb10dE6Ad6449B9F9Ee561f18e50b6B79234',
-            weight: 50,
+            weight: 0,
             pools: ['AAVE - USDC LEND'],
             estimatedHistoricApy: [0, 20],
-            withdrawable: false,
+            withdrawable: true,
           },
           {
             address: '0x9Fe673EAefd59281679dad8eaf1a86212ab24654',
@@ -68,6 +68,13 @@ const networkConfigurations: { [key in SupportedChainId]: NetworkConfiguration }
             pools: ['AAVE - USDC LEND'],
             estimatedHistoricApy: [0, 20],
             withdrawable: true,
+          },
+          {
+            address: '0xd5817100223ad11919b0effd866459e96ae37b96',
+            weight: 100,
+            pools: ['AAVE - USDC LEND', 'AAVE - USDC BORROW'],
+            estimatedHistoricApy: [0, 20],
+            withdrawable: false,
           },
         ],
       },
@@ -90,8 +97,16 @@ const networkConfigurations: { [key in SupportedChainId]: NetworkConfiguration }
           },
           {
             address: '0x5e6f99876b709E0C8384dd2A7F9F12771E00d240',
-            weight: 100,
+            weight: 0,
             pools: ['LIDO - ETH', 'ROCKET - ETH'],
+            estimatedHistoricApy: [-16, 6],
+            withdrawable: true,
+          },
+
+          {
+            address: '0x074764cdb38c2ad8e90bc56fefd06061d35e345d',
+            weight: 100,
+            pools: ['LIDO - ETH', 'ROCKET - ETH', 'AAVE - ETH BORROW'],
             estimatedHistoricApy: [-16, 6],
             withdrawable: false,
           },
@@ -116,10 +131,10 @@ const networkConfigurations: { [key in SupportedChainId]: NetworkConfiguration }
           },
           {
             address: '0x3AF84EC55b9A696C650C2a7Cab7D2555dbf45892',
-            weight: 100,
+            weight: 0,
             pools: ['AAVE - DAI LEND', 'COMPOUND - DAI LEND'],
             estimatedHistoricApy: [1, 4],
-            withdrawable: false,
+            withdrawable: true,
           },
         ],
       },
@@ -135,15 +150,22 @@ const networkConfigurations: { [key in SupportedChainId]: NetworkConfiguration }
         vaults: [
           {
             address: '0x6F0e45AA2B7D936F88166F92Be82AB162788Ed9b',
-            weight: 80,
+            weight: 0,
             pools: ['COMPOUND - USDT BORROW'],
             estimatedHistoricApy: [3, 32],
-            withdrawable: false,
+            withdrawable: true,
           },
           {
             address: '0x336ce0084D1aCF7c32578924b13F7abCed47Ac3e',
-            weight: 20,
+            weight: 0,
             pools: ['AAVE - USDT BORROW'],
+            estimatedHistoricApy: [3, 32],
+            withdrawable: true,
+          },
+          {
+            address: '0x3223d78ee640cf3c5fc56605151d13c37bfb3fd5',
+            weight: 100,
+            pools: ['COMPOUND - USDT BORROW', 'AAVE - USDT BORROW'],
             estimatedHistoricApy: [3, 32],
             withdrawable: false,
           },
