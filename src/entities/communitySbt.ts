@@ -108,8 +108,8 @@ export type NonProgramaticBadgeResponse = {
 };
 
 export const TOP_BADGES_VARIANT: Record<string, string[]> = {
-  trader: ['15', '31', '56'],
-  liquidityProvider: ['12', '28', '53'],
+  trader: ['15', '31', '56', '79'],
+  liquidityProvider: ['12', '28', '53', '76'],
 };
 
 export const NON_PROGRAMATIC_BADGES_VARIANT: Record<number, Record<string, string>> = {
@@ -123,6 +123,11 @@ export const NON_PROGRAMATIC_BADGES_VARIANT: Record<number, Record<string, strin
     governorz: '58',
     senatorz: '59',
   },
+  3: {
+    diplomatz: '80',
+    governorz: '81',
+    senatorz: '82',
+  },
 };
 
 export const REFERROR_BADGES_VARIANT: Record<number, Record<string, string>> = {
@@ -135,6 +140,11 @@ export const REFERROR_BADGES_VARIANT: Record<number, Record<string, string>> = {
     referror: '60',
     notionalInfluencer: '61',
     whaleWhisperer: '62',
+  },
+  3: {
+    referror: '83',
+    notionalInfluencer: '84',
+    whaleWhisperer: '85',
   },
 };
 
@@ -159,6 +169,16 @@ export const NON_SUBGRAPH_BADGES_SEASONS: Record<number, string[]> = {
     REFERROR_BADGES_VARIANT[2].referror,
     REFERROR_BADGES_VARIANT[2].notionalInfluencer,
     REFERROR_BADGES_VARIANT[2].whaleWhisperer,
+  ],
+  3: [
+    TOP_BADGES_VARIANT.trader[3],
+    TOP_BADGES_VARIANT.liquidityProvider[3],
+    NON_PROGRAMATIC_BADGES_VARIANT[3].diplomatz,
+    NON_PROGRAMATIC_BADGES_VARIANT[3].governorz,
+    NON_PROGRAMATIC_BADGES_VARIANT[3].senatorz,
+    REFERROR_BADGES_VARIANT[3].referror,
+    REFERROR_BADGES_VARIANT[3].notionalInfluencer,
+    REFERROR_BADGES_VARIANT[3].whaleWhisperer,
   ],
 };
 
@@ -624,9 +644,16 @@ class SBT {
       };
     }
 
+    const selectedBadgesSubgraphUrl = getSelectedSeasonBadgesUrl(
+      seasonId,
+      this.badgesCids,
+      this.currentBadgesSubgraphUrl,
+      this.nextBadgesSubgraphUrl,
+    );
+
     const scoreArgs: GetScoresArgs = {
       season: seasonId,
-      subgraphUrl: this.nextBadgesSubgraphUrl || '',
+      subgraphUrl: selectedBadgesSubgraphUrl || '',
       ignoredWalletIds: this.ignoredWalletIds,
     };
 
