@@ -171,24 +171,39 @@ class Position {
     tickLower: number,
     tickUpper: number,
   ) {
-    let res = null;
-
-    try {
-      res = await axios.get(
-        `https://voltz-indexer-3wpwbm66ca-nw.a.run.app/api/positions/
-        ${vammAddress}/
-        ${ownerAddress}/
-        ${tickLower}/
-        ${tickUpper}`,
-      );
-      res = res.data;
-    } catch (e) {
-      const sentryTracker = getSentryTracker();
-      sentryTracker.captureMessage('GCloud Positions API unavailable');
+    // todo: bring back the implementation
+    return {
+      realizedPnLFromSwaps: 100.3,
+      unrealizedPnLFromSwaps: -50.5
     }
-
-    return res;
   }
+
+  // private async getPositionPnLGCloud(
+  //   vammAddress: string,
+  //   ownerAddress: string,
+  //   tickLower: number,
+  //   tickUpper: number,
+  // ) {
+  //   let res = null;
+    
+  //   const reqUrl = `
+  //   https://voltz-indexer-3wpwbm66ca-nw.a.run.app/api/positions/
+  //   ${vammAddress}/
+  //   ${ownerAddress}/
+  //   ${tickLower}/
+  //   ${tickUpper}`;
+
+  //   try {
+
+  //     res = await axios.get(reqUrl);
+
+  //     res = res.data;
+  //   } catch (e) {
+  //     const sentryTracker = getSentryTracker();
+  //     sentryTracker.captureMessage('GCloud Positions API unavailable');
+  //   }
+  //   return res;
+  // }
 
   public getNotionalFromLiquidity(liquidity: BigNumber): number {
     const sqrtPriceLowerX96 = new Price(Q96, TickMath.getSqrtRatioAtTick(this.tickLower));
@@ -262,19 +277,17 @@ class Position {
             this.estimatedFutureCashflow = cashflowInfo.estimatedFutureCashflow;
             this.estimatedTotalCashflow = cashflowInfo.estimatedTotalCashflow;
 
-            // todo: add chain id as well
+            // todo: add chain id as well + check if we need exponential backoff here
             const positionPnLJson = await this.getPositionPnLGCloud(
               this.amm.id,
               this.owner,
               this.tickLower,
               this.tickUpper,
             );
-
-            if (positionPnLJson !== null) {
-              this.realizedPnLFromSwaps = positionPnLJson['realizedPnLFromSwaps'];
-              this.unrealizedPnLFromSwaps = positionPnLJson['unrealizedPnLFromSwaps'];
-            }
-
+  
+            this.realizedPnLFromSwaps = positionPnLJson.realizedPnLFromSwaps;
+            this.unrealizedPnLFromSwaps = positionPnLJson.unrealizedPnLFromSwaps;
+          
             // Get receiving and paying rates
             const avgFixedRate = cashflowInfo.avgFixedRate;
             const avgVariableRate = (await this.amm.getInstantApy()) * 100;
