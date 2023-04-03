@@ -5,3 +5,4 @@ export * from './detectNetwork';
 export * from './getChainInfo';
 export * from './getViewOnEtherScanLink';
 export * from './token';
+export * from './getNotionalFromLiquidity';
