@@ -81,6 +81,13 @@ class Position {
   public accruedCashflow = 0;
   public accruedCashflowInUSD = 0;
 
+  // pnl
+  public realizedPnLFromSwaps = 0;
+  public realizedPnLFromSwapsInUSD = 0;
+
+  public unrealizedPnLFromSwaps = 0;
+  public unrealizedPnLFromSwapsInUSD = 0;
+
   public estimatedFutureCashflow: (estimatedApy: number) => number = () => 0;
   public estimatedFutureCashflowInUSD: (estimatedApy: number) => number = () => 0;
 
@@ -229,6 +236,15 @@ class Position {
             this.estimatedFutureCashflow = cashflowInfo.estimatedFutureCashflow;
             this.estimatedTotalCashflow = cashflowInfo.estimatedTotalCashflow;
 
+            // todo: add chain id as well
+            const positionPnLJson = await getPositionPnLGCloud(
+              this.amm.id,
+              this.owner,
+              this.tickLower,
+              this.tickUpper,
+            );
+            this.realizedPnLFromSwaps = positionPnLJson['realizedPnLFromSwaps'];
+            this.unrealizedPnLFromSwaps = positionPnLJson['unrealizedPnLFromSwaps'];
             // Get receiving and paying rates
             const avgFixedRate = cashflowInfo.avgFixedRate;
             const avgVariableRate = (await this.amm.getInstantApy()) * 100;
@@ -317,6 +333,9 @@ class Position {
       this.marginInUSD = this.margin * usdExchangeRate;
       this.feesInUSD = this.fees * usdExchangeRate;
       this.accruedCashflowInUSD = this.accruedCashflow * usdExchangeRate;
+      this.realizedPnLFromSwapsInUSD = this.realizedPnLFromSwaps * usdExchangeRate;
+      this.unrealizedPnLFromSwapsInUSD = this.unrealizedPnLFromSwaps * usdExchangeRate;
+
       this.estimatedFutureCashflowInUSD = (estimatedApy) =>
         this.estimatedFutureCashflow(estimatedApy) * usdExchangeRate;
       this.estimatedTotalCashflowInUSD = (estimatedApy) =>
