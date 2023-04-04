@@ -7,7 +7,7 @@ const initSubgraphURLs = (chainId: SupportedChainId): { [key in SubgraphURLEnum]
         [SubgraphURLEnum.voltzProtocol]:
           'https://api.thegraph.com/subgraphs/name/voltzprotocol/mainnet-v1',
         [SubgraphURLEnum.badgesCurrentSeasonNoIPFS]:
-          'https://api.thegraph.com/subgraphs/name/voltzprotocol/main-voltz-badges',
+          'https://api.thegraph.com/subgraphs/name/voltzprotocol/main-badges-season-3-mainnet',
         [SubgraphURLEnum.badgesRollingSeason]:
           'https://api.thegraph.com/subgraphs/name/voltzprotocol/main-badges-season-3-mainnet',
         [SubgraphURLEnum.historicalRates]:
