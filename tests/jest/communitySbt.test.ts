@@ -343,52 +343,27 @@ describe('getSeasonBadges: general', () => {
     expect(badge).toBe(undefined);
 
     badge = (
-      await communitySbt.getTopBadges(
-        'wallet2',
-        seasonId,
-        s1SeasonEnd,
-        'current_badges_subgraph',
-      )
+      await communitySbt.getTopBadges('wallet2', seasonId, s1SeasonEnd, 'current_badges_subgraph')
     ).topLpBadge;
     expect(badge?.badgeType).toBe('28');
 
     badge = (
-      await communitySbt.getTopBadges(
-        'wallet3',
-        seasonId,
-        s1SeasonEnd,
-        'current_badges_subgraph',
-      )
+      await communitySbt.getTopBadges('wallet3', seasonId, s1SeasonEnd, 'current_badges_subgraph')
     ).topLpBadge;
     expect(badge?.badgeType).toBe('28');
 
     badge = (
-      await communitySbt.getTopBadges(
-        'wallet4',
-        seasonId,
-        s1SeasonEnd,
-        'current_badges_subgraph',
-      )
+      await communitySbt.getTopBadges('wallet4', seasonId, s1SeasonEnd, 'current_badges_subgraph')
     ).topLpBadge;
     expect(badge?.badgeType).toBe('28');
 
     badge = (
-      await communitySbt.getTopBadges(
-        'wallet5',
-        seasonId,
-        s1SeasonEnd,
-        'current_badges_subgraph',
-      )
+      await communitySbt.getTopBadges('wallet5', seasonId, s1SeasonEnd, 'current_badges_subgraph')
     ).topLpBadge;
     expect(badge?.badgeType).toBe('28');
 
     badge = (
-      await communitySbt.getTopBadges(
-        'wallet6',
-        seasonId,
-        s1SeasonEnd,
-        'current_badges_subgraph',
-      )
+      await communitySbt.getTopBadges('wallet6', seasonId, s1SeasonEnd, 'current_badges_subgraph')
     ).topLpBadge;
     expect(badge?.badgeType).toBe('28');
   });
@@ -461,52 +436,27 @@ describe('getSeasonBadges: general', () => {
     expect(badge).toBe(undefined);
 
     badge = (
-      await communitySbt.getTopBadges(
-        'wallet2',
-        seasonId,
-        s1SeasonEnd,
-        'current_badges_subgraph',
-      )
+      await communitySbt.getTopBadges('wallet2', seasonId, s1SeasonEnd, 'current_badges_subgraph')
     ).topTraderBadge;
     expect(badge?.badgeType).toBe('31');
 
     badge = (
-      await communitySbt.getTopBadges(
-        'wallet3',
-        seasonId,
-        s1SeasonEnd,
-        'current_badges_subgraph',
-      )
+      await communitySbt.getTopBadges('wallet3', seasonId, s1SeasonEnd, 'current_badges_subgraph')
     ).topTraderBadge;
     expect(badge?.badgeType).toBe('31');
 
     badge = (
-      await communitySbt.getTopBadges(
-        'wallet4',
-        seasonId,
-        s1SeasonEnd,
-        'current_badges_subgraph',
-      )
+      await communitySbt.getTopBadges('wallet4', seasonId, s1SeasonEnd, 'current_badges_subgraph')
     ).topTraderBadge;
     expect(badge?.badgeType).toBe('31');
 
     badge = (
-      await communitySbt.getTopBadges(
-        'wallet5',
-        seasonId,
-        s1SeasonEnd,
-        'current_badges_subgraph',
-      )
+      await communitySbt.getTopBadges('wallet5', seasonId, s1SeasonEnd, 'current_badges_subgraph')
     ).topTraderBadge;
     expect(badge?.badgeType).toBe('31');
 
     badge = (
-      await communitySbt.getTopBadges(
-        'wallet6',
-        seasonId,
-        s1SeasonEnd,
-        'current_badges_subgraph',
-      )
+      await communitySbt.getTopBadges('wallet6', seasonId, s1SeasonEnd, 'current_badges_subgraph')
     ).topTraderBadge;
     expect(badge?.badgeType).toBe('31');
   });
@@ -547,22 +497,12 @@ describe('getSeasonBadges: general', () => {
     expect(badge?.badgeType).toBe('31');
 
     badge = (
-      await communitySbt.getTopBadges(
-        'wallet2',
-        seasonId,
-        s1SeasonEnd,
-        'current_badges_subgraph',
-      )
+      await communitySbt.getTopBadges('wallet2', seasonId, s1SeasonEnd, 'current_badges_subgraph')
     ).topTraderBadge;
     expect(badge?.badgeType).toBe('31');
 
     badge = (
-      await communitySbt.getTopBadges(
-        'wallet3',
-        seasonId,
-        s1SeasonEnd,
-        'current_badges_subgraph',
-      )
+      await communitySbt.getTopBadges('wallet3', seasonId, s1SeasonEnd, 'current_badges_subgraph')
     ).topTraderBadge;
     expect(badge).toBe(undefined);
   });

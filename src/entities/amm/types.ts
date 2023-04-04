@@ -1,6 +1,6 @@
 import { providers, Signer } from 'ethers';
 import { Price } from '../fractions/price';
-import Position from '../position';
+import { Position } from '../position';
 import { RateOracle } from '../rateOracle';
 import Token from '../token';
 

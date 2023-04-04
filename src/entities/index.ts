@@ -1,6 +1,6 @@
 export { default as BorrowAMM } from './borrowAMM';
 export { BorrowAMMConstructorArgs, BorrowSwapInfo } from './borrowAMM';
-export { default as Position } from './position';
+export * from './position';
 export { default as Token } from './token';
 export { RateOracle } from './rateOracle';
 export {

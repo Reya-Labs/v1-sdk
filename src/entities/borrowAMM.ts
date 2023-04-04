@@ -8,7 +8,7 @@ import {
   CompoundBorrowRateOracle__factory,
   AaveBorrowRateOracle__factory,
 } from '../typechain';
-import Position from './position';
+import { Position } from './position';
 import { geckoEthToUsd } from '../utils/priceFetch';
 import { AMM, InfoPostSwap, AMMGetInfoPostSwapArgs } from './amm';
 

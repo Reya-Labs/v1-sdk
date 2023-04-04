@@ -10,6 +10,7 @@ import { OptimiserInfo } from '../../../src/entities/mellow-stateless/getters/ty
 import { getAllMellowProducts } from '../../../src/entities/mellow-stateless/getters';
 import { withSigner } from '../../utils';
 import * as priceFetch from '../../../src/utils/priceFetch';
+import alchemyApiKeyToURL from '../../../src/utils/alchemyApiKeyToURL';
 
 const { provider } = waffle;
 
@@ -21,7 +22,7 @@ describe('Mellow Optimiser:GetOptimisers', () => {
         {
           chainId: 5,
           forking: {
-            jsonRpcUrl: process.env.GOERLI_URL,
+            jsonRpcUrl: alchemyApiKeyToURL(5, process.env.ALCHEMY_API_KEY || ''),
             blockNumber,
           },
         },
@@ -58,7 +59,12 @@ describe('Mellow Optimiser:GetOptimisers', () => {
 
     before(async () => {
       await mock();
-      const mellowOptimisers = await getAllMellowProducts(null);
+      const mellowOptimisers = await getAllMellowProducts({
+        signer: null,
+        type: 'all',
+        chainId: 1, // doesn't matter, provider mocked
+        alchemyApiKey: '', // doesn't matter, provider mocked
+      });
       await restore();
 
       ethOptimiserInfo = mellowOptimisers[1];
@@ -120,7 +126,12 @@ describe('Mellow Optimiser:GetOptimisers', () => {
     before(async () => {
       await mock();
       await withSigner(network, userAddress, async (signer) => {
-        const mellowOptimisers = await getAllMellowProducts(signer);
+        const mellowOptimisers = await getAllMellowProducts({
+          signer,
+          type: 'all',
+          chainId: 1, // doesn't matter, provider mocked
+          alchemyApiKey: '', // doesn't matter, provider mocked
+        });
         ethOptimiserInfo = mellowOptimisers[1];
       });
       await restore();
@@ -176,7 +187,7 @@ describe('getOptimisers', () => {
         {
           chainId: 5,
           forking: {
-            jsonRpcUrl: process.env.GOERLI_URL,
+            jsonRpcUrl: alchemyApiKeyToURL(5, process.env.ALCHEMY_API_KEY || ''),
             blockNumber,
           },
         },
@@ -213,7 +224,12 @@ describe('getOptimisers', () => {
 
     before(async () => {
       await mock();
-      const mellowOptimisers = await getAllMellowProducts(null);
+      const mellowOptimisers = await getAllMellowProducts({
+        signer: null,
+        type: 'all',
+        chainId: 1, // doesn't matter, provider mocked
+        alchemyApiKey: '', // doesn't matter, provider mocked
+      });
       await restore();
 
       ethOptimiserInfo = mellowOptimisers[1];
@@ -275,7 +291,12 @@ describe('getOptimisers', () => {
     before(async () => {
       await mock();
       await withSigner(network, userAddress, async (signer) => {
-        const mellowOptimisers = await getAllMellowProducts(signer);
+        const mellowOptimisers = await getAllMellowProducts({
+          signer,
+          type: 'all',
+          chainId: 1, // doesn't matter, provider mocked
+          alchemyApiKey: '', // doesn't matter, provider mocked
+        });
         ethOptimiserInfo = mellowOptimisers[1];
       });
       await restore();

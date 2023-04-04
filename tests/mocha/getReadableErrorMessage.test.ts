@@ -38,7 +38,9 @@ describe('getReadableErrorMessage', () => {
       };
 
       const errorMessage = getReadableErrorMessage(error);
-      expect(errorMessage).to.be.eq('Not enough margin for this operation');
+      expect(errorMessage).to.be.eq(
+        'Margin requirement not satisfied, consider adding more margin to your position',
+      );
     });
 
     it('Unrecognised custom error', async () => {
@@ -115,7 +117,9 @@ describe('getReadableErrorMessage', () => {
       };
 
       const errorMessage = getReadableErrorMessage(error);
-      expect(errorMessage).to.be.eq('Not enough margin for this operation');
+      expect(errorMessage).to.be.eq(
+        'Margin requirement not satisfied, consider adding more margin to your position',
+      );
     });
   });
 
@@ -132,7 +136,9 @@ describe('getReadableErrorMessage', () => {
       };
 
       const errorMessage = getReadableErrorMessage(error);
-      expect(errorMessage).to.be.eq('Not enough margin for this operation');
+      expect(errorMessage).to.be.eq(
+        'Margin requirement not satisfied, consider adding more margin to your position',
+      );
     });
   });
 

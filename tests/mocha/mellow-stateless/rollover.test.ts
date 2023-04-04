@@ -11,6 +11,7 @@ import { rollover } from '../../../src/entities/mellow-stateless/actions/rollove
 import { getMellowProduct } from '../../../src/entities/mellow-stateless/getters/getMellowProduct';
 import { exponentialBackoff } from '../../../src/utils/retry';
 import * as priceFetch from '../../../src/utils/priceFetch';
+import alchemyApiKeyToURL from '../../../src/utils/alchemyApiKeyToURL';
 
 const { provider } = waffle;
 const DELTA = 0.00001;
@@ -25,7 +26,7 @@ describe('Mellow Optimiser:Rollover', () => {
         {
           chainId: 5,
           forking: {
-            jsonRpcUrl: process.env.GOERLI_URL,
+            jsonRpcUrl: alchemyApiKeyToURL(5, process.env.ALCHEMY_API_KEY || ''),
             blockNumber,
           },
         },
@@ -78,6 +79,8 @@ describe('Mellow Optimiser:Rollover', () => {
                 vaultId,
                 spareWeights: [['0x62E224d9ae2f4702CC88695e6Ea4aA16D0925BdB', 0]],
                 signer,
+                chainId: 1, // doesn't matter, provider mocked
+                alchemyApiKey: '', // doesn't matter, provider mocked
               }),
             RETRY_ATTEMPTS,
           );
@@ -94,6 +97,8 @@ describe('Mellow Optimiser:Rollover', () => {
         const optimiserState = await getMellowProduct({
           optimiserId,
           signer,
+          chainId: 1, // doesn't matter, provider mocked
+          alchemyApiKey: '', // doesn't matter, provider mocked
         });
 
         const { newOptimiserState } = await exponentialBackoff(
@@ -106,6 +111,8 @@ describe('Mellow Optimiser:Rollover', () => {
                 ['0x5de7a5BbEDcE4a739b8a8D1cdA15D71924BDC9f7', 50],
               ],
               signer,
+              chainId: 1, // doesn't matter, provider mocked
+              alchemyApiKey: '', // doesn't matter, provider mocked
             }),
           RETRY_ATTEMPTS,
         );
@@ -136,6 +143,8 @@ describe('Mellow Optimiser:Rollover', () => {
         const optimiserState = await getMellowProduct({
           optimiserId,
           signer,
+          chainId: 1, // doesn't matter, provider mocked
+          alchemyApiKey: '', // doesn't matter, provider mocked
         });
 
         const { newOptimiserState } = await exponentialBackoff(
@@ -145,6 +154,8 @@ describe('Mellow Optimiser:Rollover', () => {
               vaultId,
               spareWeights: [['0x4972C5f24E6EDfD479ba989b204bD376503D48d8', 100]],
               signer,
+              chainId: 1, // doesn't matter, provider mocked
+              alchemyApiKey: '', // doesn't matter, provider mocked
             }),
           RETRY_ATTEMPTS,
         );
