@@ -5,7 +5,7 @@ import {
 import { getSentryTracker, getSubgraphURL } from '../../init';
 import { SubgraphURLEnum, SupportedChainId } from '../../types';
 import { sum } from '../../utils/functions';
-import Position from '../position';
+import { Position } from '../position';
 import { AMM } from './amm';
 
 type GetPositionsArgs = {

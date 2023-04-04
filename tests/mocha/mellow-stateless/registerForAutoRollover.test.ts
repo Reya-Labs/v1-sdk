@@ -10,6 +10,7 @@ import { fail, withSigner } from '../../utils';
 import { registerForAutoRollover } from '../../../src/entities/mellow-stateless/actions/registerForAutoRollover';
 import { exponentialBackoff } from '../../../src/utils/retry';
 import * as priceFetch from '../../../src/utils/priceFetch';
+import alchemyApiKeyToURL from '../../../src/utils/alchemyApiKeyToURL';
 
 const { provider } = waffle;
 
@@ -23,7 +24,7 @@ describe('Mellow Optimiser:RegisterForAutorollover', () => {
         {
           chainId: 5,
           forking: {
-            jsonRpcUrl: process.env.GOERLI_URL,
+            jsonRpcUrl: alchemyApiKeyToURL(5, process.env.ALCHEMY_API_KEY || ''),
             blockNumber,
           },
         },
@@ -74,6 +75,8 @@ describe('Mellow Optimiser:RegisterForAutorollover', () => {
                 optimiserId,
                 signer,
                 registration: true,
+                chainId: 1, // doesn't matter, provider mocked
+                alchemyApiKey: '', // doesn't matter, provider mocked
               }),
             RETRY_ATTEMPTS,
           );
@@ -91,6 +94,8 @@ describe('Mellow Optimiser:RegisterForAutorollover', () => {
               optimiserId,
               signer,
               registration: false,
+              chainId: 1, // doesn't matter, provider mocked
+              alchemyApiKey: '', // doesn't matter, provider mocked
             }),
           RETRY_ATTEMPTS,
         );
@@ -113,6 +118,8 @@ describe('Mellow Optimiser:RegisterForAutorollover', () => {
               optimiserId,
               signer,
               registration: false,
+              chainId: 1, // doesn't matter, provider mocked
+              alchemyApiKey: '', // doesn't matter, provider mocked
             }),
           RETRY_ATTEMPTS,
         );

@@ -8,21 +8,21 @@ import {
   Settlement,
   Swap,
 } from '@voltz-protocol/subgraph-data';
-import { AMM, HealthFactorStatus } from './amm';
-import { ONE_YEAR_IN_SECONDS, Q96 } from '../constants';
-import { tickToPrice, tickToFixedRate } from '../utils/priceTickConversions';
-import { TickMath } from '../utils/tickMath';
-import { Price } from './fractions/price';
-import axios from 'axios';
+import { AMM, HealthFactorStatus } from '../amm';
+import { ONE_YEAR_IN_SECONDS, Q96 } from '../../constants';
+import { tickToPrice, tickToFixedRate } from '../../utils/priceTickConversions';
+import { TickMath } from '../../utils/tickMath';
+import { Price } from '../fractions/price';
 
 import {
   MarginEngine__factory as marginEngineFactory,
   BaseRateOracle__factory as baseRateOracleFactory,
-} from '../typechain';
-import { getCashflowInfo, transformSwaps } from '../services/getCashflowInfo';
-import { getSentryTracker } from '../init';
-import { getRangeHealthFactor } from '../utils/rangeHealthFactor';
-import { exponentialBackoff } from '../utils/retry';
+} from '../../typechain';
+import { getCashflowInfo, transformSwaps } from '../../services/getCashflowInfo';
+import { getSentryTracker } from '../../init';
+import { getRangeHealthFactor } from '../../utils/rangeHealthFactor';
+import { exponentialBackoff } from '../../utils/retry';
+import { getPositionPnLGCloud } from './services/getPositionPnLGCloud';
 
 export type PositionConstructorArgs = {
   id: string;
@@ -46,7 +46,7 @@ export type PositionConstructorArgs = {
   isBothTraderAndLP: boolean;
 };
 
-class Position {
+export class Position {
   public readonly id: string;
   public readonly createdTimestamp: number;
   public readonly amm: AMM;
@@ -165,31 +165,6 @@ class Position {
     return tickToFixedRate(this.tickLower);
   }
 
-  private async getPositionPnLGCloud(
-    vammAddress: string,
-    ownerAddress: string,
-    tickLower: number,
-    tickUpper: number,
-  ) {
-    let res = null;
-
-    try {
-      res = await axios.get(
-        `https://voltz-indexer-3wpwbm66ca-nw.a.run.app/api/positions/
-        ${vammAddress}/
-        ${ownerAddress}/
-        ${tickLower}/
-        ${tickUpper}`,
-      );
-      res = res.data;
-    } catch (e) {
-      const sentryTracker = getSentryTracker();
-      sentryTracker.captureMessage('GCloud Positions API unavailable');
-    }
-
-    return res;
-  }
-
   public getNotionalFromLiquidity(liquidity: BigNumber): number {
     const sqrtPriceLowerX96 = new Price(Q96, TickMath.getSqrtRatioAtTick(this.tickLower));
     const sqrtPriceUpperX96 = new Price(Q96, TickMath.getSqrtRatioAtTick(this.tickUpper));
@@ -263,17 +238,15 @@ class Position {
             this.estimatedTotalCashflow = cashflowInfo.estimatedTotalCashflow;
 
             // todo: add chain id as well
-            const positionPnLJson = await this.getPositionPnLGCloud(
+            const positionPnL = await getPositionPnLGCloud(
               this.amm.id,
               this.owner,
               this.tickLower,
               this.tickUpper,
             );
 
-            if (positionPnLJson !== null) {
-              this.realizedPnLFromSwaps = positionPnLJson['realizedPnLFromSwaps'];
-              this.unrealizedPnLFromSwaps = positionPnLJson['unrealizedPnLFromSwaps'];
-            }
+            this.realizedPnLFromSwaps = positionPnL.realizedPnLFromSwaps;
+            this.unrealizedPnLFromSwaps = positionPnL.unrealizedPnLFromSwaps;
 
             // Get receiving and paying rates
             const avgFixedRate = cashflowInfo.avgFixedRate;
@@ -400,5 +373,3 @@ class Position {
     return 0;
   }
 }
-
-export default Position;

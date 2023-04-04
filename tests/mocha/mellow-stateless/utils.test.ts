@@ -46,7 +46,7 @@ describe('tests for utils', () => {
   describe('getOptimiserConfig', () => {
     it('existing Id', async () => {
       const optimiserId = '0x62E224d9ae2f4702CC88695e6Ea4aA16D0925BdB';
-      const optimiserConfig = getOptimiserConfig(optimiserId);
+      const optimiserConfig = getOptimiserConfig(5, optimiserId);
 
       expect(optimiserConfig).to.be.deep.eq({
         optimiser: '0x62E224d9ae2f4702CC88695e6Ea4aA16D0925BdB',
@@ -71,7 +71,7 @@ describe('tests for utils', () => {
     it('non-existing ID', async () => {
       const optimiserId = '0x62E224d9ae2f4702CC88695e6Ea4aA16D0925BdC';
       try {
-        getOptimiserConfig(optimiserId);
+        getOptimiserConfig(5, optimiserId);
         fail();
       } catch (error: unknown) {
         expect((error as Error).message).to.be.eq('Optimiser ID not found');

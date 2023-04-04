@@ -12,6 +12,7 @@ import {
   MarginEngine__factory as marginEngineFactory,
   IERC20Minimal__factory as tokenFactory,
 } from '../../src/typechain';
+import alchemyApiKeyToURL from '../../src/utils/alchemyApiKeyToURL';
 
 const { provider } = waffle;
 const DELTA = 0.0001;
@@ -24,7 +25,7 @@ describe('amm:rolloverWithSwap', () => {
         {
           chainId: 1,
           forking: {
-            jsonRpcUrl: process.env.MAINNET_URL,
+            jsonRpcUrl: alchemyApiKeyToURL(1, process.env.ALCHEMY_API_KEY || ''),
             blockNumber,
           },
         },
@@ -63,6 +64,7 @@ describe('amm:rolloverWithSwap', () => {
             signer,
             provider,
             factoryAddress: '0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf',
+            peripheryAddress: '0x07ceD903E6ad0278CC32bC83a3fC97112F763722',
             marginEngineAddress: '0x654316a63e68f1c0823f0518570bc108de377831',
             rateOracle: new RateOracle({
               id: '0x65f5139977c608c6c2640c088d7fd07fa17a0614',
@@ -130,6 +132,7 @@ describe('amm:rolloverWithSwap', () => {
             signer,
             provider,
             factoryAddress: '0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf',
+            peripheryAddress: '0x07ceD903E6ad0278CC32bC83a3fC97112F763722',
             marginEngineAddress: '0x654316a63e68f1c0823f0518570bc108de377831',
             rateOracle: new RateOracle({
               id: '0x65f5139977c608c6c2640c088d7fd07fa17a0614',
@@ -199,6 +202,7 @@ describe('amm:rolloverWithSwap', () => {
             signer,
             provider,
             factoryAddress: '0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf',
+            peripheryAddress: '0x07ceD903E6ad0278CC32bC83a3fC97112F763722',
             marginEngineAddress: '0x21f9151d6e06f834751b614c2ff40fc28811b235',
             rateOracle: new RateOracle({
               id: '0xa667502bf7f5da45c7b6a70da7f0595e6cf342d8',
@@ -251,6 +255,7 @@ describe('amm:rolloverWithSwap', () => {
             signer,
             provider,
             factoryAddress: '0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf',
+            peripheryAddress: '0x07ceD903E6ad0278CC32bC83a3fC97112F763722',
             marginEngineAddress: '0x21f9151d6e06f834751b614c2ff40fc28811b235',
             rateOracle: new RateOracle({
               id: '0xa667502bf7f5da45c7b6a70da7f0595e6cf342d8',
@@ -330,6 +335,7 @@ describe('amm:rolloverWithSwap', () => {
             signer,
             provider,
             factoryAddress: '0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf',
+            peripheryAddress: '0x07ceD903E6ad0278CC32bC83a3fC97112F763722',
             marginEngineAddress: '0x21f9151d6e06f834751b614c2ff40fc28811b235',
             rateOracle: new RateOracle({
               id: '0xa667502bf7f5da45c7b6a70da7f0595e6cf342d8',

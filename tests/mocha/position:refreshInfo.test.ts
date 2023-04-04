@@ -5,6 +5,8 @@ import { BrowserClient } from '@sentry/browser';
 import { AMM, Position, RateOracle, Token } from '../../src/entities';
 import { advanceTimeAndBlock } from '../time';
 import * as initSDK from '../../src/init';
+import axios from 'axios';
+import alchemyApiKeyToURL from '../../src/utils/alchemyApiKeyToURL';
 
 const { provider } = waffle;
 const DELTA = 0.0001;
@@ -17,7 +19,7 @@ describe('position:refreshInfo', () => {
         {
           chainId: 1,
           forking: {
-            jsonRpcUrl: process.env.MAINNET_URL,
+            jsonRpcUrl: alchemyApiKeyToURL(1, process.env.ALCHEMY_API_KEY || ''),
             blockNumber,
           },
         },
@@ -36,11 +38,16 @@ describe('position:refreshInfo', () => {
           captureMessage: () => undefined,
         } as unknown as BrowserClient),
     );
+
+    sinon.stub(axios, 'get').resolves(() => null);
   });
 
   afterEach(() => {
     // restore the original implementation of initSDK.getSentryTracker
     (initSDK.getSentryTracker as sinon.SinonStub).restore();
+
+    // restore the original implementation of axios.get
+    (axios.get as sinon.SinonStub).restore();
   });
 
   describe('Stable coin positions', () => {
@@ -51,6 +58,7 @@ describe('position:refreshInfo', () => {
           signer: null,
           provider,
           factoryAddress: '0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf',
+          peripheryAddress: '0x07ceD903E6ad0278CC32bC83a3fC97112F763722',
           marginEngineAddress: '0xb785e7e71f099ada43222e1690ee0bf701f80396',
           rateOracle: new RateOracle({
             id: '0x9f30ec6903f1728ca250f48f664e48c3f15038ed',
@@ -79,6 +87,7 @@ describe('position:refreshInfo', () => {
           owner: '0xf8f6b70a36f4398f0853a311dc6699aba8333cc1',
           tickLower: -4680,
           tickUpper: -3360,
+          isBothTraderAndLP: false,
 
           createdTimestamp: 0,
 
@@ -165,6 +174,7 @@ describe('position:refreshInfo', () => {
           signer: null,
           provider,
           factoryAddress: '0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf',
+          peripheryAddress: '0x07ceD903E6ad0278CC32bC83a3fC97112F763722',
           marginEngineAddress: '0x654316a63e68f1c0823f0518570bc108de377831',
           rateOracle: new RateOracle({
             id: '0x65f5139977c608c6c2640c088d7fd07fa17a0614',
@@ -193,6 +203,7 @@ describe('position:refreshInfo', () => {
           owner: '0xf8f6b70a36f4398f0853a311dc6699aba8333cc1',
           tickLower: -5280,
           tickUpper: -2640,
+          isBothTraderAndLP: false,
 
           createdTimestamp: 0,
           positionType: 3,
@@ -264,6 +275,7 @@ describe('position:refreshInfo', () => {
           signer: null,
           provider,
           factoryAddress: '0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf',
+          peripheryAddress: '0x07ceD903E6ad0278CC32bC83a3fC97112F763722',
           marginEngineAddress: '0x317916f91050ee7e4f53f7c94e83fbd4ecadec7e',
           rateOracle: new RateOracle({
             id: '0x65f5139977c608c6c2640c088d7fd07fa17a0614',
@@ -292,6 +304,7 @@ describe('position:refreshInfo', () => {
           owner: '0xf8f6b70a36f4398f0853a311dc6699aba8333cc1',
           tickLower: -5880,
           tickUpper: -1800,
+          isBothTraderAndLP: false,
 
           createdTimestamp: 0,
 
@@ -380,6 +393,7 @@ describe('position:refreshInfo', () => {
           signer: null,
           provider,
           factoryAddress: '0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf',
+          peripheryAddress: '0x07ceD903E6ad0278CC32bC83a3fC97112F763722',
           marginEngineAddress: '0x111a75e91625142e85193b67b10e53acf82838cd',
           rateOracle: new RateOracle({
             id: '0xd24047316b274d48dbb2fe20068c9cc849b76152',
@@ -408,6 +422,7 @@ describe('position:refreshInfo', () => {
           owner: '0xf8f6b70a36f4398f0853a311dc6699aba8333cc1',
           tickLower: -69060,
           tickUpper: 0,
+          isBothTraderAndLP: false,
 
           createdTimestamp: 0,
 
@@ -484,8 +499,8 @@ describe('position:refreshInfo', () => {
         expect(position.fees).to.be.closeTo(0, DELTA);
         expect(position.feesInUSD).to.be.closeTo(0, DELTA);
 
-        expect(position.accruedCashflow).to.closeTo(7.43095, DELTA);
-        expect(position.accruedCashflowInUSD).to.closeTo(7.43095, DELTA);
+        expect(position.accruedCashflow).to.closeTo(7.151056, DELTA);
+        expect(position.accruedCashflowInUSD).to.closeTo(7.151056, DELTA);
 
         expect(position.settlementCashflow).to.closeTo(0, DELTA);
         expect(position.settlementCashflowInUSD).to.closeTo(0, DELTA);
@@ -512,6 +527,7 @@ describe('position:refreshInfo', () => {
           signer: null,
           provider,
           factoryAddress: '0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf',
+          peripheryAddress: '0x07ceD903E6ad0278CC32bC83a3fC97112F763722',
           marginEngineAddress: '0x111a75e91625142e85193b67b10e53acf82838cd',
           rateOracle: new RateOracle({
             id: '0xd24047316b274d48dbb2fe20068c9cc849b76152',
@@ -540,6 +556,7 @@ describe('position:refreshInfo', () => {
           owner: '0xf8f6b70a36f4398f0853a311dc6699aba8333cc1',
           tickLower: -69060,
           tickUpper: 0,
+          isBothTraderAndLP: false,
 
           createdTimestamp: 0,
           positionType: 2,
@@ -645,6 +662,7 @@ describe('position:refreshInfo', () => {
           signer: null,
           provider,
           factoryAddress: '0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf',
+          peripheryAddress: '0x07ceD903E6ad0278CC32bC83a3fC97112F763722',
           marginEngineAddress: '0xb1125ba5878cf3a843be686c6c2486306f03e301',
           rateOracle: new RateOracle({
             id: '0x41ecaac9061f6babf2d42068f8f8daf3ba9644ff',
@@ -673,6 +691,7 @@ describe('position:refreshInfo', () => {
           owner: '0xf8f6b70a36f4398f0853a311dc6699aba8333cc1',
           tickLower: -16080,
           tickUpper: -12540,
+          isBothTraderAndLP: false,
 
           createdTimestamp: 0,
 
@@ -747,6 +766,7 @@ describe('position:refreshInfo', () => {
           signer: null,
           provider,
           factoryAddress: '0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf',
+          peripheryAddress: '0x07ceD903E6ad0278CC32bC83a3fC97112F763722',
           marginEngineAddress: '0xb1125ba5878cf3a843be686c6c2486306f03e301',
           rateOracle: new RateOracle({
             id: '0x41ecaac9061f6babf2d42068f8f8daf3ba9644ff',
@@ -775,6 +795,7 @@ describe('position:refreshInfo', () => {
           owner: '0xf8f6b70a36f4398f0853a311dc6699aba8333cc1',
           tickLower: -69060,
           tickUpper: 0,
+          isBothTraderAndLP: false,
 
           createdTimestamp: 0,
           positionType: 1,
@@ -847,8 +868,8 @@ describe('position:refreshInfo', () => {
         expect(position.fees).to.be.closeTo(0, DELTA);
         expect(position.feesInUSD).to.be.closeTo(0, DELTA);
 
-        expect(position.accruedCashflow).to.closeTo(0.002328, DELTA);
-        expect(position.accruedCashflowInUSD).to.closeTo(2.79401, DELTA);
+        expect(position.accruedCashflow).to.closeTo(0.002629, DELTA);
+        expect(position.accruedCashflowInUSD).to.closeTo(3.1548, DELTA);
 
         expect(position.settlementCashflow).to.closeTo(0, DELTA);
         expect(position.settlementCashflowInUSD).to.closeTo(0, DELTA);

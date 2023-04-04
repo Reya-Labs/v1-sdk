@@ -5,7 +5,7 @@ import { fail } from '../../utils';
 const DELTA = 0.000001;
 
 describe('getExpectedApy', () => {
-  [1, 2, 3, 4, 5, 6, 7].forEach((rateOracleID) => {
+  [1, 2, 3, 4, 5, 6, 7, 9].forEach((rateOracleID) => {
     it(`fixed taker in the middle of a pool in profit - compounding rate oracle ${rateOracleID}`, () => {
       const currentInSeconds = 15 * 24 * 60 * 60;
       const endInSeconds = 30 * 24 * 60 * 60;
@@ -63,7 +63,7 @@ describe('getExpectedApy', () => {
     });
   });
 
-  [1, 2, 3, 4, 5, 6, 7].forEach((rateOracleID) => {
+  [1, 2, 3, 4, 5, 6, 7, 9].forEach((rateOracleID) => {
     it(`fixed taker in the middle of a pool in profit - compounding rate oracle ${rateOracleID}`, () => {
       const currentInSeconds = 15 * 24 * 60 * 60;
       const endInSeconds = 30 * 24 * 60 * 60;
@@ -121,7 +121,7 @@ describe('getExpectedApy', () => {
     });
   });
 
-  [1, 2, 3, 4, 5, 6, 7].forEach((rateOracleID) => {
+  [1, 2, 3, 4, 5, 6, 7, 9].forEach((rateOracleID) => {
     it(`variable taker in the middle of a pool in loss - compounding rate oracle ${rateOracleID}`, () => {
       const currentInSeconds = 15 * 24 * 60 * 60;
       const endInSeconds = 30 * 24 * 60 * 60;
@@ -179,7 +179,7 @@ describe('getExpectedApy', () => {
     });
   });
 
-  [1, 2, 3, 4, 5, 6, 7].forEach((rateOracleID) => {
+  [1, 2, 3, 4, 5, 6, 7, 9].forEach((rateOracleID) => {
     it(`variable taker in the middle of a pool in profit - compounding rate oracle ${rateOracleID}`, () => {
       const currentInSeconds = 15 * 24 * 60 * 60;
       const endInSeconds = 30 * 24 * 60 * 60;
@@ -237,7 +237,7 @@ describe('getExpectedApy', () => {
     });
   });
 
-  [1, 2, 3, 4, 5, 6, 7, 8].forEach((rateOracleID) => {
+  [1, 2, 3, 4, 5, 6, 7, 8, 9].forEach((rateOracleID) => {
     it(`fixed taker after the pool end term - rate oracle ${rateOracleID}`, () => {
       const currentInSeconds = 31 * 24 * 60 * 60;
       const endInSeconds = 30 * 24 * 60 * 60;

@@ -4,6 +4,7 @@ import * as dotenv from 'dotenv';
 
 import '@nomiclabs/hardhat-ethers';
 import '@nomiclabs/hardhat-waffle';
+import alchemyApiKeyToURL from './src/utils/alchemyApiKeyToURL';
 
 dotenv.config();
 
@@ -13,7 +14,7 @@ const hardhatNetworkConfig = {
   chainId: 1,
   live: false,
   forking: {
-    url: `${process.env.MAINNET_URL}`,
+    url: `${alchemyApiKeyToURL(1, process.env.ALCHEMY_API_KEY || '')}`,
   },
 };
 

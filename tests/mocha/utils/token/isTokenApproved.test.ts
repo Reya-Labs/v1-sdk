@@ -12,6 +12,7 @@ import { withSigner } from '../../../utils';
 import { isTokenApproved } from '../../../../src/services/token/isTokenApproved';
 import { exponentialBackoff } from '../../../../src/utils/retry';
 import * as priceFetch from '../../../../src/utils/priceFetch';
+import alchemyApiKeyToURL from '../../../../src/utils/alchemyApiKeyToURL';
 
 const { provider } = waffle;
 
@@ -27,7 +28,7 @@ describe('Utilities:IsTokenApproved', () => {
         {
           chainId: 1,
           forking: {
-            jsonRpcUrl: process.env.MAINNET_URL,
+            jsonRpcUrl: alchemyApiKeyToURL(1, process.env.ALCHEMY_API_KEY || ''),
             blockNumber,
           },
         },

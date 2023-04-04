@@ -13,6 +13,7 @@ import { getMellowProduct } from '../../../src/entities/mellow-stateless/getters
 import { IERC20MinimalABI, MellowDepositWrapperABI } from '../../../src/ABIs';
 import { exponentialBackoff } from '../../../src/utils/retry';
 import * as priceFetch from '../../../src/utils/priceFetch';
+import alchemyApiKeyToURL from '../../../src/utils/alchemyApiKeyToURL';
 
 const { provider } = waffle;
 const DELTA = 0.00001;
@@ -27,7 +28,7 @@ describe('Mellow Optimiser:Withdraw', () => {
         {
           chainId: 5,
           forking: {
-            jsonRpcUrl: process.env.GOERLI_URL,
+            jsonRpcUrl: alchemyApiKeyToURL(5, process.env.ALCHEMY_API_KEY || ''),
             blockNumber,
           },
         },
@@ -100,6 +101,8 @@ describe('Mellow Optimiser:Withdraw', () => {
         const optimiserState = await getMellowProduct({
           optimiserId,
           signer,
+          chainId: 1, // doesn't matter, provider mocked
+          alchemyApiKey: '', // doesn't matter, provider mocked
         });
 
         await exponentialBackoff(
@@ -108,6 +111,8 @@ describe('Mellow Optimiser:Withdraw', () => {
               optimiserId,
               vaultId,
               signer,
+              chainId: 1, // doesn't matter, provider mocked
+              alchemyApiKey: '', // doesn't matter, provider mocked
             }),
           RETRY_ATTEMPTS,
         );
@@ -123,6 +128,8 @@ describe('Mellow Optimiser:Withdraw', () => {
               optimiserId,
               vaultId,
               signer,
+              chainId: 1, // doesn't matter, provider mocked
+              alchemyApiKey: '', // doesn't matter, provider mocked
             }),
           RETRY_ATTEMPTS,
         );
@@ -149,6 +156,8 @@ describe('Mellow Optimiser:Withdraw', () => {
         const optimiserState = await getMellowProduct({
           optimiserId,
           signer,
+          chainId: 1, // doesn't matter, provider mocked
+          alchemyApiKey: '', // doesn't matter, provider mocked
         });
 
         const { newOptimiserState } = await exponentialBackoff(
@@ -157,6 +166,8 @@ describe('Mellow Optimiser:Withdraw', () => {
               optimiserId,
               vaultId,
               signer,
+              chainId: 1, // doesn't matter, provider mocked
+              alchemyApiKey: '', // doesn't matter, provider mocked
             }),
           RETRY_ATTEMPTS,
         );
@@ -179,6 +190,8 @@ describe('Mellow Optimiser:Withdraw', () => {
         const optimiserState = await getMellowProduct({
           optimiserId,
           signer,
+          chainId: 1, // doesn't matter, provider mocked
+          alchemyApiKey: '', // doesn't matter, provider mocked
         });
 
         const { newOptimiserState } = await exponentialBackoff(
@@ -187,6 +200,8 @@ describe('Mellow Optimiser:Withdraw', () => {
               optimiserId,
               vaultId,
               signer,
+              chainId: 1, // doesn't matter, provider mocked
+              alchemyApiKey: '', // doesn't matter, provider mocked
             }),
           RETRY_ATTEMPTS,
         );
