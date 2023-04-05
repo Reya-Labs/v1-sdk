@@ -308,9 +308,9 @@ export class Position {
         }
 
         // Get health factor
-        if (this.margin < this.liquidationThreshold) {
+        if (this.margin + this.fees < this.liquidationThreshold) {
           this.healthFactor = HealthFactorStatus.DANGER;
-        } else if (this.margin < this.safetyThreshold) {
+        } else if (this.margin + this.fees < this.safetyThreshold) {
           this.healthFactor = HealthFactorStatus.WARNING;
         } else {
           this.healthFactor = HealthFactorStatus.HEALTHY;
