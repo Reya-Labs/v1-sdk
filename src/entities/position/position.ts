@@ -223,6 +223,18 @@ export class Position {
         this.settlementCashflow = await this.getSettlementCashflow();
       }
 
+      // todo: add chain id as well
+      // todo: consider getting it out of the isSettled clause as well and push that logic into the gcloud api
+      const positionPnL = await getPositionPnLGCloud(
+        this.amm.id,
+        this.owner,
+        this.tickLower,
+        this.tickUpper,
+      );
+
+      this.realizedPnLFromSwaps = positionPnL.realizedPnLFromSwaps;
+      this.unrealizedPnLFromSwaps = positionPnL.unrealizedPnLFromSwaps;
+
       // Get accrued cashflow and receiving/paying rates
       if (this.swaps.length > 0) {
         if (!this.isPoolMatured) {
@@ -236,17 +248,6 @@ export class Position {
             this.accruedCashflow = cashflowInfo.accruedCashflow;
             this.estimatedFutureCashflow = cashflowInfo.estimatedFutureCashflow;
             this.estimatedTotalCashflow = cashflowInfo.estimatedTotalCashflow;
-
-            // todo: add chain id as well
-            const positionPnL = await getPositionPnLGCloud(
-              this.amm.id,
-              this.owner,
-              this.tickLower,
-              this.tickUpper,
-            );
-
-            this.realizedPnLFromSwaps = positionPnL.realizedPnLFromSwaps;
-            this.unrealizedPnLFromSwaps = positionPnL.unrealizedPnLFromSwaps;
 
             // Get receiving and paying rates
             const avgFixedRate = cashflowInfo.avgFixedRate;
