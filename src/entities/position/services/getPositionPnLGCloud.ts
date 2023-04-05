@@ -14,8 +14,11 @@ export const getPositionPnLGCloud = async (
 }> => {
   try {
     const url = `${baseURL}/${vammAddress}/${ownerAddress}/${tickLower}/${tickUpper}`;
-    const res = await axios.get(url);
-
+    const res = await axios({
+      method: 'get',
+      url: url,
+      withCredentials: false,
+    });
     return {
       realizedPnLFromSwaps: res.data.realizedPnLFromSwaps,
       unrealizedPnLFromSwaps: res.data.unrealizedPnLFromSwaps,
