@@ -10,6 +10,7 @@ export const getPositionPnLGCloud = async (
   tickUpper: number,
 ): Promise<{
   realizedPnLFromSwaps: number;
+  realizedPnLFromFeesPaid: number;
   unrealizedPnLFromSwaps: number;
 }> => {
   try {
@@ -21,6 +22,7 @@ export const getPositionPnLGCloud = async (
     });
     return {
       realizedPnLFromSwaps: res.data.realizedPnLFromSwaps,
+      realizedPnLFromFeesPaid: res.data.realizedPnLFromFeesPaid,
       unrealizedPnLFromSwaps: res.data.unrealizedPnLFromSwaps,
     };
   } catch (e) {
@@ -29,6 +31,7 @@ export const getPositionPnLGCloud = async (
 
     return {
       realizedPnLFromSwaps: 0,
+      realizedPnLFromFeesPaid: 0,
       unrealizedPnLFromSwaps: 0,
     };
   }
