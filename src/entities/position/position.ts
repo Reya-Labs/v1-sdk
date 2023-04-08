@@ -86,6 +86,9 @@ export class Position {
   public realizedPnLFromSwaps = 0;
   public realizedPnLFromSwapsInUSD = 0;
 
+  public realizedPnLFromFeesPaid = 0;
+  public realizedPnLFromFeesPaidInUSD = 0;
+
   public unrealizedPnLFromSwaps = 0;
   public unrealizedPnLFromSwapsInUSD = 0;
 
@@ -233,6 +236,7 @@ export class Position {
       );
 
       this.realizedPnLFromSwaps = positionPnL.realizedPnLFromSwaps;
+      this.realizedPnLFromFeesPaid = positionPnL.realizedPnLFromFeesPaid;
       this.unrealizedPnLFromSwaps = positionPnL.unrealizedPnLFromSwaps;
 
       // Get accrued cashflow and receiving/paying rates
@@ -338,6 +342,7 @@ export class Position {
       this.feesInUSD = this.fees * usdExchangeRate;
       this.accruedCashflowInUSD = this.accruedCashflow * usdExchangeRate;
       this.realizedPnLFromSwapsInUSD = this.realizedPnLFromSwaps * usdExchangeRate;
+      this.realizedPnLFromFeesPaidInUSD = this.realizedPnLFromFeesPaid * usdExchangeRate;
       this.unrealizedPnLFromSwapsInUSD = this.unrealizedPnLFromSwaps * usdExchangeRate;
 
       this.estimatedFutureCashflowInUSD = (estimatedApy) =>
