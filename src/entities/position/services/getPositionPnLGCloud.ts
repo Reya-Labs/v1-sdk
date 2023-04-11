@@ -4,6 +4,7 @@ import { getSentryTracker } from '../../../init';
 const baseURL = 'https://voltz-indexer-3wpwbm66ca-nw.a.run.app/api/positions';
 
 export const getPositionPnLGCloud = async (
+  chainId: number,
   vammAddress: string,
   ownerAddress: string,
   tickLower: number,
@@ -14,7 +15,7 @@ export const getPositionPnLGCloud = async (
   unrealizedPnLFromSwaps: number;
 }> => {
   try {
-    const url = `${baseURL}/${vammAddress}/${ownerAddress}/${tickLower}/${tickUpper}`;
+    const url = `${baseURL}/${chainId}/${vammAddress}/${ownerAddress}/${tickLower}/${tickUpper}`;
     const res = await axios({
       method: 'get',
       url: url,
