@@ -226,9 +226,11 @@ export class Position {
         this.settlementCashflow = await this.getSettlementCashflow();
       }
 
-      // todo: add chain id as well
+      const chainId = (await this.amm.provider.getNetwork()).chainId;
+
       // todo: consider getting it out of the isSettled clause as well and push that logic into the gcloud api
       const positionPnL = await getPositionPnLGCloud(
+        chainId,
         this.amm.id,
         this.owner,
         this.tickLower,
