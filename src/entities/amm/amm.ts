@@ -294,8 +294,10 @@ export class AMM {
       )
       .catch((error) => {
         const sentryTracker = getSentryTracker();
-        sentryTracker.captureException(error);
-        sentryTracker.captureMessage('Transaction Confirmation Error');
+        if (sentryTracker) {
+          sentryTracker.captureException(error);
+          sentryTracker.captureMessage('Transaction Confirmation Error');
+        }
         throw new Error('Transaction Confirmation Error');
       });
 
@@ -304,8 +306,10 @@ export class AMM {
       return receipt;
     } catch (error) {
       const sentryTracker = getSentryTracker();
-      sentryTracker.captureException(error);
-      sentryTracker.captureMessage('Transaction Confirmation Error');
+      if (sentryTracker) {
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage('Transaction Confirmation Error');
+      }
       throw new Error('Transaction Confirmation Error');
     }
   }
@@ -416,8 +420,10 @@ export class AMM {
       )
       .catch((error) => {
         const sentryTracker = getSentryTracker();
-        sentryTracker.captureException(error);
-        sentryTracker.captureMessage('Transaction Confirmation Error');
+        if (sentryTracker) {
+          sentryTracker.captureException(error);
+          sentryTracker.captureMessage('Transaction Confirmation Error');
+        }
         throw new Error('Transaction Confirmation Error');
       });
 
@@ -426,8 +432,10 @@ export class AMM {
       return receipt;
     } catch (error) {
       const sentryTracker = getSentryTracker();
-      sentryTracker.captureException(error);
-      sentryTracker.captureMessage('Transaction Confirmation Error');
+      if (sentryTracker) {
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage('Transaction Confirmation Error');
+      }
       throw new Error('Transaction Confirmation Error');
     }
   }
@@ -791,7 +799,9 @@ export class AMM {
         }
       } catch (error) {
         const sentryTracker = getSentryTracker();
-        sentryTracker.captureException(error);
+        if (sentryTracker) {
+          sentryTracker.captureException(error);
+        }
       }
     }
 
@@ -910,8 +920,10 @@ export class AMM {
         .swap(swapPeripheryParams, tempOverrides)
         .catch((error) => {
           const sentryTracker = getSentryTracker();
-          sentryTracker.captureException(error);
-          sentryTracker.captureMessage('Transaction Confirmation Error');
+          if (sentryTracker) {
+            sentryTracker.captureException(error);
+            sentryTracker.captureMessage('Transaction Confirmation Error');
+          }
           throw new Error('Transaction Confirmation Error');
         });
     } else {
@@ -954,8 +966,10 @@ export class AMM {
         )
         .catch((error) => {
           const sentryTracker = getSentryTracker();
-          sentryTracker.captureException(error);
-          sentryTracker.captureMessage('Transaction Confirmation Error');
+          if (sentryTracker) {
+            sentryTracker.captureException(error);
+            sentryTracker.captureMessage('Transaction Confirmation Error');
+          }
           throw new Error('Transaction Confirmation Error');
         });
     }
@@ -965,8 +979,10 @@ export class AMM {
       return receipt;
     } catch (error) {
       const sentryTracker = getSentryTracker();
-      sentryTracker.captureException(error);
-      sentryTracker.captureMessage('Transaction Confirmation Error');
+      if (sentryTracker) {
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage('Transaction Confirmation Error');
+      }
       throw new Error('Transaction Confirmation Error');
     }
   }
@@ -1057,8 +1073,10 @@ export class AMM {
       .mintOrBurn(mintOrBurnParams, tempOverrides)
       .catch((error) => {
         const sentryTracker = getSentryTracker();
-        sentryTracker.captureException(error);
-        sentryTracker.captureMessage('Transaction Confirmation Error');
+        if (sentryTracker) {
+          sentryTracker.captureException(error);
+          sentryTracker.captureMessage('Transaction Confirmation Error');
+        }
         throw new Error('Transaction Confirmation Error');
       });
 
@@ -1067,8 +1085,10 @@ export class AMM {
       return receipt;
     } catch (error) {
       const sentryTracker = getSentryTracker();
-      sentryTracker.captureException(error);
-      sentryTracker.captureMessage('Transaction Confirmation Error');
+      if (sentryTracker) {
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage('Transaction Confirmation Error');
+      }
       throw new Error('Transaction Confirmation Error');
     }
   }
@@ -1322,8 +1342,10 @@ export class AMM {
       .mintOrBurn(mintOrBurnParams, tempOverrides)
       .catch((error) => {
         const sentryTracker = getSentryTracker();
-        sentryTracker.captureException(error);
-        sentryTracker.captureMessage('Transaction Confirmation Error');
+        if (sentryTracker) {
+          sentryTracker.captureException(error);
+          sentryTracker.captureMessage('Transaction Confirmation Error');
+        }
         throw new Error('Transaction Confirmation Error');
       });
 
@@ -1332,8 +1354,10 @@ export class AMM {
       return receipt;
     } catch (error) {
       const sentryTracker = getSentryTracker();
-      sentryTracker.captureException(error);
-      sentryTracker.captureMessage('Transaction Confirmation Error');
+      if (sentryTracker) {
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage('Transaction Confirmation Error');
+      }
       throw new Error('Transaction Confirmation Error');
     }
   }
@@ -1390,8 +1414,10 @@ export class AMM {
       })
       .catch((error) => {
         const sentryTracker = getSentryTracker();
-        sentryTracker.captureException(error);
-        sentryTracker.captureMessage('Transaction Confirmation Error');
+        if (sentryTracker) {
+          sentryTracker.captureException(error);
+          sentryTracker.captureMessage('Transaction Confirmation Error');
+        }
         throw new Error('Transaction Confirmation Error');
       });
 
@@ -1400,8 +1426,10 @@ export class AMM {
       return receipt;
     } catch (error) {
       const sentryTracker = getSentryTracker();
-      sentryTracker.captureException(error);
-      sentryTracker.captureMessage('Transaction Confirmation Error');
+      if (sentryTracker) {
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage('Transaction Confirmation Error');
+      }
       throw new Error('Transaction Confirmation Error');
     }
   }
@@ -1480,8 +1508,10 @@ export class AMM {
       )
       .catch((error) => {
         const sentryTracker = getSentryTracker();
-        sentryTracker.captureException(error);
-        sentryTracker.captureMessage('Transaction Confirmation Error');
+        if (sentryTracker) {
+          sentryTracker.captureException(error);
+          sentryTracker.captureMessage('Transaction Confirmation Error');
+        }
         throw new Error('Transaction Confirmation Error');
       });
 
@@ -1490,8 +1520,10 @@ export class AMM {
       return receipt;
     } catch (error) {
       const sentryTracker = getSentryTracker();
-      sentryTracker.captureException(error);
-      sentryTracker.captureMessage('Transaction Confirmation Error');
+      if (sentryTracker) {
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage('Transaction Confirmation Error');
+      }
       throw new Error('Transaction Confirmation Error');
     }
   }
@@ -1545,8 +1577,10 @@ export class AMM {
       )
       .catch((error) => {
         const sentryTracker = getSentryTracker();
-        sentryTracker.captureException(error);
-        sentryTracker.captureMessage('Transaction Confirmation Error');
+        if (sentryTracker) {
+          sentryTracker.captureException(error);
+          sentryTracker.captureMessage('Transaction Confirmation Error');
+        }
         throw new Error('Transaction Confirmation Error');
       });
 
@@ -1555,8 +1589,10 @@ export class AMM {
       return receipt;
     } catch (error) {
       const sentryTracker = getSentryTracker();
-      sentryTracker.captureException(error);
-      sentryTracker.captureMessage('Transaction Confirmation Error');
+      if (sentryTracker) {
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage('Transaction Confirmation Error');
+      }
       throw new Error('Transaction Confirmation Error');
     }
   }
@@ -1651,10 +1687,12 @@ export class AMM {
       estimatedGas = await token.estimateGas.approve(this.peripheryAddress, MaxUint256Bn);
     } catch (error) {
       const sentryTracker = getSentryTracker();
-      sentryTracker.captureException(error);
-      sentryTracker.captureMessage(
-        `Could not increase periphery allowance (${tokenAddress}, ${await this.getUserAddress()}, ${MaxUint256Bn.toString()})`,
-      );
+      if (sentryTracker) {
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage(
+          `Could not increase periphery allowance (${tokenAddress}, ${await this.getUserAddress()}, ${MaxUint256Bn.toString()})`,
+        );
+      }
       throw new Error(
         `Unable to approve. If your existing allowance is non-zero but lower than needed, some tokens like USDT require you to call approve("${this.peripheryAddress}", 0) before you can increase the allowance.`,
       );
@@ -1666,8 +1704,10 @@ export class AMM {
       })
       .catch((error) => {
         const sentryTracker = getSentryTracker();
-        sentryTracker.captureException(error);
-        sentryTracker.captureMessage('Transaction Confirmation Error');
+        if (sentryTracker) {
+          sentryTracker.captureException(error);
+          sentryTracker.captureMessage('Transaction Confirmation Error');
+        }
         throw new Error('Transaction Confirmation Error');
       });
 
@@ -1675,8 +1715,10 @@ export class AMM {
       await approvalTransaction.wait();
     } catch (error) {
       const sentryTracker = getSentryTracker();
-      sentryTracker.captureException(error);
-      sentryTracker.captureMessage('Token approval failed');
+      if (sentryTracker) {
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage('Token approval failed');
+      }
       throw new Error('Token approval failed');
     }
   }

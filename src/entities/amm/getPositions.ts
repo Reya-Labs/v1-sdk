@@ -52,8 +52,10 @@ const getUninitialisedPositions = async ({
     );
   } catch (err) {
     const sentryTracker = getSentryTracker();
-    sentryTracker.captureException(err);
-    sentryTracker.captureMessage('Transaction Confirmation Error');
+    if (sentryTracker) {
+      sentryTracker.captureException(err);
+      sentryTracker.captureMessage('Transaction Confirmation Error');
+    }
 
     error = 'Failed to fetch positions from the subgraph';
   }
@@ -77,7 +79,9 @@ const getUninitialisedPositions = async ({
     });
   } catch (err) {
     const sentryTracker = getSentryTracker();
-    sentryTracker.captureMessage('Position AMM not found');
+    if (sentryTracker) {
+      sentryTracker.captureMessage('Position AMM not found');
+    }
 
     error = 'Position AMM not found';
   }
@@ -121,8 +125,10 @@ export const getPositions = async (params: GetPositionsArgs): Promise<GetPositio
     await Promise.allSettled(positions.map((pos) => pos.refreshInfo()));
   } catch (err) {
     const sentryTracker = getSentryTracker();
-    sentryTracker.captureException(err);
-    sentryTracker.captureMessage('');
+    if (sentryTracker) {
+      sentryTracker.captureException(err);
+      sentryTracker.captureMessage('');
+    }
 
     error = 'Positions failed to be initialised';
   }

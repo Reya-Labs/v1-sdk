@@ -119,7 +119,9 @@ export const getHistoricalRatesFromBigQuery = async (
     }
   } catch (e) {
     const sentryTracker = getSentryTracker();
-    sentryTracker.captureMessage('Historical rates API unavailable');
+    if (sentryTracker) {
+      sentryTracker.captureMessage('Historical rates API unavailable');
+    }
     return [];
   }
 
@@ -146,7 +148,9 @@ export const getCurrentRateFromSubgraph = async (
     const res = await getTickUpdates(subgraphUrl, parentObjectId, startTime, endTime);
     if (res.length === 0) {
       const sentryTracker = getSentryTracker();
-      sentryTracker.captureMessage('No variable rate registered in the last day');
+      if (sentryTracker) {
+        sentryTracker.captureMessage('No variable rate registered in the last day');
+      }
       return BigNumber.from(-10).pow(16); // default to -0.01
     }
     return res[res.length - 1].historicalFixedRate;
@@ -154,7 +158,9 @@ export const getCurrentRateFromSubgraph = async (
   const res = await getHistoricalVariableIndex(subgraphUrl, parentObjectId, startTime, endTime);
   if (res.length === 0) {
     const sentryTracker = getSentryTracker();
-    sentryTracker.captureMessage('No fixed rate registered in the last day');
+    if (sentryTracker) {
+      sentryTracker.captureMessage('No fixed rate registered in the last day');
+    }
     return BigNumber.from(-10).pow(16); // default to -0.01
   }
   return res[res.length - 1].historicalVariableRate;

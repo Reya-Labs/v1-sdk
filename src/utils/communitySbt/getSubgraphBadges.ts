@@ -46,7 +46,9 @@ export async function getSubgraphBadges({
     return [];
   } catch (error) {
     const sentryTracker = getSentryTracker();
-    sentryTracker.captureException(error);
+    if (sentryTracker) {
+      sentryTracker.captureException(error);
+    }
     return [];
   }
 }

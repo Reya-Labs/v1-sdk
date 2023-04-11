@@ -39,8 +39,10 @@ export const getIndividualOptimiserInfo = async (
     return optimiser;
   } catch (error) {
     const sentryTracker = getSentryTracker();
-    sentryTracker.captureException(error);
-    sentryTracker.captureMessage('Failed to load individual optimiser information.');
+    if (sentryTracker) {
+      sentryTracker.captureException(error);
+      sentryTracker.captureMessage('Failed to load individual optimiser information.');
+    }
     throw new Error('Failed to load optimiser information.');
   }
 };

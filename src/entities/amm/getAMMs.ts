@@ -43,9 +43,10 @@ export const getAMMs = async ({
     );
   } catch (err) {
     const sentryTracker = getSentryTracker();
-    sentryTracker.captureException(err);
-    sentryTracker.captureMessage('Failed to fetch AMMs from the subgraph');
-
+    if (sentryTracker) {
+      sentryTracker.captureException(err);
+      sentryTracker.captureMessage('Failed to fetch AMMs from the subgraph');
+    }
     error = 'Failed to fetch AMMs from the subgraph';
   }
 

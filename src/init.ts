@@ -42,10 +42,7 @@ export const getSubgraphURL = (
   return subgraphURLs[subgraphURLType];
 };
 
-export const getSentryTracker = (): BrowserClient => {
-  if (!sentryTracker) {
-    throw new Error('Sentry tracker is not set up!');
-  }
+export const getSentryTracker = (): BrowserClient | null => {
   return sentryTracker;
 };
 

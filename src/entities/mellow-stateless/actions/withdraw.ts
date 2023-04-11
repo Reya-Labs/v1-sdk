@@ -48,8 +48,10 @@ const vaultWithdraw = async ({
 
     // Report to Sentry
     const sentryTracker = getSentryTracker();
-    sentryTracker.captureException(error);
-    sentryTracker.captureMessage(errorMessage);
+    if (sentryTracker) {
+      sentryTracker.captureException(error);
+      sentryTracker.captureMessage(errorMessage);
+    }
 
     throw new Error(errorMessage);
   }
@@ -83,8 +85,10 @@ const vaultWithdraw = async ({
 
     // Report to Sentry
     const sentryTracker = getSentryTracker();
-    sentryTracker.captureException(error);
-    sentryTracker.captureMessage(errorMessage);
+    if (sentryTracker) {
+      sentryTracker.captureException(error);
+      sentryTracker.captureMessage(errorMessage);
+    }
 
     throw new Error(errorMessage);
   }
@@ -115,7 +119,9 @@ const optimiserWithdraw = async ({
 
     // Report to Sentry
     const sentryTracker = getSentryTracker();
-    sentryTracker.captureMessage(errorMessage);
+    if (sentryTracker) {
+      sentryTracker.captureMessage(errorMessage);
+    }
 
     throw new Error(errorMessage);
   }
@@ -127,7 +133,9 @@ const optimiserWithdraw = async ({
 
     // Report to Sentry
     const sentryTracker = getSentryTracker();
-    sentryTracker.captureMessage(errorMessage);
+    if (sentryTracker) {
+      sentryTracker.captureMessage(errorMessage);
+    }
 
     throw new Error(errorMessage);
   }
@@ -146,9 +154,10 @@ const optimiserWithdraw = async ({
 
     // Report to Sentry
     const sentryTracker = getSentryTracker();
-    sentryTracker.captureException(error);
-    sentryTracker.captureMessage(errorMessage);
-
+    if (sentryTracker) {
+      sentryTracker.captureException(error);
+      sentryTracker.captureMessage(errorMessage);
+    }
     throw new Error(errorMessage);
   }
 
@@ -164,8 +173,10 @@ const optimiserWithdraw = async ({
 
     // Report to Sentry
     const sentryTracker = getSentryTracker();
-    sentryTracker.captureException(error);
-    sentryTracker.captureMessage(errorMessage);
+    if (sentryTracker) {
+      sentryTracker.captureException(error);
+      sentryTracker.captureMessage(errorMessage);
+    }
 
     throw new Error(errorMessage);
   }
@@ -190,8 +201,10 @@ const optimiserWithdraw = async ({
 
     // Report to Sentry
     const sentryTracker = getSentryTracker();
-    sentryTracker.captureException(error);
-    sentryTracker.captureMessage(errorMessage);
+    if (sentryTracker) {
+      sentryTracker.captureException(error);
+      sentryTracker.captureMessage(errorMessage);
+    }
 
     throw new Error(errorMessage);
   }
@@ -222,8 +235,10 @@ export const withdraw = async (params: WithdrawArgs): Promise<WithdrawResponse> 
 
     // Report to Sentry
     const sentryTracker = getSentryTracker();
-    sentryTracker.captureException(error);
-    sentryTracker.captureMessage(errorMessage);
+    if (sentryTracker) {
+      sentryTracker.captureException(error);
+      sentryTracker.captureMessage(errorMessage);
+    }
   }
 
   // Return the response

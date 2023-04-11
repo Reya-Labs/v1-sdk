@@ -99,8 +99,10 @@ export const getMarket = (protocolId: number): Market => {
   const error = new Error(errorMessage);
 
   const sentryTracker = getSentryTracker();
-  sentryTracker.captureException(error);
-  sentryTracker.captureMessage(errorMessage);
+  if (sentryTracker) {
+    sentryTracker.captureException(error);
+    sentryTracker.captureMessage(errorMessage);
+  }
 
   throw error;
 };

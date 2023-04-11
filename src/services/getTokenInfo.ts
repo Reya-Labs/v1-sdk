@@ -159,6 +159,8 @@ export const getTokenInfo = (tokenAddress: string): { name: string; decimals: nu
   }
 
   const sentryTracker = getSentryTracker();
-  sentryTracker.captureMessage(`Token address ${tokenAddress} not supported.`);
+  if (sentryTracker) {
+    sentryTracker.captureMessage(`Token address ${tokenAddress} not supported.`);
+  }
   throw new Error(`Token address ${tokenAddress} not supported.`);
 };

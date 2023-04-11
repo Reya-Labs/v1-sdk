@@ -28,7 +28,9 @@ export const getPositionPnLGCloud = async (
     };
   } catch (e) {
     const sentryTracker = getSentryTracker();
-    sentryTracker.captureMessage('GCloud Positions API unavailable');
+    if (sentryTracker) {
+      sentryTracker.captureMessage('GCloud Positions API unavailable');
+    }
 
     return {
       realizedPnLFromSwaps: 0,

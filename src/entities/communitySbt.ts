@@ -298,8 +298,10 @@ class SBT {
       return tokenId;
     } catch (error) {
       const sentryTracker = getSentryTracker();
-      sentryTracker.captureException(error);
-      sentryTracker.captureMessage('Unable to claim');
+      if (sentryTracker) {
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage('Unable to claim');
+      }
       throw new Error('Unable to claim');
     }
   }
@@ -374,8 +376,10 @@ class SBT {
       };
     } catch (error) {
       const sentryTracker = getSentryTracker();
-      sentryTracker.captureException(error);
-      sentryTracker.captureMessage('Unable to claim multiple badges');
+      if (sentryTracker) {
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage('Unable to claim multiple badges');
+      }
       throw new Error('Unable to claim multiple badges');
     }
   }
@@ -418,8 +422,10 @@ class SBT {
       return badges;
     } catch (error) {
       const sentryTracker = getSentryTracker();
-      sentryTracker.captureException(error);
-      sentryTracker.captureMessage('Failed to get season badges');
+      if (sentryTracker) {
+        sentryTracker.captureException(error);
+        sentryTracker.captureMessage('Failed to get season badges');
+      }
       throw new Error('Failed to get season badges');
     }
   }
@@ -564,7 +570,9 @@ class SBT {
       return badgesResponse;
     } catch (error) {
       const sentryTracker = getSentryTracker();
-      sentryTracker.captureException(error);
+      if (sentryTracker) {
+        sentryTracker.captureException(error);
+      }
       return [];
     }
   }

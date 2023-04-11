@@ -265,7 +265,9 @@ export class Position {
                 : [avgVariableRate, avgFixedRate];
           } catch (error) {
             const sentryTracker = getSentryTracker();
-            sentryTracker.captureException(error);
+            if (sentryTracker) {
+              sentryTracker.captureException(error);
+            }
           }
         } else {
           this.accruedCashflow = this.settlementCashflow;
@@ -288,8 +290,10 @@ export class Position {
           this.liquidationThreshold = this.amm.descale(scaledLiqT);
         } catch (error) {
           const sentryTracker = getSentryTracker();
-          sentryTracker.captureMessage('Failed to compute the liquidation threshold');
-          sentryTracker.captureException(error);
+          if (sentryTracker) {
+            sentryTracker.captureMessage('Failed to compute the liquidation threshold');
+            sentryTracker.captureException(error);
+          }
         }
 
         // Get safety threshold
@@ -309,8 +313,10 @@ export class Position {
           );
         } catch (error) {
           const sentryTracker = getSentryTracker();
-          sentryTracker.captureMessage('Failed to compute the safety threshold');
-          sentryTracker.captureException(error);
+          if (sentryTracker) {
+            sentryTracker.captureMessage('Failed to compute the safety threshold');
+            sentryTracker.captureException(error);
+          }
         }
 
         // Get health factor

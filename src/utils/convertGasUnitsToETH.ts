@@ -15,8 +15,10 @@ export async function convertGasUnitsToETH(
     } catch (error) {
       if (attempt + 1 === attempts) {
         const sentryTracker = getSentryTracker();
-        sentryTracker.captureException(error);
-        sentryTracker.captureMessage('Unable to fetch ETH price after 5 attempts');
+        if (sentryTracker) {
+          sentryTracker.captureException(error);
+          sentryTracker.captureMessage('Unable to fetch ETH price after 5 attempts');
+        }
       }
     }
   }

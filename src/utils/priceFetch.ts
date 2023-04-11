@@ -28,8 +28,10 @@ export const geckoEthToUsd = async (apiKey: string): Promise<number> => {
     return price;
   } catch (error) {
     const sentryTracker = getSentryTracker();
-    sentryTracker.captureException(error);
-    sentryTracker.captureMessage(`Unable to fetch ETH price after ${NO_OF_RETRIES} attempts`);
+    if (sentryTracker) {
+      sentryTracker.captureException(error);
+      sentryTracker.captureMessage(`Unable to fetch ETH price after ${NO_OF_RETRIES} attempts`);
+    }
   }
 
   return 0;

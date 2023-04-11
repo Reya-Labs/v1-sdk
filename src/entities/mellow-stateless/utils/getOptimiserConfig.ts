@@ -18,7 +18,9 @@ export const getOptimiserConfig = (
 
     // Report to Sentry
     const sentryTracker = getSentryTracker();
-    sentryTracker.captureMessage(errorMessage);
+    if (sentryTracker) {
+      sentryTracker.captureMessage(errorMessage);
+    }
 
     throw new Error(errorMessage);
   }
