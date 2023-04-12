@@ -5,6 +5,7 @@ export type Market = {
   tags: {
     isBorrowing: boolean;
     isAaveV3: boolean;
+    isV2: boolean;
   };
 };
 
@@ -16,6 +17,7 @@ export const getMarket = (protocolId: number): Market => {
         tags: {
           isBorrowing: false,
           isAaveV3: false,
+          isV2: false,
         },
       };
 
@@ -25,6 +27,7 @@ export const getMarket = (protocolId: number): Market => {
         tags: {
           isBorrowing: false,
           isAaveV3: false,
+          isV2: false,
         },
       };
 
@@ -34,6 +37,7 @@ export const getMarket = (protocolId: number): Market => {
         tags: {
           isBorrowing: false,
           isAaveV3: false,
+          isV2: false,
         },
       };
 
@@ -43,6 +47,7 @@ export const getMarket = (protocolId: number): Market => {
         tags: {
           isBorrowing: false,
           isAaveV3: false,
+          isV2: false,
         },
       };
 
@@ -52,6 +57,7 @@ export const getMarket = (protocolId: number): Market => {
         tags: {
           isBorrowing: true,
           isAaveV3: false,
+          isV2: false,
         },
       };
 
@@ -61,6 +67,7 @@ export const getMarket = (protocolId: number): Market => {
         tags: {
           isBorrowing: true,
           isAaveV3: false,
+          isV2: false,
         },
       };
 
@@ -70,6 +77,7 @@ export const getMarket = (protocolId: number): Market => {
         tags: {
           isBorrowing: false,
           isAaveV3: true,
+          isV2: false,
         },
       };
 
@@ -79,6 +87,7 @@ export const getMarket = (protocolId: number): Market => {
         tags: {
           isBorrowing: false,
           isAaveV3: false,
+          isV2: false,
         },
       };
 
@@ -88,6 +97,7 @@ export const getMarket = (protocolId: number): Market => {
         tags: {
           isBorrowing: true,
           isAaveV3: true,
+          isV2: false,
         },
       };
 
