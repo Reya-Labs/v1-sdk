@@ -93,6 +93,16 @@ export const getAMMs = async ({
     });
   });
 
+  try {
+    await Promise.allSettled(amms.map((amm) => amm.refreshInfo()));
+  } catch (err) {
+    const sentryTracker = getSentryTracker();
+    sentryTracker.captureException(err);
+    sentryTracker.captureMessage('');
+
+    error = 'Amms failed to be initialized';
+  }
+
   return {
     amms,
     error,
