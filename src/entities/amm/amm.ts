@@ -166,7 +166,7 @@ export class AMM {
 
   public async refreshInfo(): Promise<void> {
     this.fixedApr = await this.getFixedApr();
-    this.variableApy = await this.getInstantApy();
+    this.variableApy = (await this.getInstantApy()) * 100;
     const oneDayInMilliseconds = 24 * 60 * 60 * 1000;
     const variableRate = await this.getInstantApy(Date.now() - oneDayInMilliseconds);
     this.variableApy24Ago = variableRate * 100;
