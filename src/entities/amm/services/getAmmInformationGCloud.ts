@@ -1,10 +1,11 @@
 import axios from 'axios';
 import { getSentryTracker } from '../../../init';
+import { SupportedChainId } from '../../../types';
 
 const baseURL = 'https://voltz-indexer-3wpwbm66ca-nw.a.run.app/api/amms';
 
 export const getAmmInformationGCloud = async (
-  chainId: number,
+  chainId: SupportedChainId,
   vammAddress: string,
 ): Promise<{
   volume30Day: number;

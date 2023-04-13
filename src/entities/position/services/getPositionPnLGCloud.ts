@@ -1,10 +1,11 @@
 import axios from 'axios';
 import { getSentryTracker } from '../../../init';
+import { SupportedChainId } from '../../../types';
 
 const baseURL = 'https://voltz-indexer-3wpwbm66ca-nw.a.run.app/api/positions';
 
 export const getPositionPnLGCloud = async (
-  chainId: number,
+  chainId: SupportedChainId,
   vammAddress: string,
   ownerAddress: string,
   tickLower: number,
