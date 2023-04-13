@@ -88,7 +88,7 @@ import { estimateSwapGasUnits } from '../../utils/estimateSwapGasUnits';
 import { convertGasUnitsToETH } from '../../utils/convertGasUnitsToETH';
 import { getBlockAtTimestampHeuristic } from '../../utils/getBlockAtTimestamp';
 import { approveToken, tokenAllowance } from '../../services';
-import { getAmmInformation } from './services/getAmmInformation';
+import { getAmmInformationGCloud } from './services/getAmmInformationGCloud';
 
 export class AMM {
   public readonly id: string;
@@ -172,7 +172,7 @@ export class AMM {
     this.variableApy24Ago = variableRate * 100;
 
     const chainId = (await this.provider.getNetwork()).chainId;
-    const ammInformationAPI = getAmmInformation(chainId, this.id);
+    const ammInformationAPI = getAmmInformationGCloud(chainId, this.id);
 
     this.volume30Days = ammInformationAPI.volume30Days;
     this.totalLiquidity = ammInformationAPI.totalLiquidity;
