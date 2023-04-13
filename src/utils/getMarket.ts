@@ -85,7 +85,7 @@ export const getMarket = (protocolId: number): Market => {
           isBorrowing: false,
           isAaveV3: true,
           isV2: false,
-          isYield: false,
+          isYield: true,
         },
       };
 
