@@ -115,6 +115,14 @@ export class AMM {
 
   private readonly dummyWallet: Wallet;
 
+  // new
+
+  public fixedAPR = 0;
+  public variableAPY = 0;
+  public variableAPYDelta = 0;
+  public volume30Days = 0;
+  public totalLiquidity = 0;
+
   public constructor({
     id,
     signer,
@@ -154,6 +162,8 @@ export class AMM {
 
     this.dummyWallet = getDummyWallet().connect(this.provider);
   }
+
+  public async refreshInfo(): Promise<void> {}
 
   public getUserAddress = async (_signer?: Signer): Promise<string> => {
     const signer = _signer || this.signer;
