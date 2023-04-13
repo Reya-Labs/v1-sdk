@@ -121,7 +121,7 @@ export class AMM {
   public fixedApr = 0;
   public variableApy = 0;
   public variableApy24Ago = 0;
-  public volume30Days = 0;
+  public volume30Day = 0;
   public totalLiquidity = 0;
 
   public constructor({
@@ -172,9 +172,8 @@ export class AMM {
     this.variableApy24Ago = variableRate * 100;
 
     const chainId = (await this.provider.getNetwork()).chainId;
-    const ammInformationAPI = getAmmInformationGCloud(chainId, this.id);
-
-    this.volume30Days = ammInformationAPI.volume30Days;
+    const ammInformationAPI = await getAmmInformationGCloud(chainId, this.id);
+    this.volume30Day = ammInformationAPI.volume30Day;
     this.totalLiquidity = ammInformationAPI.totalLiquidity;
   }
 
