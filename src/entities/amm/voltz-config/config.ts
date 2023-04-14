@@ -446,8 +446,8 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
         name: 'glpETH_v3',
         id: '0x034f2b4137ed637c6b6ca9636d5f9fee0998e5f1', // vamm address
         show: {
-          general: true,
-          trader: true,
+          general: false,
+          trader: false,
         },
         traderWithdrawable: false,
       },
