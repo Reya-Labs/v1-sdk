@@ -300,7 +300,7 @@ export class Position {
         this.tickUpper,
       );
 
-      positionPnL = this.processPositionPnLGCloud(positionPnL, this.liquidity > 0);
+      positionPnL = await this.processPositionPnLGCloud(positionPnL, this.liquidity > 0);
 
       this.realizedPnLFromSwaps = positionPnL.realizedPnLFromSwaps;
       this.realizedPnLFromFeesPaid = positionPnL.realizedPnLFromFeesPaid;
