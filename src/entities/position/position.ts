@@ -183,6 +183,8 @@ export class Position {
     return DateTime.fromMillis(this.createdTimestamp);
   }
 
+  private processPositionPnLGCloud();
+
   public async refreshInfo(): Promise<void> {
     if (this.initialized) {
       return;
@@ -229,13 +231,15 @@ export class Position {
       const chainId = (await this.amm.provider.getNetwork()).chainId;
 
       // todo: consider getting it out of the isSettled clause as well and push that logic into the gcloud api
-      const positionPnL = await getPositionPnLGCloud(
+      let positionPnL = await getPositionPnLGCloud(
         chainId,
         this.amm.id,
         this.owner,
         this.tickLower,
         this.tickUpper,
       );
+
+      positionPnL = this.processPositionPnLGCloud(positionPnL, this.liquidity > 0);
 
       this.realizedPnLFromSwaps = positionPnL.realizedPnLFromSwaps;
       this.realizedPnLFromFeesPaid = positionPnL.realizedPnLFromFeesPaid;
