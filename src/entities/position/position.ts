@@ -22,7 +22,8 @@ import { getCashflowInfo, transformSwaps } from '../../services/getCashflowInfo'
 import { getSentryTracker } from '../../init';
 import { getRangeHealthFactor } from '../../utils/rangeHealthFactor';
 import { exponentialBackoff } from '../../utils/retry';
-import { getPositionPnLGCloud } from './services/getPositionPnLGCloud';
+import { getPositionPnLGCloud, GetPositionPnLGCloudReturn } from './services/getPositionPnLGCloud';
+import { getAnnualizedTime } from '../../utils/functions';
 
 export type PositionConstructorArgs = {
   id: string;
@@ -183,7 +184,67 @@ export class Position {
     return DateTime.fromMillis(this.createdTimestamp);
   }
 
-  private processPositionPnLGCloud();
+  private async estimatedRealizedPnL(): Promise<number> {
+    const startTimestampSeconds = this.amm.termStartTimestampInMS / 1000;
+    const endTimestampSeconds = this.amm.termEndTimestampInMS / 1000;
+    const timeInYearsStartEnd = getAnnualizedTime(startTimestampSeconds, endTimestampSeconds);
+    const timeInYearsNowEnd = getAnnualizedTime(DateTime.now().toSeconds(), endTimestampSeconds);
+
+    const variableFactorStartNow = (
+      await this.amm.variableFactor(this.amm.termStartTimestampInMS, this.amm.termEndTimestampInMS)
+    ).scaled;
+
+    const variableFactorNowEndEstimated = this.amm.variableApy * timeInYearsNowEnd;
+
+    const variableCashflowStartNow = this.variableTokenBalance * variableFactorStartNow;
+    const variableCashflowNowEnd = this.variableTokenBalance * variableFactorNowEndEstimated;
+    const variableCashflow = variableCashflowStartNow + variableCashflowNowEnd;
+
+    const fixedCashflow: number = this.fixedTokenBalance * 0.01 * timeInYearsStartEnd;
+
+    return variableCashflow + fixedCashflow;
+  }
+
+  private async processPositionPnLGCloud(
+    positionPnL: GetPositionPnLGCloudReturn,
+    isLP: boolean,
+  ): Promise<GetPositionPnLGCloudReturn> {
+    // todo: break down into one function for lps and one for traders
+
+    const realizedPnLFromSwapsGCloud = positionPnL.realizedPnLFromSwaps;
+    const errorMarginInPercentThreshold = 0.4; // 40%
+
+    if (isLP) {
+      const realizedPnLFromSwapsFallback = await this.estimatedRealizedPnL();
+      const errorMargin = Math.abs(realizedPnLFromSwapsGCloud - realizedPnLFromSwapsFallback);
+      const errorMarginInPercent = errorMargin / Math.abs(realizedPnLFromSwapsFallback);
+
+      if (errorMarginInPercent > errorMarginInPercentThreshold) {
+        return {
+          realizedPnLFromSwaps: realizedPnLFromSwapsFallback,
+          realizedPnLFromFeesPaid: 0, // todo: need better fallback
+          unrealizedPnLFromSwaps: 0, // todo: need better fallback
+        };
+      }
+
+      return positionPnL;
+    }
+
+    // todo: move to constants
+    const realizedPnLFromSwapsFallback = this.accruedCashflow;
+    const errorMargin = Math.abs(realizedPnLFromSwapsGCloud - realizedPnLFromSwapsFallback);
+    const errorMarginInPercent = errorMargin / Math.abs(realizedPnLFromSwapsFallback);
+
+    if (errorMarginInPercent > errorMarginInPercentThreshold) {
+      return {
+        realizedPnLFromSwaps: realizedPnLFromSwapsFallback,
+        realizedPnLFromFeesPaid: 0, // todo: need better fallback
+        unrealizedPnLFromSwaps: 0, // todo: need better fallback
+      };
+    }
+
+    return positionPnL;
+  }
 
   public async refreshInfo(): Promise<void> {
     if (this.initialized) {
