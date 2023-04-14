@@ -205,41 +205,22 @@ export class Position {
     return variableCashflow + fixedCashflow;
   }
 
-  private async processPositionPnLGCloud(
+  private async processLPPositionPnLGCloud(
     positionPnL: GetPositionPnLGCloudReturn,
-    isLP: boolean,
   ): Promise<GetPositionPnLGCloudReturn> {
-    // todo: break down into one function for lps and one for traders
-
     const realizedPnLFromSwapsGCloud = positionPnL.realizedPnLFromSwaps;
     const errorMarginInPercentThreshold = 0.4; // 40%
 
-    if (isLP) {
-      const realizedPnLFromSwapsFallback = await this.estimatedRealizedPnL();
-      const errorMargin = Math.abs(realizedPnLFromSwapsGCloud - realizedPnLFromSwapsFallback);
-      const errorMarginInPercent = errorMargin / Math.abs(realizedPnLFromSwapsFallback);
-
-      if (errorMarginInPercent > errorMarginInPercentThreshold) {
-        return {
-          realizedPnLFromSwaps: realizedPnLFromSwapsFallback,
-          realizedPnLFromFeesPaid: 0, // todo: need better fallback
-          unrealizedPnLFromSwaps: 0, // todo: need better fallback
-        };
-      }
-
-      return positionPnL;
-    }
-
-    // todo: move to constants
-    const realizedPnLFromSwapsFallback = this.accruedCashflow;
+    // todo: turn estimatedRealizedPnL into a stateless function
+    const realizedPnLFromSwapsFallback = await this.estimatedRealizedPnL();
     const errorMargin = Math.abs(realizedPnLFromSwapsGCloud - realizedPnLFromSwapsFallback);
     const errorMarginInPercent = errorMargin / Math.abs(realizedPnLFromSwapsFallback);
 
     if (errorMarginInPercent > errorMarginInPercentThreshold) {
       return {
         realizedPnLFromSwaps: realizedPnLFromSwapsFallback,
-        realizedPnLFromFeesPaid: 0, // todo: need better fallback
-        unrealizedPnLFromSwaps: 0, // todo: need better fallback
+        realizedPnLFromFeesPaid: 0,
+        unrealizedPnLFromSwaps: 0,
       };
     }
 
@@ -300,7 +281,9 @@ export class Position {
         this.tickUpper,
       );
 
-      positionPnL = await this.processPositionPnLGCloud(positionPnL, this.liquidity > 0);
+      if (this.liquidity > 0) {
+        positionPnL = await this.processLPPositionPnLGCloud(positionPnL);
+      }
 
       this.realizedPnLFromSwaps = positionPnL.realizedPnLFromSwaps;
       this.realizedPnLFromFeesPaid = positionPnL.realizedPnLFromFeesPaid;
