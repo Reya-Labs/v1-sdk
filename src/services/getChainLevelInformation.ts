@@ -2,7 +2,7 @@ import axios from 'axios';
 import { getSentryTracker } from '../init';
 import { SupportedChainId } from '../types';
 
-const baseURL = 'http://34.142.8.201:8080/api/chains';
+const baseURL = 'https://api.voltz.xyz/chains';
 
 export const getChainLevelInformation = async (
   chainId: SupportedChainId,

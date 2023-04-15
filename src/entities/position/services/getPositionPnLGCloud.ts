@@ -2,7 +2,7 @@ import axios from 'axios';
 import { getSentryTracker } from '../../../init';
 import { SupportedChainId } from '../../../types';
 
-const baseURL = 'http://34.142.8.201:8080/api/positions';
+const baseURL = 'https://api.voltz.xyz/positions';
 
 export type GetPositionPnLGCloudReturn = {
   realizedPnLFromSwaps: number;

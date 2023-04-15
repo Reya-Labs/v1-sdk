@@ -2,7 +2,7 @@ import axios from 'axios';
 import { getSentryTracker } from '../../../init';
 import { SupportedChainId } from '../../../types';
 
-const baseURL = 'http://34.142.8.201:8080/api/amms';
+const baseURL = 'https://api.voltz.xyz/amms';
 
 export const getAmmInformationGCloud = async (
   chainId: SupportedChainId,
