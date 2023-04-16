@@ -134,6 +134,18 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
           general: true,
           trader: true,
         },
+        traderWithdrawable: true,
+        isAaveV3: true,
+      },
+
+      // aave v3 lend usdc mainnet
+      {
+        name: 'aUSDC_v14',
+        id: '0x42de041087B665CF62537CBF2A208E52274cc74d', // vamm address
+        show: {
+          general: true,
+          trader: true,
+        },
         traderWithdrawable: false,
         isAaveV3: true,
       },
