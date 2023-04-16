@@ -447,7 +447,7 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
 
       {
         name: 'borrow_aUSDC_v2',
-        id: '0xb97191595b38b192e776402a6ed2a23c7cf25582', // vamm address
+        id: '0x36f62fd95d4abf214a0b9c843ffc69a08d54bdc9', // vamm address
         show: {
           general: true,
           trader: true,
