@@ -407,7 +407,7 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
           general: true,
           trader: true,
         },
-        traderWithdrawable: false,
+        traderWithdrawable: true,
         isAaveV3: true,
       },
 
@@ -415,6 +415,17 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
       {
         name: 'borrow_aUSDC_v1',
         id: '0x8ce24926b49f9e1b97dc21109ed8ab67cf0293c2', // vamm address
+        show: {
+          general: true,
+          trader: true,
+        },
+        traderWithdrawable: false,
+        isAaveV3: true,
+      },
+
+      {
+        name: 'borrow_aUSDC_v2',
+        id: '0xb97191595b38b192e776402a6ed2a23c7cf25582', // vamm address
         show: {
           general: true,
           trader: true,
