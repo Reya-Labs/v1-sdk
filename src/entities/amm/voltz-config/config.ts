@@ -134,6 +134,18 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
           general: true,
           trader: true,
         },
+        traderWithdrawable: true,
+        isAaveV3: true,
+      },
+
+      // aave v3 lend usdc mainnet
+      {
+        name: 'aUSDC_v14',
+        id: '0x42de041087B665CF62537CBF2A208E52274cc74d', // vamm address
+        show: {
+          general: true,
+          trader: true,
+        },
         traderWithdrawable: false,
         isAaveV3: true,
       },
@@ -152,6 +164,16 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
       {
         name: 'borrow_aUSDC_v2',
         id: '0xb1842fe197320359271d061b42795d7ce4b77513', // vamm address
+        show: {
+          general: true,
+          trader: true,
+        },
+        traderWithdrawable: false,
+      },
+
+      {
+        name: 'borrow_aUSDC_v3',
+        id: '0xAe2725e6A6CDfD742cBeEE177D093F3677dc2c49', // vamm address
         show: {
           general: true,
           trader: true,
@@ -407,7 +429,7 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
           general: true,
           trader: true,
         },
-        traderWithdrawable: false,
+        traderWithdrawable: true,
         isAaveV3: true,
       },
 
@@ -415,6 +437,17 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
       {
         name: 'borrow_aUSDC_v1',
         id: '0x8ce24926b49f9e1b97dc21109ed8ab67cf0293c2', // vamm address
+        show: {
+          general: true,
+          trader: true,
+        },
+        traderWithdrawable: false,
+        isAaveV3: true,
+      },
+
+      {
+        name: 'borrow_aUSDC_v2',
+        id: '0xb97191595b38b192e776402a6ed2a23c7cf25582', // vamm address
         show: {
           general: true,
           trader: true,
