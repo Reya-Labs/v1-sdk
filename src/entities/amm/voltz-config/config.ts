@@ -161,12 +161,13 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
 
       {
         name: 'borrow_aUSDC_v3',
-        id: '0xAe2725e6A6CDfD742cBeEE177D093F3677dc2c49', // vamm address
+        id: '0xb62d44e1bd91e868b682c09b1792a9026f35b1e4', // vamm address
         show: {
           general: true,
           trader: true,
         },
         traderWithdrawable: false,
+        isAaveV3: true,
       },
 
       // aDAI pools
