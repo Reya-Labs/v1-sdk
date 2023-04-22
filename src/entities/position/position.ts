@@ -22,8 +22,7 @@ import { getCashflowInfo, transformSwaps } from '../../services/getCashflowInfo'
 import { getSentryTracker } from '../../init';
 import { getRangeHealthFactor } from '../../utils/rangeHealthFactor';
 import { exponentialBackoff } from '../../utils/retry';
-import { getPositionPnLGCloud, GetPositionPnLGCloudReturn } from './services/getPositionPnLGCloud';
-import { getAnnualizedTime } from '../../utils/functions';
+import { getPositionPnLGCloud } from './services/getPositionPnLGCloud';
 
 export type PositionConstructorArgs = {
   id: string;
@@ -184,49 +183,6 @@ export class Position {
     return DateTime.fromMillis(this.createdTimestamp);
   }
 
-  private async estimatedRealizedPnL(): Promise<number> {
-    const startTimestampSeconds = this.amm.termStartTimestampInMS / 1000;
-    const endTimestampSeconds = this.amm.termEndTimestampInMS / 1000;
-    const timeInYearsStartEnd = getAnnualizedTime(startTimestampSeconds, endTimestampSeconds);
-    const timeInYearsNowEnd = getAnnualizedTime(DateTime.now().toSeconds(), endTimestampSeconds);
-
-    const variableFactorStartNow = (
-      await this.amm.variableFactor(this.amm.termStartTimestampInMS, this.amm.termEndTimestampInMS)
-    ).scaled;
-
-    const variableFactorNowEndEstimated = this.amm.variableApy * timeInYearsNowEnd;
-
-    const variableCashflowStartNow = this.variableTokenBalance * variableFactorStartNow;
-    const variableCashflowNowEnd = this.variableTokenBalance * variableFactorNowEndEstimated;
-    const variableCashflow = variableCashflowStartNow + variableCashflowNowEnd;
-
-    const fixedCashflow: number = this.fixedTokenBalance * 0.01 * timeInYearsStartEnd;
-
-    return variableCashflow + fixedCashflow;
-  }
-
-  private async processLPPositionPnLGCloud(
-    positionPnL: GetPositionPnLGCloudReturn,
-  ): Promise<GetPositionPnLGCloudReturn> {
-    const realizedPnLFromSwapsGCloud = positionPnL.realizedPnLFromSwaps;
-    const errorMarginInPercentThreshold = 0.4; // 40%
-
-    // todo: turn estimatedRealizedPnL into a stateless function
-    const realizedPnLFromSwapsFallback = await this.estimatedRealizedPnL();
-    const errorMargin = Math.abs(realizedPnLFromSwapsGCloud - realizedPnLFromSwapsFallback);
-    const errorMarginInPercent = errorMargin / Math.abs(realizedPnLFromSwapsFallback);
-
-    if (errorMarginInPercent > errorMarginInPercentThreshold) {
-      return {
-        realizedPnLFromSwaps: realizedPnLFromSwapsFallback,
-        realizedPnLFromFeesPaid: 0,
-        unrealizedPnLFromSwaps: 0,
-      };
-    }
-
-    return positionPnL;
-  }
-
   public async refreshInfo(): Promise<void> {
     if (this.initialized) {
       return;
@@ -273,17 +229,13 @@ export class Position {
       const chainId = (await this.amm.provider.getNetwork()).chainId;
 
       // todo: consider getting it out of the isSettled clause as well and push that logic into the gcloud api
-      let positionPnL = await getPositionPnLGCloud(
+      const positionPnL = await getPositionPnLGCloud(
         chainId,
         this.amm.id,
         this.owner,
         this.tickLower,
         this.tickUpper,
       );
-
-      if (this.liquidity > 0) {
-        positionPnL = await this.processLPPositionPnLGCloud(positionPnL);
-      }
 
       this.realizedPnLFromSwaps = positionPnL.realizedPnLFromSwaps;
       this.realizedPnLFromFeesPaid = positionPnL.realizedPnLFromFeesPaid;
