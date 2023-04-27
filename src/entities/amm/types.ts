@@ -24,6 +24,12 @@ export type AMMConstructorArgs = {
   ethPrice?: () => Promise<number>;
 
   minLeverageAllowed: number;
+
+  hidden: boolean;
+  traderHidden: boolean;
+  traderWithdrawable: boolean;
+
+  rollover?: string;
 };
 
 // swap
