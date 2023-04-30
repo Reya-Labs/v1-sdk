@@ -2,9 +2,18 @@ import { getSentryTracker } from '../../../init';
 import { validateWeights } from './validateWeights';
 
 export const mapWeights = (
-  optimiserVaultIds: string[],
-  spareWeights: [string, number][],
+  caseSensitiveOptimiserVaultIds: string[],
+  caseSensitiveSpareWeights: [string, number][],
 ): number[] => {
+  const spareWeights: [string, number][] = caseSensitiveSpareWeights.map((w) => [
+    w[0].toLowerCase(),
+    w[1],
+  ]);
+
+  const optimiserVaultIds = caseSensitiveOptimiserVaultIds.map((optimiser) =>
+    optimiser.toLowerCase(),
+  );
+
   const uniqueVaultIds = Array.from(new Set(spareWeights.map((w) => w[0])));
 
   if (uniqueVaultIds.length < spareWeights.length) {
