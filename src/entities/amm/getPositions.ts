@@ -25,7 +25,13 @@ const isBorrowingPosition = (p: Position) => {
 };
 
 const isTraderPosition = (p: Position) => {
-  return p.positionType === 1 || p.positionType === 2 || p.swaps.length > 0;
+  return (
+    p.positionType === 1 ||
+    p.positionType === 2 ||
+    p.swaps.filter(
+      (swap) => !p.liquidations.map((liquidation) => liquidation.txId).includes(swap.txId),
+    ).length > 0
+  );
 };
 
 const isLPPosition = (p: Position) => {
