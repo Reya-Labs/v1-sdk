@@ -17,11 +17,13 @@ type GetAMMsResponse = {
 type GetAMMsArgs = {
   chainId: SupportedChainId;
   alchemyApiKey: string;
+  active?: boolean;
 };
 
 export const getAMMs = async ({
   chainId,
   alchemyApiKey,
+  active,
 }: GetAMMsArgs): Promise<GetAMMsResponse> => {
   const config = getVoltzPoolConfig(chainId);
 
@@ -39,6 +41,7 @@ export const getAMMs = async ({
       Date.now().valueOf(),
       {
         ammIDs: config.apply ? whitelistedPoolIds : undefined,
+        active,
       },
     );
   } catch (err) {
@@ -90,6 +93,16 @@ export const getAMMs = async ({
           : config.defaultMinLeverageAllowed,
     });
   });
+
+  try {
+    await Promise.allSettled(amms.map((amm) => amm.refreshInfo()));
+  } catch (err) {
+    const sentryTracker = getSentryTracker();
+    sentryTracker.captureException(err);
+    sentryTracker.captureMessage('');
+
+    error = 'Amms failed to be initialized';
+  }
 
   return {
     amms,

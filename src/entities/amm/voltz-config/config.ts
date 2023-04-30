@@ -134,7 +134,7 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
           general: true,
           trader: true,
         },
-        traderWithdrawable: false,
+        traderWithdrawable: true,
         isAaveV3: true,
       },
 
@@ -157,6 +157,17 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
           trader: true,
         },
         traderWithdrawable: false,
+      },
+
+      {
+        name: 'borrow_aUSDC_v3',
+        id: '0xb62d44e1bd91e868b682c09b1792a9026f35b1e4', // vamm address
+        show: {
+          general: true,
+          trader: true,
+        },
+        traderWithdrawable: false,
+        isAaveV3: true,
       },
 
       // aDAI pools
@@ -407,7 +418,7 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
           general: true,
           trader: true,
         },
-        traderWithdrawable: false,
+        traderWithdrawable: true,
         isAaveV3: true,
       },
 
@@ -415,6 +426,17 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
       {
         name: 'borrow_aUSDC_v1',
         id: '0x8ce24926b49f9e1b97dc21109ed8ab67cf0293c2', // vamm address
+        show: {
+          general: true,
+          trader: true,
+        },
+        traderWithdrawable: false,
+        isAaveV3: true,
+      },
+
+      {
+        name: 'borrow_aUSDC_v2',
+        id: '0xb97191595b38b192e776402a6ed2a23c7cf25582', // vamm address
         show: {
           general: true,
           trader: true,
@@ -436,6 +458,15 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
       {
         name: 'glpETH_v2',
         id: '0x1aac6232b7c7cd6c8479077844eb0302cca0d2af', // vamm address
+        show: {
+          general: true,
+          trader: true,
+        },
+        traderWithdrawable: true,
+      },
+      {
+        name: 'glpETH_v3',
+        id: '0x034f2b4137ed637c6b6ca9636d5f9fee0998e5f1', // vamm address
         show: {
           general: true,
           trader: true,
