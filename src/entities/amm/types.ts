@@ -217,3 +217,7 @@ export type ExpectedCashflowInfo = {
   // Total cashflow of resulting position
   estimatedTotalCashflow: (estimatedApy: number) => number;
 };
+
+export type InfoPostSettlePosition = {
+  gasFeeETH: number;
+};

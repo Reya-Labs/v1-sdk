@@ -73,6 +73,7 @@ import {
   ExpectedCashflowInfo,
   InfoPostLp,
   AMMGetInfoPostLpArgs,
+  InfoPostSettlePosition,
 } from './types';
 import { geckoEthToUsd } from '../../utils/priceFetch';
 import { getVariableFactor, RateOracle } from '../rateOracle';
@@ -1581,6 +1582,36 @@ export class AMM {
       sentryTracker.captureMessage('Transaction Confirmation Error');
       throw new Error('Transaction Confirmation Error');
     }
+  }
+
+  public async getInfoPostSettlePosition({
+    owner,
+    fixedLow,
+    fixedHigh,
+  }: AMMSettlePositionArgs): Promise<InfoPostSettlePosition> {
+    if (!this.signer) {
+      throw new Error('Wallet not connected');
+    }
+
+    const effectiveOwner = !owner ? await this.getUserAddress() : owner;
+
+    const { closestUsableTick: tickUpper } = this.closestTickAndFixedRate(fixedLow);
+    const { closestUsableTick: tickLower } = this.closestTickAndFixedRate(fixedHigh);
+
+    const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.signer);
+
+    const gasLimit = await peripheryContract.estimateGas.settlePositionAndWithdrawMargin(
+      this.marginEngineAddress,
+      effectiveOwner,
+      tickLower,
+      tickUpper,
+    );
+
+    const gasFeeETH = await convertGasUnitsToETH(this.provider, gasLimit.toNumber());
+
+    return {
+      gasFeeETH,
+    };
   }
 
   // scale/descale according to underlying token
