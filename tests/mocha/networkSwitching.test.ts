@@ -44,6 +44,12 @@ describe('Network Switching tests', async () => {
         expect(networkDetected.isSupported).to.be.eq(true);
         expect(networkDetected.chainId).to.be.eq(SupportedChainId.arbitrumGoerli);
       }
+
+      {
+        const networkDetected = detectNetworkWithChainId(43114);
+        expect(networkDetected.isSupported).to.be.eq(true);
+        expect(networkDetected.chainId).to.be.eq(SupportedChainId.avalanche);
+      }
     });
 
     it('Detect network using signer', async () => {
@@ -85,6 +91,14 @@ describe('Network Switching tests', async () => {
         );
         expect(networkDetected.isSupported).to.be.eq(true);
         expect(networkDetected.chainId).to.be.eq(SupportedChainId.arbitrumGoerli);
+      }
+
+      {
+        const networkDetected = await detectNetworkWithSigner(
+          getMockedSigner(43114) as unknown as Signer,
+        );
+        expect(networkDetected.isSupported).to.be.eq(true);
+        expect(networkDetected.chainId).to.be.eq(SupportedChainId.avalanche);
       }
     });
   });

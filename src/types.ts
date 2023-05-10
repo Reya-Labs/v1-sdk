@@ -38,6 +38,7 @@ export enum SupportedChainId {
   goerli = 5,
   arbitrum = 42161,
   arbitrumGoerli = 421613,
+  avalanche = 43114,
 }
 
 export enum SubgraphURLEnum {
