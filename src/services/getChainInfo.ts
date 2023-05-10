@@ -36,6 +36,13 @@ const CHAIN_INFO: Record<SupportedChainId, ChainInfo> = {
     nativeCurrency: { name: 'Görli Ether', symbol: 'görETH', decimals: 18 },
     defaultRpcUrl: 'https://goerli-rollup.arbitrum.io/rpc',
   },
+  [SupportedChainId.avalanche]: {
+    // TODO: Costin, Alex fix here please
+    explorer: 'https://goerli.arbiscan.io/',
+    label: 'Avalanche',
+    nativeCurrency: { name: 'Avalanche', symbol: 'AVAX', decimals: 18 },
+    defaultRpcUrl: 'https://goerli-rollup.arbitrum.io/rpc',
+  },
 };
 
 export function getChainInfo(chainId: SupportedChainId): ChainInfo | undefined {
