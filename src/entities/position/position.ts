@@ -257,7 +257,7 @@ export class Position {
 
             // Get receiving and paying rates
             const avgFixedRate = cashflowInfo.avgFixedRate;
-            const avgVariableRate = (await this.amm.getInstantApy()) * 100;
+            const avgVariableRate = (await this.amm.getInstantApy()).currentApy * 100;
 
             [this.receivingRate, this.payingRate] =
               this.positionType === 1

@@ -83,6 +83,9 @@ describe('amm:rolloverWithSwap', () => {
             wethAddress: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
             ethPrice: async () => 1200,
             minLeverageAllowed: 0,
+            chainId: 1,
+            traderVisible: true,
+            traderWithdrawable: true,
           });
 
           const before = {
@@ -151,6 +154,9 @@ describe('amm:rolloverWithSwap', () => {
             wethAddress: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
             ethPrice: async () => 1200,
             minLeverageAllowed: 0,
+            chainId: 1,
+            traderVisible: true,
+            traderWithdrawable: true,
           });
 
           const before = {
@@ -221,6 +227,9 @@ describe('amm:rolloverWithSwap', () => {
             wethAddress: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
             ethPrice: async () => 1200,
             minLeverageAllowed: 0,
+            chainId: 1,
+            traderVisible: true,
+            traderWithdrawable: true,
           });
 
           const newMarginEngine = '0x626cf6b2fbf578653f7fa5424962972161a79de7';
@@ -274,6 +283,9 @@ describe('amm:rolloverWithSwap', () => {
             wethAddress: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
             ethPrice: async () => 1200,
             minLeverageAllowed: 0,
+            chainId: 1,
+            traderVisible: true,
+            traderWithdrawable: true,
           });
 
           const tokenAddress = amm.underlyingToken.id;
@@ -354,6 +366,9 @@ describe('amm:rolloverWithSwap', () => {
             wethAddress: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
             ethPrice: async () => 1200,
             minLeverageAllowed: 0,
+            chainId: 1,
+            traderVisible: true,
+            traderWithdrawable: true,
           });
 
           const tokenAddress = amm.underlyingToken.id;

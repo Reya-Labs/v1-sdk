@@ -73,7 +73,4 @@ export const ONE_DAY_IN_SECONDS = 60 * 60 * 24;
 export const ONE_YEAR_IN_SECONDS = 365 * 24 * 60 * 60;
 export const DEPOSIT_WINDOW = 48 * ONE_HOUR_IN_MS;
 
-export const GLP_PRECISION = BigNumber.from(10).pow(30);
-export const WAD_PRECISION = BigNumber.from(10).pow(18);
-
 export const WAD = BigNumber.from('1000000000000000000');

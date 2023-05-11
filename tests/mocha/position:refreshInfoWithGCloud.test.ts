@@ -1,16 +1,12 @@
 import { network, waffle } from 'hardhat';
-import { expect } from 'chai';
 import * as sinon from 'sinon';
 import { BrowserClient } from '@sentry/browser';
 import { AMM, Position, RateOracle, Token } from '../../src/entities';
-import { advanceTimeAndBlock } from '../time';
 import * as initSDK from '../../src/init';
 import axios from 'axios';
 import alchemyApiKeyToURL from '../../src/utils/alchemyApiKeyToURL';
 
 const { provider } = waffle;
-const DELTA = 0.0001;
-
 
 // todo: needs more work
 describe.skip('position:refreshInfoGcloud', () => {
@@ -53,10 +49,8 @@ describe.skip('position:refreshInfoGcloud', () => {
   });
 
   describe('Stable coin positions', () => {
-
     describe('positions', () => {
       it('trader', async () => {
-
         // todo: remove redundunt mock data
         const amm = new AMM({
           id: '0xf6421486af95c3ea6c4555554d55ef0c3a2048ba',
@@ -82,11 +76,14 @@ describe.skip('position:refreshInfoGcloud', () => {
           wethAddress: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
           ethPrice: async () => 1200,
           minLeverageAllowed: 0,
+          chainId: 1,
+          traderVisible: true,
+          traderWithdrawable: true,
         });
 
         const positionId =
           '0xf6421486af95c3ea6c4555554d55ef0c3a2048ba#0xf8f6b70a36f4398f0853a311dc6699aba8333cc1#-69060#0';
-        
+
         // todo: not swaps in the example below won't align with gcloud
         const position = new Position({
           id: positionId,
@@ -158,11 +155,11 @@ describe.skip('position:refreshInfoGcloud', () => {
 
         const realizedPnLFromSwaps = position.realizedPnLFromSwaps;
 
+        // eslint-disable-next-line no-console
         console.log(`realizedPnLFromSwaps trader ${realizedPnLFromSwaps}`);
       });
 
       it('lp', async () => {
-
         // todo: remove redundunt mock data
         const amm = new AMM({
           id: '0xf6421486af95c3ea6c4555554d55ef0c3a2048ba',
@@ -188,11 +185,14 @@ describe.skip('position:refreshInfoGcloud', () => {
           wethAddress: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
           ethPrice: async () => 1200,
           minLeverageAllowed: 0,
+          chainId: 1,
+          traderVisible: true,
+          traderWithdrawable: true,
         });
 
         const positionId =
           '0xf6421486af95c3ea6c4555554d55ef0c3a2048ba#0xf8f6b70a36f4398f0853a311dc6699aba8333cc1#-69060#0';
-        
+
         // todo: not swaps in the example below won't align with gcloud
         const position = new Position({
           id: positionId,
@@ -201,7 +201,7 @@ describe.skip('position:refreshInfoGcloud', () => {
           tickLower: -13560,
           tickUpper: -13440,
           isBothTraderAndLP: false,
-          
+
           createdTimestamp: 0,
 
           positionType: 2,
@@ -276,13 +276,7 @@ describe.skip('position:refreshInfoGcloud', () => {
         });
 
         await position.refreshInfo();
-
-        const realizedPnLFromSwaps = position.realizedPnLFromSwaps;
-
-        console.log(`realizedPnLFromSwaps lp ${realizedPnLFromSwaps}`);
       });
-
     });
   });
-
 });
