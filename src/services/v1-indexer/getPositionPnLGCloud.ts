@@ -1,8 +1,7 @@
 import axios from 'axios';
-import { getSentryTracker } from '../../../init';
-import { SupportedChainId } from '../../../types';
-
-const baseURL = 'https://api.voltz.xyz/positions';
+import { getSentryTracker } from '../../init';
+import { SupportedChainId } from '../../types';
+import { getServiceUrl } from './urls';
 
 export type GetPositionPnLGCloudReturn = {
   realizedPnLFromSwaps: number;
@@ -18,7 +17,8 @@ export const getPositionPnLGCloud = async (
   tickUpper: number,
 ): Promise<GetPositionPnLGCloudReturn> => {
   try {
-    const url = `${baseURL}/${chainId}/${vammAddress}/${ownerAddress}/${tickLower}/${tickUpper}`;
+    const baseUrl = getServiceUrl('position-pnl');
+    const url = `${baseUrl}/${chainId}/${vammAddress}/${ownerAddress}/${tickLower}/${tickUpper}`;
     const res = await axios({
       method: 'get',
       url: url,

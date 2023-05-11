@@ -1,17 +1,17 @@
 import axios from 'axios';
-import { getSentryTracker } from '../init';
-import { SupportedChainId } from '../types';
-
-const baseURL = 'https://api.voltz.xyz/chains';
+import { getSentryTracker } from '../../init';
+import { SupportedChainId } from '../../types';
+import { getServiceUrl } from './urls';
 
 export const getChainLevelInformation = async (
-  chainId: SupportedChainId,
+  chainIds: SupportedChainId[],
 ): Promise<{
   volume30DayInDollars: number;
   totalLiquidityInDollars: number;
 }> => {
   try {
-    const url = `${baseURL}/${chainId}`;
+    const baseUrl = getServiceUrl('chain-information');
+    const url = `${baseUrl}/${chainIds}`;
     const res = await axios({
       method: 'get',
       url: url,
