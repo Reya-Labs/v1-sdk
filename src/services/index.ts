@@ -6,4 +6,4 @@ export * from './getChainInfo';
 export * from './getViewOnEtherScanLink';
 export * from './token';
 export * from './getNotionalFromLiquidity';
-export * from './getChainLevelInformation';
+export * from './v1-indexer/getChainLevelInformation';

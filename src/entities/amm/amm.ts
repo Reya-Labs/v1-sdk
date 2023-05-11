@@ -89,7 +89,6 @@ import { estimateSwapGasUnits } from '../../utils/estimateSwapGasUnits';
 import { convertGasUnitsToETH } from '../../utils/convertGasUnitsToETH';
 import { getBlockAtTimestampHeuristic } from '../../utils/getBlockAtTimestamp';
 import { approveToken, tokenAllowance } from '../../services';
-import { getAmmInformationGCloud } from './services/getAmmInformationGCloud';
 
 export class AMM {
   public readonly id: string;
@@ -122,8 +121,6 @@ export class AMM {
   public fixedApr = 0;
   public variableApy = 0;
   public variableApy24Ago = 0;
-  public volume30Day = 0;
-  public totalLiquidity = 0;
 
   public constructor({
     id,
@@ -171,11 +168,6 @@ export class AMM {
     const oneDayInMilliseconds = 24 * 60 * 60 * 1000;
     const variableRate = await this.getInstantApy(Date.now() - oneDayInMilliseconds);
     this.variableApy24Ago = variableRate * 100;
-
-    const chainId = (await this.provider.getNetwork()).chainId;
-    const ammInformationAPI = await getAmmInformationGCloud(chainId, this.id);
-    this.volume30Day = ammInformationAPI.volume30Day;
-    this.totalLiquidity = ammInformationAPI.totalLiquidity;
   }
 
   public getUserAddress = async (_signer?: Signer): Promise<string> => {
