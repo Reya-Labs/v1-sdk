@@ -1,13 +1,16 @@
 import { providers } from 'ethers';
 import { exponentialBackoff } from './retry';
+import { getCurrentBlock, getRandomBlock } from '../services/chainBlocks';
+import { SupportedChainId } from '../types';
 
 // It returns the block at given timestamp in a specific network
 export async function getBlockAtTimestamp(
+  chainId: SupportedChainId,
   provider: providers.Provider,
   timestamp: number,
 ): Promise<number> {
   let lo = 0;
-  let hi = (await exponentialBackoff(() => provider.getBlock('latest'))).number;
+  let hi = (await getCurrentBlock(chainId, provider)).number;
   let answer = 0;
 
   while (lo <= hi) {
@@ -29,13 +32,12 @@ export async function getBlockAtTimestamp(
 // It returns the block at given timestamp in a specific network
 // using an heuristic method
 export async function getBlockAtTimestampHeuristic(
+  chainId: SupportedChainId,
   provider: providers.Provider,
   timestamp: number,
 ): Promise<number> {
-  const currentBlock = await exponentialBackoff(() => provider.getBlock('latest'));
-  const randomPastBlock = await exponentialBackoff(() =>
-    provider.getBlock(Math.max(1, currentBlock.number - 100000)),
-  );
+  const currentBlock = await getCurrentBlock(chainId, provider);
+  const randomPastBlock = await getRandomBlock(chainId, provider);
 
   const blockNumberAtTimestamp = Math.max(
     1,

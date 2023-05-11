@@ -1,4 +1,3 @@
-import { isUndefined } from 'lodash';
 import { getProvider, getSentryTracker } from '../../init';
 import { SupportedChainId } from '../../types';
 import { RateOracle } from '../rateOracle';
@@ -6,6 +5,7 @@ import Token from '../token';
 import { AMM } from './amm';
 import { getVoltzPoolConfig } from './voltz-config';
 import { RawAMM, getPoolsGCloud } from '../../services/v1-indexer/getPoolsGCloud';
+import { getVoltzSinglePoolConfig } from './voltz-config/getConfig';
 
 type GetAMMsResponse = {
   amms: AMM[];
@@ -66,15 +66,20 @@ export const getAMMs = async ({
     return a.chainId - b.chainId;
   });
 
-  const amms = sortedRawAMMs.map((rawAmm, index) => {
-    const config = getVoltzPoolConfig(rawAmm.chainId);
+  const amms = sortedRawAMMs.map((rawAmm) => {
+    const networkConfig = getVoltzPoolConfig(rawAmm.chainId);
+    const poolConfig = getVoltzSinglePoolConfig(rawAmm.chainId, rawAmm.vamm);
 
     return new AMM({
+      chainId: rawAmm.chainId,
       id: rawAmm.vamm,
+
       signer: null,
       provider: getProvider(rawAmm.chainId, alchemyApiKey),
-      peripheryAddress: config.peripheryAddress,
-      factoryAddress: config.factoryAddress,
+
+      peripheryAddress: networkConfig.peripheryAddress,
+      factoryAddress: networkConfig.factoryAddress,
+
       marginEngineAddress: rawAmm.marginEngine,
       rateOracle: new RateOracle({
         id: rawAmm.rateOracle,
@@ -88,11 +93,11 @@ export const getAMMs = async ({
         decimals: rawAmm.tokenDecimals,
       }),
       tickSpacing: rawAmm.tickSpacing,
-      wethAddress: config.wethAddress,
-      minLeverageAllowed:
-        index < config.pools.length && !isUndefined(config.pools[index].minLeverageAllowed)
-          ? (config.pools[index].minLeverageAllowed as number)
-          : config.defaultMinLeverageAllowed,
+      wethAddress: networkConfig.wethAddress,
+
+      minLeverageAllowed: poolConfig.minLeverageAllowed || networkConfig.defaultMinLeverageAllowed,
+      traderVisible: poolConfig.show.trader,
+      traderWithdrawable: poolConfig.traderWithdrawable,
     });
   });
 
