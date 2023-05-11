@@ -3,9 +3,11 @@ import { Price } from '../fractions/price';
 import { Position } from '../position';
 import { RateOracle } from '../rateOracle';
 import Token from '../token';
+import { SupportedChainId } from '../../types';
 
 export type AMMConstructorArgs = {
   id: string;
+  chainId: SupportedChainId;
   signer: Signer | null;
   provider: providers.Provider;
 
@@ -24,6 +26,8 @@ export type AMMConstructorArgs = {
   ethPrice?: () => Promise<number>;
 
   minLeverageAllowed: number;
+  traderVisible: boolean;
+  traderWithdrawable: boolean;
 };
 
 // swap

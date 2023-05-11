@@ -1,4 +1,4 @@
-type PoolConfiguration = {
+export type PoolConfiguration = {
   name: string;
   id: string;
   show: {

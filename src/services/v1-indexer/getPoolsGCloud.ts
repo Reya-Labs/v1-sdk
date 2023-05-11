@@ -22,7 +22,7 @@ export type RawAMM = {
 export const getPoolsGCloud = async (chainIds: SupportedChainId[]): Promise<RawAMM[]> => {
   try {
     const baseUrl = getServiceUrl('chain-pools');
-    const url = `${baseUrl}/${chainIds}`;
+    const url = `${baseUrl}/${chainIds.join('&')}`;
 
     const res = await axios({
       method: 'get',

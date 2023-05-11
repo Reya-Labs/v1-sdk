@@ -89,9 +89,11 @@ import { estimateSwapGasUnits } from '../../utils/estimateSwapGasUnits';
 import { convertGasUnitsToETH } from '../../utils/convertGasUnitsToETH';
 import { getBlockAtTimestampHeuristic } from '../../utils/getBlockAtTimestamp';
 import { approveToken, tokenAllowance } from '../../services';
+import { getCurrentBlock } from '../../services/chainBlocks';
 
 export class AMM {
   public readonly id: string;
+  public readonly chainId: number;
   public readonly signer: Signer | null;
   public readonly provider: providers.Provider;
   public readonly peripheryAddress: string;
@@ -113,6 +115,8 @@ export class AMM {
     wad: BigNumber;
   }>;
   public readonly minLeverageAllowed: number;
+  public readonly traderVisible: boolean;
+  public readonly traderWithdrawable: boolean;
 
   private readonly dummyWallet: Wallet;
 
@@ -124,6 +128,7 @@ export class AMM {
 
   public constructor({
     id,
+    chainId,
     signer,
     provider,
     peripheryAddress,
@@ -137,8 +142,11 @@ export class AMM {
     wethAddress,
     ethPrice,
     minLeverageAllowed,
+    traderVisible,
+    traderWithdrawable,
   }: AMMConstructorArgs) {
     this.id = id;
+    this.chainId = chainId;
     this.signer = signer;
     this.peripheryAddress = peripheryAddress;
     this.factoryAddress = factoryAddress;
@@ -158,16 +166,32 @@ export class AMM {
     this.variableFactor = getVariableFactor(this.provider, this.rateOracle.id);
 
     this.minLeverageAllowed = minLeverageAllowed;
+    this.traderVisible = traderVisible;
+    this.traderWithdrawable = traderWithdrawable;
 
     this.dummyWallet = getDummyWallet().connect(this.provider);
   }
 
   public async refreshInfo(): Promise<void> {
-    this.fixedApr = await this.getFixedApr();
-    this.variableApy = (await this.getInstantApy()) * 100;
     const oneDayInMilliseconds = 24 * 60 * 60 * 1000;
-    const variableRate = await this.getInstantApy(Date.now() - oneDayInMilliseconds);
-    this.variableApy24Ago = variableRate * 100;
+
+    const responses = await Promise.allSettled([
+      this.getFixedApr(),
+      this.getInstantApy(),
+      this.getInstantApy(Date.now() - oneDayInMilliseconds),
+    ]);
+
+    if (responses[0].status === 'fulfilled') {
+      this.fixedApr = responses[0].value;
+    }
+
+    if (responses[1].status === 'fulfilled') {
+      this.variableApy = responses[1].value * 100;
+    }
+
+    if (responses[2].status === 'fulfilled') {
+      this.variableApy24Ago = responses[2].value * 100;
+    }
   }
 
   public getUserAddress = async (_signer?: Signer): Promise<string> => {
@@ -778,8 +802,7 @@ export class AMM {
 
     const rateOracleContract = baseRateOracleFactory.connect(this.rateOracle.id, this.provider);
 
-    const lastBlockTimestamp =
-      (await exponentialBackoff(() => this.provider.getBlock('latest'))).timestamp - 15;
+    const lastBlockTimestamp = (await getCurrentBlock(this.chainId, this.provider)).timestamp - 15;
 
     const scaledCurrentMargin = this.descale(currentMargin);
 
@@ -1871,9 +1894,9 @@ export class AMM {
   async getInstantApy(timestampInMS?: number): Promise<number> {
     let block: number;
     if (timestampInMS) {
-      block = await getBlockAtTimestampHeuristic(this.provider, timestampInMS / 1000);
+      block = await getBlockAtTimestampHeuristic(this.chainId, this.provider, timestampInMS / 1000);
     } else {
-      block = (await exponentialBackoff(() => this.provider.getBlock('latest'))).number;
+      block = (await getCurrentBlock(this.chainId, this.provider)).number;
     }
 
     const blocksPerDay = 6570; // 13.15 seconds per block

@@ -11,7 +11,7 @@ export const getChainLevelInformation = async (
 }> => {
   try {
     const baseUrl = getServiceUrl('chain-information');
-    const url = `${baseUrl}/${chainIds}`;
+    const url = `${baseUrl}/${chainIds.join('&')}`;
     const res = await axios({
       method: 'get',
       url: url,
