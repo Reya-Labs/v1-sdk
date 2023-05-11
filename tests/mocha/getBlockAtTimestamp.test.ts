@@ -68,6 +68,7 @@ describe('#getBlockAtTimestampHeuristic', () => {
 
     {
       const blockNumber = await getBlockAtTimestampHeuristic(
+        1,
         provider as unknown as providers.Provider,
         timestamp,
       );
@@ -77,6 +78,7 @@ describe('#getBlockAtTimestampHeuristic', () => {
 
     {
       const blockNumber = await getBlockAtTimestampHeuristic(
+        1,
         provider as unknown as providers.Provider,
         timestamp - 12 * 100,
       );
@@ -86,6 +88,7 @@ describe('#getBlockAtTimestampHeuristic', () => {
 
     {
       const blockNumber = await getBlockAtTimestampHeuristic(
+        1,
         provider as unknown as providers.Provider,
         timestamp - 12 * 2000000,
       );
@@ -95,6 +98,7 @@ describe('#getBlockAtTimestampHeuristic', () => {
 
     {
       const blockNumber = await getBlockAtTimestampHeuristic(
+        1,
         provider as unknown as providers.Provider,
         genesisTimestamp - 100,
       );
@@ -113,6 +117,7 @@ describe('#getBlockAtTimestampHeuristic', () => {
 
     {
       const blockNumber = await getBlockAtTimestampHeuristic(
+        42161,
         provider as unknown as providers.Provider,
         timestamp,
       );
@@ -122,6 +127,7 @@ describe('#getBlockAtTimestampHeuristic', () => {
 
     {
       const blockNumber = await getBlockAtTimestampHeuristic(
+        42161,
         provider as unknown as providers.Provider,
         timestamp - 0.2 * 100,
       );
@@ -131,6 +137,7 @@ describe('#getBlockAtTimestampHeuristic', () => {
 
     {
       const blockNumber = await getBlockAtTimestampHeuristic(
+        42161,
         provider as unknown as providers.Provider,
         timestamp - 0.2 * 1000000000,
       );
@@ -140,6 +147,7 @@ describe('#getBlockAtTimestampHeuristic', () => {
 
     {
       const blockNumber = await getBlockAtTimestampHeuristic(
+        42161,
         provider as unknown as providers.Provider,
         timestamp - 0.2 * 100000000000000,
       );

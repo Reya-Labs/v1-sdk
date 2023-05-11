@@ -77,6 +77,9 @@ describe('position:refreshInfo', () => {
           wethAddress: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
           ethPrice: async () => 1200,
           minLeverageAllowed: 0,
+          chainId: 1,
+          traderVisible: true,
+          traderWithdrawable: true,
         });
 
         const positionId =
@@ -193,6 +196,9 @@ describe('position:refreshInfo', () => {
           wethAddress: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
           ethPrice: async () => 1200,
           minLeverageAllowed: 0,
+          chainId: 1,
+          traderVisible: true,
+          traderWithdrawable: true,
         });
 
         const positionId =
@@ -294,6 +300,9 @@ describe('position:refreshInfo', () => {
           wethAddress: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
           ethPrice: async () => 1200,
           minLeverageAllowed: 0,
+          chainId: 1,
+          traderVisible: true,
+          traderWithdrawable: true,
         });
 
         const positionId =
@@ -412,6 +421,9 @@ describe('position:refreshInfo', () => {
           wethAddress: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
           ethPrice: async () => 1200,
           minLeverageAllowed: 0,
+          chainId: 1,
+          traderVisible: true,
+          traderWithdrawable: true,
         });
 
         const positionId =
@@ -546,6 +558,9 @@ describe('position:refreshInfo', () => {
           wethAddress: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
           ethPrice: async () => 1200,
           minLeverageAllowed: 0,
+          chainId: 1,
+          traderVisible: true,
+          traderWithdrawable: true,
         });
 
         const positionId =
@@ -681,6 +696,9 @@ describe('position:refreshInfo', () => {
           wethAddress: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
           ethPrice: async () => 1200,
           minLeverageAllowed: 0,
+          chainId: 1,
+          traderVisible: true,
+          traderWithdrawable: true,
         });
 
         const positionId =
@@ -785,6 +803,9 @@ describe('position:refreshInfo', () => {
           wethAddress: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
           ethPrice: async () => 1200,
           minLeverageAllowed: 0,
+          chainId: 1,
+          traderVisible: true,
+          traderWithdrawable: true,
         });
 
         const positionId =
@@ -877,8 +898,8 @@ describe('position:refreshInfo', () => {
         expect(position.liquidationThreshold).to.closeTo(0.00005, DELTA);
         expect(position.safetyThreshold).to.closeTo(0.0002, DELTA);
 
-        expect(position.payingRate).to.be.closeTo(4.1388, DELTA);
-        expect(position.receivingRate).to.be.closeTo(5.20099, DELTA);
+        expect(position.payingRate).to.be.closeTo(0, DELTA);
+        expect(position.receivingRate).to.be.closeTo(0, DELTA);
 
         expect(position.poolAPR).to.be.closeTo(4.584, DELTA);
 
