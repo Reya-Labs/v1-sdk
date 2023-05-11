@@ -93,7 +93,7 @@ import { getCurrentBlock } from '../../services/chainBlocks';
 
 export class AMM {
   public readonly id: string;
-  public readonly chainId: number;
+  public readonly chainId: SupportedChainId;
   public readonly signer: Signer | null;
   public readonly provider: providers.Provider;
   public readonly peripheryAddress: string;
