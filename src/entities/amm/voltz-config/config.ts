@@ -206,7 +206,7 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
           general: true,
           trader: true,
         },
-        traderWithdrawable: false,
+        traderWithdrawable: true,
         isAaveV3: true,
       },
 
@@ -550,7 +550,7 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
           general: true,
           trader: true,
         },
-        traderWithdrawable: false,
+        traderWithdrawable: true,
         isAaveV3: true,
       },
 
