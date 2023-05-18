@@ -19,9 +19,7 @@ export const getPositionPnLGCloud = async (
   try {
     const baseUrl = getServiceUrl('position-pnl');
     const url = `${baseUrl}/${chainId}/${vammAddress}/${ownerAddress}/${tickLower}/${tickUpper}`;
-    const res = await axios({
-      method: 'get',
-      url: url,
+    const res = await axios.get<GetPositionPnLGCloudReturn>(url, {
       withCredentials: false,
     });
     return {

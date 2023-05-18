@@ -64,11 +64,6 @@ import {
 import { geckoEthToUsd } from '../../utils/priceFetch';
 import { getVariableFactor, RateOracle } from '../rateOracle';
 import { exponentialBackoff } from '../../utils/retry';
-import {
-  getHistoricalRates,
-  Granularity,
-  RatesData,
-} from './getters/historicalRates/getHistoricalRate';
 import getDummyWallet from '../../utils/getDummyWallet';
 import { getMarket, Market } from '../../utils/getMarket';
 import { estimateSwapGasUnits } from '../../utils/estimateSwapGasUnits';
@@ -1807,46 +1802,6 @@ export class AMM {
     let { closestUsableTick } = this.closestTickAndFixedRate(fixedRate);
     closestUsableTick -= count * this.tickSpacing;
     return tickToFixedRate(closestUsableTick).toNumber();
-  }
-
-  // historocal rates
-
-  public async getHistoricalVariableRate(
-    chainId: SupportedChainId,
-    filters: {
-      granularity: Granularity;
-      timeframeMs: number;
-    },
-    historicalRatesApiKey: string,
-  ): Promise<RatesData> {
-    const result = await getHistoricalRates({
-      chainId: chainId,
-      isFixed: false,
-      filters,
-      ammId: this.id,
-      rateOracleId: this.rateOracle.id,
-      historicalRatesApiKey: historicalRatesApiKey,
-    });
-    return result;
-  }
-
-  public async getHistoricalFixedRate(
-    chainId: SupportedChainId,
-    filters: {
-      granularity: Granularity;
-      timeframeMs: number;
-    },
-    historicalRatesApiKey: string,
-  ): Promise<RatesData> {
-    const result = await getHistoricalRates({
-      chainId: chainId,
-      isFixed: true,
-      filters,
-      ammId: this.id,
-      rateOracleId: this.rateOracle.id,
-      historicalRatesApiKey: historicalRatesApiKey,
-    });
-    return result;
   }
 
   // balance checks

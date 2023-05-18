@@ -2,11 +2,15 @@ import {
   getHistoricalFixedRate as getTickUpdates,
   getHistoricalVariableIndex,
 } from '@voltz-protocol/subgraph-data';
-import axios from 'axios';
 import { BigNumber } from 'ethers';
 import { ONE_DAY_IN_SECONDS } from '../../../../constants';
 import { getSentryTracker } from '../../../../init';
 import { SupportedChainId } from '../../../../types';
+import {
+  HistoricalRate,
+  getFixedRatesGCloud,
+  getVariableRatesGCloud,
+} from '../../../../services/v1-indexer/getHistoricalRatesGCloud';
 
 export enum Granularity {
   ONE_HOUR = 3600 * 1000,
@@ -32,7 +36,6 @@ export type HistoricalRatesParams = {
   };
   ammId: string;
   rateOracleId: string;
-  historicalRatesApiKey: string;
 };
 
 export const getHistoricalRates = async ({
@@ -41,7 +44,6 @@ export const getHistoricalRates = async ({
   filters,
   ammId,
   rateOracleId,
-  historicalRatesApiKey,
 }: HistoricalRatesParams): Promise<RatesData> => {
   // check ids
   const parentObjectId = isFixed ? ammId : rateOracleId;
@@ -53,7 +55,6 @@ export const getHistoricalRates = async ({
   const endTime = currentTimestamp;
 
   const rateUpdates = await getHistoricalRatesFromBigQuery(
-    historicalRatesApiKey,
     isFixed,
     parentObjectId,
     Math.round(startTime / 1000),
@@ -86,7 +87,6 @@ export const getHistoricalRates = async ({
 };
 
 export const getHistoricalRatesFromBigQuery = async (
-  historicalRatesApiKey: string,
   isFixed: boolean,
   parentObjectId: string,
   startTime: number,
@@ -98,24 +98,12 @@ export const getHistoricalRatesFromBigQuery = async (
     value: number;
   }[]
 > => {
-  const params = {
-    key: historicalRatesApiKey,
-    start_time: startTime,
-    end_time: endTime,
-    chain_id: chainId,
-  };
-
-  let resp: { data: { rate: number; timestamp: number }[] };
-
+  let resp: HistoricalRate[];
   try {
     if (isFixed) {
-      resp = await axios.get(`https://voltz-historical-rates.herokuapp.com/fixed_rates/`, {
-        params: { ...params, vamm: parentObjectId },
-      });
+      resp = await getFixedRatesGCloud(chainId, parentObjectId, startTime, endTime);
     } else {
-      resp = await axios.get(`https://voltz-historical-rates.herokuapp.com/variable_rates/`, {
-        params: { ...params, rate_oracle: parentObjectId },
-      });
+      resp = await getVariableRatesGCloud(chainId, parentObjectId, startTime, endTime);
     }
   } catch (e) {
     const sentryTracker = getSentryTracker();
@@ -123,7 +111,7 @@ export const getHistoricalRatesFromBigQuery = async (
     return [];
   }
 
-  const sortedData = resp.data.sort((a, b) => a.timestamp - b.timestamp);
+  const sortedData = resp.sort((a, b) => a.timestamp - b.timestamp);
 
   const result = sortedData.map((r) => ({
     timestampInMs: r.timestamp * 1000,
