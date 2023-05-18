@@ -6,7 +6,7 @@ import {
 } from '@sentry/browser';
 import { ethers } from 'ethers';
 import { SubgraphURLEnum, SupportedChainId } from './types';
-import alchemyApiKeyToURL from './utils/alchemyApiKeyToURL';
+import providerApiKeyToURL from './utils/providerApiKeyToURL';
 import initSubgraphURLs from './utils/initSubgraphURLs';
 
 let sentryTracker: BrowserClient | null;
@@ -29,8 +29,9 @@ export const initSentryTracker = (): BrowserClient => {
 export const getProvider = (
   chainId: SupportedChainId,
   alchemyApiKey: string,
+  infuraApiKey: string,
 ): ethers.providers.JsonRpcProvider => {
-  const providerURL = alchemyApiKeyToURL(chainId, alchemyApiKey);
+  const providerURL = providerApiKeyToURL(chainId, alchemyApiKey, infuraApiKey);
   return new ethers.providers.JsonRpcProvider(providerURL);
 };
 

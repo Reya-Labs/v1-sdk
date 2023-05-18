@@ -18,4 +18,5 @@ export type NetworkConfiguration = {
   apply: boolean;
   defaultMinLeverageAllowed: number;
   pools: PoolConfiguration[];
+  sofrRatePriceFeed?: string;
 };

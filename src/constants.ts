@@ -71,6 +71,7 @@ export const GOERLI_TWO_MILLON = 200;
 export const ONE_HOUR_IN_MS = 60 * 60 * 1000;
 export const ONE_DAY_IN_SECONDS = 60 * 60 * 24;
 export const ONE_YEAR_IN_SECONDS = 365 * 24 * 60 * 60;
+export const ONE_360DAY_YEAR_IN_SECONDS = 360 * 24 * 60 * 60;
 export const DEPOSIT_WINDOW = 48 * ONE_HOUR_IN_MS;
 
 export const WAD = BigNumber.from('1000000000000000000');

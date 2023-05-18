@@ -21,6 +21,7 @@ type RegisterForAutoRolloverArgs = {
   signer: ethers.Signer;
   chainId: SupportedChainId;
   alchemyApiKey: string;
+  infuraApiKey: string;
 };
 
 export const registerForAutoRollover = async ({
@@ -30,6 +31,7 @@ export const registerForAutoRollover = async ({
   signer,
   chainId,
   alchemyApiKey,
+  infuraApiKey,
 }: RegisterForAutoRolloverArgs): Promise<RegisterForAutoRolloverResponse> => {
   // Get Mellow Config
   const optimiserConfig = getOptimiserConfig(chainId, optimiserId);
@@ -54,7 +56,7 @@ export const registerForAutoRollover = async ({
 
   const gasLimit = await mellowOptimiser.estimateGas.registerForAutoRollover(registration);
 
-  const provider = getProvider(chainId, alchemyApiKey);
+  const provider = getProvider(chainId, alchemyApiKey, infuraApiKey);
   const gasEstimateUsd = await convertGasUnitsToUSD(provider, gasLimit.toNumber());
 
   if (onlyGasEstimate) {
@@ -87,7 +89,13 @@ export const registerForAutoRollover = async ({
   // Get the next state of the optimiser
   let optimiserInfo: OptimiserInfo | null = null;
   try {
-    optimiserInfo = await getIndividualOptimiserInfo(optimiserId, signer, chainId, alchemyApiKey);
+    optimiserInfo = await getIndividualOptimiserInfo(
+      optimiserId,
+      signer,
+      chainId,
+      alchemyApiKey,
+      infuraApiKey,
+    );
   } catch (error) {
     const errorMessage = 'Failed to get new state after deposit';
 

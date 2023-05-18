@@ -26,6 +26,7 @@ type DepositArgs = {
   signer: ethers.Signer;
   chainId: SupportedChainId;
   alchemyApiKey: string;
+  infuraApiKey: string;
 };
 
 export const deposit = async ({
@@ -36,6 +37,7 @@ export const deposit = async ({
   signer,
   chainId,
   alchemyApiKey,
+  infuraApiKey,
 }: DepositArgs): Promise<DepositResponse> => {
   // Get Mellow Config
   const optimiserConfig = getOptimiserConfig(chainId, optimiserId);
@@ -113,7 +115,7 @@ export const deposit = async ({
     : await mellowOptimiser.estimateGas.depositErc20(scaledAmount, weights);
   tempOverrides.gasLimit = getGasBuffer(gasLimit);
 
-  const provider = getProvider(chainId, alchemyApiKey);
+  const provider = getProvider(chainId, alchemyApiKey, infuraApiKey);
   const gasEstimateUsd = await convertGasUnitsToUSD(provider, gasLimit.toNumber());
 
   if (onlyGasEstimate) {
@@ -147,7 +149,13 @@ export const deposit = async ({
   // Get the next state of the optimiser
   let optimiserInfo: OptimiserInfo | null = null;
   try {
-    optimiserInfo = await getIndividualOptimiserInfo(optimiserId, signer, chainId, alchemyApiKey);
+    optimiserInfo = await getIndividualOptimiserInfo(
+      optimiserId,
+      signer,
+      chainId,
+      alchemyApiKey,
+      infuraApiKey,
+    );
   } catch (error) {
     const errorMessage = 'Failed to get new state after deposit';
 

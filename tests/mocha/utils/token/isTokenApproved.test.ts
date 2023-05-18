@@ -12,14 +12,15 @@ import { withSigner } from '../../../utils';
 import { isTokenApproved } from '../../../../src/services/token/isTokenApproved';
 import { exponentialBackoff } from '../../../../src/utils/retry';
 import * as priceFetch from '../../../../src/utils/priceFetch';
-import alchemyApiKeyToURL from '../../../../src/utils/alchemyApiKeyToURL';
+import providerApiKeyToURL from '../../../../src/utils/providerApiKeyToURL';
 
 const { provider } = waffle;
 
 describe('Utilities:IsTokenApproved', () => {
   const userAddress = '0xf8f6b70a36f4398f0853a311dc6699aba8333cc1';
   const chainId = 1;
-  const alchemyApiKey = 'key';
+  const alchemyApiKey = 'alchemy-key';
+  const infuraApiKey = 'infura-key';
 
   const resetNetwork = async (blockNumber: number) => {
     await network.provider.request({
@@ -28,7 +29,11 @@ describe('Utilities:IsTokenApproved', () => {
         {
           chainId: 1,
           forking: {
-            jsonRpcUrl: alchemyApiKeyToURL(1, process.env.ALCHEMY_API_KEY || ''),
+            jsonRpcUrl: providerApiKeyToURL(
+              1,
+              process.env.ALCHEMY_API_KEY || '',
+              process.env.INFURE_API_KEY || '',
+            ),
             blockNumber,
           },
         },
@@ -78,6 +83,7 @@ describe('Utilities:IsTokenApproved', () => {
         to,
         chainId,
         alchemyApiKey,
+        infuraApiKey,
       });
 
       expect(approval).to.be.eq(false);
@@ -94,6 +100,7 @@ describe('Utilities:IsTokenApproved', () => {
         threshold: 1,
         chainId,
         alchemyApiKey,
+        infuraApiKey,
       });
 
       expect(approval).to.be.eq(false);
@@ -110,6 +117,7 @@ describe('Utilities:IsTokenApproved', () => {
         threshold: 0,
         chainId,
         alchemyApiKey,
+        infuraApiKey,
       });
 
       expect(approval).to.be.eq(true);
@@ -132,6 +140,7 @@ describe('Utilities:IsTokenApproved', () => {
         threshold: 1,
         chainId,
         alchemyApiKey,
+        infuraApiKey,
       });
 
       expect(approval).to.be.eq(true);
@@ -154,6 +163,7 @@ describe('Utilities:IsTokenApproved', () => {
         threshold: 10,
         chainId,
         alchemyApiKey,
+        infuraApiKey,
       });
 
       expect(approval).to.be.eq(false);
@@ -175,6 +185,7 @@ describe('Utilities:IsTokenApproved', () => {
         to,
         chainId,
         alchemyApiKey,
+        infuraApiKey,
       });
 
       expect(approval).to.be.eq(false);
@@ -190,6 +201,7 @@ describe('Utilities:IsTokenApproved', () => {
         to,
         chainId,
         alchemyApiKey,
+        infuraApiKey,
       });
 
       expect(approval).to.be.eq(true);
@@ -206,6 +218,7 @@ describe('Utilities:IsTokenApproved', () => {
         forceErc20: true,
         chainId,
         alchemyApiKey,
+        infuraApiKey,
       });
 
       expect(approval).to.be.eq(false);
@@ -232,6 +245,7 @@ describe('Utilities:IsTokenApproved', () => {
         threshold: 2,
         chainId,
         alchemyApiKey,
+        infuraApiKey,
       });
 
       expect(approval).to.be.eq(true);
@@ -258,6 +272,7 @@ describe('Utilities:IsTokenApproved', () => {
         threshold: 10,
         chainId,
         alchemyApiKey,
+        infuraApiKey,
       });
 
       expect(approval).to.be.eq(false);

@@ -29,6 +29,9 @@ export const getProtocolPrefix = (protocolId: number): string => {
     case 9: {
       return 'a';
     }
+    case 10: {
+      return 'sofr';
+    }
     default: {
       return '-';
     }
@@ -156,6 +159,14 @@ export const getTokenInfo = (tokenAddress: string): { name: string; decimals: nu
     tokenAddress.toLowerCase().includes('0x8F30ec9Fb348513494cCC1710528E744Efa71003'.toLowerCase())
   ) {
     return { name: 'USDT', decimals: 6 };
+  }
+
+  // ====== VUSD ======
+  // avalanche fuji
+  if (
+    tokenAddress.toLowerCase().includes('0x54B868B03c68A1307B24fB0A4b60b18A0714a94C'.toLowerCase())
+  ) {
+    return { name: 'VUSD', decimals: 18 };
   }
 
   const sentryTracker = getSentryTracker();

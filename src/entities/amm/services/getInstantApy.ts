@@ -9,10 +9,12 @@ import {
   ICToken__factory as iCTokenFactory,
   IGlpManager__factory as glpManagerFactory,
   IRewardTracker__factory as rewardTrackerFactory,
+  IPriceFeed__factory as iPriceFeedFactory,
 } from '../../../typechain';
 import { getBlockAtTimestampHeuristic } from '../../../utils/getBlockAtTimestamp';
 import { SupportedChainId } from '../../../types';
 import { ONE_YEAR_IN_SECONDS } from '../../../constants';
+import { getVoltzPoolConfig } from '../voltz-config';
 
 const getInstantApyAsArray = async (
   chainId: SupportedChainId,
@@ -174,6 +176,33 @@ const getInstantApyAsArray = async (
         const instantApy = (tokensPerInterval * ONE_YEAR_IN_SECONDS * ethUsdPrice) / aumUsd;
 
         return instantApy;
+      });
+    }
+
+    case 10: {
+      // note: can replace this by hard-coded address for main networks
+      const sofrRatePriceFeed = iPriceFeedFactory.connect(
+        getVoltzPoolConfig(chainId).sofrRatePriceFeed || '',
+        provider,
+      );
+
+      const responses = await Promise.allSettled([
+        sofrRatePriceFeed.latestRoundData(),
+        ...pastBlocks.map((block) =>
+          sofrRatePriceFeed.latestRoundData({
+            blockTag: block,
+          }),
+        ),
+      ]);
+
+      return responses.map((r) => {
+        if (r.status === 'rejected') {
+          throw new Error('Failed to fetch SOFR latest round data');
+        }
+
+        const rate = r.value.answer;
+
+        return Number(ethers.utils.formatUnits(rate, 8));
       });
     }
 

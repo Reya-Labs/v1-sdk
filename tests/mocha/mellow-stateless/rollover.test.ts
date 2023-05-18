@@ -11,7 +11,7 @@ import { rollover } from '../../../src/entities/mellow-stateless/actions/rollove
 import { getMellowProduct } from '../../../src/entities/mellow-stateless/getters/getMellowProduct';
 import { exponentialBackoff } from '../../../src/utils/retry';
 import * as priceFetch from '../../../src/utils/priceFetch';
-import alchemyApiKeyToURL from '../../../src/utils/alchemyApiKeyToURL';
+import providerApiKeyToURL from '../../../src/utils/providerApiKeyToURL';
 
 const { provider } = waffle;
 const DELTA = 0.00001;
@@ -26,7 +26,11 @@ describe('Mellow Optimiser:Rollover', () => {
         {
           chainId: 5,
           forking: {
-            jsonRpcUrl: alchemyApiKeyToURL(5, process.env.ALCHEMY_API_KEY || ''),
+            jsonRpcUrl: providerApiKeyToURL(
+              5,
+              process.env.ALCHEMY_API_KEY || '',
+              process.env.INFURE_API_KEY || '',
+            ),
             blockNumber,
           },
         },
@@ -80,7 +84,8 @@ describe('Mellow Optimiser:Rollover', () => {
                 spareWeights: [['0x62E224d9ae2f4702CC88695e6Ea4aA16D0925BdB', 0]],
                 signer,
                 chainId: 1, // doesn't matter, provider mocked
-                alchemyApiKey: '', // doesn't matter, provider mocked
+                alchemyApiKey: '',
+                infuraApiKey: '', // doesn't matter, provider mocked
               }),
             RETRY_ATTEMPTS,
           );
@@ -98,7 +103,8 @@ describe('Mellow Optimiser:Rollover', () => {
           optimiserId,
           signer,
           chainId: 1, // doesn't matter, provider mocked
-          alchemyApiKey: '', // doesn't matter, provider mocked
+          alchemyApiKey: '',
+          infuraApiKey: '', // doesn't matter, provider mocked
         });
 
         const { newOptimiserState } = await exponentialBackoff(
@@ -112,7 +118,8 @@ describe('Mellow Optimiser:Rollover', () => {
               ],
               signer,
               chainId: 1, // doesn't matter, provider mocked
-              alchemyApiKey: '', // doesn't matter, provider mocked
+              alchemyApiKey: '',
+              infuraApiKey: '', // doesn't matter, provider mocked
             }),
           RETRY_ATTEMPTS,
         );
@@ -144,7 +151,8 @@ describe('Mellow Optimiser:Rollover', () => {
           optimiserId,
           signer,
           chainId: 1, // doesn't matter, provider mocked
-          alchemyApiKey: '', // doesn't matter, provider mocked
+          alchemyApiKey: '',
+          infuraApiKey: '', // doesn't matter, provider mocked
         });
 
         const { newOptimiserState } = await exponentialBackoff(
@@ -155,7 +163,8 @@ describe('Mellow Optimiser:Rollover', () => {
               spareWeights: [['0x4972C5f24E6EDfD479ba989b204bD376503D48d8', 100]],
               signer,
               chainId: 1, // doesn't matter, provider mocked
-              alchemyApiKey: '', // doesn't matter, provider mocked
+              alchemyApiKey: '',
+              infuraApiKey: '', // doesn't matter, provider mocked
             }),
           RETRY_ATTEMPTS,
         );

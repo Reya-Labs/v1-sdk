@@ -35,6 +35,10 @@ const mapProtocolIdToProtocol = (protocolId: number): string => {
     return 'BORROW AAVE V3';
   }
 
+  if (protocolId === 10) {
+    return 'SOFR';
+  }
+
   throw new Error('Unrecognized protocol');
 };
 

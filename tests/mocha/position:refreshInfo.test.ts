@@ -6,7 +6,7 @@ import { AMM, Position, RateOracle, Token } from '../../src/entities';
 import { advanceTimeAndBlock } from '../time';
 import * as initSDK from '../../src/init';
 import axios from 'axios';
-import alchemyApiKeyToURL from '../../src/utils/alchemyApiKeyToURL';
+import providerApiKeyToURL from '../../src/utils/providerApiKeyToURL';
 
 const { provider } = waffle;
 const DELTA = 0.0001;
@@ -19,7 +19,11 @@ describe('position:refreshInfo', () => {
         {
           chainId: 1,
           forking: {
-            jsonRpcUrl: alchemyApiKeyToURL(1, process.env.ALCHEMY_API_KEY || ''),
+            jsonRpcUrl: providerApiKeyToURL(
+              1,
+              process.env.ALCHEMY_API_KEY || '',
+              process.env.INFURE_API_KEY || '',
+            ),
             blockNumber,
           },
         },

@@ -13,6 +13,7 @@ type TokenAllowanceArgs = {
   forceErc20?: boolean;
   chainId: SupportedChainId;
   alchemyApiKey: string;
+  infuraApiKey: string;
 };
 
 // Returns allowance, descaled and capped at Number.MAX_SAFE_INTEGER
@@ -23,8 +24,9 @@ export const tokenAllowance = async ({
   forceErc20,
   chainId,
   alchemyApiKey,
+  infuraApiKey,
 }: TokenAllowanceArgs): Promise<number> => {
-  const provider = getProvider(chainId, alchemyApiKey);
+  const provider = getProvider(chainId, alchemyApiKey, infuraApiKey);
 
   // Get the token decimals
   const { decimals: tokenDecimals, name: tokenName } = getTokenInfo(tokenId);

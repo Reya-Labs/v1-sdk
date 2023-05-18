@@ -14,10 +14,11 @@ export const getIndividualOptimiserInfo = async (
   signer: ethers.Signer | null,
   chainId: SupportedChainId,
   alchemyApiKey: string,
+  infuraApiKey: string,
 ): Promise<OptimiserInfo> => {
   const { MELLOW_LENS } = getMellowConfig(chainId);
   const optimiserConfig = getOptimiserConfig(chainId, optimiserId);
-  const provider = getProvider(chainId, alchemyApiKey);
+  const provider = getProvider(chainId, alchemyApiKey, infuraApiKey);
 
   const userAddress = signer ? await signer.getAddress() : ZERO_ADDRESS;
 
@@ -34,6 +35,7 @@ export const getIndividualOptimiserInfo = async (
       signer,
       chainId,
       alchemyApiKey,
+      infuraApiKey,
     );
 
     return optimiser;

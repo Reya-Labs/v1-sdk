@@ -13,7 +13,7 @@ import { approveToken } from '../../../../src/services/token/approveToken';
 import { MaxUint256Bn } from '../../../../src/constants';
 import { exponentialBackoff } from '../../../../src/utils/retry';
 import * as priceFetch from '../../../../src/utils/priceFetch';
-import alchemyApiKeyToURL from '../../../../src/utils/alchemyApiKeyToURL';
+import providerApiKeyToURL from '../../../../src/utils/providerApiKeyToURL';
 
 const { provider } = waffle;
 
@@ -27,7 +27,11 @@ describe('Utilities:ApproveToken', () => {
         {
           chainId: 1,
           forking: {
-            jsonRpcUrl: alchemyApiKeyToURL(1, process.env.ALCHEMY_API_KEY || ''),
+            jsonRpcUrl: providerApiKeyToURL(
+              1,
+              process.env.ALCHEMY_API_KEY || '',
+              process.env.INFURE_API_KEY || '',
+            ),
             blockNumber,
           },
         },

@@ -29,6 +29,7 @@ type DepositAndRegisterArgs = {
   signer: ethers.Signer;
   chainId: SupportedChainId;
   alchemyApiKey: string;
+  infuraApiKey: string;
 };
 
 export const depositAndRegister = async ({
@@ -40,6 +41,7 @@ export const depositAndRegister = async ({
   signer,
   chainId,
   alchemyApiKey,
+  infuraApiKey,
 }: DepositAndRegisterArgs): Promise<DepositAndRegisterResponse> => {
   if (isUndefined(registration)) {
     return deposit({
@@ -50,6 +52,7 @@ export const depositAndRegister = async ({
       signer,
       chainId,
       alchemyApiKey,
+      infuraApiKey,
     });
   }
 
@@ -144,7 +147,7 @@ export const depositAndRegister = async ({
       );
   tempOverrides.gasLimit = getGasBuffer(gasLimit);
 
-  const provider = getProvider(chainId, alchemyApiKey);
+  const provider = getProvider(chainId, alchemyApiKey, infuraApiKey);
   const gasEstimateUsd = await convertGasUnitsToUSD(provider, gasLimit.toNumber());
 
   if (onlyGasEstimate) {
@@ -187,7 +190,13 @@ export const depositAndRegister = async ({
   // Get the next state of the optimiser
   let optimiserInfo: OptimiserInfo | null = null;
   try {
-    optimiserInfo = await getIndividualOptimiserInfo(optimiserId, signer, chainId, alchemyApiKey);
+    optimiserInfo = await getIndividualOptimiserInfo(
+      optimiserId,
+      signer,
+      chainId,
+      alchemyApiKey,
+      infuraApiKey,
+    );
   } catch (error) {
     const errorMessage = 'Failed to get new state after deposit and register';
 

@@ -20,6 +20,7 @@ type SubmitAllBatchesForFeeArgs = {
   signer: ethers.Signer;
   chainId: SupportedChainId;
   alchemyApiKey: string;
+  infuraApiKey: string;
 };
 
 export const submitAllBatchesForFee = async ({
@@ -28,8 +29,9 @@ export const submitAllBatchesForFee = async ({
   signer,
   chainId,
   alchemyApiKey,
+  infuraApiKey,
 }: SubmitAllBatchesForFeeArgs): Promise<SubmitAllBatchesForFeeResponse> => {
-  const provider = getProvider(chainId, alchemyApiKey);
+  const provider = getProvider(chainId, alchemyApiKey, infuraApiKey);
 
   // Get Mellow Config
   const optimiserConfig = getOptimiserConfig(chainId, optimiserId);
@@ -107,7 +109,13 @@ export const submitAllBatchesForFee = async ({
   // Get the next state of the optimiser
   let optimiserInfo: OptimiserInfo | null = null;
   try {
-    optimiserInfo = await getIndividualOptimiserInfo(optimiserId, signer, chainId, alchemyApiKey);
+    optimiserInfo = await getIndividualOptimiserInfo(
+      optimiserId,
+      signer,
+      chainId,
+      alchemyApiKey,
+      infuraApiKey,
+    );
   } catch (error) {
     const errorMessage = 'Failed to get new state after deposit';
 

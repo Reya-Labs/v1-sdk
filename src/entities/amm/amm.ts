@@ -1659,10 +1659,12 @@ export class AMM {
     forceErc20Check,
     chainId,
     alchemyApiKey,
+    infuraApiKey,
   }: {
     forceErc20Check: boolean;
     chainId: SupportedChainId;
     alchemyApiKey: string;
+    infuraApiKey: string;
   }): Promise<number> {
     if (!forceErc20Check && this.isETH) {
       return Number.MAX_SAFE_INTEGER;
@@ -1681,6 +1683,7 @@ export class AMM {
       forceErc20: forceErc20Check,
       chainId,
       alchemyApiKey,
+      infuraApiKey,
     });
   }
 

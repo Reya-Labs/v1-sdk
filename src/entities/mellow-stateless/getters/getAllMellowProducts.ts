@@ -10,6 +10,7 @@ type GetAllMellowProductsParams = {
   type: 'all' | 'active';
   chainId: SupportedChainId;
   alchemyApiKey: string;
+  infuraApiKey: string;
 };
 
 export const getAllMellowProducts = async ({
@@ -17,10 +18,11 @@ export const getAllMellowProducts = async ({
   type = 'all',
   chainId,
   alchemyApiKey,
+  infuraApiKey,
 }: GetAllMellowProductsParams): Promise<OptimiserInfo[]> => {
   const userAddress = signer ? await signer.getAddress() : ZERO_ADDRESS;
-  const vaults = await getVaultsInfo(userAddress, type, chainId, alchemyApiKey);
-  const optimisers = await getOptimisersInfo(signer, type, chainId, alchemyApiKey);
+  const vaults = await getVaultsInfo(userAddress, type, chainId, alchemyApiKey, infuraApiKey);
+  const optimisers = await getOptimisersInfo(signer, type, chainId, alchemyApiKey, infuraApiKey);
 
   return vaults.concat(optimisers);
 };

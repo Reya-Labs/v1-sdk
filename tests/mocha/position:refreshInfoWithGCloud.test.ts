@@ -4,7 +4,7 @@ import { BrowserClient } from '@sentry/browser';
 import { AMM, Position, RateOracle, Token } from '../../src/entities';
 import * as initSDK from '../../src/init';
 import axios from 'axios';
-import alchemyApiKeyToURL from '../../src/utils/alchemyApiKeyToURL';
+import providerApiKeyToURL from '../../src/utils/providerApiKeyToURL';
 
 const { provider } = waffle;
 
@@ -17,7 +17,11 @@ describe.skip('position:refreshInfoGcloud', () => {
         {
           chainId: 1,
           forking: {
-            jsonRpcUrl: alchemyApiKeyToURL(1, process.env.ALCHEMY_API_KEY || ''),
+            jsonRpcUrl: providerApiKeyToURL(
+              1,
+              process.env.ALCHEMY_API_KEY || '',
+              process.env.INFURE_API_KEY || '',
+            ),
             blockNumber,
           },
         },

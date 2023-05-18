@@ -13,9 +13,10 @@ export const getOptimisersInfo = async (
   type: 'all' | 'active' = 'all',
   chainId: SupportedChainId,
   alchemyApiKey: string,
+  infuraApiKey: string,
 ): Promise<OptimiserInfo[]> => {
   const config = getMellowConfig(chainId);
-  const provider = getProvider(chainId, alchemyApiKey);
+  const provider = getProvider(chainId, alchemyApiKey, infuraApiKey);
   let optimiserConfigs = config.MELLOW_OPTIMISERS.filter((o) => !o.isVault);
   if (type === 'active') {
     optimiserConfigs = optimiserConfigs.filter((o) => !o.deprecated);
@@ -46,6 +47,7 @@ export const getOptimisersInfo = async (
           signer,
           chainId,
           alchemyApiKey,
+          infuraApiKey,
         ),
       ),
     )

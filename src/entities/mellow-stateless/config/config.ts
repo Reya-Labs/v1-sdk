@@ -346,8 +346,11 @@ const networkConfigurations: { [key in SupportedChainId]: NetworkConfiguration }
     MELLOW_LENS: '0x0000000000000000000000000000000000000000',
     MELLOW_OPTIMISERS: [],
   },
-  // TODO: Costin, Alex fix here please
   [SupportedChainId.avalanche]: {
+    MELLOW_LENS: '0x0000000000000000000000000000000000000000',
+    MELLOW_OPTIMISERS: [],
+  },
+  [SupportedChainId.avalancheFuji]: {
     MELLOW_LENS: '0x0000000000000000000000000000000000000000',
     MELLOW_OPTIMISERS: [],
   },
