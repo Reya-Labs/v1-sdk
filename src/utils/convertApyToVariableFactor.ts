@@ -1,4 +1,4 @@
-import { getAnnualizedTime } from './functions';
+import { getAnnualizedTime, getAnnualizedTime360dayYear } from './functions';
 
 export const convertApyToVariableFactor = (
   apy: number,
@@ -26,6 +26,13 @@ export const convertApyToVariableFactor = (
       // rate[endTimestamp]/rate[startTimestamp] = APY(startTimestamp, endTimestamp) * (endTimestamp - startTimestamp) / YEAR + 1
       // rate[endTimestamp]/rate[startTimestamp] - 1 = APY(startTimestamp, endTimestamp) * (endTimestamp - startTimestamp) / YEAR
       return apy * getAnnualizedTime(startTimestamp, endTimestamp);
+    }
+
+    case 10: {
+      // apy = (rate[endTimestamp] / rate[startTimestamp] - 1) * (360 / timeDelta)
+      // (rate[endTimestamp] / rate[startTimestamp] - 1) = apy * (timeDelta / 360)
+      // (rate[endTimestamp] / rate[startTimestamp] - 1) = apy * (endTimestamp - startTimestamp) / 360
+      return apy * getAnnualizedTime360dayYear(startTimestamp, endTimestamp);
     }
 
     default: {

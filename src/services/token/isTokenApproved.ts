@@ -16,6 +16,7 @@ type IsTokenApprovedArgs = {
   forceErc20?: boolean;
   chainId: SupportedChainId;
   alchemyApiKey: string;
+  infuraApiKey: string;
 };
 
 export const isTokenApproved = async ({
@@ -26,8 +27,9 @@ export const isTokenApproved = async ({
   forceErc20,
   chainId,
   alchemyApiKey,
+  infuraApiKey,
 }: IsTokenApprovedArgs): Promise<boolean> => {
-  const provider = getProvider(chainId, alchemyApiKey);
+  const provider = getProvider(chainId, alchemyApiKey, infuraApiKey);
 
   // Get the token decimals
   const { decimals: tokenDecimals, name: tokenName } = getTokenInfo(tokenId);

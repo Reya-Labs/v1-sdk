@@ -8,7 +8,7 @@ import { geckoEthToUsd } from '../../src/utils/priceFetch';
 import * as initSDK from '../../src/init';
 import { exponentialBackoff } from '../../src/utils/retry';
 import { fail } from '../utils';
-import alchemyApiKeyToURL from '../../src/utils/alchemyApiKeyToURL';
+import providerApiKeyToURL from '../../src/utils/providerApiKeyToURL';
 
 const { provider } = waffle;
 
@@ -20,7 +20,11 @@ describe('Price utils', () => {
         {
           chainId: 5,
           forking: {
-            jsonRpcUrl: alchemyApiKeyToURL(5, process.env.ALCHEMY_API_KEY || ''),
+            jsonRpcUrl: providerApiKeyToURL(
+              5,
+              process.env.ALCHEMY_API_KEY || '',
+              process.env.INFURE_API_KEY || '',
+            ),
             blockNumber,
           },
         },

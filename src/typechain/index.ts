@@ -11,6 +11,7 @@ export type { CompoundRateOracle } from "./CompoundRateOracle";
 export type { GlpRateOracle } from "./GlpRateOracle";
 export type { IRewardTracker } from "./IRewardTracker";
 export type { IGlpManager } from "./IGlpManager";
+export type { IPriceFeed } from "./IPriceFeed";
 export type { ICToken } from "./ICToken";
 export type { IERC20Minimal } from "./IERC20Minimal";
 
@@ -28,6 +29,7 @@ export { BaseRateOracle__factory } from "./factories/BaseRateOracle__factory";
 export { CompoundBorrowRateOracle__factory } from "./factories/CompoundBorrowRateOracle__factory";
 export { CompoundRateOracle__factory } from "./factories/CompoundRateOracle__factory";
 export { GlpRateOracle__factory } from "./factories/GlpRateOracle__factory";
+export { IPriceFeed__factory } from "./factories/IPriceFeed__factory";
 export { IRewardTracker__factory } from "./factories/IRewardTracker__factory";
 export { IGlpManager__factory } from "./factories/IGlpManager__factory";
 

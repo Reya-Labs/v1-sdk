@@ -37,11 +37,16 @@ const CHAIN_INFO: Record<SupportedChainId, ChainInfo> = {
     defaultRpcUrl: 'https://goerli-rollup.arbitrum.io/rpc',
   },
   [SupportedChainId.avalanche]: {
-    // TODO: Costin, Alex fix here please
-    explorer: 'https://goerli.arbiscan.io/',
+    explorer: 'https://snowtrace.io',
     label: 'Avalanche',
     nativeCurrency: { name: 'Avalanche', symbol: 'AVAX', decimals: 18 },
-    defaultRpcUrl: 'https://goerli-rollup.arbitrum.io/rpc',
+    defaultRpcUrl: 'https://api.avax.network/ext/bc/C/rpc',
+  },
+  [SupportedChainId.avalancheFuji]: {
+    explorer: 'https://testnet.snowtrace.io',
+    label: 'Avalanche',
+    nativeCurrency: { name: 'Avalanche', symbol: 'AVAX', decimals: 18 },
+    defaultRpcUrl: 'https://api.avax-test.network/ext/C/rpc',
   },
 };
 

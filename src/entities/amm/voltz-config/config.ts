@@ -606,12 +606,22 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
   },
 
   [SupportedChainId.avalanche]: {
-    // TODO: Costin, Alex fix here please
-    factoryAddress: '0xCC39fF9f5413DA2dFB8475a88E3E6C8B190CeAe6', // TBC
-    peripheryAddress: '0xb1fb9e3610b0ca31a698ea81c2de3242eb45b12c',
-    wethAddress: '0xb83C277172198E8Ec6b841Ff9bEF2d7fa524f797',
+    // todo: alex tbc
+    factoryAddress: '',
+    peripheryAddress: '',
+    wethAddress: '',
     apply: false,
     defaultMinLeverageAllowed: 5,
     pools: [],
+  },
+
+  [SupportedChainId.avalancheFuji]: {
+    factoryAddress: '0xda66a7584da7210fd26726EFb12585734F7688c1',
+    peripheryAddress: '0x00D25e91774a509e5FA91CaE69793545B88686e1',
+    wethAddress: '0xd00ae08403b9bbb9124bb305c09058e32c39a48c',
+    apply: false,
+    defaultMinLeverageAllowed: 5,
+    pools: [],
+    sofrRatePriceFeed: '0x89F48f6671Ec1B1C4f6abE964EBdd21F4eb7076f',
   },
 };

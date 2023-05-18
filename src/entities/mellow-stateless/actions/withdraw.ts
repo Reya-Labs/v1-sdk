@@ -96,6 +96,7 @@ type WithdrawArgs = {
   signer: ethers.Signer;
   chainId: SupportedChainId;
   alchemyApiKey: string;
+  infuraApiKey: string;
 };
 
 const optimiserWithdraw = async ({
@@ -198,7 +199,7 @@ const optimiserWithdraw = async ({
 };
 
 export const withdraw = async (params: WithdrawArgs): Promise<WithdrawResponse> => {
-  const { optimiserId, signer, chainId, alchemyApiKey } = params;
+  const { optimiserId, signer, chainId, alchemyApiKey, infuraApiKey } = params;
 
   // Get Mellow Config
   const optimiserConfig = getOptimiserConfig(chainId, params.optimiserId);
@@ -216,6 +217,7 @@ export const withdraw = async (params: WithdrawArgs): Promise<WithdrawResponse> 
       signer,
       chainId,
       alchemyApiKey,
+      infuraApiKey,
     });
   } catch (error) {
     const errorMessage = 'Failed to get new state after deposit';

@@ -10,8 +10,6 @@ const initSubgraphURLs = (chainId: SupportedChainId): { [key in SubgraphURLEnum]
           'https://api.thegraph.com/subgraphs/name/voltzprotocol/main-badges-season-3-mainnet',
         [SubgraphURLEnum.badgesRollingSeason]:
           'https://api.thegraph.com/subgraphs/name/voltzprotocol/main-badges-season-3-mainnet',
-        [SubgraphURLEnum.historicalRates]:
-          'https://api.studio.thegraph.com/query/36721/voltz-historical-rates-mainnet/v0.0.7',
       };
     }
     case SupportedChainId.goerli: {
@@ -22,8 +20,6 @@ const initSubgraphURLs = (chainId: SupportedChainId): { [key in SubgraphURLEnum]
           'https://api.thegraph.com/subgraphs/name/voltzprotocol/badges-goerli',
         [SubgraphURLEnum.badgesRollingSeason]:
           'https://api.thegraph.com/subgraphs/name/voltzprotocol/badges-goerli',
-        [SubgraphURLEnum.historicalRates]:
-          'https://api.studio.thegraph.com/query/36721/voltz-goerli-historical-rates/v0.0.2',
       };
     }
     case SupportedChainId.arbitrum: {
@@ -34,8 +30,6 @@ const initSubgraphURLs = (chainId: SupportedChainId): { [key in SubgraphURLEnum]
           'https://api.thegraph.com/subgraphs/name/voltzprotocol/main-badges-season-3-arbitrum',
         [SubgraphURLEnum.badgesRollingSeason]:
           'https://api.thegraph.com/subgraphs/name/voltzprotocol/main-badges-season-3-arbitrum',
-        [SubgraphURLEnum.historicalRates]:
-          'https://api.thegraph.com/subgraphs/name/voltzprotocol/voltz-historical-rates-arb-one',
       };
     }
     case SupportedChainId.arbitrumGoerli: {
@@ -44,8 +38,22 @@ const initSubgraphURLs = (chainId: SupportedChainId): { [key in SubgraphURLEnum]
           'https://api.thegraph.com/subgraphs/name/voltzprotocol/arbitrum-goerli-v1',
         [SubgraphURLEnum.badgesCurrentSeasonNoIPFS]: '',
         [SubgraphURLEnum.badgesRollingSeason]: '',
-        [SubgraphURLEnum.historicalRates]:
-          'https://api.thegraph.com/subgraphs/name/voltzprotocol/voltz-historical-rates-arbgrli',
+      };
+    }
+    case SupportedChainId.avalanche: {
+      // todo: alex tbc
+      return {
+        [SubgraphURLEnum.voltzProtocol]: '',
+        [SubgraphURLEnum.badgesCurrentSeasonNoIPFS]: '',
+        [SubgraphURLEnum.badgesRollingSeason]: '',
+      };
+    }
+    case SupportedChainId.avalancheFuji: {
+      return {
+        [SubgraphURLEnum.voltzProtocol]:
+          'https://api.thegraph.com/subgraphs/name/voltzprotocol/ava-fuji-v1',
+        [SubgraphURLEnum.badgesCurrentSeasonNoIPFS]: '',
+        [SubgraphURLEnum.badgesRollingSeason]: '',
       };
     }
     default: {

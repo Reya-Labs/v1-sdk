@@ -10,7 +10,7 @@ import { OptimiserInfo } from '../../../src/entities/mellow-stateless/getters/ty
 import { getAllMellowProducts } from '../../../src/entities/mellow-stateless/getters';
 import { withSigner } from '../../utils';
 import * as priceFetch from '../../../src/utils/priceFetch';
-import alchemyApiKeyToURL from '../../../src/utils/alchemyApiKeyToURL';
+import providerApiKeyToURL from '../../../src/utils/providerApiKeyToURL';
 
 const { provider } = waffle;
 
@@ -22,7 +22,11 @@ describe('Mellow Optimiser:GetOptimisers', () => {
         {
           chainId: 5,
           forking: {
-            jsonRpcUrl: alchemyApiKeyToURL(5, process.env.ALCHEMY_API_KEY || ''),
+            jsonRpcUrl: providerApiKeyToURL(
+              5,
+              process.env.ALCHEMY_API_KEY || '',
+              process.env.INFURE_API_KEY || '',
+            ),
             blockNumber,
           },
         },
@@ -63,7 +67,8 @@ describe('Mellow Optimiser:GetOptimisers', () => {
         signer: null,
         type: 'all',
         chainId: 1, // doesn't matter, provider mocked
-        alchemyApiKey: '', // doesn't matter, provider mocked
+        alchemyApiKey: '',
+        infuraApiKey: '', // doesn't matter, provider mocked
       });
       await restore();
 
@@ -130,7 +135,8 @@ describe('Mellow Optimiser:GetOptimisers', () => {
           signer,
           type: 'all',
           chainId: 1, // doesn't matter, provider mocked
-          alchemyApiKey: '', // doesn't matter, provider mocked
+          alchemyApiKey: '',
+          infuraApiKey: '', // doesn't matter, provider mocked
         });
         ethOptimiserInfo = mellowOptimisers[1];
       });
@@ -187,7 +193,11 @@ describe('getOptimisers', () => {
         {
           chainId: 5,
           forking: {
-            jsonRpcUrl: alchemyApiKeyToURL(5, process.env.ALCHEMY_API_KEY || ''),
+            jsonRpcUrl: providerApiKeyToURL(
+              5,
+              process.env.ALCHEMY_API_KEY || '',
+              process.env.INFURE_API_KEY || '',
+            ),
             blockNumber,
           },
         },
@@ -228,7 +238,8 @@ describe('getOptimisers', () => {
         signer: null,
         type: 'all',
         chainId: 1, // doesn't matter, provider mocked
-        alchemyApiKey: '', // doesn't matter, provider mocked
+        alchemyApiKey: '',
+        infuraApiKey: '', // doesn't matter, provider mocked
       });
       await restore();
 
@@ -295,7 +306,8 @@ describe('getOptimisers', () => {
           signer,
           type: 'all',
           chainId: 1, // doesn't matter, provider mocked
-          alchemyApiKey: '', // doesn't matter, provider mocked
+          alchemyApiKey: '',
+          infuraApiKey: '', // doesn't matter, provider mocked
         });
         ethOptimiserInfo = mellowOptimisers[1];
       });

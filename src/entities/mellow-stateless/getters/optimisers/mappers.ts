@@ -17,8 +17,9 @@ export const mapOptimiser = async (
   signer: ethers.Signer | null,
   chainId: SupportedChainId,
   alchemyApiKey: string,
+  infuraApiKey: string,
 ): Promise<OptimiserInfo> => {
-  const provider = getProvider(chainId, alchemyApiKey);
+  const provider = getProvider(chainId, alchemyApiKey, infuraApiKey);
 
   // Get token information
   const tokenId = optimiserContractInfo.token;

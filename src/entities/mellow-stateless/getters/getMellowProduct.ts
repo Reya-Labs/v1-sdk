@@ -11,17 +11,31 @@ export const getMellowProduct = async ({
   signer,
   chainId,
   alchemyApiKey,
+  infuraApiKey,
 }: {
   optimiserId: string;
   signer: ethers.Signer | null;
   chainId: SupportedChainId;
   alchemyApiKey: string;
+  infuraApiKey: string;
 }): Promise<OptimiserInfo> => {
   const optimiserConfig = getOptimiserConfig(chainId, optimiserId);
   if (optimiserConfig.isVault) {
     const userAddress = signer ? await signer.getAddress() : ZERO_ADDRESS;
-    return getVaultInfo(optimiserConfig.optimiser, userAddress, chainId, alchemyApiKey);
+    return getVaultInfo(
+      optimiserConfig.optimiser,
+      userAddress,
+      chainId,
+      alchemyApiKey,
+      infuraApiKey,
+    );
   }
 
-  return getIndividualOptimiserInfo(optimiserConfig.optimiser, signer, chainId, alchemyApiKey);
+  return getIndividualOptimiserInfo(
+    optimiserConfig.optimiser,
+    signer,
+    chainId,
+    alchemyApiKey,
+    infuraApiKey,
+  );
 };

@@ -39,11 +39,11 @@ export enum SupportedChainId {
   arbitrum = 42161,
   arbitrumGoerli = 421613,
   avalanche = 43114,
+  avalancheFuji = 43113,
 }
 
 export enum SubgraphURLEnum {
   voltzProtocol = 1,
   badgesCurrentSeasonNoIPFS = 2,
   badgesRollingSeason = 3,
-  historicalRates = 4,
 }

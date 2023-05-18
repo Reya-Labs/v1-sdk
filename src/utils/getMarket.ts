@@ -111,6 +111,17 @@ export const getMarket = (protocolId: number): Market => {
         },
       };
 
+    case 10:
+      return {
+        name: 'SOFR',
+        tags: {
+          isBorrowing: true,
+          isAaveV3: false,
+          isV2: false,
+          isYield: false,
+        },
+      };
+
     default:
       break;
   }

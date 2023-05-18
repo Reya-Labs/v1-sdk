@@ -23,6 +23,7 @@ type RolloverArgs = {
   signer: ethers.Signer;
   chainId: SupportedChainId;
   alchemyApiKey: string;
+  infuraApiKey: string;
 };
 
 export const rollover = async ({
@@ -32,6 +33,7 @@ export const rollover = async ({
   signer,
   chainId,
   alchemyApiKey,
+  infuraApiKey,
 }: RolloverArgs): Promise<RolloverResponse> => {
   // Get Mellow Config
   const optimiserConfig = getOptimiserConfig(chainId, optimiserId);
@@ -150,7 +152,13 @@ export const rollover = async ({
   // Get the next state of the optimiser
   let optimiserInfo: OptimiserInfo | null = null;
   try {
-    optimiserInfo = await getIndividualOptimiserInfo(optimiserId, signer, chainId, alchemyApiKey);
+    optimiserInfo = await getIndividualOptimiserInfo(
+      optimiserId,
+      signer,
+      chainId,
+      alchemyApiKey,
+      infuraApiKey,
+    );
   } catch (error) {
     const errorMessage = 'Failed to get new state after deposit';
 

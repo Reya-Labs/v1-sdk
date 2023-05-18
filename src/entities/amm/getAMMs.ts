@@ -15,11 +15,13 @@ type GetAMMsResponse = {
 type GetAMMsArgs = {
   chainIds: SupportedChainId[];
   alchemyApiKey: string;
+  infuraApiKey: string;
 };
 
 export const getAMMs = async ({
   chainIds,
   alchemyApiKey,
+  infuraApiKey,
 }: GetAMMsArgs): Promise<GetAMMsResponse> => {
   let rawAMMs: RawAMM[] = [];
   let error: string | undefined;
@@ -75,7 +77,7 @@ export const getAMMs = async ({
       id: rawAmm.vamm,
 
       signer: null,
-      provider: getProvider(rawAmm.chainId, alchemyApiKey),
+      provider: getProvider(rawAmm.chainId, alchemyApiKey, infuraApiKey),
 
       peripheryAddress: networkConfig.peripheryAddress,
       factoryAddress: networkConfig.factoryAddress,

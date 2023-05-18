@@ -16,10 +16,11 @@ export const getVaultInfo = async (
   userAddress: string,
   chainId: SupportedChainId,
   alchemyApiKey: string,
+  infuraApiKey: string,
 ): Promise<OptimiserInfo> => {
   const vaultConfig = getOptimiserConfig(chainId, optimiserId);
   const { MELLOW_LENS } = getMellowConfig(chainId);
-  const provider = getProvider(chainId, alchemyApiKey);
+  const provider = getProvider(chainId, alchemyApiKey, infuraApiKey);
   const vaultAddress = vaultConfig.vaults[0].address;
 
   // Get Mellow Lens Contract
