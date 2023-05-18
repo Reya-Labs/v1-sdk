@@ -17,11 +17,7 @@ export const getFixedRatesGCloud = async (
   try {
     const baseUrl = getServiceUrl('fixed-rates');
     const url = `${baseUrl}/${chainId}/${vammAddress}/${startTimestamp}/${endTimestamp}`;
-    const res = await axios({
-      method: 'get',
-      url: url,
-      withCredentials: false,
-    });
+    const res = await axios.get<HistoricalRate[]>(url, { withCredentials: false });
 
     return res.data;
   } catch (e) {
@@ -41,11 +37,7 @@ export const getVariableRatesGCloud = async (
   try {
     const baseUrl = getServiceUrl('variable-rates');
     const url = `${baseUrl}/${chainId}/${rateOracleAddress}/${startTimestamp}/${endTimestamp}`;
-    const res = await axios({
-      method: 'get',
-      url: url,
-      withCredentials: false,
-    });
+    const res = await axios.get<HistoricalRate[]>(url, { withCredentials: false });
 
     return res.data;
   } catch (e) {
