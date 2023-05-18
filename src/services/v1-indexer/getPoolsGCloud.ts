@@ -24,21 +24,17 @@ export const getPoolsGCloud = async (chainIds: SupportedChainId[]): Promise<RawA
     const baseUrl = getServiceUrl('all-pools');
     const url = `${baseUrl}/${chainIds.join('&')}`;
 
-    const res = await axios({
-      method: 'get',
-      url: url,
+    const res = await axios.get<RawAMM[]>(url, {
       withCredentials: false,
     });
 
-    const rawAMMs = res.data;
-
-    return rawAMMs;
+    return res.data;
   } catch (e) {
     const sentryTracker = getSentryTracker();
     sentryTracker.captureMessage(
       `GCloud Pool API unavailable with message ${(e as Error).message}`,
     );
 
-    throw new Error(`GCloud Pool API unavailable with message ${(e as Error).message}`);
+    return [];
   }
 };
