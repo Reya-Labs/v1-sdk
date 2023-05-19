@@ -202,7 +202,7 @@ const getInstantApyAsArray = async (
 
         const rate = r.value.answer;
 
-        return Number(ethers.utils.formatUnits(rate, 8));
+        return Number(ethers.utils.formatUnits(rate, 8 + 2));
       });
     }
 
