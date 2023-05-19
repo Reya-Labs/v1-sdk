@@ -68,7 +68,9 @@ const getUninitialisedPositions = async ({
 
   try {
     positions = rawPositions.map((rawPos) => {
-      const correspondingAmm = amms.find((amm) => amm.id === rawPos.amm.id);
+      const correspondingAmm = amms.find(
+        (amm) => amm.id === rawPos.amm.id && amm.chainId === chainId,
+      );
       if (correspondingAmm) {
         return new Position({
           ...rawPos,
