@@ -38,13 +38,13 @@ const CHAIN_INFO: Record<SupportedChainId, ChainInfo> = {
   },
   [SupportedChainId.avalanche]: {
     explorer: 'https://snowtrace.io',
-    label: 'Avalanche',
+    label: 'Avalanche C-Chain',
     nativeCurrency: { name: 'Avalanche', symbol: 'AVAX', decimals: 18 },
     defaultRpcUrl: 'https://api.avax.network/ext/bc/C/rpc',
   },
   [SupportedChainId.avalancheFuji]: {
     explorer: 'https://testnet.snowtrace.io',
-    label: 'Avalanche',
+    label: 'Avalanche Fuji',
     nativeCurrency: { name: 'Avalanche', symbol: 'AVAX', decimals: 18 },
     defaultRpcUrl: 'https://api.avax-test.network/ext/C/rpc',
   },
