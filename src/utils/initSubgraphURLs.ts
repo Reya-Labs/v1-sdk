@@ -41,9 +41,9 @@ const initSubgraphURLs = (chainId: SupportedChainId): { [key in SubgraphURLEnum]
       };
     }
     case SupportedChainId.avalanche: {
-      // todo: alex tbc
       return {
-        [SubgraphURLEnum.voltzProtocol]: '',
+        [SubgraphURLEnum.voltzProtocol]:
+          'https://api.thegraph.com/subgraphs/name/voltzprotocol/avalanche-v1',
         [SubgraphURLEnum.badgesCurrentSeasonNoIPFS]: '',
         [SubgraphURLEnum.badgesRollingSeason]: '',
       };

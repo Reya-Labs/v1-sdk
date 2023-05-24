@@ -606,19 +606,39 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
   },
 
   [SupportedChainId.avalanche]: {
-    // todo: alex tbc
-    factoryAddress: '',
-    peripheryAddress: '',
-    wethAddress: '',
-    apply: false,
-    defaultMinLeverageAllowed: 5,
-    pools: [],
+    factoryAddress: '0xda66a7584da7210fd26726EFb12585734F7688c1',
+    peripheryAddress: '0x4870b57E2e4bAA82ac8CC87350A2959e4b51694f',
+    wethAddress: '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7', // wavax
+    apply: true,
+    defaultMinLeverageAllowed: 10,
+    pools: [
+      // SOFR pools
+      {
+        name: 'sofrUSDC_30Sep23',
+        id: '0xb69c2b77c844b55f9924242df4299a1598753320',
+        show: {
+          general: true,
+          trader: true,
+        },
+        traderWithdrawable: false,
+      },
+      {
+        name: 'sofrUSDC_31Dec23',
+        id: '0x1d7e4d7c1629c9d6e3bb6a344496b1b782c9ca9a',
+        show: {
+          general: true,
+          trader: true,
+        },
+        traderWithdrawable: false,
+      },
+    ],
+    sofrRatePriceFeed: '0xdEF67A0c85A8613D13C69F233FFc76C55dEa5603',
   },
 
   [SupportedChainId.avalancheFuji]: {
     factoryAddress: '0xda66a7584da7210fd26726EFb12585734F7688c1',
     peripheryAddress: '0x00D25e91774a509e5FA91CaE69793545B88686e1',
-    wethAddress: '0xd00ae08403b9bbb9124bb305c09058e32c39a48c',
+    wethAddress: '0xd00ae08403b9bbb9124bb305c09058e32c39a48c', // wavax
     apply: false,
     defaultMinLeverageAllowed: 5,
     pools: [],
