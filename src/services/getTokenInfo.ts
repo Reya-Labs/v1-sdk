@@ -70,6 +70,12 @@ export const getTokenInfo = (tokenAddress: string): { name: string; decimals: nu
   ) {
     return { name: 'USDC', decimals: 6 };
   }
+  // avalanche
+  if (
+    tokenAddress.toLowerCase().includes('0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E'.toLowerCase())
+  ) {
+    return { name: 'USDC', decimals: 6 };
+  }
 
   // ====== DAI ======
   // mainnet

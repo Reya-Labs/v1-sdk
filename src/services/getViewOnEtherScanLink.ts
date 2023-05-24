@@ -28,5 +28,14 @@ export const getViewOnEtherScanLink = (
   if (ethereumNetworkIdentifier === SupportedChainId.arbitrumGoerli) {
     return `https://goerli.arbiscan.io/tx/${transactionId}`;
   }
+
+  if (ethereumNetworkIdentifier === SupportedChainId.avalanche) {
+    return `https://snowtrace.io/tx/${transactionId}`;
+  }
+
+  if (ethereumNetworkIdentifier === SupportedChainId.avalancheFuji) {
+    return `https://testnet.snowtrace.io/tx/${transactionId}`;
+  }
+
   return 'https://etherscan.io/';
 };
