@@ -8,6 +8,7 @@ import { getServiceUrl } from './urls';
 export type Voyage = {
   id: 'v2Voyage';
   timestamp: number | null; // UNIX milliseconds
+  status: 'achieved' | 'notAchieved' | 'notStarted' | 'inProgress';
 };
 
 export type GetVoyagesParams = {
