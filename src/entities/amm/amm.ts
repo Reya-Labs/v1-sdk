@@ -67,10 +67,11 @@ import { exponentialBackoff } from '../../utils/retry';
 import getDummyWallet from '../../utils/getDummyWallet';
 import { getMarket, Market } from '../../utils/getMarket';
 import { estimateSwapGasUnits } from '../../utils/estimateSwapGasUnits';
-import { convertGasUnitsToETH } from '../../utils/convertGasUnitsToETH';
+import { convertGasUnitsToNativeToken } from '../../utils/convertGasUnitsToNativeToken';
 import { approveToken, tokenAllowance } from '../../services';
 import { getCurrentBlock } from '../../services/chainBlocks';
 import { getInstantApy } from './services/getInstantApy';
+import { getNativeToken } from '../../utils/getNativeToken';
 
 export class AMM {
   public readonly id: string;
@@ -716,7 +717,7 @@ export class AMM {
     if (Object.values(SupportedChainId).includes(chainId)) {
       swapGasUnits = estimateSwapGasUnits(chainId);
     }
-    const gasFeeETH = await convertGasUnitsToETH(this.provider, swapGasUnits);
+    const gasFeeNativeToken = await convertGasUnitsToNativeToken(this.provider, swapGasUnits);
 
     const maxMarginWithdrawable = Math.max(
       0,
@@ -734,7 +735,10 @@ export class AMM {
       fixedTokenDeltaBalance: this.descale(fixedTokenDelta),
       variableTokenDeltaBalance: this.descale(availableNotional),
       fixedTokenDeltaUnbalanced: this.descale(fixedTokenDeltaUnbalanced),
-      gasFeeETH,
+      gasFee: {
+        value: gasFeeNativeToken,
+        token: await getNativeToken(this.provider),
+      },
     };
 
     return result;
@@ -1165,7 +1169,7 @@ export class AMM {
       lpGasUnits = estimateSwapGasUnits(chainId);
     }
 
-    const gasFeeETH = await convertGasUnitsToETH(this.provider, lpGasUnits);
+    const gasFeeNativeToken = await convertGasUnitsToNativeToken(this.provider, lpGasUnits);
 
     const maxMarginWithdrawable = Math.max(
       0,
@@ -1175,7 +1179,10 @@ export class AMM {
     const result: InfoPostLp = {
       marginRequirement: additionalMargin,
       maxMarginWithdrawable: maxMarginWithdrawable,
-      gasFeeETH,
+      gasFee: {
+        value: gasFeeNativeToken,
+        token: await getNativeToken(this.provider),
+      },
     };
 
     return result;
@@ -1599,10 +1606,16 @@ export class AMM {
       tickUpper,
     );
 
-    const gasFeeETH = await convertGasUnitsToETH(this.provider, gasLimit.toNumber());
+    const gasFeeNativeToken = await convertGasUnitsToNativeToken(
+      this.provider,
+      gasLimit.toNumber(),
+    );
 
     return {
-      gasFeeETH,
+      gasFee: {
+        value: gasFeeNativeToken,
+        token: await getNativeToken(this.provider),
+      },
     };
   }
 

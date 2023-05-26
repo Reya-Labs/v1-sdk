@@ -67,7 +67,10 @@ export type InfoPostSwap = {
 export type InfoPostLp = {
   marginRequirement: number;
   maxMarginWithdrawable: number;
-  gasFeeETH: number;
+  gasFee: {
+    value: number;
+    token: 'ETH' | 'AVAX';
+  };
 };
 
 export type InfoPostSwapV1 = {
@@ -80,7 +83,10 @@ export type InfoPostSwapV1 = {
   fixedTokenDeltaBalance: number;
   variableTokenDeltaBalance: number;
   fixedTokenDeltaUnbalanced: number;
-  gasFeeETH: number;
+  gasFee: {
+    value: number;
+    token: 'ETH' | 'AVAX';
+  };
 };
 
 export type ExpectedApyArgs = {
@@ -223,5 +229,8 @@ export type ExpectedCashflowInfo = {
 };
 
 export type InfoPostSettlePosition = {
-  gasFeeETH: number;
+  gasFee: {
+    value: number;
+    token: 'ETH' | 'AVAX';
+  };
 };
