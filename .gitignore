@@ -12,3 +12,5 @@ playground
 #Hardhat files
 cache
 artifacts
+/.idea/
+/coverage/
