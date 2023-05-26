@@ -4,7 +4,7 @@ type Service =
   | 'chain-information'
   | 'all-pools'
   | 'position-pnl'
-  | 'voyage'
+  | 'voyage-V1'
   | 'fixed-rates'
   | 'variable-rates';
 

@@ -6,9 +6,9 @@ import { SupportedChainId } from '../../types';
 import { getServiceUrl } from './urls';
 
 export type Voyage = {
-  id: 'v2Voyage';
-  timestamp: number | null; // UNIX milliseconds
+  id: number;
   status: 'achieved' | 'notAchieved' | 'notStarted' | 'inProgress';
+  timestamp: number | null; // UNIX milliseconds
 };
 
 export type GetVoyagesParams = {
@@ -18,7 +18,7 @@ export type GetVoyagesParams = {
 
 export const getVoyages = async ({ chainId, account }: GetVoyagesParams): Promise<Voyage[]> => {
   try {
-    const baseUrl = getServiceUrl('voyage');
+    const baseUrl = getServiceUrl('voyage-V1');
     const url = `${baseUrl}/${chainId}/${account.toLowerCase()}`;
 
     const res = await axios.get<Voyage[]>(url, {
