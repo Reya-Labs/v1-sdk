@@ -6,7 +6,7 @@ import { SupportedChainId } from '../../types';
 import { getServiceUrl } from './urls';
 
 export type Voyage = {
-  id: number;
+  id: 1 | 2 | 3 | 4;
   status: 'achieved' | 'notAchieved' | 'notStarted' | 'inProgress';
   timestamp: number | null; // UNIX milliseconds
 };
