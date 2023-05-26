@@ -10,6 +10,10 @@ export function estimateSwapGasUnits(chainId: SupportedChainId): number {
     case SupportedChainId.arbitrumGoerli:
       return 1500000;
 
+    case SupportedChainId.avalanche:
+    case SupportedChainId.avalancheFuji:
+      return 650000;
+
     default:
       return -1;
   }

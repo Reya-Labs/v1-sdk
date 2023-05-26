@@ -1,7 +1,7 @@
 import { BigNumber, ethers, providers } from 'ethers';
 import { getSentryTracker } from '../init';
 
-export async function convertGasUnitsToETH(
+export async function convertGasUnitsToNativeToken(
   provider: providers.Provider,
   gasUnits: number,
 ): Promise<number> {
@@ -16,11 +16,11 @@ export async function convertGasUnitsToETH(
       if (attempt + 1 === attempts) {
         const sentryTracker = getSentryTracker();
         sentryTracker.captureException(error);
-        sentryTracker.captureMessage('Unable to fetch ETH price after 5 attempts');
+        sentryTracker.captureMessage('Unable to fetch gas price after 5 attempts');
       }
     }
   }
 
-  const gasUnitsToETH = parseFloat(ethers.utils.formatEther(gasPriceWei)) * gasUnits;
-  return gasUnitsToETH;
+  const gasUnitsToNativeToken = parseFloat(ethers.utils.formatEther(gasPriceWei)) * gasUnits;
+  return gasUnitsToNativeToken;
 }
