@@ -131,6 +131,9 @@ export const mapOptimiser = async (
     } catch (_) {}
   }
 
+  const userOptimiserDeposit = sum(vaults.map((vault) => vault.userVaultDeposit));
+  const userOptimiserCommittedDeposit = sum(vaults.map((vault) => vault.userVaultCommittedDeposit));
+  const userOptimiserPendingDeposit = sum(vaults.map((vault) => vault.userVaultPendingDeposit));
   return {
     optimiserId: optimiserConfig.optimiser,
 
@@ -159,9 +162,12 @@ export const mapOptimiser = async (
 
     userWalletBalance,
 
-    userOptimiserDeposit: sum(vaults.map((vault) => vault.userVaultDeposit)),
-    userOptimiserCommittedDeposit: sum(vaults.map((vault) => vault.userVaultCommittedDeposit)),
-    userOptimiserPendingDeposit: sum(vaults.map((vault) => vault.userVaultPendingDeposit)),
+    userOptimiserDeposit,
+    userOptimiserDepositUSD: userOptimiserDeposit * underlyingPrice,
+    userOptimiserCommittedDeposit,
+    userOptimiserCommittedDepositUSD: userOptimiserCommittedDeposit * underlyingPrice,
+    userOptimiserPendingDeposit,
+    userOptimiserPendingDepositUSD: userOptimiserPendingDeposit * underlyingPrice,
     isUserRegisteredForAutoRollover: optimiserContractInfo.isRegisteredForAutoRollover,
 
     vaults,

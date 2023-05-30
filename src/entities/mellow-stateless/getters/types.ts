@@ -96,12 +96,18 @@ export type OptimiserInfo = {
 
   // Overall optimiser deposit (in underlying token)
   userOptimiserDeposit: number;
+  // Overall optimiser deposit (in USD)
+  userOptimiserDepositUSD: number;
 
   // Committed (transferred) optimiser deposit (in underlying token)
   userOptimiserCommittedDeposit: number;
+  // Committed (transferred) optimiser deposit (in USD)
+  userOptimiserCommittedDepositUSD: number;
 
   // Pending optimiser deposit (in underlying token)
   userOptimiserPendingDeposit: number;
+  // Pending optimiser deposit (in USD)
+  userOptimiserPendingDepositUSD: number;
 
   // Is the user registered for auto rollover?
   isUserRegisteredForAutoRollover: boolean;
