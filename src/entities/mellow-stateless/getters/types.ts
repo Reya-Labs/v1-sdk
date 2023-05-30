@@ -49,6 +49,8 @@ export type VaultInfo = {
 
   // Pending vault deposit (in underlying token)
   userVaultDeposit: number;
+  // Pending vault deposit (in USD)
+  userVaultDepositUSD: number;
 
   // Can user withdraw or rollover vault? (autorollover related)
   canUserManageVault: boolean;

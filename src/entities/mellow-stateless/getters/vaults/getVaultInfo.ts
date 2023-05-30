@@ -95,6 +95,7 @@ export const getVaultInfo = async (
       userVaultCommittedDeposit,
       userVaultPendingDeposit: 0,
       userVaultDeposit: userVaultCommittedDeposit,
+      userVaultDepositUSD: userVaultCommittedDeposit * underlyingPrice,
 
       canUserManageVault: true,
     },

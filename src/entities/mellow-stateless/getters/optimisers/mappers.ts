@@ -71,6 +71,8 @@ export const mapOptimiser = async (
   const feePerDeposit = descale(optimiserContractInfo.feePerDeposit, tokenDecimals);
   const accumulatedFees = descale(optimiserContractInfo.accumulatedFees, tokenDecimals);
   const pendingDepositsCount = descale(optimiserContractInfo.pendingDepositsCount, tokenDecimals);
+  const underlyingPrice =
+    tokenName === 'ETH' ? await geckoEthToUsd(process.env.REACT_APP_COINGECKO_API_KEY || '') : 1;
 
   // Get vault information
   const vaults = optimiserConfig.vaults.map((vaultConfig, vaultIndex): VaultInfo => {
@@ -102,13 +104,10 @@ export const mapOptimiser = async (
       userVaultCommittedDeposit,
       userVaultPendingDeposit,
       userVaultDeposit,
-
+      userVaultDepositUSD: userVaultDeposit * underlyingPrice,
       canUserManageVault: vaultContractInfo.canWithdrawOrRollover,
     };
   });
-
-  const underlyingPrice =
-    tokenName === 'ETH' ? await geckoEthToUsd(process.env.REACT_APP_COINGECKO_API_KEY || '') : 1;
 
   let gasEstimateUsd = 0;
   let canRegisterUnregister = false;
