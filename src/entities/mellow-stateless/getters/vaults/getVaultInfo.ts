@@ -10,6 +10,7 @@ import { getMellowConfig } from '../../config/config';
 import { getOptimiserConfig } from '../../utils/getOptimiserConfig';
 import { OptimiserInfo, VaultInfo } from '../types';
 import { SupportedChainId } from '../../../../types';
+import { geckoEthToUsd } from '../../../../utils/priceFetch';
 
 export const getVaultInfo = async (
   optimiserId: string,
@@ -33,6 +34,9 @@ export const getVaultInfo = async (
   const tokenId: string = (await exponentialBackoff(() => erc20RootVault.vaultTokens()))[0];
   const { name: tokenName, decimals: tokenDecimals } = getTokenInfo(tokenId);
   const isETH = tokenName === 'ETH';
+  const underlyingPrice = isETH
+    ? await geckoEthToUsd(process.env.REACT_APP_COINGECKO_API_KEY || '')
+    : 1;
 
   // Get ERC20 vault contract
   const tokenContract = new ethers.Contract(tokenId, IERC20MinimalABI, provider);
@@ -96,6 +100,10 @@ export const getVaultInfo = async (
     },
   ];
 
+  const userOptimiserDeposit = sum(vaults.map((vault) => vault.userVaultDeposit));
+  const userOptimiserCommittedDeposit = sum(vaults.map((vault) => vault.userVaultCommittedDeposit));
+  const userOptimiserPendingDeposit = sum(vaults.map((vault) => vault.userVaultPendingDeposit));
+
   return {
     optimiserId: vaultConfig.optimiser,
 
@@ -122,9 +130,12 @@ export const getVaultInfo = async (
 
     userWalletBalance,
 
-    userOptimiserDeposit: sum(vaults.map((vault) => vault.userVaultDeposit)),
-    userOptimiserCommittedDeposit: sum(vaults.map((vault) => vault.userVaultCommittedDeposit)),
-    userOptimiserPendingDeposit: sum(vaults.map((vault) => vault.userVaultPendingDeposit)),
+    userOptimiserDeposit,
+    userOptimiserDepositUSD: userOptimiserDeposit * underlyingPrice,
+    userOptimiserCommittedDeposit,
+    userOptimiserCommittedDepositUSD: userOptimiserCommittedDeposit * underlyingPrice,
+    userOptimiserPendingDeposit,
+    userOptimiserPendingDepositUSD: userOptimiserPendingDeposit * underlyingPrice,
     isUserRegisteredForAutoRollover: false,
 
     vaults,
