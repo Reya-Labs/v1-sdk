@@ -48,5 +48,9 @@ export type PortfolioPosition = {
   realizedPNLCashflow: number;
   realizedPNLTotal: number;
 
+  canEdit: boolean;
+  canSettle: boolean;
+  rolloverAmmId: null | string;
+
   amm: PortfolioPositionAMM;
 };
