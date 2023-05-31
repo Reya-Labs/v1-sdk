@@ -8,3 +8,4 @@ export * from './token';
 export * from './getNotionalFromLiquidity';
 export * from './v1-indexer/getChainLevelInformation';
 export * from './v1-indexer/getVoyages';
+export * from './v1-indexer/getPortfolioPositionsV1';
