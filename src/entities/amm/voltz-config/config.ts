@@ -153,7 +153,7 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
           general: true,
           trader: true,
         },
-        traderWithdrawable: false,
+        traderWithdrawable: true,
         isAaveV3: true,
       },
 
@@ -196,7 +196,7 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
           general: true,
           trader: true,
         },
-        traderWithdrawable: false,
+        traderWithdrawable: true,
       },
 
       {
@@ -213,6 +213,27 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
       {
         name: 'borrow_aUSDC_v6',
         id: '0xd6fc50c52b198f5017a4bd383c92a3da753883a3', // vamm address
+        show: {
+          general: true,
+          trader: true,
+        },
+        traderWithdrawable: true,
+        isAaveV3: true,
+      },
+
+      {
+        name: 'borrow_aUSDC_30Jun23',
+        id: '0xe8ddb4676eec36acffdffa6707f422e23a8dfc12', // vamm address
+        show: {
+          general: true,
+          trader: true,
+        },
+        traderWithdrawable: false,
+      },
+
+      {
+        name: 'borrow_av3USDC_30Jun23',
+        id: '0x3ca96c10ac0b7651c9ea78b110db9e2e355893df', // vamm address
         show: {
           general: true,
           trader: true,
@@ -332,7 +353,7 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
           general: true,
           trader: true,
         },
-        traderWithdrawable: false,
+        traderWithdrawable: true,
       },
 
       // rETH pools
@@ -370,7 +391,7 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
           general: true,
           trader: true,
         },
-        traderWithdrawable: false,
+        traderWithdrawable: true,
       },
 
       // aETH pools
@@ -419,7 +440,7 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
           general: true,
           trader: true,
         },
-        traderWithdrawable: false,
+        traderWithdrawable: true,
       },
 
       // borrow cUSDT pools
@@ -448,7 +469,7 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
           general: true,
           trader: true,
         },
-        traderWithdrawable: false,
+        traderWithdrawable: true,
       },
 
       // borrow aUSDT pools
@@ -477,7 +498,7 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
           general: true,
           trader: true,
         },
-        traderWithdrawable: false,
+        traderWithdrawable: true,
       },
     ],
   },
@@ -550,7 +571,7 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
           general: true,
           trader: true,
         },
-        traderWithdrawable: false,
+        traderWithdrawable: true,
         isAaveV3: true,
       },
 
@@ -562,6 +583,28 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
           trader: true,
         },
         traderWithdrawable: true,
+        isAaveV3: true,
+      },
+
+      {
+        name: 'borrow_av3USDC_30Jun23',
+        id: '0xa3c0c89ac146b89edd17efd4e9c43cc4fc35ec1e', // vamm address
+        show: {
+          general: true,
+          trader: true,
+        },
+        traderWithdrawable: false,
+        isAaveV3: true,
+      },
+
+      {
+        name: 'borrow_av3USDC_31Aug23',
+        id: '0x3ecf01157e9b1a66197325771b63789d1fb18f1f', // vamm address
+        show: {
+          general: true,
+          trader: true,
+        },
+        traderWithdrawable: false,
         isAaveV3: true,
       },
 
@@ -587,6 +630,15 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
       {
         name: 'glpETH_v3',
         id: '0x034f2b4137ed637c6b6ca9636d5f9fee0998e5f1', // vamm address
+        show: {
+          general: true,
+          trader: true,
+        },
+        traderWithdrawable: true,
+      },
+      {
+        name: 'glpETH_28Jun23',
+        id: '0x22393f23f16925d282aeca0a8464dccaf10ee480', // vamm address
         show: {
           general: true,
           trader: true,
