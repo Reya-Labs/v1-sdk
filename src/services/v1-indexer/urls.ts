@@ -6,7 +6,8 @@ type Service =
   | 'position-pnl'
   | 'voyage-V1'
   | 'fixed-rates'
-  | 'variable-rates';
+  | 'variable-rates'
+  | 'portfolio-positions';
 
 export const getServiceUrl = (service: Service): string => {
   return `${baseUrl}/${service}`;
