@@ -29,17 +29,11 @@ export type PortfolioPosition = {
   fixLow: number;
   fixHigh: number;
 
+  tokenPriceUSD: number;
   notionalProvided: number;
-  notionalProvidedUSD: number;
-
   notionalTraded: number;
-  notionalTradedUSD: number;
-
   notional: number;
-  notionalUSD: number;
-
   margin: number;
-  marginUSD: number;
 
   status: {
     health: 'healthy' | 'danger' | 'warning';
@@ -49,35 +43,10 @@ export type PortfolioPosition = {
     paying: number;
   };
 
-  unrealizedPNLUSD: number;
   unrealizedPNL: number;
-
   realizedPNLFees: number;
-  realizedPNLFeesUSD: number;
-
   realizedPNLCashflow: number;
-  realizedPNLCashflowUSD: number;
-
   realizedPNLTotal: number;
-  realizedPNLTotalUSD: number;
 
   amm: PortfolioPositionAMM;
-};
-
-export type PortfolioSummary = {
-  portfolioValueUSD: number;
-  marginUSD: number;
-  unrealizedPNLUSD: number;
-  realizedPNLUSD: number;
-  notionalUSD: number;
-
-  numberOfPositions: number;
-  healthyPositions: number;
-  warningPositions: number;
-  dangerPositions: number;
-};
-
-export type GetPortfolioPositionsResponse = {
-  positions: PortfolioPosition[];
-  summary: PortfolioSummary;
 };

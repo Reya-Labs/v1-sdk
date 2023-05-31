@@ -2,17 +2,17 @@ import axios from 'axios';
 import { getSentryTracker } from '../../../init';
 import { SupportedChainId } from '../../../types';
 import { getServiceUrl } from '../urls';
-import { GetPortfolioPositionsResponse } from './types';
+import { PortfolioPosition } from './types';
 
 export const getPortfolioPositions = async (
   chainIds: SupportedChainId[],
   ownerAddress: string,
-): Promise<GetPortfolioPositionsResponse> => {
+): Promise<PortfolioPosition[]> => {
   try {
     const baseUrl = getServiceUrl('portfolio-positions');
     const url = `${baseUrl}/${chainIds.join('&')}/${ownerAddress.toLowerCase()}`;
 
-    const res = await axios.get<GetPortfolioPositionsResponse>(url, {
+    const res = await axios.get<PortfolioPosition[]>(url, {
       withCredentials: false,
     });
 
@@ -23,20 +23,6 @@ export const getPortfolioPositions = async (
       `GCloud Portfolio Positions API unavailable with message ${(e as Error).message}`,
     );
 
-    return {
-      positions: [],
-      summary: {
-        portfolioValueUSD: 0,
-        marginUSD: 0,
-        unrealizedPNLUSD: 0,
-        realizedPNLUSD: 0,
-        notionalUSD: 0,
-
-        numberOfPositions: 0,
-        healthyPositions: 0,
-        warningPositions: 0,
-        dangerPositions: 0,
-      },
-    };
+    return [];
   }
 };
