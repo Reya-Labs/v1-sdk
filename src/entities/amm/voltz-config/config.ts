@@ -153,7 +153,7 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
           general: true,
           trader: true,
         },
-        traderWithdrawable: false,
+        traderWithdrawable: true,
         isAaveV3: true,
       },
 
@@ -196,7 +196,7 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
           general: true,
           trader: true,
         },
-        traderWithdrawable: false,
+        traderWithdrawable: true,
       },
 
       {
@@ -217,7 +217,7 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
           general: true,
           trader: true,
         },
-        traderWithdrawable: false,
+        traderWithdrawable: true,
         isAaveV3: true,
       },
 
@@ -332,7 +332,7 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
           general: true,
           trader: true,
         },
-        traderWithdrawable: false,
+        traderWithdrawable: true,
       },
 
       // rETH pools
@@ -370,7 +370,7 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
           general: true,
           trader: true,
         },
-        traderWithdrawable: false,
+        traderWithdrawable: true,
       },
 
       // aETH pools
@@ -419,7 +419,7 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
           general: true,
           trader: true,
         },
-        traderWithdrawable: false,
+        traderWithdrawable: true,
       },
 
       // borrow cUSDT pools
@@ -448,7 +448,7 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
           general: true,
           trader: true,
         },
-        traderWithdrawable: false,
+        traderWithdrawable: true,
       },
 
       // borrow aUSDT pools
@@ -477,7 +477,7 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
           general: true,
           trader: true,
         },
-        traderWithdrawable: false,
+        traderWithdrawable: true,
       },
     ],
   },
@@ -550,7 +550,7 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
           general: true,
           trader: true,
         },
-        traderWithdrawable: false,
+        traderWithdrawable: true,
         isAaveV3: true,
       },
 
@@ -591,7 +591,7 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
           general: true,
           trader: true,
         },
-        traderWithdrawable: false,
+        traderWithdrawable: true,
       },
     ],
   },
