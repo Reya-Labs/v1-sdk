@@ -122,7 +122,9 @@ const optimiserWithdraw = async ({
   }
 
   const optimiserVaultIds = optimiserConfig.vaults.map((v) => v.address);
-  const vaultIndex = optimiserVaultIds.findIndex((item) => item === vaultId);
+  const vaultIndex = optimiserVaultIds.findIndex(
+    (item) => item.toLowerCase() === vaultId.toLowerCase(),
+  );
   if (vaultIndex < 0) {
     const errorMessage = 'Vault ID not found';
 
