@@ -20,7 +20,11 @@ export const mapWeights = (
     throw new Error('Duplicate vault ids in spare weights');
   }
 
-  if (!uniqueVaultIds.every((id) => optimiserVaultIds.find((rootId) => rootId === id))) {
+  if (
+    !uniqueVaultIds.every((id) =>
+      optimiserVaultIds.find((rootId) => rootId.toLowerCase() === id.toLowerCase()),
+    )
+  ) {
     throw new Error('Spare vault id not found');
   }
 
