@@ -20,6 +20,7 @@ export type PortfolioPositionAMM = {
 export type PortfolioPosition = {
   id: string;
   type: 'LP' | 'Variable' | 'Fixed';
+  creationTimestampInMS: number;
 
   ownerAddress: string;
 
@@ -47,10 +48,6 @@ export type PortfolioPosition = {
   realizedPNLFees: number;
   realizedPNLCashflow: number;
   realizedPNLTotal: number;
-
-  canEdit: boolean;
-  canSettle: boolean;
-  rolloverAmmId: null | string;
 
   amm: PortfolioPositionAMM;
 };
