@@ -147,6 +147,7 @@ export const mapOptimiser = async (
     soon: optimiserConfig.soon,
     title: optimiserConfig.title,
     description: optimiserConfig.description,
+    deprecated: optimiserConfig.deprecated,
 
     underlyingPools,
 

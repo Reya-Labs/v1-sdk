@@ -69,6 +69,9 @@ export type OptimiserInfo = {
   // Description of the optimiser
   description: string;
 
+  // Deprecation of the optimiser
+  deprecated: boolean;
+
   // Unique underlying pools of the vaults (e.g. Aave - USDC Lend)
   underlyingPools: string[];
 

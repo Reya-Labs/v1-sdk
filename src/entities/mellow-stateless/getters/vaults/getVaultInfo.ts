@@ -111,6 +111,7 @@ export const getVaultInfo = async (
     soon: vaultConfig.soon,
     title: vaultConfig.title,
     description: vaultConfig.description,
+    deprecated: vaultConfig.deprecated,
 
     underlyingPools,
 
