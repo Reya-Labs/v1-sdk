@@ -72,9 +72,9 @@ const getUninitialisedPositions = async ({
         (amm) => amm.id === rawPos.amm.id && amm.chainId === chainId,
       );
 
-      const positionId = `
-        ${chainId}_${rawPos.amm.id.toLowerCase()}_${rawPos.owner.toLowerCase()}_
-        ${rawPos.tickLower}_${rawPos.tickUpper}`;
+      const positionId = `${chainId}_${rawPos.amm.id.toLowerCase()}_${rawPos.owner.toLowerCase()}_${
+        rawPos.tickLower
+      }_${rawPos.tickUpper}`;
 
       if (correspondingAmm) {
         return new Position({
