@@ -15,6 +15,12 @@ export type PortfolioPositionDetails = {
   type: 'LP' | 'Variable' | 'Fixed';
   creationTimestampInMS: number;
 
+  tickLower: number;
+  tickUpper: number;
+
+  fixLow: number;
+  fixHigh: number;
+
   tokenPriceUSD: number;
   notional: number;
   margin: number;
