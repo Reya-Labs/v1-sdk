@@ -3,12 +3,19 @@ import { getSentryTracker } from '../../../init';
 import { getServiceUrl } from '../urls';
 import { PortfolioPositionDetails } from './types';
 
-export const getPortfolioPositionDetails = async (
-  positionId: string,
-): Promise<PortfolioPositionDetails | null> => {
+type GetPortfolioPositionDetailsParams = {
+  positionId: string;
+  includeHistory: boolean;
+};
+export const getPortfolioPositionDetails = async ({
+  positionId,
+  includeHistory,
+}: GetPortfolioPositionDetailsParams): Promise<PortfolioPositionDetails | null> => {
   try {
     const baseUrl = getServiceUrl('portfolio-position-details');
-    const url = `${baseUrl}/${positionId.toLowerCase()}`;
+    const url = `${baseUrl}/${positionId.toLowerCase()}${
+      includeHistory ? '?includeHistory=true' : ''
+    }`;
 
     const res = await axios.get<PortfolioPositionDetails>(url, {
       withCredentials: false,
