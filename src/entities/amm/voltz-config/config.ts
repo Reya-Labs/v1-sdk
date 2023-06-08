@@ -656,11 +656,10 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
     defaultMinLeverageAllowed: 5,
     pools: [],
   },
-  // TODO: Alex fix spruce
   [SupportedChainId.spruce]: {
-    factoryAddress: '0xCC39fF9f5413DA2dFB8475a88E3E6C8B190CeAe6', // TBC
-    peripheryAddress: '0xb1fb9e3610b0ca31a698ea81c2de3242eb45b12c',
-    wethAddress: '0xb83C277172198E8Ec6b841Ff9bEF2d7fa524f797',
+    factoryAddress: '0xFa9DDF4569206625370D2A8546f42c1CC924063c',
+    peripheryAddress: '', //  todo spruce: update once deployment is done
+    wethAddress: '', // todo spruce: confirm address
     apply: false,
     defaultMinLeverageAllowed: 5,
     pools: [],

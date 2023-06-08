@@ -40,8 +40,7 @@ export enum SupportedChainId {
   arbitrumGoerli = 421613,
   avalanche = 43114,
   avalancheFuji = 43113,
-  // TODO: Alex fix spruce
-  spruce = -1,
+  spruce = 424242,
 }
 
 export enum SubgraphURLEnum {

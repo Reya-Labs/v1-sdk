@@ -49,11 +49,11 @@ const CHAIN_INFO: Record<SupportedChainId, ChainInfo> = {
     defaultRpcUrl: 'https://api.avax-test.network/ext/C/rpc',
   },
   [SupportedChainId.spruce]: {
-    // TODO: Alex fix spruce
-    explorer: 'https://etherscan.io/',
-    label: 'Ethereum',
-    nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-    defaultRpcUrl: 'https://mainnet.infura.io/v3/',
+    explorer: '',
+    label: 'Spruce Insti 1',
+    nativeCurrency: { name: 'USDCf', symbol: 'USDCF', decimals: 18 },
+    defaultRpcUrl:
+      'https://api-insti-1-testnet-us-west-2.avax-test.network/ext/bc/Ue98aQ3AoP1EqH8LwX496W6h1d8hUHNHG7AFGvRe4PSJVkQw1/rpc',
   },
 };
 
