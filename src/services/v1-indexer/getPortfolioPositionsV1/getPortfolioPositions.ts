@@ -3,6 +3,7 @@ import { getSentryTracker } from '../../../init';
 import { SupportedChainId } from '../../../types';
 import { getServiceUrl } from '../urls';
 import { PortfolioPosition } from './types';
+import { getVoltzPoolConfig } from '../../../entities/amm/voltz-config/getConfig';
 
 export const getPortfolioPositions = async (
   chainIds: SupportedChainId[],
@@ -16,7 +17,28 @@ export const getPortfolioPositions = async (
       withCredentials: false,
     });
 
-    return res.data;
+    let positions = res.data;
+
+    // todo: move this config and filtering on the API side
+    for (const chainId of chainIds) {
+      const config = getVoltzPoolConfig(chainId);
+
+      if (config.apply) {
+        const whitelistedPoolIds = config.pools
+          .filter((pool) => pool.show.general)
+          .map((pool) => pool.id.toLowerCase());
+
+        positions = positions.filter((item) => {
+          if (!(item.amm.chainId === chainId)) {
+            return true;
+          }
+
+          return whitelistedPoolIds.map((w) => w.toLowerCase()).includes(item.amm.id.toLowerCase());
+        });
+      }
+    }
+
+    return positions;
   } catch (e) {
     const sentryTracker = getSentryTracker();
     sentryTracker.captureMessage(
