@@ -2,17 +2,18 @@ import { providers } from 'ethers';
 import { getSentryTracker } from '../init';
 import { SupportedChainId } from '../types';
 
-const CHAIN_TOKEN_MAP: Record<SupportedChainId, 'ETH' | 'AVAX'> = {
+const CHAIN_TOKEN_MAP: Record<SupportedChainId, 'ETH' | 'AVAX' | 'USDCf'> = {
   [SupportedChainId.mainnet]: 'ETH',
   [SupportedChainId.goerli]: 'ETH',
   [SupportedChainId.arbitrum]: 'ETH',
   [SupportedChainId.arbitrumGoerli]: 'ETH',
   [SupportedChainId.avalanche]: 'AVAX',
   [SupportedChainId.avalancheFuji]: 'AVAX',
-  // TODO: Alex fix spruce
-  [SupportedChainId.spruce]: 'AVAX',
+  [SupportedChainId.spruce]: 'USDCf',
 };
-export async function getNativeToken(provider: providers.Provider): Promise<'ETH' | 'AVAX'> {
+export async function getNativeToken(
+  provider: providers.Provider,
+): Promise<'ETH' | 'AVAX' | 'USDCf'> {
   let chainId: SupportedChainId | null = null;
 
   const attempts = 5;

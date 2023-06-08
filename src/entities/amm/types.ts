@@ -69,7 +69,7 @@ export type InfoPostLp = {
   maxMarginWithdrawable: number;
   gasFee: {
     value: number;
-    token: 'ETH' | 'AVAX';
+    token: 'ETH' | 'AVAX' | 'USDCf';
   };
 };
 
@@ -85,7 +85,7 @@ export type InfoPostSwapV1 = {
   fixedTokenDeltaUnbalanced: number;
   gasFee: {
     value: number;
-    token: 'ETH' | 'AVAX';
+    token: 'ETH' | 'AVAX' | 'USDCf';
   };
 };
 
@@ -231,6 +231,6 @@ export type ExpectedCashflowInfo = {
 export type InfoPostSettlePosition = {
   gasFee: {
     value: number;
-    token: 'ETH' | 'AVAX';
+    token: 'ETH' | 'AVAX' | 'USDCf';
   };
 };

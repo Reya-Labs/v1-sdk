@@ -7,8 +7,7 @@ const CHAIN_SWAP_GAS_UNITS_MAP: Record<SupportedChainId, number> = {
   [SupportedChainId.arbitrumGoerli]: 1500000,
   [SupportedChainId.avalanche]: 650000,
   [SupportedChainId.avalancheFuji]: 650000,
-  // TODO: Alex fix spruce
-  [SupportedChainId.spruce]: -1,
+  [SupportedChainId.spruce]: 650000, // todo spruce: confirm this
 };
 
 export function estimateSwapGasUnits(chainId: SupportedChainId): number {

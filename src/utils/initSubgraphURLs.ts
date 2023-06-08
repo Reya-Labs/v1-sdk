@@ -43,9 +43,8 @@ const CHAIN_SUBGRAPH_URL_MAP: Record<SupportedChainId, { [key in SubgraphURLEnum
     [SubgraphURLEnum.badgesCurrentSeasonNoIPFS]: '',
     [SubgraphURLEnum.badgesRollingSeason]: '',
   },
-  // TODO: Alex fix spruce
   [SupportedChainId.spruce]: {
-    [SubgraphURLEnum.voltzProtocol]: 'https://api.thegraph.com/subgraphs/name/voltzprotocol/spruce',
+    [SubgraphURLEnum.voltzProtocol]: '', // subgraph does not have support for spruce
     [SubgraphURLEnum.badgesCurrentSeasonNoIPFS]: '',
     [SubgraphURLEnum.badgesRollingSeason]: '',
   },
