@@ -20,6 +20,8 @@
     "prettier:check": "prettier --check 'src/**/*.ts' 'tests/**/*.ts'",
     "lint:check": "eslint 'src/**/*.{ts,tsx}'",
     "lint:fix": "eslint --fix 'src/**/*.ts'",
+    "ts:check": "yarn ts:check-types",
+    "ts:check-types": "tsc --noEmit",
     "yalc:push-changes": "yarn build-release && npx yalc publish && npx yalc push --sig",
     "test": "jest tests/jest/*.ts && hardhat test",
     "test:cicd": "yarn test:jest && hardhat test tests/mocha/getCashflowInfo.test.ts",
@@ -28,7 +30,7 @@
     "release": "semantic-release",
     "irs-setup": "ts-node scripts/setup.ts",
     "decode-error": "ts-node src/utils/errors/decodeError.ts",
-    "code-quality:check": "npx concurrently 'yarn prettier:check' 'yarn lint:check'",
+    "code-quality:check": "npx concurrently 'yarn prettier:check' 'yarn lint:check' 'yarn ts:check'",
     "generate:coverage-badges": "npx istanbul-badges-readme --silent"
   },
   "devDependencies": {
