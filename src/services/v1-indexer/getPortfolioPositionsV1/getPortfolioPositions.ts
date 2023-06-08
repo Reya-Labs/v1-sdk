@@ -33,7 +33,7 @@ export const getPortfolioPositions = async (
             return true;
           }
 
-          return whitelistedPoolIds.map((w) => w.toLowerCase()).includes(item.amm.id.toLowerCase());
+          return whitelistedPoolIds.includes(item.amm.id.toLowerCase());
         });
       }
     }

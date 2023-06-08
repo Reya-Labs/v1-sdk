@@ -50,7 +50,7 @@ export const getAMMs = async ({
           return true;
         }
 
-        return whitelistedPoolIds.map((w) => w.toLowerCase()).includes(item.vamm.toLowerCase());
+        return whitelistedPoolIds.includes(item.vamm.toLowerCase());
       });
     }
   }
