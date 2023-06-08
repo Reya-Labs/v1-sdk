@@ -9,6 +9,8 @@ const CHAIN_TOKEN_MAP: Record<SupportedChainId, 'ETH' | 'AVAX'> = {
   [SupportedChainId.arbitrumGoerli]: 'ETH',
   [SupportedChainId.avalanche]: 'AVAX',
   [SupportedChainId.avalancheFuji]: 'AVAX',
+  // TODO: Alex fix spruce
+  [SupportedChainId.spruce]: 'AVAX',
 };
 export async function getNativeToken(provider: providers.Provider): Promise<'ETH' | 'AVAX'> {
   let chainId: SupportedChainId | null = null;

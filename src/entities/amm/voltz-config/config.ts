@@ -656,6 +656,15 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
     defaultMinLeverageAllowed: 5,
     pools: [],
   },
+  // TODO: Alex fix spruce
+  [SupportedChainId.spruce]: {
+    factoryAddress: '0xCC39fF9f5413DA2dFB8475a88E3E6C8B190CeAe6', // TBC
+    peripheryAddress: '0xb1fb9e3610b0ca31a698ea81c2de3242eb45b12c',
+    wethAddress: '0xb83C277172198E8Ec6b841Ff9bEF2d7fa524f797',
+    apply: false,
+    defaultMinLeverageAllowed: 5,
+    pools: [],
+  },
 
   [SupportedChainId.avalanche]: {
     factoryAddress: '0xda66a7584da7210fd26726EFb12585734F7688c1',

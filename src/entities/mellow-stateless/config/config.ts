@@ -361,6 +361,10 @@ const networkConfigurations: { [key in SupportedChainId]: NetworkConfiguration }
     MELLOW_LENS: '0x0000000000000000000000000000000000000000',
     MELLOW_OPTIMISERS: [],
   },
+  [SupportedChainId.spruce]: {
+    MELLOW_LENS: '0x0000000000000000000000000000000000000000',
+    MELLOW_OPTIMISERS: [],
+  },
 };
 
 export const getMellowConfig = (chainId: SupportedChainId): NetworkConfiguration => {

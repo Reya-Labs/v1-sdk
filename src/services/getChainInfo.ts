@@ -48,6 +48,13 @@ const CHAIN_INFO: Record<SupportedChainId, ChainInfo> = {
     nativeCurrency: { name: 'Avalanche', symbol: 'AVAX', decimals: 18 },
     defaultRpcUrl: 'https://api.avax-test.network/ext/C/rpc',
   },
+  [SupportedChainId.spruce]: {
+    // TODO: Alex fix spruce
+    explorer: 'https://etherscan.io/',
+    label: 'Ethereum',
+    nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+    defaultRpcUrl: 'https://mainnet.infura.io/v3/',
+  },
 };
 
 export function getChainInfo(chainId: SupportedChainId): ChainInfo | undefined {

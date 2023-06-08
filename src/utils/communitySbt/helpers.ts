@@ -35,6 +35,7 @@ export function decodeMultipleBadgeTypes(input: Bytes): number[] {
 
 export function getEtherscanURL(network: string, apiKey: string, userAddress: string): string {
   switch (network) {
+    // TODO: Alex fix spruce
     case 'goerli':
       return `https://api-goerli.etherscan.io/api?module=account&action=txlist&address=${userAddress}&page=1&offset=50&sort=desc&apikey=${apiKey}`;
     case 'mainnet':
