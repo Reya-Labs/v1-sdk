@@ -17,6 +17,7 @@ export type RawAMM = {
   tokenId: string;
   tokenName: string;
   tokenDecimals: number;
+  isV2: boolean;
 };
 
 export const getPoolsGCloud = async (chainIds: SupportedChainId[]): Promise<RawAMM[]> => {

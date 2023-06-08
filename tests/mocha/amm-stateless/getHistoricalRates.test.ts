@@ -42,7 +42,6 @@ describe('getHistoricalRates', () => {
     },
     rateOracleId: 'mockId',
     ammId: 'mockId',
-    historicalRatesApiKey: 'mockKey',
   };
 
   afterEach(async () => {
