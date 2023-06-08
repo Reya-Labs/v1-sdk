@@ -15,6 +15,7 @@ export type PortfolioPositionAMM = {
 
   termEndTimestampInMS: number;
   termStartTimestampInMS: number;
+  isV2: boolean;
 };
 
 export type PortfolioPosition = {
