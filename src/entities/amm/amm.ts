@@ -1982,7 +1982,7 @@ export class AMM {
       maxLeverageVT: 0,
     };
 
-    {
+    try {
       const { availableNotional, maxLeverage } = await this.getPoolSwapInfoOneSide({
         isFT: true,
         sqrtPriceLimitX96: BigNumber.from(
@@ -1991,9 +1991,13 @@ export class AMM {
       });
       poolSwapInfo.availableNotionalFT = availableNotional;
       poolSwapInfo.maxLeverageFT = maxLeverage;
+    } catch (error) {
+      const sentryTracker = getSentryTracker();
+      sentryTracker.captureException(error);
+      sentryTracker.captureMessage('Unable to retrieve available notional in FT direction');
     }
 
-    {
+    try {
       const { availableNotional, maxLeverage } = await this.getPoolSwapInfoOneSide({
         isFT: false,
         sqrtPriceLimitX96: BigNumber.from(
@@ -2002,6 +2006,10 @@ export class AMM {
       });
       poolSwapInfo.availableNotionalVT = availableNotional;
       poolSwapInfo.maxLeverageVT = maxLeverage;
+    } catch (error) {
+      const sentryTracker = getSentryTracker();
+      sentryTracker.captureException(error);
+      sentryTracker.captureMessage('Unable to retrieve available notional in VT direction');
     }
 
     return poolSwapInfo;
