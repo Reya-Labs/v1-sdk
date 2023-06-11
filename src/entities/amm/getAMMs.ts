@@ -36,6 +36,7 @@ export const getAMMs = async ({
     error = 'Failed to fetch AMMs from the indexer';
   }
 
+  // todo: move this config and filtering on the API side
   for (const chainId of chainIds) {
     const config = getVoltzPoolConfig(chainId);
 
@@ -49,7 +50,7 @@ export const getAMMs = async ({
           return true;
         }
 
-        return whitelistedPoolIds.map((w) => w.toLowerCase()).includes(item.vamm.toLowerCase());
+        return whitelistedPoolIds.includes(item.vamm.toLowerCase());
       });
     }
   }
