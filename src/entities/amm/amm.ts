@@ -101,6 +101,7 @@ export class AMM {
   public readonly traderWithdrawable: boolean;
 
   private readonly dummyWallet: Wallet;
+  public readonly isV2: boolean;
 
   // new
 
@@ -126,6 +127,10 @@ export class AMM {
     minLeverageAllowed,
     traderVisible,
     traderWithdrawable,
+    isV2,
+    fixedApr,
+    variableApy,
+    variableApy24Ago,
   }: AMMConstructorArgs) {
     this.id = id;
     this.chainId = chainId;
@@ -152,6 +157,11 @@ export class AMM {
     this.traderWithdrawable = traderWithdrawable;
 
     this.dummyWallet = getDummyWallet().connect(this.provider);
+
+    this.fixedApr = fixedApr ?? 0;
+    this.variableApy = variableApy ?? 0;
+    this.variableApy24Ago = variableApy24Ago ?? 0;
+    this.isV2 = isV2 === undefined ? false : isV2;
   }
 
   public async refreshInfo(): Promise<void> {
