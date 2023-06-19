@@ -28,6 +28,12 @@ export type AMMConstructorArgs = {
   minLeverageAllowed: number;
   traderVisible: boolean;
   traderWithdrawable: boolean;
+
+  isV2?: boolean;
+
+  fixedApr?: number;
+  variableApy?: number;
+  variableApy24Ago?: number;
 };
 
 // swap

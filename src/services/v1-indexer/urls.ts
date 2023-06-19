@@ -7,6 +7,7 @@ type Service =
   | 'voyage-V1'
   | 'fixed-rates'
   | 'variable-rates'
+  | 'v1v2-pools'
   | 'portfolio-positions'
   | 'portfolio-position-details';
 
