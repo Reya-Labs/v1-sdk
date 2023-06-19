@@ -1782,7 +1782,7 @@ export class AMM {
   }
 
   public get market(): Market {
-    return getMarket(this.rateOracle.protocolId);
+    return getMarket(this.rateOracle.protocolId, this.isV2);
   }
 
   // start and end dates
