@@ -198,8 +198,8 @@ export const getV1V2AMMs = async ({
         id: rawAmm.rateOracle.address,
         protocolId: rawAmm.rateOracle.protocolId,
       }),
-      termStartTimestampInMS: rawAmm.termStartTimestampInMS * (rawAmm.isV2 ? 1000 : 0),
-      termEndTimestampInMS: rawAmm.termEndTimestampInMS * (rawAmm.isV2 ? 1000 : 0),
+      termStartTimestampInMS: rawAmm.termStartTimestampInMS,
+      termEndTimestampInMS: rawAmm.termEndTimestampInMS,
       underlyingToken: new Token({
         id: rawAmm.underlyingToken.address,
         name: rawAmm.underlyingToken.name,
