@@ -213,9 +213,11 @@ export const getV1V2AMMs = async ({
       traderWithdrawable: poolConfig.traderWithdrawable,
 
       isV2: rawAmm.isV2,
-      fixedApr: rawAmm.isV2 ? rawAmm.currentFixedRate : 0,
-      variableApy: rawAmm.isV2 ? rawAmm.currentVariableRate : 0,
-      variableApy24Ago: rawAmm.isV2 ? rawAmm.currentVariableRate + rawAmm.variableRateChange : 0,
+      fixedApr: rawAmm.isV2 ? rawAmm.currentFixedRate * 100 : 0,
+      variableApy: rawAmm.isV2 ? rawAmm.currentVariableRate * 100 : 0,
+      variableApy24Ago: rawAmm.isV2
+        ? (rawAmm.currentVariableRate + rawAmm.variableRateChange) * 100
+        : 0,
     });
   });
 
