@@ -68,10 +68,10 @@ import getDummyWallet from '../../utils/getDummyWallet';
 import { getMarket, Market } from '../../utils/getMarket';
 import { estimateSwapGasUnits } from '../../utils/estimateSwapGasUnits';
 import { convertGasUnitsToNativeToken } from '../../utils/convertGasUnitsToNativeToken';
-import { approveToken, tokenAllowance } from '../../services';
 import { getCurrentBlock } from '../../services/chainBlocks';
 import { getInstantApy } from './services/getInstantApy';
 import { getNativeToken } from '../../utils/getNativeToken';
+import { approveToken, tokenAllowance } from '../../services/token';
 
 export class AMM {
   public readonly id: string;

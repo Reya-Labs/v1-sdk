@@ -10,3 +10,4 @@ export * from './v1-indexer/getChainLevelInformation';
 export * from './v1-indexer/getVoyages';
 export * from './v1-indexer/getPortfolioPositionsV1';
 export * from './v1-indexer/getPortfolioPositionDetailsV1';
+export * from './v1-indexer/getPortfolioPositionsByPoolV1';

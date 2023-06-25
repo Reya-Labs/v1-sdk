@@ -9,7 +9,9 @@ type Service =
   | 'variable-rates'
   | 'v1v2-pools'
   | 'portfolio-positions'
-  | 'portfolio-position-details';
+  | 'portfolio-position-details'
+  | 'v1v2-trader-positions-by-pool'
+  | 'v1v2-lp-positions-by-pool';
 
 export const getServiceUrl = (service: Service): string => {
   return `${baseUrl}/${service}`;
