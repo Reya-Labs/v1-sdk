@@ -1989,10 +1989,10 @@ export class AMM {
 
   public async getPoolSwapInfo(): Promise<PoolSwapInfo> {
     const poolSwapInfo: PoolSwapInfo = {
-      availableNotionalFT: 0,
-      availableNotionalVT: 0,
-      maxLeverageFT: 0,
-      maxLeverageVT: 0,
+      availableNotionalFixedTaker: 0,
+      availableNotionalVariableTaker: 0,
+      maxLeverageFixedTaker: 0,
+      maxLeverageVariableTaker: 0,
     };
 
     try {
@@ -2002,8 +2002,8 @@ export class AMM {
           TickMath.getSqrtRatioAtTick(TickMath.MAX_TICK - 1).toString(),
         ),
       });
-      poolSwapInfo.availableNotionalFT = availableNotional;
-      poolSwapInfo.maxLeverageFT = maxLeverage;
+      poolSwapInfo.availableNotionalFixedTaker = availableNotional;
+      poolSwapInfo.maxLeverageFixedTaker = maxLeverage;
     } catch (error) {
       const sentryTracker = getSentryTracker();
       sentryTracker.captureException(error);
@@ -2017,8 +2017,8 @@ export class AMM {
           TickMath.getSqrtRatioAtTick(TickMath.MIN_TICK + 1).toString(),
         ),
       });
-      poolSwapInfo.availableNotionalVT = availableNotional;
-      poolSwapInfo.maxLeverageVT = maxLeverage;
+      poolSwapInfo.availableNotionalVariableTaker = availableNotional;
+      poolSwapInfo.maxLeverageVariableTaker = maxLeverage;
     } catch (error) {
       const sentryTracker = getSentryTracker();
       sentryTracker.captureException(error);
