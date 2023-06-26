@@ -157,11 +157,6 @@ describe.skip('position:refreshInfoGcloud', () => {
         });
 
         await position.refreshInfo();
-
-        const realizedPnLFromSwaps = position.realizedPnLFromSwaps;
-
-        // eslint-disable-next-line no-console
-        console.log(`realizedPnLFromSwaps trader ${realizedPnLFromSwaps}`);
       });
 
       it('lp', async () => {
