@@ -7,10 +7,10 @@ import { ONE_DAY_IN_SECONDS } from '../../../../constants';
 import { getSentryTracker } from '../../../../init';
 import { SupportedChainId } from '../../../../types';
 import {
-  HistoricalRate,
   getFixedRatesGCloud,
   getVariableRatesGCloud,
 } from '../../../../services/gateway/getHistoricalRatesGCloud';
+import { HistoricalRate } from '@voltz-protocol/api-v2-types';
 
 export enum Granularity {
   ONE_HOUR = 3600 * 1000,
