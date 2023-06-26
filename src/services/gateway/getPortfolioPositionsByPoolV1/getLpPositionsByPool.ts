@@ -4,7 +4,7 @@ import { getServiceUrl } from '../urls';
 import { Position } from '../../../entities/position/position';
 import { mapToPosition } from './mapToPosition';
 import { AMM } from '../../../entities/amm/amm';
-import { V1PortfolioPositionDetails } from './types';
+import { V1V2PortfolioPositionDetails } from '@voltz-protocol/api-v2-types';
 
 export const getLpPositionsByPool = async (
   poolId: string,
@@ -19,7 +19,7 @@ export const getLpPositionsByPool = async (
     const baseUrl = getServiceUrl('v1v2-lp-positions-by-pool');
     const url = `${baseUrl}/${poolId.toLowerCase()}/${ownerAddress.toString}`;
 
-    const res = await axios.get<V1PortfolioPositionDetails[]>(url, {
+    const res = await axios.get<V1V2PortfolioPositionDetails[]>(url, {
       withCredentials: false,
     });
 

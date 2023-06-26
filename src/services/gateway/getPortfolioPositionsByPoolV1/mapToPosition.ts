@@ -1,8 +1,11 @@
+import { V1V2PortfolioPositionDetails } from '@voltz-protocol/api-v2-types';
 import { AMM } from '../../../entities/amm/amm';
 import { Position } from '../../../entities/position/position';
-import { V1PortfolioPositionDetails } from './types';
 
-export const mapToPosition = async (p: V1PortfolioPositionDetails, amm: AMM): Promise<Position> => {
+export const mapToPosition = async (
+  p: V1V2PortfolioPositionDetails,
+  amm: AMM,
+): Promise<Position> => {
   const position = new Position({
     id: p.id,
 

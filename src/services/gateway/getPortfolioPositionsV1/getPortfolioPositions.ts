@@ -2,18 +2,18 @@ import axios from 'axios';
 import { getSentryTracker } from '../../../init';
 import { SupportedChainId } from '../../../types';
 import { getServiceUrl } from '../urls';
-import { PortfolioPosition } from './types';
 import { getVoltzPoolConfig } from '../../../entities/amm/voltz-config/getConfig';
+import { V1V2PortfolioPosition } from '@voltz-protocol/api-v2-types';
 
 export const getPortfolioPositions = async (
   chainIds: SupportedChainId[],
   ownerAddress: string,
-): Promise<PortfolioPosition[]> => {
+): Promise<V1V2PortfolioPosition[]> => {
   try {
     const baseUrl = getServiceUrl('v1v2-positions');
     const url = `${baseUrl}/${chainIds.join('&')}/${ownerAddress.toLowerCase()}`;
 
-    const res = await axios.get<PortfolioPosition[]>(url, {
+    const res = await axios.get<V1V2PortfolioPosition[]>(url, {
       withCredentials: false,
     });
 
@@ -29,11 +29,11 @@ export const getPortfolioPositions = async (
           .map((pool) => pool.id.toLowerCase());
 
         positions = positions.filter((item) => {
-          if (!(item.amm.chainId === chainId)) {
+          if (!(item.pool.chainId === chainId)) {
             return true;
           }
 
-          return whitelistedPoolIds.includes(item.amm.id.toLowerCase());
+          return whitelistedPoolIds.includes(item.pool.vamm.toLowerCase());
         });
       }
     }
