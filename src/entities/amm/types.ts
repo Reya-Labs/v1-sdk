@@ -209,10 +209,10 @@ export type ClosestTickAndFixedRate = {
 };
 
 export type PoolSwapInfo = {
-  availableNotionalFT: number;
-  availableNotionalVT: number;
-  maxLeverageFT: number;
-  maxLeverageVT: number;
+  availableNotionalFixedTaker: number;
+  availableNotionalVariableTaker: number;
+  maxLeverageFixedTaker: number;
+  maxLeverageVariableTaker: number;
 };
 
 export type PoolLpInfo = {
