@@ -10,7 +10,7 @@ export const getPortfolioPositions = async (
   ownerAddress: string,
 ): Promise<PortfolioPosition[]> => {
   try {
-    const baseUrl = getServiceUrl('portfolio-positions');
+    const baseUrl = getServiceUrl('v1v2-positions');
     const url = `${baseUrl}/${chainIds.join('&')}/${ownerAddress.toLowerCase()}`;
 
     const res = await axios.get<PortfolioPosition[]>(url, {
