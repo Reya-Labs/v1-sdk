@@ -1,2 +1,2 @@
-export * from './getLpPositionByPool';
+export * from './getLpPositionsByPool';
 export * from './getTraderPositionByPool';

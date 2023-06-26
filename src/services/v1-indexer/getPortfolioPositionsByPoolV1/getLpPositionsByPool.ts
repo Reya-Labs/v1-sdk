@@ -6,7 +6,7 @@ import { mapToPosition } from './mapToPosition';
 import { AMM } from '../../../entities/amm/amm';
 import { V1PortfolioPositionDetails } from './types';
 
-export const getLpPositionByPool = async (
+export const getLpPositionsByPool = async (
   poolId: string,
   ownerAddress: string,
   amm: AMM,

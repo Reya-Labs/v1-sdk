@@ -9,7 +9,7 @@ export const getTraderPositionByPool = async (
   poolId: string,
   ownerAddress: string,
   amm: AMM,
-): Promise<Position[]> => {
+): Promise<Position | null> => {
   if (poolId.endsWith('v2')) {
     throw new Error('Not implemented yet');
   }
@@ -22,22 +22,17 @@ export const getTraderPositionByPool = async (
       withCredentials: false,
     });
 
-    const responses = await Promise.allSettled(res.data.map((p) => mapToPosition(p, amm)));
+    if (res.data.length === 0) {
+      return null;
+    }
 
-    const positions = responses.map((r) => {
-      if (r.status === 'rejected') {
-        throw r.reason;
-      }
-      return r.value;
-    });
-
-    return positions;
+    return mapToPosition(res.data[0], amm);
   } catch (e) {
     const sentryTracker = getSentryTracker();
     sentryTracker.captureMessage(
       `GCloud v1v2-trader-positions-by-pool API unavailable with message ${(e as Error).message}`,
     );
 
-    return [];
+    return null;
   }
 };
