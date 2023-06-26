@@ -9,7 +9,7 @@ import {
   getPoolsGCloud,
   RawV1V2AMM,
   getV1V2PoolsGCloud,
-} from '../../services/v1-indexer/getPoolsGCloud';
+} from '../../services/gateway/getPoolsGCloud';
 import { getVoltzSinglePoolConfig } from './voltz-config/getConfig';
 
 type GetAMMsResponse = {

@@ -83,6 +83,7 @@
     "@metamask/detect-provider": "^1.2.0",
     "@sentry/browser": "7.25.0",
     "@sentry/tracing": "7.25.0",
+    "@voltz-protocol/api-v2-types": "1.44.0",
     "@voltz-protocol/subgraph-data": "1.18.1",
     "axios": "^0.27.2",
     "big.js": "^6.1.1",

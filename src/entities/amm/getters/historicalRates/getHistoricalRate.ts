@@ -10,7 +10,7 @@ import {
   HistoricalRate,
   getFixedRatesGCloud,
   getVariableRatesGCloud,
-} from '../../../../services/v1-indexer/getHistoricalRatesGCloud';
+} from '../../../../services/gateway/getHistoricalRatesGCloud';
 
 export enum Granularity {
   ONE_HOUR = 3600 * 1000,

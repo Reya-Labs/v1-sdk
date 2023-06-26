@@ -22,7 +22,7 @@ import { getCashflowInfo, transformSwaps } from '../../services/getCashflowInfo'
 import { getSentryTracker } from '../../init';
 import { getRangeHealthFactor } from '../../utils/rangeHealthFactor';
 import { exponentialBackoff } from '../../utils/retry';
-import { getPositionPnLGCloud } from '../../services/v1-indexer/getPositionPnLGCloud';
+import { getPositionPnLGCloud } from '../../services/gateway/getPositionPnLGCloud';
 
 export type PositionConstructorArgs = {
   id: string;
