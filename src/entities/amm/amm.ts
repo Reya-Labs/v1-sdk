@@ -1799,8 +1799,6 @@ export class AMM {
   }
 
   public async getFixedApr(): Promise<number> {
-    // eslint-disable-next-line no-console
-    console.log('here?', this.marginEngineAddress);
     const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.provider);
     const currentTick = await exponentialBackoff(() =>
       peripheryContract.getCurrentTick(this.marginEngineAddress),
