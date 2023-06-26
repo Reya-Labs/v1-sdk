@@ -51,7 +51,7 @@ const getUninitialisedPositions = async ({
       getSubgraphURL(chainId, SubgraphURLEnum.voltzProtocol),
       Date.now().valueOf(),
       {
-        ammIDs: amms.map((amm) => amm.id),
+        ammIDs: amms.map((amm) => amm.vammAddress),
         owners: [userWalletId],
       },
       true,
@@ -69,7 +69,7 @@ const getUninitialisedPositions = async ({
   try {
     positions = rawPositions.map((rawPos) => {
       const correspondingAmm = amms.find(
-        (amm) => amm.id === rawPos.amm.id && amm.chainId === chainId,
+        (amm) => amm.vammAddress === rawPos.amm.id && amm.chainId === chainId,
       );
 
       const positionId = `${chainId}_${rawPos.amm.id.toLowerCase()}_${rawPos.owner.toLowerCase()}_${

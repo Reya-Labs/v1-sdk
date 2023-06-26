@@ -65,6 +65,7 @@ describe('amm:rolloverWithMint', () => {
         await withSigner(network, owner, async (signer) => {
           const amm = new AMM({
             id: '0xc75e6d901817b476a9f3b6b79831d2b61673f9f5',
+            vammAddress: '0xc75e6d901817b476a9f3b6b79831d2b61673f9f5',
             signer,
             provider,
             peripheryAddress: '0x07ceD903E6ad0278CC32bC83a3fC97112F763722',
@@ -133,6 +134,7 @@ describe('amm:rolloverWithMint', () => {
             signer,
             provider,
             factoryAddress: '0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf',
+            vammAddress: '0xc75e6d901817b476a9f3b6b79831d2b61673f9f5',
             peripheryAddress: '0x07ceD903E6ad0278CC32bC83a3fC97112F763722',
             marginEngineAddress: '0x654316a63e68f1c0823f0518570bc108de377831',
             rateOracle: new RateOracle({
@@ -199,6 +201,7 @@ describe('amm:rolloverWithMint', () => {
             id: '0x3806b99d0a0483e0d07501b31884c10e8e8b1215',
             signer,
             provider,
+            vammAddress: '0x3806b99d0a0483e0d07501b31884c10e8e8b1215',
             factoryAddress: '0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf',
             peripheryAddress: '0x07ceD903E6ad0278CC32bC83a3fC97112F763722',
             marginEngineAddress: '0x21f9151d6e06f834751b614c2ff40fc28811b235',
@@ -254,6 +257,7 @@ describe('amm:rolloverWithMint', () => {
             id: '0x3806b99d0a0483e0d07501b31884c10e8e8b1215',
             signer,
             provider,
+            vammAddress: '0x3806b99d0a0483e0d07501b31884c10e8e8b1215',
             factoryAddress: '0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf',
             peripheryAddress: '0x07ceD903E6ad0278CC32bC83a3fC97112F763722',
             marginEngineAddress: '0x21f9151d6e06f834751b614c2ff40fc28811b235',
@@ -331,6 +335,7 @@ describe('amm:rolloverWithMint', () => {
             id: '0x3806b99d0a0483e0d07501b31884c10e8e8b1215',
             signer,
             provider,
+            vammAddress: '0x3806b99d0a0483e0d07501b31884c10e8e8b1215',
             factoryAddress: '0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf',
             peripheryAddress: '0x07ceD903E6ad0278CC32bC83a3fC97112F763722',
             marginEngineAddress: '0x21f9151d6e06f834751b614c2ff40fc28811b235',

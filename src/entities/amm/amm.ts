@@ -80,6 +80,7 @@ export class AMM {
   public readonly provider: providers.Provider;
   public readonly peripheryAddress: string;
   public readonly factoryAddress: string;
+  public readonly vammAddress: string;
   public readonly marginEngineAddress: string;
   public readonly rateOracle: RateOracle;
   public readonly termStartTimestampInMS: number;
@@ -116,6 +117,7 @@ export class AMM {
     provider,
     peripheryAddress,
     factoryAddress,
+    vammAddress,
     marginEngineAddress,
     rateOracle,
     termStartTimestampInMS,
@@ -137,6 +139,7 @@ export class AMM {
     this.signer = signer;
     this.peripheryAddress = peripheryAddress;
     this.factoryAddress = factoryAddress;
+    this.vammAddress = vammAddress;
     this.marginEngineAddress = marginEngineAddress;
     this.rateOracle = rateOracle;
     this.termStartTimestampInMS = termStartTimestampInMS;
@@ -1796,6 +1799,8 @@ export class AMM {
   }
 
   public async getFixedApr(): Promise<number> {
+    // eslint-disable-next-line no-console
+    console.log('here?', this.marginEngineAddress);
     const peripheryContract = peripheryFactory.connect(this.peripheryAddress, this.provider);
     const currentTick = await exponentialBackoff(() =>
       peripheryContract.getCurrentTick(this.marginEngineAddress),

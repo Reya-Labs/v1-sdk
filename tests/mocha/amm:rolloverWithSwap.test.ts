@@ -65,6 +65,7 @@ describe('amm:rolloverWithSwap', () => {
         await withSigner(network, owner, async (signer) => {
           const amm = new AMM({
             id: '0xc75e6d901817b476a9f3b6b79831d2b61673f9f5',
+            vammAddress: '0xc75e6d901817b476a9f3b6b79831d2b61673f9f5',
             signer,
             provider,
             factoryAddress: '0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf',
@@ -136,6 +137,7 @@ describe('amm:rolloverWithSwap', () => {
         await withSigner(network, owner, async (signer) => {
           const amm = new AMM({
             id: '0xc75e6d901817b476a9f3b6b79831d2b61673f9f5',
+            vammAddress: '0xc75e6d901817b476a9f3b6b79831d2b61673f9f5',
             signer,
             provider,
             factoryAddress: '0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf',
@@ -209,6 +211,7 @@ describe('amm:rolloverWithSwap', () => {
         await withSigner(network, owner, async (signer) => {
           const amm = new AMM({
             id: '0x3806b99d0a0483e0d07501b31884c10e8e8b1215',
+            vammAddress: '0x3806b99d0a0483e0d07501b31884c10e8e8b1215',
             signer,
             provider,
             factoryAddress: '0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf',
@@ -265,6 +268,7 @@ describe('amm:rolloverWithSwap', () => {
         await withSigner(network, owner, async (signer) => {
           const amm = new AMM({
             id: '0x3806b99d0a0483e0d07501b31884c10e8e8b1215',
+            vammAddress: '0x3806b99d0a0483e0d07501b31884c10e8e8b1215',
             signer,
             provider,
             factoryAddress: '0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf',
@@ -348,6 +352,7 @@ describe('amm:rolloverWithSwap', () => {
         await withSigner(network, owner, async (signer) => {
           const amm = new AMM({
             id: '0x3806b99d0a0483e0d07501b31884c10e8e8b1215',
+            vammAddress: '0x3806b99d0a0483e0d07501b31884c10e8e8b1215',
             signer,
             provider,
             factoryAddress: '0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf',

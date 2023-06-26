@@ -58,6 +58,7 @@ describe.skip('position:refreshInfoGcloud', () => {
         // todo: remove redundunt mock data
         const amm = new AMM({
           id: '0xf6421486af95c3ea6c4555554d55ef0c3a2048ba',
+          vammAddress: '0xf6421486af95c3ea6c4555554d55ef0c3a2048ba',
           signer: null,
           provider,
           factoryAddress: '0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf',
@@ -167,6 +168,7 @@ describe.skip('position:refreshInfoGcloud', () => {
         // todo: remove redundunt mock data
         const amm = new AMM({
           id: '0xf6421486af95c3ea6c4555554d55ef0c3a2048ba',
+          vammAddress: '0xf6421486af95c3ea6c4555554d55ef0c3a2048ba',
           signer: null,
           provider,
           factoryAddress: '0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf',

@@ -13,6 +13,7 @@ export type AMMConstructorArgs = {
 
   peripheryAddress: string;
   factoryAddress: string;
+  vammAddress: string;
   marginEngineAddress: string;
   rateOracle: RateOracle;
   underlyingToken: Token;
