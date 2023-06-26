@@ -59,6 +59,7 @@ describe('position:refreshInfo', () => {
       it('Before maturity', async () => {
         const amm = new AMM({
           id: '0x953e581dd817b0faa69eacafb2c5709483f39aba',
+          vammAddress: '0x953e581dd817b0faa69eacafb2c5709483f39aba',
           signer: null,
           provider,
           factoryAddress: '0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf',
@@ -178,6 +179,7 @@ describe('position:refreshInfo', () => {
       it('After maturity, un-settled position', async () => {
         const amm = new AMM({
           id: '0xc75e6d901817b476a9f3b6b79831d2b61673f9f5',
+          vammAddress: '0xc75e6d901817b476a9f3b6b79831d2b61673f9f5',
           signer: null,
           provider,
           factoryAddress: '0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf',
@@ -282,6 +284,7 @@ describe('position:refreshInfo', () => {
       it('After maturity, settled position', async () => {
         const amm = new AMM({
           id: '0xa1a75f6689949ff413aa115d300f5e30f35ba061',
+          vammAddress: '0xa1a75f6689949ff413aa115d300f5e30f35ba061',
           signer: null,
           provider,
           factoryAddress: '0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf',
@@ -403,6 +406,7 @@ describe('position:refreshInfo', () => {
       it('Before maturity', async () => {
         const amm = new AMM({
           id: '0xcd47347a8c4f40e6877425080d22f4c3115b60a5',
+          vammAddress: '0xcd47347a8c4f40e6877425080d22f4c3115b60a5',
           signer: null,
           provider,
           factoryAddress: '0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf',
@@ -540,6 +544,7 @@ describe('position:refreshInfo', () => {
 
         const amm = new AMM({
           id: '0xcd47347a8c4f40e6877425080d22f4c3115b60a5',
+          vammAddress: '0xcd47347a8c4f40e6877425080d22f4c3115b60a5',
           signer: null,
           provider,
           factoryAddress: '0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf',
@@ -678,6 +683,7 @@ describe('position:refreshInfo', () => {
       it('Before maturity', async () => {
         const amm = new AMM({
           id: '0x5842254e74510e000d25b5e601bcbc43b52946b4',
+          vammAddress: '0x5842254e74510e000d25b5e601bcbc43b52946b4',
           signer: null,
           provider,
           factoryAddress: '0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf',
@@ -785,6 +791,7 @@ describe('position:refreshInfo', () => {
       it('Before maturity', async () => {
         const amm = new AMM({
           id: '0x5842254e74510e000d25b5e601bcbc43b52946b4',
+          vammAddress: '0x5842254e74510e000d25b5e601bcbc43b52946b4',
           signer: null,
           provider,
           factoryAddress: '0x6a7a5c3824508d03f0d2d24e0482bea39e08ccaf',

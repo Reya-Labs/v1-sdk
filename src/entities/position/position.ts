@@ -231,7 +231,7 @@ export class Position {
       // todo: consider getting it out of the isSettled clause as well and push that logic into the gcloud api
       const positionPnL = await getPositionPnLGCloud(
         chainId,
-        this.amm.id,
+        this.amm.vammAddress,
         this.owner,
         this.tickLower,
         this.tickUpper,

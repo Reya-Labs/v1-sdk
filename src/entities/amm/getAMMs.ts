@@ -88,6 +88,7 @@ export const getAMMs = async ({
       peripheryAddress: networkConfig.peripheryAddress,
       factoryAddress: networkConfig.factoryAddress,
 
+      vammAddress: rawAmm.vamm,
       marginEngineAddress: rawAmm.marginEngine,
       rateOracle: new RateOracle({
         id: rawAmm.rateOracle,
@@ -185,7 +186,7 @@ export const getV1V2AMMs = async ({
 
     return new AMM({
       chainId: rawAmm.chainId,
-      id: rawAmm.isV2 ? rawAmm.id : rawAmm.vamm,
+      id: rawAmm.id,
 
       signer: null,
       provider: getProvider(rawAmm.chainId, alchemyApiKey, infuraApiKey),
@@ -193,7 +194,8 @@ export const getV1V2AMMs = async ({
       peripheryAddress: networkConfig.peripheryAddress,
       factoryAddress: networkConfig.factoryAddress,
 
-      marginEngineAddress: rawAmm.marginEngine,
+      vammAddress: rawAmm.vamm,
+      marginEngineAddress: rawAmm.marginEngineAddress,
       rateOracle: new RateOracle({
         id: rawAmm.rateOracle.address,
         protocolId: rawAmm.rateOracle.protocolId,
