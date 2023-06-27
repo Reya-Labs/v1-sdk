@@ -10,10 +10,6 @@ export const getTraderPositionByPool = async (
   ownerAddress: string,
   amm: AMM,
 ): Promise<Position | null> => {
-  if (poolId.endsWith('v2')) {
-    throw new Error('Not implemented yet');
-  }
-
   try {
     const baseUrl = getServiceUrl('v1v2-trader-positions-by-pool');
     const url = `${baseUrl}/${poolId.toLowerCase()}/${ownerAddress.toString}`;
