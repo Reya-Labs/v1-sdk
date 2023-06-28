@@ -12,7 +12,7 @@ export const getTraderPositionByPool = async (
 ): Promise<Position | null> => {
   try {
     const baseUrl = getServiceUrl('v1v2-trader-positions-by-pool');
-    const url = `${baseUrl}/${poolId.toLowerCase()}/${ownerAddress.toString}`;
+    const url = `${baseUrl}/${poolId.toLowerCase()}/${ownerAddress.toLowerCase()}`;
 
     const res = await axios.get<V1V2PortfolioPositionDetails[]>(url, {
       withCredentials: false,
