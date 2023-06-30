@@ -85,6 +85,13 @@ const networkConfigurations: { [key in SupportedChainId]: NetworkConfiguration }
           },
           {
             address: '0xda5d31dc70e5acd6e66b49f31ee796977566152b',
+            weight: 0,
+            pools: ['AAVE - USDC BORROW', 'AAVE V3 - USDC BORROW'],
+            estimatedHistoricApy: [-10, 20],
+            withdrawable: true,
+          },
+          {
+            address: '0x47867f3e9277e0e08893e8309cb4180c8247c0a4',
             weight: 100,
             pools: ['AAVE - USDC BORROW', 'AAVE V3 - USDC BORROW'],
             estimatedHistoricApy: [-10, 20],
