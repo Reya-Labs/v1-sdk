@@ -228,12 +228,33 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
           general: true,
           trader: true,
         },
-        traderWithdrawable: false,
+        traderWithdrawable: true,
       },
 
       {
         name: 'borrow_av3USDC_30Jun23',
         id: '0x3ca96c10ac0b7651c9ea78b110db9e2e355893df', // vamm address
+        show: {
+          general: true,
+          trader: true,
+        },
+        traderWithdrawable: true,
+        isAaveV3: true,
+      },
+
+      {
+        name: 'borrow_aUSDC_31Jul23',
+        id: '0x037c8d42972c3c058224a2e51b5cb9b504f75b77', // vamm address
+        show: {
+          general: true,
+          trader: true,
+        },
+        traderWithdrawable: false,
+      },
+
+      {
+        name: 'borrow_av3USDC_31Jul23',
+        id: '0xd9a3f015a4ffd645014ec0f43148685be8754737', // vamm address
         show: {
           general: true,
           trader: true,
