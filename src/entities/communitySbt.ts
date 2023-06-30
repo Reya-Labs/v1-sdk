@@ -108,8 +108,8 @@ export type NonProgramaticBadgeResponse = {
 };
 
 export const TOP_BADGES_VARIANT: Record<string, string[]> = {
-  trader: ['15', '31', '56', '79'],
-  liquidityProvider: ['12', '28', '53', '76'],
+  trader: ['15', '31', '56', '79', '102'],
+  liquidityProvider: ['12', '28', '53', '76', '99'],
 };
 
 export const NON_PROGRAMATIC_BADGES_VARIANT: Record<number, Record<string, string>> = {
@@ -128,6 +128,11 @@ export const NON_PROGRAMATIC_BADGES_VARIANT: Record<number, Record<string, strin
     governorz: '81',
     senatorz: '82',
   },
+  4: {
+    diplomatz: '103',
+    governorz: '104',
+    senatorz: '105',
+  },
 };
 
 export const REFERROR_BADGES_VARIANT: Record<number, Record<string, string>> = {
@@ -145,6 +150,11 @@ export const REFERROR_BADGES_VARIANT: Record<number, Record<string, string>> = {
     referror: '83',
     notionalInfluencer: '84',
     whaleWhisperer: '85',
+  },
+  4: {
+    referror: '106',
+    notionalInfluencer: '107',
+    whaleWhisperer: '108',
   },
 };
 
@@ -179,6 +189,16 @@ export const NON_SUBGRAPH_BADGES_SEASONS: Record<number, string[]> = {
     REFERROR_BADGES_VARIANT[3].referror,
     REFERROR_BADGES_VARIANT[3].notionalInfluencer,
     REFERROR_BADGES_VARIANT[3].whaleWhisperer,
+  ],
+  4: [
+    TOP_BADGES_VARIANT.trader[4],
+    TOP_BADGES_VARIANT.liquidityProvider[4],
+    NON_PROGRAMATIC_BADGES_VARIANT[4].diplomatz,
+    NON_PROGRAMATIC_BADGES_VARIANT[4].governorz,
+    NON_PROGRAMATIC_BADGES_VARIANT[4].senatorz,
+    REFERROR_BADGES_VARIANT[4].referror,
+    REFERROR_BADGES_VARIANT[4].notionalInfluencer,
+    REFERROR_BADGES_VARIANT[4].whaleWhisperer,
   ],
 };
 
