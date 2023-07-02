@@ -28,10 +28,10 @@ export const getPortfolioPositions = async (
 
       if (config.apply) {
         const whitelistedPoolIds = config.pools
-          .filter(pool => pool.show.general)
-          .map(pool => pool.id.toLowerCase());
+          .filter((pool) => pool.show.general)
+          .map((pool) => pool.id.toLowerCase());
 
-        positions = positions.filter(item => {
+        positions = positions.filter((item) => {
           if (!(item.pool.chainId === chainId)) {
             return true;
           }
