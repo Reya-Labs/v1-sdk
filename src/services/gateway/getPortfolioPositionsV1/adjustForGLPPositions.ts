@@ -8,13 +8,12 @@ export const adjustForGLPPositions = (positions: V1V2PortfolioPosition[]) => {
         position.pool.marginEngineAddress.toLowerCase() ===
         '0xbe958ba49be73d3020cb62e512619da953a2bab1';
 
-      const finalBalance: number = getGLPPositionFinalBalance({
-        ownerAddress: position.ownerAddress,
-        tickLower: position.tickLower,
-        tickUpper: position.tickUpper,
-      });
-
       if (isGLP) {
+        const finalBalance: number = getGLPPositionFinalBalance({
+          ownerAddress: position.ownerAddress,
+          tickLower: position.tickLower,
+          tickUpper: position.tickUpper,
+        });
         return {
           ...position,
           margin: finalBalance,
