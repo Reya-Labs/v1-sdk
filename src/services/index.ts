@@ -11,3 +11,4 @@ export * from './gateway/getVoyages';
 export * from './gateway/getPortfolioPositionsV1';
 export * from './gateway/getPortfolioPositionDetailsV1';
 export * from './gateway/getPortfolioPositionsByPoolV1';
+export * from './glp';
