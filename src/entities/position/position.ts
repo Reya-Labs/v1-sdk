@@ -348,9 +348,9 @@ export class Position {
       this.realizedPnLFromFeesPaidInUSD = this.realizedPnLFromFeesPaid * usdExchangeRate;
       this.unrealizedPnLFromSwapsInUSD = this.unrealizedPnLFromSwaps * usdExchangeRate;
 
-      this.estimatedFutureCashflowInUSD = (estimatedApy) =>
+      this.estimatedFutureCashflowInUSD = estimatedApy =>
         this.estimatedFutureCashflow(estimatedApy) * usdExchangeRate;
-      this.estimatedTotalCashflowInUSD = (estimatedApy) =>
+      this.estimatedTotalCashflowInUSD = estimatedApy =>
         this.estimatedTotalCashflow(estimatedApy) * usdExchangeRate;
       this.settlementCashflowInUSD = this.settlementCashflow * usdExchangeRate;
     }
@@ -366,6 +366,8 @@ export class Position {
         tickLower: this.tickLower,
         tickUpper: this.tickUpper,
       });
+      this.settlementCashflow = 0;
+      this.fees = 0;
     }
 
     this.initialized = true;
