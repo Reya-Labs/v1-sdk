@@ -39,8 +39,8 @@ export const getGLPPositionFinalBalance = async ({
         (row: FinalBalancesCSVRow): boolean => {
           return (
             row.ownerAddress === ownerAddress &&
-            row.tickLower === tickLower &&
-            row.tickUpper === tickUpper
+            Number(row.tickLower) === tickLower &&
+            Number(row.tickUpper) === tickUpper
           );
         },
       );
