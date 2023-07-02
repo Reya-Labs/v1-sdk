@@ -23,6 +23,7 @@ import { getSentryTracker } from '../../init';
 import { getRangeHealthFactor } from '../../utils/rangeHealthFactor';
 import { exponentialBackoff } from '../../utils/retry';
 import { getPositionPnLGCloud } from '../../services/gateway/getPositionPnLGCloud';
+import { getGLPPositionFinalBalance } from '../../services';
 
 export type PositionConstructorArgs = {
   id: string;
@@ -347,11 +348,24 @@ export class Position {
       this.realizedPnLFromFeesPaidInUSD = this.realizedPnLFromFeesPaid * usdExchangeRate;
       this.unrealizedPnLFromSwapsInUSD = this.unrealizedPnLFromSwaps * usdExchangeRate;
 
-      this.estimatedFutureCashflowInUSD = (estimatedApy) =>
+      this.estimatedFutureCashflowInUSD = estimatedApy =>
         this.estimatedFutureCashflow(estimatedApy) * usdExchangeRate;
-      this.estimatedTotalCashflowInUSD = (estimatedApy) =>
+      this.estimatedTotalCashflowInUSD = estimatedApy =>
         this.estimatedTotalCashflow(estimatedApy) * usdExchangeRate;
       this.settlementCashflowInUSD = this.settlementCashflow * usdExchangeRate;
+    }
+
+    // GLP Edge Case
+    // minortodo: turn isGLP28Jun2023 margin engine address into a constant
+    const isGLP28Jun2023: boolean =
+      this.amm.marginEngineAddress.toLowerCase() === '0xbe958ba49be73d3020cb62e512619da953a2bab1';
+
+    if (isGLP28Jun2023) {
+      this.margin = await getGLPPositionFinalBalance({
+        ownerAddress: this.owner,
+        tickLower: this.tickLower,
+        tickUpper: this.tickUpper,
+      });
     }
 
     this.initialized = true;
