@@ -348,9 +348,9 @@ export class Position {
       this.realizedPnLFromFeesPaidInUSD = this.realizedPnLFromFeesPaid * usdExchangeRate;
       this.unrealizedPnLFromSwapsInUSD = this.unrealizedPnLFromSwaps * usdExchangeRate;
 
-      this.estimatedFutureCashflowInUSD = estimatedApy =>
+      this.estimatedFutureCashflowInUSD = (estimatedApy) =>
         this.estimatedFutureCashflow(estimatedApy) * usdExchangeRate;
-      this.estimatedTotalCashflowInUSD = estimatedApy =>
+      this.estimatedTotalCashflowInUSD = (estimatedApy) =>
         this.estimatedTotalCashflow(estimatedApy) * usdExchangeRate;
       this.settlementCashflowInUSD = this.settlementCashflow * usdExchangeRate;
     }
@@ -361,7 +361,7 @@ export class Position {
       this.amm.marginEngineAddress.toLowerCase() === '0xbe958ba49be73d3020cb62e512619da953a2bab1';
 
     if (isGLP28Jun2023) {
-      this.margin = await getGLPPositionFinalBalance({
+      this.margin = getGLPPositionFinalBalance({
         ownerAddress: this.owner,
         tickLower: this.tickLower,
         tickUpper: this.tickUpper,
