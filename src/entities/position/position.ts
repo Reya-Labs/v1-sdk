@@ -189,11 +189,6 @@ export class Position {
       return;
     }
 
-    // GLP Edge Case
-    // minortodo: turn isGLP28Jun2023 margin engine address into a constant
-    const isGLP28Jun2023: boolean =
-      this.amm.marginEngineAddress.toLowerCase() === '0xbe958ba49be73d3020cb62e512619da953a2bab1';
-
     // Build the contract
     const marginEngineContract = marginEngineFactory.connect(
       this.amm.marginEngineAddress,
@@ -344,6 +339,8 @@ export class Position {
       const usdExchangeRate = this.amm.isETH ? await this.amm.ethPrice() : 1;
 
       // glp edge case
+      const isGLP28Jun2023: boolean =
+        this.amm.marginEngineAddress.toLowerCase() === '0xbe958ba49be73d3020cb62e512619da953a2bab1';
 
       if (isGLP28Jun2023) {
         this.margin = getGLPPositionFinalBalance({
