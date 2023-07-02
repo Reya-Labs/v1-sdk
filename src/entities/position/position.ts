@@ -189,6 +189,11 @@ export class Position {
       return;
     }
 
+    // GLP Edge Case
+    // minortodo: turn isGLP28Jun2023 margin engine address into a constant
+    const isGLP28Jun2023: boolean =
+      this.amm.marginEngineAddress.toLowerCase() === '0xbe958ba49be73d3020cb62e512619da953a2bab1';
+
     // Build the contract
     const marginEngineContract = marginEngineFactory.connect(
       this.amm.marginEngineAddress,
@@ -338,6 +343,26 @@ export class Position {
       // Get the underlying token price in USD
       const usdExchangeRate = this.amm.isETH ? await this.amm.ethPrice() : 1;
 
+      // glp edge case
+
+      if (isGLP28Jun2023) {
+        this.margin = getGLPPositionFinalBalance({
+          ownerAddress: this.owner,
+          tickLower: this.tickLower,
+          tickUpper: this.tickUpper,
+        });
+        this.settlementCashflow = 0;
+        this.fees = 0;
+        this.realizedPnLFromSwaps = 0;
+        this.realizedPnLFromFeesPaid = 0;
+        this.unrealizedPnLFromSwaps = 0;
+        this.accruedCashflow = 0;
+
+        if (this.margin === 0) {
+          this.isSettled = true;
+        }
+      }
+
       // Compute the information in USD
       this.liquidityInUSD = this.liquidity * usdExchangeRate;
       this.notionalInUSD = this.notional * usdExchangeRate;
@@ -353,25 +378,6 @@ export class Position {
       this.estimatedTotalCashflowInUSD = (estimatedApy) =>
         this.estimatedTotalCashflow(estimatedApy) * usdExchangeRate;
       this.settlementCashflowInUSD = this.settlementCashflow * usdExchangeRate;
-    }
-
-    // GLP Edge Case
-    // minortodo: turn isGLP28Jun2023 margin engine address into a constant
-    const isGLP28Jun2023: boolean =
-      this.amm.marginEngineAddress.toLowerCase() === '0xbe958ba49be73d3020cb62e512619da953a2bab1';
-
-    if (isGLP28Jun2023) {
-      this.margin = getGLPPositionFinalBalance({
-        ownerAddress: this.owner,
-        tickLower: this.tickLower,
-        tickUpper: this.tickUpper,
-      });
-      this.settlementCashflow = 0;
-      this.fees = 0;
-
-      if (this.margin === 0) {
-        this.isSettled = true;
-      }
     }
 
     this.initialized = true;
