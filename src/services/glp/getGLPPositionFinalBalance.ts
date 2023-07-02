@@ -13,11 +13,11 @@ export type FinalBalancesCSVRow = {
   finalBalance: number;
 };
 
-export const getGLPPositionFinalBalance = async ({
+export const getGLPPositionFinalBalance = ({
   ownerAddress,
   tickLower,
   tickUpper,
-}: GetPositionFinalBalanceArgs): Promise<number> => {
+}: GetPositionFinalBalanceArgs): number => {
   const json = glpPositionsJSON;
 
   const filteredPosition = json.find((position: any) => {
