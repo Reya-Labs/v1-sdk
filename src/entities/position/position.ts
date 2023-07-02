@@ -368,6 +368,10 @@ export class Position {
       });
       this.settlementCashflow = 0;
       this.fees = 0;
+
+      if (this.margin === 0) {
+        this.isSettled = true;
+      }
     }
 
     this.initialized = true;
