@@ -49,6 +49,7 @@
     "@types/lodash": "^4.14.174",
     "@types/luxon": "^2.0.9",
     "@types/mocha": "^9.1.1",
+    "@types/papaparse": "^5.3.7",
     "@typescript-eslint/eslint-plugin": "4.31.2",
     "@typescript-eslint/parser": "4.31.2",
     "chai": "^4.3.7",
@@ -99,6 +100,7 @@
     "lodash": "^4.17.21",
     "luxon": "^2.3.0",
     "merkletreejs": "^0.3.0",
+    "papaparse": "^5.4.1",
     "tiny-invariant": "^1.2.0",
     "toformat": "^2.0.0"
   },
