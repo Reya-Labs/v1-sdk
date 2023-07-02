@@ -20,5 +20,19 @@ export const getGLPPositionFinalBalance = async ({
 }: GetPositionFinalBalanceArgs): Promise<number> => {
   const json = glpPositionsJSON;
 
-  return Number(json[0]['finalBalance']);
+  const filteredPosition = json.find((position: any) => {
+    return (
+      position['ownerAddress'] === ownerAddress &&
+      position['tickLower'] === tickLower &&
+      position['tickUpper'] === tickUpper
+    );
+  });
+
+  if (!filteredPosition) {
+    throw new Error(
+      `No glp 28th june position found for ownerAddress: ${ownerAddress}, tickLower: ${tickLower}, tickUpper: ${tickUpper}`,
+    );
+  }
+
+  return Number(filteredPosition['finalBalance']);
 };
