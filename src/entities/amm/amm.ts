@@ -667,15 +667,10 @@ export class AMM {
       marginDelta: '0',
     };
 
-    const tickBefore = await exponentialBackoff(() =>
-      peripheryContract.getCurrentTick(this.marginEngineAddress),
-    );
-    let tickAfter = 0;
     let marginRequirement: BigNumber = BigNumber.from(0);
     let fee = BigNumber.from(0);
     let availableNotional = BigNumber.from(0);
     let fixedTokenDeltaUnbalanced = BigNumber.from(0);
-    let fixedTokenDelta = BigNumber.from(0);
 
     await peripheryContract.callStatic.swap(swapPeripheryParams).then(
       (result: any) => {
@@ -683,25 +678,15 @@ export class AMM {
         fee = result[2];
         fixedTokenDeltaUnbalanced = result[3];
         marginRequirement = result[4];
-        tickAfter = parseInt(result[5], 10);
-        fixedTokenDelta = result[0];
       },
       (error: any) => {
         const result = decodeInfoPostSwap(error);
         marginRequirement = result.marginRequirement;
-        tickAfter = result.tick;
         fee = result.fee;
         availableNotional = result.availableNotional;
         fixedTokenDeltaUnbalanced = result.fixedTokenDeltaUnbalanced;
-        fixedTokenDelta = result.fixedTokenDelta;
       },
     );
-
-    const fixedRateBefore = tickToFixedRate(tickBefore);
-    const fixedRateAfter = tickToFixedRate(tickAfter);
-
-    const fixedRateDelta = fixedRateAfter.subtract(fixedRateBefore);
-    const fixedRateDeltaRaw = fixedRateDelta.toNumber();
 
     const marginEngineContract = marginEngineFactory.connect(this.marginEngineAddress, wallet);
     const currentMargin = (
@@ -711,7 +696,6 @@ export class AMM {
     ).margin;
 
     const scaledCurrentMargin = this.descale(currentMargin);
-    const scaledAvailableNotional = this.descale(availableNotional);
     const scaledFee = this.descale(fee);
     const scaledMarginRequirement = (this.descale(marginRequirement) + scaledFee) * 1.01;
 
@@ -740,14 +724,9 @@ export class AMM {
     const result: InfoPostSwapV1 = {
       marginRequirement: additionalMargin,
       maxMarginWithdrawable: maxMarginWithdrawable,
-      availableNotional:
-        scaledAvailableNotional < 0 ? -scaledAvailableNotional : scaledAvailableNotional,
       fee: scaledFee < 0 ? -scaledFee : scaledFee,
-      slippage: fixedRateDeltaRaw < 0 ? -fixedRateDeltaRaw : fixedRateDeltaRaw,
       averageFixedRate: averageFixedRate < 0 ? -averageFixedRate : averageFixedRate,
-      fixedTokenDeltaBalance: this.descale(fixedTokenDelta),
       variableTokenDeltaBalance: this.descale(availableNotional),
-      fixedTokenDeltaUnbalanced: this.descale(fixedTokenDeltaUnbalanced),
       gasFee: {
         value: gasFeeNativeToken,
         token: await getNativeToken(this.provider),
