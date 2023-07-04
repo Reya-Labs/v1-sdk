@@ -83,13 +83,9 @@ export type InfoPostLp = {
 export type InfoPostSwapV1 = {
   marginRequirement: number;
   maxMarginWithdrawable: number;
-  availableNotional: number;
   fee: number;
-  slippage: number;
   averageFixedRate: number;
-  fixedTokenDeltaBalance: number;
   variableTokenDeltaBalance: number;
-  fixedTokenDeltaUnbalanced: number;
   gasFee: {
     value: number;
     token: 'ETH' | 'AVAX' | 'USDCf';
