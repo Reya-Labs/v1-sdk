@@ -1,18 +1,16 @@
 import axios from 'axios';
 import { getSentryTracker } from '../../init';
-import { SupportedChainId } from '../../types';
 import { getServiceUrl } from './urls';
 import { HistoricalRate } from '@voltz-protocol/api-v2-types';
 
 export const getFixedRatesGCloud = async (
-  chainId: SupportedChainId,
-  vammAddress: string,
+  poolId: string,
   startTimestamp: number,
   endTimestamp: number,
 ): Promise<HistoricalRate[]> => {
   try {
-    const baseUrl = getServiceUrl('fixed-rates');
-    const url = `${baseUrl}/${chainId}/${vammAddress}/${startTimestamp}/${endTimestamp}`;
+    const baseUrl = getServiceUrl('v1v2-fixed-rates');
+    const url = `${baseUrl}/${poolId}/${startTimestamp}/${endTimestamp}`;
     const res = await axios.get<HistoricalRate[]>(url, { withCredentials: false });
 
     return res.data;
@@ -25,14 +23,13 @@ export const getFixedRatesGCloud = async (
 };
 
 export const getVariableRatesGCloud = async (
-  chainId: SupportedChainId,
-  rateOracleAddress: string,
+  poolId: string,
   startTimestamp: number,
   endTimestamp: number,
 ): Promise<HistoricalRate[]> => {
   try {
-    const baseUrl = getServiceUrl('variable-rates');
-    const url = `${baseUrl}/${chainId}/${rateOracleAddress}/${startTimestamp}/${endTimestamp}`;
+    const baseUrl = getServiceUrl('v1v2-variable-rates');
+    const url = `${baseUrl}/${poolId}/${startTimestamp}/${endTimestamp}`;
     const res = await axios.get<HistoricalRate[]>(url, { withCredentials: false });
 
     return res.data;

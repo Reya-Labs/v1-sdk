@@ -7,7 +7,6 @@ import { getHistoricalRates } from '../../../src/entities';
 import * as fun from '../../../src/entities/amm/getters/historicalRates/getHistoricalRate';
 import { ONE_DAY_IN_SECONDS } from '../../../src/constants';
 import { BigNumber } from 'ethers';
-import { SupportedChainId } from '../../../src/types';
 
 describe('getHistoricalRates', () => {
   const mock = async (observations: any[]) => {
@@ -34,14 +33,12 @@ describe('getHistoricalRates', () => {
   };
 
   const defautParams: fun.HistoricalRatesParams = {
-    chainId: SupportedChainId.arbitrumGoerli,
     isFixed: true,
     filters: {
       granularity: fun.Granularity.ONE_DAY,
       timeframeMs: ONE_DAY_IN_SECONDS * 2 * 1000,
     },
-    rateOracleId: 'mockId',
-    ammId: 'mockId',
+    poolId: 'mockId',
   };
 
   afterEach(async () => {
