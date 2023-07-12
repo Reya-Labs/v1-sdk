@@ -5,7 +5,6 @@ import {
 import { BigNumber } from 'ethers';
 import { ONE_DAY_IN_SECONDS } from '../../../../constants';
 import { getSentryTracker } from '../../../../init';
-import { SupportedChainId } from '../../../../types';
 import {
   getFixedRatesGCloud,
   getVariableRatesGCloud,
@@ -28,26 +27,53 @@ export type RatesData = {
 };
 
 export type HistoricalRatesParams = {
-  chainId: SupportedChainId;
+  poolId: string;
   isFixed: boolean;
   filters: {
     granularity: Granularity;
     timeframeMs: number;
   };
-  ammId: string;
-  rateOracleId: string;
+};
+
+export const getHistoricalRatesFromBigQuery = async (
+  isFixed: boolean,
+  poolId: string,
+  startTime: number,
+  endTime: number,
+): Promise<
+  {
+    timestampInMs: number;
+    value: number;
+  }[]
+> => {
+  let resp: HistoricalRate[];
+  try {
+    if (isFixed) {
+      resp = await getFixedRatesGCloud(poolId, startTime, endTime);
+    } else {
+      resp = await getVariableRatesGCloud(poolId, startTime, endTime);
+    }
+  } catch (e) {
+    const sentryTracker = getSentryTracker();
+    sentryTracker.captureMessage('Historical rates API unavailable');
+    return [];
+  }
+
+  const sortedData = resp.sort((a, b) => a.timestamp - b.timestamp);
+
+  const result = sortedData.map((r) => ({
+    timestampInMs: r.timestamp * 1000,
+    value: r.rate,
+  }));
+
+  return result;
 };
 
 export const getHistoricalRates = async ({
-  chainId,
+  poolId,
   isFixed,
   filters,
-  ammId,
-  rateOracleId,
 }: HistoricalRatesParams): Promise<RatesData> => {
-  // check ids
-  const parentObjectId = isFixed ? ammId : rateOracleId;
-
   // get ticks (with timeframe)
   const currentTimestamp = Date.now();
 
@@ -56,10 +82,9 @@ export const getHistoricalRates = async ({
 
   const rateUpdates = await getHistoricalRatesFromBigQuery(
     isFixed,
-    parentObjectId,
+    poolId,
     Math.round(startTime / 1000),
     Math.round(endTime / 1000),
-    chainId,
   );
 
   const result = [];
@@ -84,41 +109,6 @@ export const getHistoricalRates = async ({
   return {
     historicalRates: result,
   };
-};
-
-export const getHistoricalRatesFromBigQuery = async (
-  isFixed: boolean,
-  parentObjectId: string,
-  startTime: number,
-  endTime: number,
-  chainId: SupportedChainId,
-): Promise<
-  {
-    timestampInMs: number;
-    value: number;
-  }[]
-> => {
-  let resp: HistoricalRate[];
-  try {
-    if (isFixed) {
-      resp = await getFixedRatesGCloud(chainId, parentObjectId, startTime, endTime);
-    } else {
-      resp = await getVariableRatesGCloud(chainId, parentObjectId, startTime, endTime);
-    }
-  } catch (e) {
-    const sentryTracker = getSentryTracker();
-    sentryTracker.captureMessage('Historical rates API unavailable');
-    return [];
-  }
-
-  const sortedData = resp.sort((a, b) => a.timestamp - b.timestamp);
-
-  const result = sortedData.map((r) => ({
-    timestampInMs: r.timestamp * 1000,
-    value: r.rate,
-  }));
-
-  return result;
 };
 
 // gets the last rate update
