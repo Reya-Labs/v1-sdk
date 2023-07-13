@@ -2843,10 +2843,10 @@
     "@typescript-eslint/types" "4.31.2"
     eslint-visitor-keys "^2.0.0"
 
-"@voltz-protocol/api-v2-types@1.47.1":
-  version "1.47.1"
-  resolved "https://registry.yarnpkg.com/@voltz-protocol/api-v2-types/-/api-v2-types-1.47.1.tgz#67d91c58533d7ec90f92d44511a45907e23e4518"
-  integrity sha512-RQQ1otuoIk34c0CFoSzfSkY7MicubZeOhHXO+/q18kI3dlLiPVbQci7WBXePEYw/y5TGOyErJAPEpXDIJJrwHg==
+"@voltz-protocol/api-v2-types@1.48.2":
+  version "1.48.2"
+  resolved "https://registry.yarnpkg.com/@voltz-protocol/api-v2-types/-/api-v2-types-1.48.2.tgz#6dd8994ad340b81fabc736c7e809b8a914032eee"
+  integrity sha512-dE2Fgmta4w9qcuM+l9f5OWg0o2hIc5CCccCBlGma3iRVY9KEZdD4m142/vd0aKtkzyhutDTlC+Y5FA7uC3TqSQ==
 
 "@voltz-protocol/subgraph-data@1.18.1":
   version "1.18.1"
