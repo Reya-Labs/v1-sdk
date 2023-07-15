@@ -123,8 +123,8 @@ export const mapToPosition = async (
     position.liquidationThreshold = p.liquidationThreshold;
     position.safetyThreshold = p.safetyThreshold;
 
-    position.receivingRate = p.receiving;
-    position.payingRate = p.paying;
+    position.receivingRate = p.receiving * 100;
+    position.payingRate = p.paying * 100;
 
     const mapHealth = (health: typeof p.health): ReturnType<typeof getRangeHealthFactor> => {
       switch (health) {
