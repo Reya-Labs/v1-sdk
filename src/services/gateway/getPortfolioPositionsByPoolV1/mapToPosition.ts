@@ -91,7 +91,7 @@ export const mapToPosition = async (
     // not used by UI
     position.fixedTokenBalance = 0;
 
-    position.variableTokenBalance = p.notional;
+    position.variableTokenBalance = p.notionalTraded;
 
     position.liquidity = p.notionalProvided;
     position.liquidityInUSD = p.notionalProvided * tokenPriceUSD;
