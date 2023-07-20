@@ -29,6 +29,7 @@ export const getV1V2AMMs = async ({
 
   try {
     rawAMMs = await getV1V2PoolsGCloud(chainIds);
+    rawAMMs = rawAMMs.filter((pool) => !pool.flags.isBlacklisted);
   } catch (err) {
     const sentryTracker = getSentryTracker();
     sentryTracker.captureException(err);
