@@ -4,7 +4,7 @@ import { getServiceUrl } from '../urls';
 import { Position } from '../../../entities/position/position';
 import { mapToPosition } from './mapToPosition';
 import { AMM } from '../../../entities/amm/amm';
-import { V1V2PortfolioPositionDetails } from '@voltz-protocol/api-v2-types';
+import { V1V2PortfolioPositionDetails } from '@voltz-protocol/api-sdk-v2';
 
 export const getLpPositionsByPool = async (
   poolId: string,

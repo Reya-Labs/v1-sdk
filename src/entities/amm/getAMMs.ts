@@ -6,7 +6,7 @@ import { AMM } from './amm';
 import { getVoltzPoolConfig } from './voltz-config';
 import { getV1V2PoolsGCloud } from '../../services/gateway/getPoolsGCloud';
 import { getVoltzSinglePoolConfig } from './voltz-config/getConfig';
-import { V1V2Pool } from '@voltz-protocol/api-v2-types';
+import { V1V2Pool } from '@voltz-protocol/api-sdk-v2';
 
 type GetAMMsResponse = {
   amms: AMM[];
