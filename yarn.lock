@@ -2843,10 +2843,13 @@
     "@typescript-eslint/types" "4.31.2"
     eslint-visitor-keys "^2.0.0"
 
-"@voltz-protocol/api-v2-types@1.49.0":
-  version "1.49.0"
-  resolved "https://registry.yarnpkg.com/@voltz-protocol/api-v2-types/-/api-v2-types-1.49.0.tgz#976a3340f260206e5ffc645b3e4fee873edcd3e8"
-  integrity sha512-s2PKlC8/zVA2HYi905kinMgIAjESrTrPFCWuCOPZGJu+irUc5yoA54h6EfcBIxQryrtyyd2ni2t+vG6uRgm9xA==
+"@voltz-protocol/api-sdk-v2@1.14.0":
+  version "1.14.0"
+  resolved "https://registry.yarnpkg.com/@voltz-protocol/api-sdk-v2/-/api-sdk-v2-1.14.0.tgz#8358d52d9311f74aa086b9d4e9adcfb89c41db55"
+  integrity sha512-6HbJ2EwrjKW2tTnuXKeHu5bnB/pApNTtWxC/wb1loN0fmFrVAZdZohQGolUkH4Bh5vRlAEdbdiJU6egkgFmmHQ==
+  dependencies:
+    ethers "5.5.4"
+    isomorphic-fetch "3.0.0"
 
 "@voltz-protocol/subgraph-data@1.18.1":
   version "1.18.1"
@@ -8908,6 +8911,14 @@ isobject@^3.0.0, isobject@^3.0.1:
   version "3.0.1"
   resolved "https://registry.yarnpkg.com/isobject/-/isobject-3.0.1.tgz#4e431e92b11a9731636aa1f9c8d1ccbcfdab78df"
   integrity sha512-WhB9zCku7EGTj/HQQRz5aUQEUeoQZH2bWcltRErOpymJ4boYE6wL9Tbr23krRPSZ+C5zqNSrSw+Cc7sZZ4b7vg==
+
+isomorphic-fetch@3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/isomorphic-fetch/-/isomorphic-fetch-3.0.0.tgz#0267b005049046d2421207215d45d6a262b8b8b4"
+  integrity sha512-qvUtwJ3j6qwsF3jLxkZ72qCgjMysPzDfeV240JHiGZsANBYd+EEuu35v7dfrJ9Up0Ak07D7GGSkGhCHTqg/5wA==
+  dependencies:
+    node-fetch "^2.6.1"
+    whatwg-fetch "^3.4.1"
 
 isstream@~0.1.2:
   version "0.1.2"
@@ -15521,6 +15532,11 @@ whatwg-fetch@^2.0.4:
   version "2.0.4"
   resolved "https://registry.yarnpkg.com/whatwg-fetch/-/whatwg-fetch-2.0.4.tgz#dde6a5df315f9d39991aa17621853d720b85566f"
   integrity sha512-dcQ1GWpOD/eEQ97k66aiEVpNnapVj90/+R+SXTPYGHpYBBypfKJEQjLrvMZ7YXbKm21gXd4NcuxUTjiv1YtLng==
+
+whatwg-fetch@^3.4.1:
+  version "3.6.17"
+  resolved "https://registry.yarnpkg.com/whatwg-fetch/-/whatwg-fetch-3.6.17.tgz#009bbbfc122b227b74ba1ff31536b3a1a0e0e212"
+  integrity sha512-c4ghIvG6th0eudYwKZY5keb81wtFz9/WeAHAoy8+r18kcWlitUIrmGFQ2rWEl4UCKUilD3zCLHOIPheHx5ypRQ==
 
 whatwg-url@^5.0.0:
   version "5.0.0"

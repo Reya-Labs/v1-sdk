@@ -3,7 +3,7 @@ import { getSentryTracker } from '../../../init';
 import { getServiceUrl } from '../urls';
 import { AMM, Position } from '../../../entities';
 import { mapToPosition } from './mapToPosition';
-import { V1V2PortfolioPositionDetails } from '@voltz-protocol/api-v2-types/dist/types';
+import { V1V2PortfolioPositionDetails } from '@voltz-protocol/api-sdk-v2';
 
 export const getTraderPositionByPool = async (
   poolId: string,
