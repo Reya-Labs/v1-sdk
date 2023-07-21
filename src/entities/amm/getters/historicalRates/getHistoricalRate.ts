@@ -9,7 +9,7 @@ import {
   getFixedRatesGCloud,
   getVariableRatesGCloud,
 } from '../../../../services/gateway/getHistoricalRatesGCloud';
-import { HistoricalRate } from '@voltz-protocol/api-v2-types';
+import { HistoricalRate } from '@voltz-protocol/api-sdk-v2';
 
 export enum Granularity {
   ONE_HOUR = 3600 * 1000,

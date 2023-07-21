@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { getSentryTracker } from '../../init';
 import { getServiceUrl } from './urls';
-import { HistoricalRate } from '@voltz-protocol/api-v2-types';
+import { HistoricalRate } from '@voltz-protocol/api-sdk-v2';
 
 export const getFixedRatesGCloud = async (
   poolId: string,
