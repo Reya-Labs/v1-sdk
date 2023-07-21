@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { getSentryTracker } from '../../../init';
 import { getServiceUrl } from '../urls';
-import { V1V2PortfolioPositionDetails } from '@voltz-protocol/api-v2-types';
+import { V1V2PortfolioPositionDetails } from '@voltz-protocol/api-sdk-v2';
 
 type GetPortfolioPositionDetailsParams = {
   positionId: string;

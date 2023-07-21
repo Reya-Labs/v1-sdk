@@ -2,7 +2,7 @@ import axios from 'axios';
 import { getSentryTracker } from '../../init';
 import { SupportedChainId } from '../../types';
 import { getServiceUrl } from './urls';
-import { V1V2Pool } from '@voltz-protocol/api-v2-types';
+import { V1V2Pool } from '@voltz-protocol/api-sdk-v2';
 
 export const getV1V2PoolsGCloud = async (chainIds: SupportedChainId[]): Promise<V1V2Pool[]> => {
   try {

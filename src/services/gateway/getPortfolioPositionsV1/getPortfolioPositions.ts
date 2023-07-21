@@ -3,7 +3,7 @@ import { getSentryTracker } from '../../../init';
 import { SupportedChainId } from '../../../types';
 import { getServiceUrl } from '../urls';
 import { getVoltzPoolConfig } from '../../../entities/amm/voltz-config/getConfig';
-import { V1V2PortfolioPosition } from '@voltz-protocol/api-v2-types';
+import { V1V2PortfolioPosition } from '@voltz-protocol/api-sdk-v2';
 import { adjustForGLPPositions } from './adjustForGLPPositions';
 
 export const getPortfolioPositions = async (

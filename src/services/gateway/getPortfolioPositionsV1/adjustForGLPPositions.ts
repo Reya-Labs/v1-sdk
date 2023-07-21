@@ -1,4 +1,4 @@
-import { V1V2PortfolioPosition } from '@voltz-protocol/api-v2-types';
+import { V1V2PortfolioPosition } from '@voltz-protocol/api-sdk-v2';
 import { getGLPPositionFinalBalance } from '../../glp';
 
 export const adjustForGLPPositions = (positions: V1V2PortfolioPosition[]) => {
