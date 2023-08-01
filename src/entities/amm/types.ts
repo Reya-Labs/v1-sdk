@@ -31,6 +31,7 @@ export type AMMConstructorArgs = {
   traderWithdrawable: boolean;
 
   isV2?: boolean;
+  isPaused?: boolean;
 
   fixedApr?: number;
   variableApy?: number;
