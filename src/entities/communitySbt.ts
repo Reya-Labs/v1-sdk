@@ -25,9 +25,10 @@ import { getSentryTracker } from '../init';
 import { geckoEthToUsd } from '../utils/priceFetch';
 import { getScores, GetScoresArgs } from '../utils/communitySbt/getScores';
 import { SupportedChainId } from '../types';
+import { badgesCids, leavesCids, communityContractAddress } from '../utils/communitySbt/config';
 
 export type SBTConstructorArgs = {
-  id: string;
+  id: string; // todo: deprecate
   signer: Signer | null;
   chainId: SupportedChainId | null;
   coingeckoKey?: string;
@@ -37,8 +38,8 @@ export type SBTConstructorArgs = {
   referralsDbUrl?: string;
   subgraphUrl?: string;
   ignoredWalletIds?: Record<string, boolean>;
-  badgesCids?: Array<string>;
-  leavesCids?: Array<string>;
+  badgesCids?: Array<string>; // todo: deprecate
+  leavesCids?: Array<string>; // todo: deprecate
 };
 
 export type BadgeRecord = {
@@ -225,7 +226,6 @@ class SBT {
    * @param signer: Signer object according to the user's wallet
    */
   public constructor({
-    id,
     signer,
     chainId,
     coingeckoKey,
@@ -235,10 +235,8 @@ class SBT {
     referralsDbUrl,
     subgraphUrl,
     ignoredWalletIds,
-    badgesCids,
-    leavesCids,
   }: SBTConstructorArgs) {
-    this.id = id;
+    this.id = communityContractAddress[chainId as SupportedChainId];
     this.signer = signer;
 
     this.coingeckoKey = coingeckoKey;
@@ -248,11 +246,11 @@ class SBT {
     this.referralsDbUrl = referralsDbUrl;
     this.subgraphUrl = subgraphUrl;
     this.ignoredWalletIds = ignoredWalletIds ?? {};
-    this.badgesCids = badgesCids;
-    this.leavesCids = leavesCids;
+    this.badgesCids = badgesCids[chainId as SupportedChainId];
+    this.leavesCids = leavesCids[chainId as SupportedChainId];
     this.chainId = chainId;
     if (signer) {
-      this.contract = CommunitySBT__factory.connect(id, signer);
+      this.contract = CommunitySBT__factory.connect(this.id, signer);
       this.provider = signer.provider;
     } else {
       this.contract = null;
