@@ -38,6 +38,14 @@ jest.mock('../../src/init.ts', () => {
   };
 });
 
+jest.mock('../../src/utils/communitySbt/config.ts', () => {
+  return {
+    badgesCids: { 5: ['badgesCid'] },
+    communityContractAddress: { 5: ['someId'] },
+    leavesCids: { 5: ['leavesCid'] },
+  };
+});
+
 describe('getSeasonBadges: general', () => {
   const ogSeasonStart = 1654037999;
   const ogSeasonEnd = 1664578799;
