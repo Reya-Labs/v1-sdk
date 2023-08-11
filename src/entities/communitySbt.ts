@@ -133,6 +133,10 @@ export const NON_PROGRAMATIC_BADGES_VARIANT: Record<number, Record<string, strin
     diplomatz: '103',
     governorz: '104',
     senatorz: '105',
+    glp: '112',
+    aave: '113',
+    heroT: '114',
+    heroU: '115',
   },
 };
 
@@ -197,6 +201,10 @@ export const NON_SUBGRAPH_BADGES_SEASONS: Record<number, string[]> = {
     NON_PROGRAMATIC_BADGES_VARIANT[4].diplomatz,
     NON_PROGRAMATIC_BADGES_VARIANT[4].governorz,
     NON_PROGRAMATIC_BADGES_VARIANT[4].senatorz,
+    NON_PROGRAMATIC_BADGES_VARIANT[4].glp,
+    NON_PROGRAMATIC_BADGES_VARIANT[4].aave,
+    NON_PROGRAMATIC_BADGES_VARIANT[4].heroT,
+    NON_PROGRAMATIC_BADGES_VARIANT[4].heroU,
     REFERROR_BADGES_VARIANT[4].referror,
     REFERROR_BADGES_VARIANT[4].notionalInfluencer,
     REFERROR_BADGES_VARIANT[4].whaleWhisperer,
@@ -528,7 +536,9 @@ class SBT {
         badgesSubgraphUrl: selectedBadgesSubgraphUrl,
       });
 
-      // referrer badges & non-programatic badges
+      const insolvencyBadgeTypes: Array<string> = ['112', '113', '114', '115'];
+
+      // referrer badges & non-programatic badges - mainnet
       if (this.chainId === SupportedChainId.mainnet || this.chainId === SupportedChainId.goerli) {
         let referroorBadges: Record<string, BadgeResponse> = {};
         let nonProgBadges: Record<string, BadgeResponse> = {};
@@ -550,13 +560,35 @@ class SBT {
         }
 
         for (const badgeType of NON_SUBGRAPH_BADGES_SEASONS[seasonId]) {
-          if (nonProgBadges[badgeType]) {
+          if (nonProgBadges[badgeType] && insolvencyBadgeTypes.indexOf(badgeType) < 0) {
             const nonProgBadge = nonProgBadges[badgeType];
             badgesResponse.push(nonProgBadge);
           }
           if (referroorBadges[badgeType]) {
             const referroorBadge = referroorBadges[badgeType];
             badgesResponse.push(referroorBadge);
+          }
+        }
+      }
+
+      // insolvency badges - arbitrum
+      if (
+        this.chainId === SupportedChainId.arbitrum ||
+        this.chainId === SupportedChainId.arbitrumGoerli
+      ) {
+        let nonProgBadges: Record<string, BadgeResponse> = {};
+        if (this.nonProgDbUrl) {
+          nonProgBadges = await this.getNonProgramaticBadges(
+            userId,
+            seasonId,
+            seasonStart,
+            seasonEnd,
+          );
+        }
+
+        for (const badgeType of NON_SUBGRAPH_BADGES_SEASONS[seasonId]) {
+          if (nonProgBadges[badgeType] && insolvencyBadgeTypes.indexOf(badgeType) >= 0) {
+            badgesResponse.push(nonProgBadges[badgeType]);
           }
         }
       }
