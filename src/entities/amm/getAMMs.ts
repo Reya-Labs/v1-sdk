@@ -78,7 +78,7 @@ export const getV1V2AMMs = async ({
       chainId: rawAmm.chainId,
       id: rawAmm.id,
       isPaused: rawAmm.flags.isPaused,
-      isSettlementAllowedWhenPaused: rawAmm.flags.isSettementAllowedWhenPaused,
+      isSettlementAllowedWhenPaused: rawAmm.flags.isSettlementAllowedWhenPaused,
       signer: null,
       provider: getProvider(rawAmm.chainId, alchemyApiKey, infuraApiKey),
 

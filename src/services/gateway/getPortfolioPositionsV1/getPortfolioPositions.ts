@@ -5,6 +5,7 @@ import { getServiceUrl } from '../urls';
 import { getVoltzPoolConfig } from '../../../entities/amm/voltz-config/getConfig';
 import { V1V2PortfolioPosition } from '@voltz-protocol/api-sdk-v2';
 import { adjustForGLPPositions } from './adjustForGLPPositions';
+import { adjustForAavePositions } from './adjustForAavePositions';
 
 export const getPortfolioPositions = async (
   chainIds: SupportedChainId[],
@@ -21,6 +22,7 @@ export const getPortfolioPositions = async (
     let positions = res.data;
 
     positions = adjustForGLPPositions(positions);
+    positions = adjustForAavePositions(positions);
 
     // todo: move this config and filtering on the API side
     for (const chainId of chainIds) {
