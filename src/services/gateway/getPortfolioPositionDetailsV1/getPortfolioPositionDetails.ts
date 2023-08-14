@@ -2,6 +2,7 @@ import axios from 'axios';
 import { getSentryTracker } from '../../../init';
 import { getServiceUrl } from '../urls';
 import { V1V2PortfolioPositionDetails } from '@voltz-protocol/api-sdk-v2';
+import { adjustForAavePosition } from './adjustForAavePosition';
 
 type GetPortfolioPositionDetailsParams = {
   positionId: string;
@@ -22,7 +23,7 @@ export const getPortfolioPositionDetails = async ({
       withCredentials: false,
     });
 
-    return res.data;
+    return adjustForAavePosition(res.data);
   } catch (e) {
     const sentryTracker = getSentryTracker();
     sentryTracker.captureMessage(
