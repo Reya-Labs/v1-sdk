@@ -2843,13 +2843,21 @@
     "@typescript-eslint/types" "4.31.2"
     eslint-visitor-keys "^2.0.0"
 
-"@voltz-protocol/api-sdk-v2@1.16.0":
-  version "1.16.0"
-  resolved "https://registry.yarnpkg.com/@voltz-protocol/api-sdk-v2/-/api-sdk-v2-1.16.0.tgz#a86478ae5d224f7da22a72be35c43c1c26fcf915"
-  integrity sha512-T49+7noJHUk82IsHbEy9wvs0tSniCJlaeRRgz0mUwtmCxacrtJIxB/Rdu0Cz2SMR0OOR5asWq7E/yF35FqIi/Q==
+"@voltz-protocol/api-sdk-v2@1.19.0":
+  version "1.19.0"
+  resolved "https://registry.yarnpkg.com/@voltz-protocol/api-sdk-v2/-/api-sdk-v2-1.19.0.tgz#e80011d953486de84a5c127fc219cbf20b51d058"
+  integrity sha512-tR3iqbezs2jpxgJrujdTkrtfAIwKAclB2P4WTrjbfOouXlGnGVs07GK7atcNreu93W/AEfr6hgIWqgyCaj7BDQ==
   dependencies:
+    "@voltz-protocol/commons-v2" "^1.15.0"
     ethers "5.5.4"
     isomorphic-fetch "3.0.0"
+
+"@voltz-protocol/commons-v2@^1.15.0":
+  version "1.15.0"
+  resolved "https://registry.yarnpkg.com/@voltz-protocol/commons-v2/-/commons-v2-1.15.0.tgz#f11f8b1d95c27e91fa55df321ef1dd0273f19bee"
+  integrity sha512-3jvIgU29JnB1bJzrZ263x6NT6zlPDlMC6p395bdYLFkba1337qRiKWB6jPlQvVwSbbo+JyU/D0xkTFZcuwJvoA==
+  dependencies:
+    ethers "5.5.4"
 
 "@voltz-protocol/subgraph-data@1.18.1":
   version "1.18.1"
