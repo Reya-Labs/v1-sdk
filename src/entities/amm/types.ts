@@ -32,6 +32,7 @@ export type AMMConstructorArgs = {
 
   isV2?: boolean;
   isPaused?: boolean;
+  isSettlementAllowedWhenPaused?: boolean;
 
   fixedApr?: number;
   variableApy?: number;

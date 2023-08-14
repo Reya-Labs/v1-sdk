@@ -89,6 +89,7 @@ export class AMM {
   public readonly tickSpacing: number;
   public readonly isETH: boolean;
   public readonly isPaused: boolean;
+  public readonly isSettlementAllowedWhenPaused: boolean;
   public readonly wethAddress: string;
   public readonly ethPrice: () => Promise<number>;
   public readonly variableFactor: (
@@ -135,6 +136,7 @@ export class AMM {
     variableApy,
     variableApy24Ago,
     isPaused,
+    isSettlementAllowedWhenPaused,
   }: AMMConstructorArgs) {
     this.id = id;
     this.chainId = chainId;
@@ -151,6 +153,7 @@ export class AMM {
     this.wethAddress = wethAddress;
     this.isETH = this.underlyingToken.name === 'ETH';
     this.isPaused = Boolean(isPaused);
+    this.isSettlementAllowedWhenPaused = Boolean(isSettlementAllowedWhenPaused);
     this.ethPrice =
       ethPrice || (() => geckoEthToUsd(process.env.REACT_APP_COINGECKO_API_KEY || ''));
 
