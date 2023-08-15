@@ -32,7 +32,7 @@ export type AMMConstructorArgs = {
 
   isV2?: boolean;
   isPaused?: boolean;
-  isSettlementAllowedWhenPaused?: boolean;
+  isArbAaveAugust?: boolean;
 
   fixedApr?: number;
   variableApy?: number;
