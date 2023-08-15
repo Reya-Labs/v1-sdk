@@ -1,23 +1,18 @@
 import { V1V2PortfolioPositionDetails } from '@voltz-protocol/api-sdk-v2';
-import { getAavePositionFinalBalance } from '../../aave';
+import { getGLPPositionFinalBalance } from '../../glp';
 
-export const adjustForAavePosition = (
+export const adjustForGlpPosition = (
   position: V1V2PortfolioPositionDetails,
 ): V1V2PortfolioPositionDetails => {
-  const aaveVAMMs = [
-    '0x037c8d42972c3c058224a2e51b5cb9b504f75b77',
-    '0xd9a3f015a4ffd645014ec0f43148685be8754737',
-    '0x3ecf01157e9b1a66197325771b63789d1fb18f1f',
-  ];
+  const isGLP =
+    position.pool.marginEngineAddress.toLowerCase() ===
+    '0xbe958ba49be73d3020cb62e512619da953a2bab1';
 
-  const isAave = aaveVAMMs.includes(position.pool.vamm.toLowerCase());
-
-  if (isAave) {
-    const finalBalance: number = getAavePositionFinalBalance({
+  if (isGLP) {
+    const finalBalance: number = getGLPPositionFinalBalance({
       ownerAddress: position.ownerAddress,
       tickLower: position.tickLower,
       tickUpper: position.tickUpper,
-      vammAddress: position.pool.vamm,
     });
     return {
       ...position,

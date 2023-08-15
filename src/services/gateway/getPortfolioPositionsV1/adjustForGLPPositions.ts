@@ -23,7 +23,12 @@ export const adjustForGLPPositions = (positions: V1V2PortfolioPosition[]) => {
           realizedPNLCashflow: 0,
           realizedPNLTotal: 0,
           settlementCashflow: 0,
-          variant: finalBalance === 0 ? 'settled' : 'matured',
+          variant:
+            finalBalance === 0
+              ? 'settled'
+              : position.variant === 'active'
+              ? 'matured'
+              : position.variant,
         };
       } else {
         return position;
