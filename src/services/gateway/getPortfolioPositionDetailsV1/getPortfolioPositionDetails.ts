@@ -3,6 +3,7 @@ import { getSentryTracker } from '../../../init';
 import { getServiceUrl } from '../urls';
 import { V1V2PortfolioPositionDetails } from '@voltz-protocol/api-sdk-v2';
 import { adjustForAavePosition } from './adjustForAavePosition';
+import { adjustForGlpPosition } from './adjustForGlpPosition';
 
 type GetPortfolioPositionDetailsParams = {
   positionId: string;
@@ -23,7 +24,10 @@ export const getPortfolioPositionDetails = async ({
       withCredentials: false,
     });
 
-    return adjustForAavePosition(res.data);
+    let position = adjustForAavePosition(res.data);
+    position = adjustForGlpPosition(position);
+
+    return position;
   } catch (e) {
     const sentryTracker = getSentryTracker();
     sentryTracker.captureMessage(
