@@ -95,7 +95,7 @@ const networkConfigurations: { [key in SupportedChainId]: NetworkConfiguration }
             weight: 100,
             pools: ['AAVE - USDC BORROW', 'AAVE V3 - USDC BORROW'],
             estimatedHistoricApy: [-10, 20],
-            withdrawable: false,
+            withdrawable: true,
           },
         ],
       },
