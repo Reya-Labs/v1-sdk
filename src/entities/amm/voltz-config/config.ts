@@ -622,8 +622,8 @@ export const networkConfigurations: { [key in SupportedChainId]: NetworkConfigur
         name: 'borrow_av3USDC_31Aug23',
         id: '0x3ecf01157e9b1a66197325771b63789d1fb18f1f', // vamm address
         show: {
-          general: true,
-          trader: true,
+          general: false,
+          trader: false,
         },
         traderWithdrawable: false,
         isAaveV3: true,
