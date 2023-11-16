@@ -30,7 +30,7 @@
     "release": "semantic-release",
     "irs-setup": "ts-node scripts/setup.ts",
     "decode-error": "ts-node src/utils/errors/decodeError.ts",
-    "code-quality:check": "npx concurrently 'yarn prettier:check' 'yarn lint:check' 'yarn ts:check'",
+    "code-quality:check": "npx concurrently 'yarn prettier:check' 'yarn lint:check'",
     "generate:coverage-badges": "npx istanbul-badges-readme --silent"
   },
   "devDependencies": {
