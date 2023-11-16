@@ -61,7 +61,7 @@
     "eslint-plugin-prettier": "4.0.0",
     "eslint-plugin-unused-imports": "2.0.0",
     "ethereum-waffle": "^3.4.4",
-    "hardhat": "2.12.2",
+    "hardhat": "2.8.0",
     "husky": "^7.0.2",
     "is-ci": "3.0.1",
     "istanbul-badges-readme": "1.8.4",
